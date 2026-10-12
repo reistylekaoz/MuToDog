@@ -5,3 +5,7 @@ saida/
 inspetor/bin/
 inspetor/obj/
 lista.txt
+openmu/
+pg/
+sock/
+pg.log
