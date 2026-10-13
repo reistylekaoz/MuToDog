@@ -9,3 +9,13 @@ openmu/
 pg/
 sock/
 pg.log
+s6/
+conversor/bin/
+conversor/obj/
+ferramentas/mega/node_modules/
+ferramentas/__pycache__/
+godot/dados/
+godot/.godot/
+godot/build/
+openmu.log
+pc/openmu-pc.zip
