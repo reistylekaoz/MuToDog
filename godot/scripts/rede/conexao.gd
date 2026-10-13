@@ -4,8 +4,11 @@ extends RefCounted
 # (C1/C2/C3/C4), decifra e cifra. Por padrao e TCP. Nos testes daqui
 # (a caixa nao abre TCP nem pra ela mesma) o transporte e um processo ponte
 # que fala com o OpenMU por socket Unix: MU_PONTE=<programa> MU_SOCKETS=<pasta>.
+# No navegador (export web) o transporte e WebSocket: wss://<o site>/ws/<porta>,
+# a ponte do servidor (mu-estudo-ponte) liga isso no OpenMU. O host e ignorado.
 
 var tcp: StreamPeerTCP
+var wsp: WebSocketPeer
 var ponte: Dictionary = {}
 var cripto := Cripto.new()
 var buffer := PackedByteArray()
@@ -43,6 +46,14 @@ func abrir(host: String, porta: int) -> void:
 		aberta = true
 		return
 	_desde = Time.get_ticks_msec()
+	if OS.has_feature("web"):
+		wsp = WebSocketPeer.new()
+		wsp.inbound_buffer_size = 1 << 20
+		var url := "wss://%s/ws/%d" % [str(JavaScriptBridge.eval("location.host")), porta]
+		var ew := wsp.connect_to_url(url)
+		if ew != OK:
+			erro = "nao conectou em %s (erro %d)" % [url, ew]
+		return
 	tcp = StreamPeerTCP.new()
 	tcp.set_no_delay(true)
 	var e := tcp.connect_to_host(host, porta)
@@ -51,6 +62,8 @@ func abrir(host: String, porta: int) -> void:
 
 
 func fechar() -> void:
+	if wsp:
+		wsp.close()
 	if tcp:
 		tcp.disconnect_from_host()
 	if not ponte.is_empty():
@@ -62,9 +75,22 @@ func fechar() -> void:
 
 # true quando ja da pra mandar; chame todo quadro
 func atualizar() -> bool:
-	if not _fita.is_empty() or (aberta and tcp == null and ponte.is_empty()):
+	if not _fita.is_empty() or (aberta and tcp == null and wsp == null and ponte.is_empty()):
 		return aberta
-	if tcp:
+	if wsp:
+		wsp.poll()
+		var sw := wsp.get_ready_state()
+		if sw == WebSocketPeer.STATE_OPEN:
+			aberta = true
+			while wsp.get_available_packet_count() > 0:
+				buffer.append_array(wsp.get_packet())
+		elif sw == WebSocketPeer.STATE_CONNECTING and Time.get_ticks_msec() - _desde > 8000:
+			erro = "o servidor nao respondeu em 8 s"
+		elif sw == WebSocketPeer.STATE_CLOSED:
+			if erro == "":
+				erro = "a conexao caiu" if aberta else "a ponte recusou (%d)" % wsp.get_close_code()
+			aberta = false
+	elif tcp:
 		tcp.poll()
 		var st := tcp.get_status()
 		if st == StreamPeerTCP.STATUS_CONNECTED:
@@ -95,7 +121,7 @@ func atualizar() -> bool:
 # pacotes que ja chegaram inteiros, abertos
 func pacotes() -> Array[PackedByteArray]:
 	var lista: Array[PackedByteArray] = []
-	if not _fita.is_empty() or (aberta and tcp == null and ponte.is_empty()):
+	if not _fita.is_empty() or (aberta and tcp == null and wsp == null and ponte.is_empty()):
 		var agora := Time.get_ticks_msec() - _t0
 		while not _fita.is_empty() and _fita[0][0] <= agora:
 			lista.append(_fita.pop_front()[1])
@@ -128,11 +154,13 @@ func pacotes() -> Array[PackedByteArray]:
 
 
 func enviar(pacote: PackedByteArray) -> void:
-	if tcp == null and ponte.is_empty():
+	if tcp == null and wsp == null and ponte.is_empty():
 		return
 	Cripto.gravar_tamanho(pacote)
 	var dados := cripto.cifrar(pacote)
-	if tcp:
+	if wsp:
+		wsp.put_packet(dados)
+	elif tcp:
 		tcp.put_data(dados)
 	elif not ponte.is_empty():
 		ponte.stdio.store_buffer(dados)
