@@ -5,5 +5,8 @@ cd "$(dirname "$0")/.."
 RAIZ=$(cd .. && pwd)
 GODOT=${GODOT:-$HOME/casa/trabalho/.ferramentas/godot/Godot_v4.7.2-stable_linux.x86_64}
 [ -S "$RAIZ/sockmu/44405" ] || { echo "ligue antes: $RAIZ/servidor.sh ligar-teste"; exit 2; }
+# a caca (cacar.sh) leva o test0Dk pra fora da cidade; o teste comeca no meio dos NPCs
+PGPASSWORD=local psql -q -h "$RAIZ/sock" -U postgres -d openmu -c \
+  "update data.\"Character\" set \"PositionX\"=143, \"PositionY\"=129 where \"Name\"='test0Dk'" || exit 2
 MU_DEBUG=${MU_DEBUG:-} MU_PONTE=$PWD/testes/ponte_unix.py MU_SOCKETS=$RAIZ/sockmu \
   timeout 120 "$GODOT" --headless --path . -s testes/rede_teste.gd 2>&1 | grep -E "TESTE|REDE|ERROR|SCRIPT|WARNING"
