@@ -1,0 +1,17 @@
+OpenMU (Season 6) no seu PC - estudo interno
+
+1. Instale o Docker Desktop (docker.com) e o Git for Windows (git-scm.com).
+   Abra o Docker Desktop e espere ficar verde ("Engine running").
+2. Instale o .NET 10 Desktop Runtime (dotnet.microsoft.com/download/dotnet/10.0).
+3. Descompacte esta pasta onde quiser (ex.: C:\OpenMU) e de dois cliques em ligar.bat.
+   Na primeira vez ele baixa tudo e pede a senha do painel. Espere uns 3 minutos.
+4. Abra http://localhost/ e entre com murilo e a senha que voce escolheu.
+   Se aparecer a tela de Setup, deixe Season 6 com contas de teste e clique Install.
+5. Cliente: o OpenMU nao traz o cliente do jogo. Use um cliente Season 6 (main.exe).
+   Baixe o launcher: github.com/MUnique/OpenMU/releases (MUnique.OpenMU.ClientLauncher 0.9.6).
+   No launcher: endereco 127.127.127.127, porta 44405, e escolha o main.exe do cliente.
+   (127.0.0.1 nao funciona: o cliente bloqueia.)
+6. Entre com test0 a test9 (senha igual ao usuario), test300, test400 ou testgm.
+
+Desligar: desligar.bat (os personagens ficam guardados).
+Caiu logo depois de escolher o servidor? No painel: Configuration > System > IP resolver = Loopback.

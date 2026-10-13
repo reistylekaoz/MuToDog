@@ -1,0 +1,6 @@
+# Ajuste do Murilo pro OpenMU no PC (estudo interno).
+# Faz o servidor mandar o cliente pro 127.127.127.127 depois da escolha do servidor.
+services:
+  openmu-startup:
+    environment:
+      RESOLVE_IP: loopback
