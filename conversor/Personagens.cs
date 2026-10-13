@@ -15,7 +15,9 @@ using SharpGLTF.Scenes;
 
 static class Personagens
 {
-    record Def(string esqueleto, string[]? partes, Dictionary<string, int> acoes, int[]? esconde);
+    // arma: BMD do item preso no osso da mao; esquerda = Weapon[1] do cliente (escudo ou segunda arma)
+    record Arma(string bmd, int osso, bool esquerda = false);
+    record Def(string esqueleto, string[]? partes, Dictionary<string, int> acoes, int[]? esconde, Arma[]? armas);
 
     public static async Task Rodar(string data, string saida)
     {
@@ -35,7 +37,14 @@ static class Personagens
                     if (arq == null) { Console.WriteLine($"  {nome}: falta {p}"); continue; }
                     partes.Add((await new BMDReader().Load(arq), Path.GetDirectoryName(arq)!));
                 }
-                var acoes = await Glb(esq, partes, d.acoes, d.esconde ?? [], Path.Combine(saida, nome + ".glb"));
+                var armas = new List<(BMD bmd, string dir, Arma a)>();
+                foreach (var a in d.armas ?? [])
+                {
+                    var arq = Arquivo(data, a.bmd);
+                    if (arq == null) { Console.WriteLine($"  {nome}: falta {a.bmd}"); continue; }
+                    armas.Add((await new BMDReader().Load(arq), Path.GetDirectoryName(arq)!, a));
+                }
+                var acoes = await Glb(esq, partes, armas, d.acoes, d.esconde ?? [], Path.Combine(saida, nome + ".glb"));
                 info[nome] = acoes;
                 Console.WriteLine($"{nome}: {esq.Bones.Length} ossos, {esq.Actions.Length} acoes, {partes.Sum(p => p.bmd.Meshes.Length)} malhas");
             }
@@ -81,8 +90,42 @@ static class Personagens
         return m;
     }
 
+    // pose 0 de cada osso de um BMD, em coordenadas do modelo
+    static Matrix4x4[] Pose0(BMD bmd)
+    {
+        var r = new Matrix4x4[bmd.Bones.Length];
+        for (int i = 0; i < r.Length; i++)
+        {
+            var b = bmd.Bones[i];
+            r[i] = Matrix4x4.Identity;
+            if (b == BMDTextureBone.Dummy || b.Matrixes.Length == 0 || b.Matrixes[0].Position.Length == 0) continue;
+            var local = Local(b, 0, 0);
+            r[i] = b.Parent >= 0 && b.Parent < i ? local * r[b.Parent] : local;
+        }
+        return r;
+    }
+
+    // onde o cliente poe a arma em relacao ao osso (RenderLinkObject, caso padrao)
+    static Matrix4x4 Encaixe(string item, bool esquerda)
+    {
+        static Matrix4x4 M(float ax, float ay, float az, float tx, float ty, float tz)
+        {
+            var m = Matrix4x4.CreateFromQuaternion(MathUtils.AngleQuaternion(new Vector3(ax, ay, az) * (MathF.PI / 180f)));
+            m.Translation = new Vector3(tx, ty, tz);
+            return m;
+        }
+        var nome = Path.GetFileName(item).ToLowerInvariant();
+        bool escudo = nome.StartsWith("shield");
+        var m = escudo ? M(70, 0, 90, -10, 0, 0)
+            : nome.StartsWith("bow") || nome.StartsWith("crossbow") ? M(70, 0, 90, -10, 5, 10)
+            : M(70, 0, 90, -20, 5, 40);
+        // segunda arma na mao esquerda: o cliente gira mais (145, 0, 275) e desloca (0, 10, -30)
+        if (esquerda && !escudo) m = M(145, 0, 275, 0, 10, -30) * m;
+        return m;
+    }
+
     static async Task<Dictionary<string, object>> Glb(BMD esq, List<(BMD bmd, string dir)> partes,
-        Dictionary<string, int> acoes, int[] esconde, string destino)
+        List<(BMD bmd, string dir, Arma a)> armas, Dictionary<string, int> acoes, int[] esconde, string destino)
     {
         // ossos: um no por osso do MU; osso "dummy" vira no parado na raiz
         var raiz = new NodeBuilder("raiz");
@@ -132,11 +175,9 @@ static class Personagens
         }
 
         var mb = new MeshBuilder<VertexPositionNormal, VertexTexture1, VertexJoints4>("corpo");
-        int malha = 0;
-        foreach (var (bmd, dir) in partes)
-        foreach (var me in bmd.Meshes)
+        // cada vertice: (osso do esqueleto que o move, matriz da pose de repouso)
+        async Task Malha(BMDTextureMesh me, string dir, Func<BMDTextureVertex, (int osso, Matrix4x4 m)> onde)
         {
-            if (esconde.Contains(malha++)) continue;
             var mat = new MaterialBuilder(me.TexturePath).WithDoubleSide(true).WithMetallicRoughness(0, 1);
             var tex = await Texturas.Textura(dir, me.TexturePath);
             if (tex != null)
@@ -149,8 +190,7 @@ static class Personagens
             {
                 var v = me.Vertices[tri.VertexIndex[k]];
                 var nrm = me.Normals[tri.NormalIndex[k]];
-                int osso = v.Node >= 0 && v.Node < mundo.Length ? v.Node : 0;
-                var m = mundo.Length > 0 ? mundo[osso] : Matrix4x4.Identity;
+                var (osso, m) = onde(v);
                 var p = Vector3.Transform(v.Position, m);
                 var n = Vector3.Normalize(Vector3.TransformNormal(nrm.Normal, m));
                 if (float.IsNaN(n.X)) n = Vector3.UnitZ;
@@ -162,6 +202,26 @@ static class Personagens
                 prim.AddTriangle(V(tri, 0), V(tri, 1), V(tri, 2));
                 if (tri.Polygon == 4) prim.AddTriangle(V(tri, 0), V(tri, 2), V(tri, 3));
             }
+        }
+        int malha = 0;
+        foreach (var (bmd, dir) in partes)
+        foreach (var me in bmd.Meshes)
+        {
+            if (esconde.Contains(malha++)) continue;
+            await Malha(me, dir, v =>
+            {
+                int osso = v.Node >= 0 && v.Node < mundo.Length ? v.Node : 0;
+                return (osso, mundo.Length > 0 ? mundo[osso] : Matrix4x4.Identity);
+            });
+        }
+        // armas: pose 0 do item, encaixe da mao, osso da mao; o vertice inteiro segue o osso da mao
+        foreach (var (bmd, dir, a) in armas)
+        {
+            if (a.osso < 0 || a.osso >= mundo.Length) { Console.WriteLine($"  osso {a.osso} fora do esqueleto"); continue; }
+            var pose = Pose0(bmd);
+            var encaixe = Encaixe(a.bmd, a.esquerda) * mundo[a.osso];
+            foreach (var me in bmd.Meshes)
+                await Malha(me, dir, v => (a.osso, (v.Node >= 0 && v.Node < pose.Length ? pose[v.Node] : Matrix4x4.Identity) * encaixe));
         }
         var cena = new SceneBuilder();
         cena.AddSkinnedMesh(mb, Matrix4x4.Identity, nos);

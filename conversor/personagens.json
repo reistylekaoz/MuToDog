@@ -9,7 +9,14 @@
    "ataque2": 4,
    "golpe": 5,
    "morre": 6
-  }
+  },
+  "armas": [
+   {
+    "bmd": "Item/Spear08.bmd",
+    "osso": 42,
+    "esquerda": false
+   }
+  ]
  },
  "monster02": {
   "esqueleto": "Monster/Monster02.bmd",
@@ -45,7 +52,14 @@
    "ataque2": 4,
    "golpe": 5,
    "morre": 6
-  }
+  },
+  "armas": [
+   {
+    "bmd": "Item/Staff03.bmd",
+    "osso": 41,
+    "esquerda": false
+   }
+  ]
  },
  "monster06": {
   "esqueleto": "Monster/Monster06.bmd",
@@ -57,7 +71,19 @@
    "ataque2": 4,
    "golpe": 5,
    "morre": 6
-  }
+  },
+  "armas": [
+   {
+    "bmd": "Item/Axe03.bmd",
+    "osso": 41,
+    "esquerda": false
+   },
+   {
+    "bmd": "Item/Axe03.bmd",
+    "osso": 32,
+    "esquerda": true
+   }
+  ]
  },
  "monster10": {
   "esqueleto": "Monster/Monster10.bmd",
@@ -245,7 +271,14 @@
    "espada": 39,
    "golpe": 230,
    "morre": 231
-  }
+  },
+  "armas": [
+   {
+    "bmd": "Item/Spear08.bmd",
+    "osso": 33,
+    "esquerda": false
+   }
+  ]
  },
  "espirito": {
   "esqueleto": "Player/player.bmd",
@@ -285,7 +318,19 @@
    "espada": 39,
    "golpe": 230,
    "morre": 231
-  }
+  },
+  "armas": [
+   {
+    "bmd": "Item/Sword07.bmd",
+    "osso": 33,
+    "esquerda": false
+   },
+   {
+    "bmd": "Item/Shield05.bmd",
+    "osso": 42,
+    "esquerda": true
+   }
+  ]
  },
  "esqueleto2": {
   "esqueleto": "Player/player.bmd",
@@ -443,6 +488,13 @@
   },
   "esconde": [
    0
+  ],
+  "armas": [
+   {
+    "bmd": "Item/Axe07.bmd",
+    "osso": 42,
+    "esquerda": false
+   }
   ]
  },
  "monster02_sem0": {
@@ -458,6 +510,64 @@
   },
   "esconde": [
    0
+  ],
+  "armas": [
+   {
+    "bmd": "Item/Sword05.bmd",
+    "osso": 19,
+    "esquerda": false
+   }
   ]
+ },
+ "guarda_besta": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmMale10.bmd",
+   "Player/ArmorMale10.bmd",
+   "Player/PantMale10.bmd",
+   "Player/GloveMale10.bmd",
+   "Player/BootMale10.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  },
+  "armas": [
+   {
+    "bmd": "Item/CrossBow04.bmd",
+    "osso": 33,
+    "esquerda": false
+   }
+  ]
+ },
+ "leo": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmMale10.bmd",
+   "Player/ArmorMale10.bmd",
+   "Player/PantMale10.bmd",
+   "Player/GloveMale10.bmd",
+   "Player/BootMale10.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
  }
 }

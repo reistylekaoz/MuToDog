@@ -25,9 +25,9 @@ const NPCS := {
 	0: ["monster01_sem0", 0.8], 1: ["monster02_sem0", 0.85], 2: ["monster03", 0.5], 3: ["monster10", 0.4],
 	4: ["monster01", 1.15], 6: ["monster05", 0.85], 7: ["monster06", 1.6], 14: ["esqueleto1", 0.95],
 	226: ["treinador", 1.0], 229: ["placa", 1.0], 230: ["alex", 1.0], 236: ["esqueleto2", 1.0],
-	240: ["baz", 1.0], 247: ["placa", 1.0], 248: ["martin", 1.0], 249: ["placa", 1.0], 250: ["harold", 1.0],
+	240: ["baz", 1.0], 247: ["guarda_besta", 1.0], 248: ["martin", 1.0], 249: ["placa", 1.0], 250: ["harold", 1.0],
 	251: ["hanzo", 0.95], 253: ["amy", 1.0], 254: ["pasi", 1.0], 255: ["lumen", 1.0], 257: ["espirito", 1.0],
-	371: ["placa", 1.0], 375: ["placa", 1.0], 543: ["duprian", 1.0], 547: ["julia", 1.0], 568: ["zyro", 0.8],
+	371: ["leo", 1.0], 375: ["leo", 1.0], 543: ["duprian", 1.0], 547: ["julia", 1.0], 568: ["zyro", 0.8],
 }
 # classe do OpenMU (classes.json) >> 2 -> corpo padrao da classe
 const CLASSES := ["classe_dw", "classe_dk", "classe_elf", "classe_mg", "classe_dl", "classe_sum", "classe_rf"]
