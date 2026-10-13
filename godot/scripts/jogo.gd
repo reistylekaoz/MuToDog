@@ -209,7 +209,7 @@ func _montar_ui() -> void:
 	v.add_theme_constant_override("separation", 8)
 	painel.add_child(v)
 	var titulo := Label.new()
-	titulo.text = "MU Estudo"
+	titulo.text = "openmu"
 	titulo.add_theme_font_size_override("font_size", 28)
 	titulo.add_theme_color_override("font_color", Color(1.0, 0.82, 0.4))
 	v.add_child(titulo)

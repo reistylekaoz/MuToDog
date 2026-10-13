@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 
-config/name="MU Estudo"
+config/name="openmu"
 config/description="Cliente do MU Season 6 refeito no Godot (estudo interno)"
 run/main_scene="res://jogo.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
