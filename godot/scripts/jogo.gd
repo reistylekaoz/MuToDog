@@ -9,6 +9,8 @@ var mundo: Node3D
 var mapa_atual := -1
 var eu: Entidade
 var meu_nome := ""
+var minha_classe := 0
+var _classe_de := {}
 var entidades := {}
 var monstros := {}
 var mapas := {}
@@ -35,6 +37,10 @@ func _ready() -> void:
 	# o visualizador de mapa (main.tscn) segue abrindo no navegador com ?vista=1
 	if OS.has_feature("web") and str(JavaScriptBridge.eval("location.search")).contains("vista="):
 		get_tree().change_scene_to_file.call_deferred("res://main.tscn")
+		return
+	# vitrine dos personagens convertidos: ?vitrine=1 (ou -- --vitrine 1)
+	if _parametros().has("vitrine"):
+		get_tree().change_scene_to_file.call_deferred("res://vitrine.tscn")
 		return
 	monstros = _json("res://dados/monstros.json")
 	mapas = _json("res://dados/mapas.json")
@@ -320,6 +326,8 @@ func _personagens(l: Array) -> void:
 		aviso.text = "Essa conta nao tem personagem. Crie um no cliente original ou no painel do OpenMU."
 		return
 	for p in l:
+		_classe_de[p.nome] = p.classe
+	for p in l:
 		if meu_nome != "" and p.nome == meu_nome:
 			_escolher(p.nome)
 			return
@@ -332,6 +340,7 @@ func _personagens(l: Array) -> void:
 
 func _escolher(nome: String) -> void:
 	meu_nome = nome
+	minha_classe = _classe_de.get(nome, 0)
 	_limpar_lista()
 	cli.escolher(nome)
 
@@ -378,7 +387,7 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 		_msg("[color=#e8b04a]%s ainda nao foi convertido: chao liso, so as posicoes.[/color]" % mapas.get(str(mapa), "Esse mapa"))
 	eu = Entidade.new()
 	mundo.add_child(eu)
-	eu.montar(mundo, cli.meu_id, "eu", meu_nome, x, y)
+	eu.montar(mundo, cli.meu_id, "eu", meu_nome, x, y, Boneco.da_classe(minha_classe))
 	entidades[cli.meu_id] = eu
 	mundo.seguir = eu
 
@@ -398,7 +407,8 @@ func _objeto_entrou(o: Dictionary) -> void:
 		tipo = ["monstro", "npc", "guarda"][m[1]] if int(m[1]) < 3 else "outro"
 	var e := Entidade.new()
 	mundo.add_child(e)
-	e.montar(mundo, o.id, tipo, nome, o.x, o.y)
+	e.montar(mundo, o.id, tipo, nome, o.x, o.y,
+		Boneco.do_npc(o.numero) if o.tipo == "npc" else Boneco.da_classe(o.get("classe", 0)))
 	entidades[o.id] = e
 	if Vector2i(o.ax, o.ay) != Vector2i(o.x, o.y):
 		_objeto_andou(o.id, o.ax, o.ay, [])
@@ -428,11 +438,9 @@ func _objeto_morreu(id: int) -> void:
 	if not entidades.has(id):
 		return
 	var e: Entidade = entidades[id]
+	e.morrer()
 	if id == cli.meu_id:
 		_msg("[color=#e05050]Voce morreu.[/color]")
-		return
-	var tw := create_tween()
-	tw.tween_property(e, "scale", Vector3(1, 0.05, 1), 0.6)
 
 
 func _mapa_mudou(mapa: int, x: int, y: int) -> void:

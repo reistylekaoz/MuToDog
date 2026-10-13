@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="lorencia.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="personagens.json" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="../xulek/Client.Data/Client.Data.csproj" />
     <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.5" />
   </ItemGroup>

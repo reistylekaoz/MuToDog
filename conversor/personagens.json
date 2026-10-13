@@ -1,0 +1,463 @@
+{
+ "monster01": {
+  "esqueleto": "Monster/Monster01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster02": {
+  "esqueleto": "Monster/Monster02.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster03": {
+  "esqueleto": "Monster/Monster03.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster05": {
+  "esqueleto": "Monster/Monster05.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster06": {
+  "esqueleto": "Monster/Monster06.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster10": {
+  "esqueleto": "Monster/Monster10.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "classe_dw": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmClass01.bmd",
+   "Player/ArmorClass01.bmd",
+   "Player/PantClass01.bmd",
+   "Player/GloveClass01.bmd",
+   "Player/BootClass01.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "classe_dk": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmClass02.bmd",
+   "Player/ArmorClass02.bmd",
+   "Player/PantClass02.bmd",
+   "Player/GloveClass02.bmd",
+   "Player/BootClass02.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "classe_elf": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmClass03.bmd",
+   "Player/ArmorClass03.bmd",
+   "Player/PantClass03.bmd",
+   "Player/GloveClass03.bmd",
+   "Player/BootClass03.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "classe_mg": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmClass04.bmd",
+   "Player/ArmorClass04.bmd",
+   "Player/PantClass04.bmd",
+   "Player/GloveClass04.bmd",
+   "Player/BootClass04.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "classe_dl": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmClass05.bmd",
+   "Player/ArmorClass05.bmd",
+   "Player/PantClass05.bmd",
+   "Player/GloveClass05.bmd",
+   "Player/BootClass05.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "classe_sum": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmClass06.bmd",
+   "Player/ArmorClass06.bmd",
+   "Player/PantClass06.bmd",
+   "Player/GloveClass06.bmd",
+   "Player/BootClass06.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "classe_rf": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmClass07.bmd",
+   "Player/ArmorClass07.bmd",
+   "Player/PantClass07.bmd",
+   "Player/GloveClass07.bmd",
+   "Player/BootClass07.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "placa": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmMale10.bmd",
+   "Player/ArmorMale10.bmd",
+   "Player/PantMale10.bmd",
+   "Player/GloveMale10.bmd",
+   "Player/BootMale10.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "espirito": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmMale25.bmd",
+   "Player/ArmorMale25.bmd",
+   "Player/PantMale25.bmd",
+   "Player/GloveMale25.bmd",
+   "Player/BootMale25.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "esqueleto1": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Skill/Skeleton01.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "esqueleto2": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Skill/Skeleton02.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  }
+ },
+ "harold": {
+  "esqueleto": "NPC/Man01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  },
+  "partes": [
+   "NPC/ManHead01.bmd",
+   "NPC/ManUpper01.bmd",
+   "NPC/ManGloves01.bmd",
+   "NPC/ManBoots01.bmd"
+  ]
+ },
+ "alex": {
+  "esqueleto": "NPC/Man01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  },
+  "partes": [
+   "NPC/ManHead01.bmd",
+   "NPC/ManUpper02.bmd",
+   "NPC/ManGloves02.bmd",
+   "NPC/ManBoots01.bmd"
+  ]
+ },
+ "martin": {
+  "esqueleto": "NPC/Man01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  },
+  "partes": [
+   "NPC/ManHead02.bmd",
+   "NPC/ManUpper02.bmd",
+   "NPC/ManGloves02.bmd",
+   "NPC/ManBoots02.bmd"
+  ]
+ },
+ "amy": {
+  "esqueleto": "NPC/Girl01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  },
+  "partes": [
+   "NPC/GirlHead01.bmd",
+   "NPC/GirlUpper01.bmd",
+   "NPC/GirlLower01.bmd"
+  ]
+ },
+ "lumen": {
+  "esqueleto": "NPC/Female01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  },
+  "partes": [
+   "NPC/FemaleHead02.bmd",
+   "NPC/FemaleUpper02.bmd",
+   "NPC/FemaleLower02.bmd",
+   "NPC/FemaleBoots02.bmd"
+  ]
+ },
+ "hanzo": {
+  "esqueleto": "NPC/Smith01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "pasi": {
+  "esqueleto": "NPC/Wizard01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "baz": {
+  "esqueleto": "NPC/Storage01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "treinador": {
+  "esqueleto": "NPC/Breeder.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "duprian": {
+  "esqueleto": "NPC/duprian.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "julia": {
+  "esqueleto": "NPC/UnitedMarkedPlace_julia.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "zyro": {
+  "esqueleto": "NPC/gambler_moss.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "monster01_sem0": {
+  "esqueleto": "Monster/Monster01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "esconde": [
+   0
+  ]
+ },
+ "monster02_sem0": {
+  "esqueleto": "Monster/Monster02.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "esconde": [
+   0
+  ]
+ }
+}
