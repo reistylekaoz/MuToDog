@@ -26,6 +26,8 @@ var _t := 0.0
 var _corpo: MeshInstance3D
 var boneco: Boneco
 var morto := false
+var rotulo: Label3D
+var _destaque := false
 
 
 func montar(m: Node3D, i: int, t: String, n: String, x: int, y: int, b: Boneco = null) -> void:
@@ -63,7 +65,7 @@ func montar(m: Node3D, i: int, t: String, n: String, x: int, y: int, b: Boneco =
 		nariz.mesh = bx
 		nariz.position = Vector3(0, cap.height * 0.8, -0.32)
 		add_child(nariz)
-	var rotulo := Label3D.new()
+	rotulo = Label3D.new()
 	rotulo.text = nome
 	rotulo.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	rotulo.no_depth_test = true
@@ -74,6 +76,8 @@ func montar(m: Node3D, i: int, t: String, n: String, x: int, y: int, b: Boneco =
 	rotulo.modulate = cor.lightened(0.3)
 	rotulo.position.y = topo + 0.45
 	add_child(rotulo)
+	# monstro e NPC: nome so com o mouse em cima ou quando e o alvo (como no cliente)
+	rotulo.visible = not _nome_escondido()
 	if tipo == "eu":
 		var anel := MeshInstance3D.new()
 		var tm := TorusMesh.new()
@@ -172,6 +176,22 @@ func morrer() -> void:
 		boneco.tocar("morre")
 	else:
 		create_tween().tween_property(self, "scale", Vector3(1, 0.05, 1), 0.6)
+
+
+func _nome_escondido() -> bool:
+	return tipo in ["monstro", "npc", "guarda"]
+
+
+func altura() -> float:
+	return boneco.altura if boneco else 1.7
+
+
+func destacar(sim: bool) -> void:
+	if sim == _destaque:
+		return
+	_destaque = sim
+	rotulo.visible = sim or not _nome_escondido()
+	rotulo.outline_modulate = Color(0.55, 0.1, 0.05) if sim and tipo == "monstro" else Color(0, 0, 0)
 
 
 func andando() -> bool:

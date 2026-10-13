@@ -18,6 +18,14 @@ signal vida(atual: int)
 signal golpe(id: int, dano: int)
 signal ataque(id: int, alvo: int)
 signal mensagem(texto: String)
+signal mana(atual: int)
+signal experiencia(morto: int, ganho: int)
+signal nivel(info: Dictionary)
+signal itens_cairam(lista: Array)
+signal itens_sumiram(ids: Array)
+signal pegou(slot: int, item: Dictionary)
+signal nao_pegou(motivo: int)
+signal zen(valor: int)
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -83,6 +91,15 @@ func andar(x: int, y: int, dirs: Array) -> void:
 		var b: int = dirs[i + 1] if i + 1 < n else 0
 		p.append((a << 4) | b)
 	con.enviar(p)
+
+
+# ataque sem skill: alvo, acao que o boneco toca e pra onde olha (indice de PASSOS)
+func atacar(alvo: int, acao: int, direcao: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x11, (alvo >> 8) & 0xFF, alvo & 0xFF, acao & 0xFF, direcao & 0x07]))
+
+
+func pegar(item: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x22, (item >> 8) & 0xFF, item & 0xFF]))
 
 
 func pronto_no_mapa() -> void:
@@ -189,6 +206,8 @@ func _tratar(p: PackedByteArray) -> void:
 		[0xF3, 0x03]:
 			if p[0] == 0xC3:
 				var info := {"x": p[4], "y": p[5], "mapa": p[6] | (p[7] << 8),
+					"exp": _ler_be(p, 8, 8), "exp_prox": _ler_be(p, 16, 8), "pontos": p[24] | (p[25] << 8),
+					"zen": p[52] | (p[53] << 8) | (p[54] << 16) | (p[55] << 24),
 					"vida": p[34] | (p[35] << 8), "vida_max": p[36] | (p[37] << 8),
 					"mana": p[38] | (p[39] << 8), "mana_max": p[40] | (p[41] << 8)}
 				_mudar("jogo")
@@ -206,6 +225,17 @@ func _tratar(p: PackedByteArray) -> void:
 		[0x26, 0xFF]:
 			vida.emit((p[4] << 8) | p[5])
 			return
+		[0x27, 0xFF]:
+			mana.emit((p[4] << 8) | p[5])
+			return
+		[0xF3, 0x05]:
+			nivel.emit({"nivel": p[4] | (p[5] << 8), "pontos": p[6] | (p[7] << 8),
+				"vida_max": p[8] | (p[9] << 8), "mana_max": p[10] | (p[11] << 8)})
+			return
+		[0x22, 0xFE]:
+			if p[0] == 0xC3:
+				zen.emit(_ler_be(p, 4, 4))
+				return
 	match cod:
 		0x12:
 			_ler_personagens(p)
@@ -227,6 +257,22 @@ func _tratar(p: PackedByteArray) -> void:
 			objeto_moveu.emit(((p[3] << 8) | p[4]) & 0x7FFF, p[5], p[6])
 		0x17:
 			objeto_morreu.emit(((p[3] << 8) | p[4]) & 0x7FFF)
+		0x16:
+			experiencia.emit(((p[3] << 8) | p[4]) & 0x7FFF, (p[5] << 8) | p[6])
+		0x20:
+			if p[0] == 0xC2:
+				_ler_itens(p)
+		0x21:
+			if p[0] == 0xC2:
+				var ids := []
+				for i in p[4]:
+					ids.append(((p[5 + i * 2] << 8) | p[6 + i * 2]) & 0x7FFF)
+				itens_sumiram.emit(ids)
+		0x22:
+			if p.size() == 4:
+				nao_pegou.emit(p[3])
+			elif p.size() >= 4 + 12:
+				pegou.emit(p[3], item_de(p, 4))
 		0x0D:
 			# aviso do servidor: tipo e 9 bytes de cabecalho do aviso antes do texto
 			var ini := 13 if p.size() > 13 else 4
@@ -249,6 +295,40 @@ func _ler_personagens(p: PackedByteArray) -> void:
 			"nome": _ler_texto(p, o + 22, 10), "classe": p[o + 4] >> 3,
 			"x": p[o + 2], "y": p[o + 3], "ax": p[o + 32], "ay": p[o + 33]})
 		o += 36 + p[o + 35]
+
+
+# C2 20: itens no chao (S6: id, x, y e os 12 bytes do item; zen e o item 14/15 com o valor
+# nos bytes 1..4, big endian: o OpenMU manda 00 00 00 1d pra 29 Zen)
+func _ler_itens(p: PackedByteArray) -> void:
+	var lista := []
+	var o := 5
+	for i in p[4]:
+		if o + 16 > p.size():
+			break
+		var it := item_de(p, o + 4)
+		it.id = ((p[o] << 8) | p[o + 1]) & 0x7FFF
+		it.novo = (p[o] & 0x80) != 0
+		it.x = p[o + 2]
+		it.y = p[o + 3]
+		if it.grupo == 14 and (it.numero & 0xFF) == 15:
+			it.zen = _ler_be(p, o + 5, 4)
+		lista.append(it)
+		o += 16
+	itens_cairam.emit(lista)
+
+
+# os 12 bytes de um item (GameServer/RemoteView/ItemSerializer.cs)
+static func item_de(p: PackedByteArray, o: int) -> Dictionary:
+	return {"numero": p[o] | ((p[o + 3] & 0x80) << 1), "grupo": p[o + 5] >> 4, "nivel": (p[o + 1] >> 3) & 0x0F,
+		"sorte": (p[o + 1] & 0x04) != 0, "skill": (p[o + 1] & 0x80) != 0, "exc": p[o + 3] & 0x3F,
+		"durabilidade": p[o + 2]}
+
+
+static func _ler_be(p: PackedByteArray, o: int, n: int) -> int:
+	var v := 0
+	for i in n:
+		v = (v << 8) | p[o + i]
+	return v
 
 
 # C2 13: npcs e monstros (Season 6: 10 bytes cada)

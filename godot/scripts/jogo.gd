@@ -1,6 +1,7 @@
 extends Node
 # Tela do cliente: entra no OpenMU (servidor, conta, personagem), monta o mapa
-# e mostra quem esta em volta. Clique no chao pra andar.
+# e mostra quem esta em volta. Clique no chao pra andar, no monstro pra atacar
+# (segue batendo ate ele morrer) e no item do chao pra pegar.
 
 const ROXO := Color(0.55, 0.45, 0.95)
 
@@ -15,6 +16,7 @@ var entidades := {}
 var monstros := {}
 var mapas := {}
 var classes := {}
+var itens_nomes := {}
 var _restante: Array[Vector2i] = []
 var _fim_enviado := Vector2i(-1, -1)
 
@@ -31,6 +33,24 @@ var hud: Control
 var hud_texto: Label
 var barra_vida: ProgressBar
 var registro: RichTextLabel
+var barra_mana: ProgressBar
+var barra_exp: ProgressBar
+var hud_nivel: Label
+
+# combate e itens
+const ALCANCE := 1          # ataque sem skill: do lado do monstro
+const RECARGA := 0.9        # segundos entre um golpe e outro
+var alvo_id := -1           # monstro que estou atacando
+var item_alvo := -1         # item do chao que vou pegar
+var itens := {}             # id -> ItemChao
+var sobre: Entidade         # debaixo do mouse
+var _recarga := 0.0
+var _repensar := 0.0
+var _aviso_seguro := false
+var meu_nivel := 1
+var exp_atual := 0
+var exp_prox := 0
+var meu_zen := 0
 
 
 func _ready() -> void:
@@ -45,6 +65,7 @@ func _ready() -> void:
 	monstros = _json("res://dados/monstros.json")
 	mapas = _json("res://dados/mapas.json")
 	classes = _json("res://dados/classes.json")
+	itens_nomes = _json("res://dados/itens.json")
 	RenderingServer.set_default_clear_color(Color(0.04, 0.04, 0.06))
 	cli = ClienteMU.new()
 	add_child(cli)
@@ -60,6 +81,19 @@ func _ready() -> void:
 	cli.mapa_mudou.connect(_mapa_mudou)
 	cli.vida.connect(func(v): barra_vida.value = v)
 	cli.mensagem.connect(_msg)
+	cli.mana.connect(func(v): barra_mana.value = v)
+	cli.experiencia.connect(_experiencia)
+	cli.nivel.connect(_nivel)
+	cli.itens_cairam.connect(_itens_cairam)
+	cli.itens_sumiram.connect(_itens_sumiram)
+	cli.pegou.connect(_pegou)
+	cli.nao_pegou.connect(func(m): _msg("[color=#e8b04a]Nao deu pra pegar (%s).[/color]" % {253: "juntou com o que ja tinha", 254: "limite de zen"}.get(m, "inventario cheio ou longe")))
+	cli.zen.connect(func(v):
+		if v > meu_zen:
+			_msg("[color=#f0c860]+%s Zen[/color]" % ItemChao._milhar(v - meu_zen))
+			print("TESTE zen +%d (total %d)" % [v - meu_zen, v])
+		meu_zen = v
+		_hud_nivel())
 	cli.golpe.connect(func(id, dano):
 		if entidades.has(id):
 			entidades[id].mostrar_dano(dano))
@@ -72,7 +106,12 @@ func _ready() -> void:
 	# (no navegador: ?auto=...&andar=...&gravacao=1, toca dados/gravacao.txt)
 	var p := _parametros()
 	if p.has("gravacao"):
-		Conexao.tocar(p.gravacao if FileAccess.file_exists(p.gravacao) else "res://dados/gravacao.txt")
+		var fita := "res://dados/gravacao_%s.txt" % p.gravacao
+		if FileAccess.file_exists(p.gravacao):
+			fita = p.gravacao
+		elif not FileAccess.file_exists(fita):
+			fita = "res://dados/gravacao.txt"
+		Conexao.tocar(fita)
 	if p.has("andar"):
 		var xy: PackedStringArray = p.andar.split(",")
 		_andar_depois = Vector2i(int(xy[0]), int(xy[1]))
@@ -81,6 +120,8 @@ func _ready() -> void:
 			print("TESTE fim: %d objetos na tela, eu em %s" % [entidades.size(), eu.tile if eu else "-"])
 			cli._fechar()
 			get_tree().quit())
+	if p.has("cacar"):
+		_cacar = int(p.cacar)
 	if p.has("auto"):
 		var c: PackedStringArray = p.auto.split(",")
 		campo_conta.text = c[0]
@@ -92,6 +133,9 @@ func _ready() -> void:
 
 var _andar_depois := Vector2i(-1, -1)
 var _auto := false
+var _cacar := 0      # testes: --cacar N mata N monstros sozinho (mira o mais perto, pega o que cair)
+var _mortos := 0
+var _cacar_t := 0.0
 
 
 func _parametros() -> Dictionary:
@@ -210,8 +254,16 @@ func _montar_ui() -> void:
 	barra_vida.add_theme_stylebox_override("background", fundo)
 	barra_vida.add_theme_stylebox_override("fill", cheio)
 	hv.add_child(barra_vida)
+	barra_mana = _barra(Color(0.25, 0.4, 0.95), Color(0.07, 0.09, 0.22), 10)
+	hv.add_child(barra_mana)
+	barra_exp = _barra(Color(0.95, 0.78, 0.25), Color(0.16, 0.13, 0.05), 6)
+	hv.add_child(barra_exp)
+	hud_nivel = Label.new()
+	hud_nivel.add_theme_font_size_override("font_size", 15)
+	hud_nivel.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
+	hv.add_child(hud_nivel)
 	var ajuda := Label.new()
-	ajuda.text = "Clique no chao pra andar · Q/E gira · roda do mouse aproxima"
+	ajuda.text = "Clique no chao pra andar · no monstro pra atacar · no item pra pegar · Q/E gira · roda aproxima"
 	ajuda.add_theme_font_size_override("font_size", 14)
 	ajuda.add_theme_color_override("font_color", Color(0.65, 0.65, 0.72))
 	hv.add_child(ajuda)
@@ -230,6 +282,19 @@ func _montar_ui() -> void:
 	registro.add_theme_stylebox_override("normal", _estilo(Color(0, 0, 0, 0.45)))
 	registro.add_theme_font_size_override("normal_font_size", 15)
 	hud.add_child(registro)
+
+
+func _barra(cor: Color, fundo_cor: Color, alto: int) -> ProgressBar:
+	var b := ProgressBar.new()
+	b.custom_minimum_size = Vector2(260, alto)
+	b.show_percentage = false
+	var fundo := StyleBoxFlat.new()
+	fundo.bg_color = fundo_cor
+	var cheio := StyleBoxFlat.new()
+	cheio.bg_color = cor
+	b.add_theme_stylebox_override("background", fundo)
+	b.add_theme_stylebox_override("fill", cheio)
+	return b
 
 
 func _campo(pai: Control, rotulo: String, valor: String) -> LineEdit:
@@ -326,7 +391,7 @@ func _personagens(l: Array) -> void:
 		aviso.text = "Essa conta nao tem personagem. Crie um no cliente original ou no painel do OpenMU."
 		return
 	for p in l:
-		_classe_de[p.nome] = p.classe
+		_classe_de[p.nome] = [p.classe, p.nivel]
 	for p in l:
 		if meu_nome != "" and p.nome == meu_nome:
 			_escolher(p.nome)
@@ -340,7 +405,8 @@ func _personagens(l: Array) -> void:
 
 func _escolher(nome: String) -> void:
 	meu_nome = nome
-	minha_classe = _classe_de.get(nome, 0)
+	minha_classe = _classe_de.get(nome, [0, 1])[0]
+	meu_nivel = _classe_de.get(nome, [0, 1])[1]
 	_limpar_lista()
 	cli.escolher(nome)
 
@@ -352,6 +418,12 @@ func _entrou(info: Dictionary) -> void:
 	hud.visible = true
 	barra_vida.max_value = info.vida_max
 	barra_vida.value = info.vida
+	barra_mana.max_value = info.mana_max
+	barra_mana.value = info.mana
+	exp_atual = info.exp
+	exp_prox = info.exp_prox
+	meu_zen = info.zen
+	_hud_nivel()
 	_abrir_mapa(info.mapa, info.x, info.y)
 	_msg("Entrou em %s (%d, %d)." % [mapas.get(str(info.mapa), "mapa %d" % info.mapa), info.x, info.y])
 	print("TESTE entrou %s" % info)
@@ -364,6 +436,10 @@ func _entrou(info: Dictionary) -> void:
 
 func _limpar_mundo() -> void:
 	entidades.clear()
+	itens.clear()
+	alvo_id = -1
+	item_alvo = -1
+	sobre = null
 	eu = null
 	_restante.clear()
 	if mundo:
@@ -415,6 +491,8 @@ func _objeto_entrou(o: Dictionary) -> void:
 
 
 func _objeto_saiu(id: int) -> void:
+	if entidades.get(id) == sobre:
+		sobre = null
 	if id != cli.meu_id and entidades.has(id):
 		entidades[id].queue_free()
 		entidades.erase(id)
@@ -439,7 +517,11 @@ func _objeto_morreu(id: int) -> void:
 		return
 	var e: Entidade = entidades[id]
 	e.morrer()
+	if id == alvo_id:
+		alvo_id = -1
 	if id == cli.meu_id:
+		alvo_id = -1
+		item_alvo = -1
 		_msg("[color=#e05050]Voce morreu.[/color]")
 
 
@@ -466,10 +548,22 @@ func _sair() -> void:
 func _unhandled_input(ev: InputEvent) -> void:
 	if eu == null or mundo == null:
 		return
+	if ev is InputEventMouseMotion:
+		_sobre(_entidade_na_tela(ev.position))
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+		var e := _entidade_na_tela(ev.position)
+		if e and e.tipo == "monstro":
+			mirar(e.id)
+			return
 		var t: Vector2i = mundo.tile_na_tela(ev.position)
+		var it := _item_perto(t)
+		if it:
+			pegar_item(it.id)
+			return
 		if t.x < 0:
 			return
+		alvo_id = -1
+		item_alvo = -1
 		andar_ate(t)
 
 
@@ -507,9 +601,10 @@ func _mandar_trecho() -> void:
 	_fim_enviado = ant
 
 
-func _process(_dt: float) -> void:
+func _process(dt: float) -> void:
 	if eu == null:
 		return
+	_combate(dt)
 	if not _restante.is_empty() and eu.tile == _fim_enviado:
 		_mandar_trecho()
 	var seg: bool = mundo.zona_segura(eu.tile.x, eu.tile.y)
@@ -519,3 +614,218 @@ func _process(_dt: float) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and cli:
 		cli._fechar()
+
+
+# --- combate e itens -----------------------------------------------------------
+
+# quem esta debaixo do mouse: o retangulo do boneco na tela (do pe a cabeca)
+func _entidade_na_tela(tela: Vector2) -> Entidade:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return null
+	var melhor: Entidade = null
+	var perto := INF
+	for e: Entidade in entidades.values():
+		if e == eu or e.morto or not is_instance_valid(e):
+			continue
+		var pe := e.global_position
+		var cabeca := pe + Vector3.UP * e.altura()
+		if cam.is_position_behind(pe):
+			continue
+		var a := cam.unproject_position(pe)
+		var b := cam.unproject_position(cabeca)
+		var alto := maxf(a.y - b.y, 24.0)
+		var largo := maxf(alto * 0.45, 22.0)
+		if absf(tela.x - (a.x + b.x) / 2.0) <= largo / 2.0 and tela.y <= a.y + 6 and tela.y >= b.y - 6:
+			var d := cam.global_position.distance_to(pe)
+			if d < perto:
+				perto = d
+				melhor = e
+	return melhor
+
+
+func _sobre(e: Entidade) -> void:
+	if e == sobre:
+		return
+	if is_instance_valid(sobre) and sobre.id != alvo_id:
+		sobre.destacar(false)
+	sobre = e
+	if e:
+		e.destacar(true)
+
+
+func _item_perto(t: Vector2i) -> ItemChao:
+	if t.x < 0:
+		return null
+	for it: ItemChao in itens.values():
+		if (it.tile - t).abs().x <= 0 and (it.tile - t).abs().y <= 0:
+			return it
+	return null
+
+
+static func _distancia(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))
+
+
+func mirar(id: int) -> void:
+	if entidades.has(alvo_id) and alvo_id != id:
+		entidades[alvo_id].destacar(false)
+	alvo_id = id
+	item_alvo = -1
+	_repensar = 0.0
+	_aviso_seguro = false
+	entidades[id].destacar(true)
+
+
+func pegar_item(id: int) -> void:
+	item_alvo = id
+	alvo_id = -1
+	_repensar = 0.0
+
+
+# anda ate ficar a "dist" tiles do alvo (o caminho para no primeiro tile que ja serve)
+func _ir_perto(t: Vector2i, dist: int) -> void:
+	var c: Array[Vector2i] = mundo.caminho(eu.tile, t)
+	var corte: Array[Vector2i] = []
+	for p in c:
+		corte.append(p)
+		if _distancia(p, t) <= dist:
+			break
+	if corte.is_empty():
+		return
+	andar_ate(corte[-1])
+
+
+func _cacador(dt: float) -> void:
+	_cacar_t -= dt
+	if _cacar_t > 0.0 or eu.morto or alvo_id >= 0 or item_alvo >= 0 or eu.andando():
+		return
+	_cacar_t = 0.5
+	var melhor_item: ItemChao = null
+	for it: ItemChao in itens.values():
+		if _distancia(it.tile, eu.tile) <= 6:
+			melhor_item = it
+	if melhor_item:
+		print("TESTE indo pegar %s em %s" % [melhor_item.nome, melhor_item.tile])
+		pegar_item(melhor_item.id)
+		return
+	if _mortos >= _cacar:
+		return
+	var melhor: Entidade = null
+	for e: Entidade in entidades.values():
+		if e.tipo == "monstro" and not e.morto and not mundo.zona_segura(e.tile.x, e.tile.y):
+			if melhor == null or _distancia(e.tile, eu.tile) < _distancia(melhor.tile, eu.tile):
+				melhor = e
+	if melhor:
+		print("TESTE mirando %s (%d) em %s" % [melhor.nome, melhor.id, melhor.tile])
+		mirar(melhor.id)
+
+
+func _combate(dt: float) -> void:
+	if _cacar > 0:
+		_cacador(dt)
+	_recarga -= dt
+	_repensar -= dt
+	if eu.morto:
+		return
+	if item_alvo >= 0:
+		var it: ItemChao = itens.get(item_alvo)
+		if it == null:
+			item_alvo = -1
+		elif _distancia(eu.tile, it.tile) <= 1 and not eu.andando():
+			cli.pegar(it.id)
+			item_alvo = -1
+		elif not eu.andando() and _repensar <= 0.0:
+			_repensar = 1.0
+			_ir_perto(it.tile, 0)
+		return
+	if alvo_id < 0:
+		return
+	var a: Entidade = entidades.get(alvo_id)
+	if a == null or a.morto:
+		alvo_id = -1
+		return
+	if _distancia(eu.tile, a.tile) > ALCANCE:
+		# o monstro anda: refaz o caminho de tempos em tempos
+		if not eu.andando() or _repensar <= 0.0:
+			_repensar = 0.6
+			_ir_perto(a.tile, ALCANCE)
+		return
+	if eu.andando():
+		return
+	if mundo.zona_segura(eu.tile.x, eu.tile.y):
+		if not _aviso_seguro:
+			_msg("[color=#e8b04a]Na zona segura nao da pra atacar.[/color]")
+			_aviso_seguro = true
+		return
+	if _recarga > 0.0:
+		return
+	_recarga = RECARGA
+	var passo := Vector2i(signi(a.tile.x - eu.tile.x), signi(a.tile.y - eu.tile.y))
+	var dir := maxi(ClienteMU.PASSOS.find(passo), 0)
+	eu.olhar_para(a)
+	cli.atacar(a.id, 38, dir)
+
+
+func _experiencia(_morto: int, ganho: int) -> void:
+	exp_atual += ganho
+	_mortos += 1
+	print("TESTE experiencia +%d (total %d de %d)" % [ganho, exp_atual, exp_prox])
+	_msg("[color=#f0d070]+%d de experiencia[/color]" % ganho)
+	_hud_nivel()
+
+
+func _nivel(info: Dictionary) -> void:
+	meu_nivel = info.nivel
+	print("TESTE nivel %s" % info)
+	barra_vida.max_value = info.vida_max
+	barra_vida.value = info.vida_max
+	barra_mana.max_value = info.mana_max
+	barra_mana.value = info.mana_max
+	exp_prox = exp_do_nivel(meu_nivel)
+	_msg("[color=#ffd84a]Subiu pro nivel %d! (%d pontos pra distribuir)[/color]" % [meu_nivel, info.pontos])
+	_hud_nivel()
+
+
+# experiencia total pra passar do nivel n pro n+1 (formula do OpenMU, ate o 255)
+static func exp_do_nivel(n: int) -> int:
+	var e := (n + 9) * n * n * 10
+	if n > 255:
+		var m := n - 255
+		e += (m + 9) * m * m * 1000
+	return e
+
+
+func _hud_nivel() -> void:
+	if hud_nivel == null:
+		return
+	var antes := exp_do_nivel(meu_nivel - 1) if meu_nivel > 1 else 0
+	barra_exp.max_value = maxi(exp_prox - antes, 1)
+	barra_exp.value = clampi(exp_atual - antes, 0, int(barra_exp.max_value))
+	hud_nivel.text = "Nivel %d  ·  Exp %d / %d  ·  Zen %s" % [meu_nivel, exp_atual, exp_prox, ItemChao._milhar(meu_zen)]
+
+
+func _itens_cairam(lista_itens: Array) -> void:
+	if mundo == null:
+		return
+	for d in lista_itens:
+		print("TESTE item no chao %s" % d)
+		if itens.has(d.id):
+			itens[d.id].queue_free()
+		var it := ItemChao.new()
+		mundo.add_child(it)
+		it.montar(mundo, d, itens_nomes)
+		itens[d.id] = it
+
+
+func _itens_sumiram(ids: Array) -> void:
+	for id in ids:
+		if itens.has(id):
+			itens[id].queue_free()
+			itens.erase(id)
+
+
+func _pegou(_slot: int, item: Dictionary) -> void:
+	var n: String = itens_nomes.get("%d,%d" % [item.grupo, item.numero], "item")
+	_msg("[color=#9fe0a0]Pegou %s%s.[/color]" % [n, " +%d" % item.nivel if item.nivel > 0 else ""])
+	print("TESTE pegou %s" % n)
