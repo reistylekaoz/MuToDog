@@ -1,13 +1,15 @@
-MU Estudo - cliente Godot pro OpenMU (Season 6) - estudo interno
+openmu - cliente Godot pro OpenMU (Season 6) - estudo interno
+Versao de 13/10/2026: Lorencia completa (modelos, combate, ambiente, barra do MU)
+Nome novo: o antigo MU Estudo agora se chama openmu (na primeira vez ele pede servidor e conta de novo).
 
 Precisa de 2 arquivos da pagina de arquivos:
-  MUEstudo-programa.zip  (o MUEstudo.exe)
-  MUEstudo-dados.zip     (o MUEstudo.pck: mapas, modelos e texturas)
+  openmu-programa.zip  (o openmu.exe)
+  openmu-dados.zip     (o openmu.pck: mapas, modelos, texturas, musica e a barra)
 
 1. Ligue o OpenMU no Docker (ligar.bat do openmu-pc.zip) e espere uns 3 minutos.
-2. Descompacte OS DOIS zips na MESMA pasta (ex.: C:\MUEstudo).
-   O MUEstudo.exe e o MUEstudo.pck tem que ficar lado a lado.
-3. De dois cliques no MUEstudo.exe.
+2. Descompacte OS DOIS zips na MESMA pasta (ex.: C:\openmu). A pasta da versao antiga (MUEstudo) pode ser apagada.
+   O openmu.exe e o openmu.pck tem que ficar lado a lado.
+3. De dois cliques no openmu.exe.
    Se o Windows avisar "O Windows protegeu o computador": Mais informacoes > Executar assim mesmo
    (o programa nao tem assinatura digital).
 4. Na tela de entrada:
@@ -17,18 +19,22 @@ Precisa de 2 arquivos da pagina de arquivos:
    Clique Entrar, escolha o servidor e o personagem.
 
 No jogo:
-  Clique no chao pra andar (o servidor confere cada passo).
+  Clique no chao pra andar. Clique no monstro pra atacar, no item ou zen pra pegar.
   Q e E giram a camera, a roda do mouse aproxima e afasta.
+  C abre a janela do personagem (ou o botao dele na barra de baixo).
+  M liga e desliga o som. - e = escurecem e clareiam (o padrao e 2,0).
+  Passe o mouse nas bolas de vida e mana, no SD, no AG e na barra de experiencia
+  pra ver o numero.
   Sair volta pra tela de entrada.
 
-O que ja tem: login, lista de servidores e de personagens, Lorencia, Dungeon, Devias e Noria
-em 3D, os outros jogadores, NPCs e monstros andando, golpe que voce leva (numero em cima),
-vida, mensagens do servidor, troca de mapa.
-O que ainda nao tem: personagem e monstro com o modelo do MU (por enquanto sao bonecos de cor:
-amarelo voce, azul jogador, vermelho monstro, verde NPC), atacar, itens, inventario, skills,
-som. Os outros mapas aparecem como chao liso, so com as posicoes.
+O que ja tem na Lorencia: personagens, NPCs e monstros com o modelo do MU e animacao,
+atacar, morrer, experiencia e nivel, itens e zen caindo e sendo pegos, fogo, fumaca,
+luz das fogueiras e postes, agua andando, grama no vento, musica da cidade e do bar,
+vento, e a barra de baixo do S6 (vida, mana, SD, AG, experiencia em 10 partes, botoes).
+O que ainda nao tem: inventario, loja, amigos e menu (os botoes avisam), skills,
+os outros mapas com o mesmo capricho.
 
 Nao conectou?
 - Confira se o Docker Desktop esta verde e se o OpenMU subiu (http://localhost/ abre o painel).
 - "Login recusado: versao do cliente recusada": me avise, e o numero da versao do cliente.
-- Ele lembra o servidor, a porta e a conta (a senha nao) em %APPDATA%\Godot\app_userdata\MU Estudo.
+- Ele lembra o servidor, a porta e a conta (a senha nao) em %APPDATA%\Godot\app_userdata\openmu.
