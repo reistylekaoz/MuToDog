@@ -14,19 +14,34 @@ var alvo := Vector2(138, 124)
 var giro := -45.0
 var inclinacao := 48.0
 var distancia := 12.0
+# no jogo (jogo.gd): a camera segue o personagem e o mapa diz onde da pra andar
+var modo_jogo := false
+var seguir: Node3D
+var tem_dados := true
+var atributos := PackedByteArray()
+var grade := AStarGrid2D.new()
 
 
 func _ready() -> void:
-	_ler_parametros()
+	if not modo_jogo:
+		_ler_parametros()
 	pasta = "res://dados/mundo%d/" % numero
 	mu = Node3D.new()
 	mu.name = "MU"
 	mu.transform = Transform3D(Basis(Vector3.RIGHT, -PI / 2) * 0.01, Vector3.ZERO)
 	add_child(mu)
 	_ambiente()
-	altura = (load(pasta + "altura.png") as Texture2D).get_image()
-	_terreno()
-	var n := _objetos()
+	var n := 0
+	tem_dados = ResourceLoader.exists(pasta + "altura.png")
+	if tem_dados:
+		altura = (load(pasta + "altura.png") as Texture2D).get_image()
+		_terreno()
+		n = _objetos()
+	else:
+		# mapa ainda nao convertido: chao liso com grade, so pra ver quem esta onde
+		altura = Image.create(TILES, TILES, false, Image.FORMAT_L8)
+		_chao_liso()
+	_grade()
 	camera = Camera3D.new()
 	camera.far = 500.0
 	camera.fov = 35.0
@@ -79,9 +94,95 @@ func _ambiente() -> void:
 
 # altura do MU (unidades) no ponto em tiles
 func altura_em(x: float, y: float) -> float:
-	var ix := clampi(int(x), 0, TILES - 1)
-	var iy := clampi(int(y), 0, TILES - 1)
-	return altura.get_pixel(ix, iy).r * 255.0 * 1.5
+	# bilinear entre os vertices (o vertice (x, y) do terreno fica no canto do tile)
+	var x0 := clampi(int(floor(x)), 0, TILES - 1)
+	var y0 := clampi(int(floor(y)), 0, TILES - 1)
+	var x1 := mini(x0 + 1, TILES - 1)
+	var y1 := mini(y0 + 1, TILES - 1)
+	var fx := clampf(x - x0, 0.0, 1.0)
+	var fy := clampf(y - y0, 0.0, 1.0)
+	var a := lerpf(altura.get_pixel(x0, y0).r, altura.get_pixel(x1, y0).r, fx)
+	var b := lerpf(altura.get_pixel(x0, y1).r, altura.get_pixel(x1, y1).r, fx)
+	return lerpf(a, b, fy) * 255.0 * 1.5
+
+
+func _chao_liso() -> void:
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(TILES, TILES)
+	pm.subdivide_width = TILES - 1
+	pm.subdivide_depth = TILES - 1
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.16, 0.17, 0.18)
+	pm.material = mat
+	var mi := MeshInstance3D.new()
+	mi.name = "ChaoLiso"
+	mi.mesh = pm
+	mi.position = Vector3(TILES / 2.0, 0, -TILES / 2.0)
+	add_child(mi)
+
+
+# onde da pra andar: atributo do terreno (EncTerrain.att) no alfa do mapa.png;
+# 4 = parede, 8 = sem chao (GameLogic: TerrainAttributeType)
+func _grade() -> void:
+	atributos.resize(TILES * TILES)
+	if tem_dados:
+		var mapa := (load(pasta + "mapa.png") as Texture2D).get_image()
+		for y in TILES:
+			for x in TILES:
+				atributos[y * TILES + x] = int(round(mapa.get_pixel(x, y).a * 255.0))
+	grade.region = Rect2i(0, 0, TILES, TILES)
+	grade.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	grade.default_compute_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+	grade.default_estimate_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+	grade.update()
+	for y in TILES:
+		for x in TILES:
+			if not anda(x, y):
+				grade.set_point_solid(Vector2i(x, y))
+
+
+func anda(x: int, y: int) -> bool:
+	if x < 0 or y < 0 or x >= TILES or y >= TILES:
+		return false
+	return atributos[y * TILES + x] & 0x0C == 0
+
+
+func zona_segura(x: int, y: int) -> bool:
+	return x >= 0 and y >= 0 and x < TILES and y < TILES and atributos[y * TILES + x] & 0x01 != 0
+
+
+# caminho em tiles (sem o ponto de partida); vazio se nao der
+func caminho(de: Vector2i, para: Vector2i) -> Array[Vector2i]:
+	var r: Array[Vector2i] = []
+	if not grade.region.has_point(de) or not grade.region.has_point(para):
+		return r
+	var pontos := grade.get_id_path(de, para, true)
+	for i in range(1, pontos.size()):
+		r.append(pontos[i])
+	return r
+
+
+# centro do tile (coordenada do servidor) no espaco do Godot
+func no_tile(x: float, y: float) -> Vector3:
+	return Vector3(x + 0.5, altura_em(x + 0.5, y + 0.5) / 100.0, -(y + 0.5))
+
+
+# tile embaixo do mouse: anda pelo raio da camera ate passar do chao
+func tile_na_tela(tela: Vector2) -> Vector2i:
+	var o := camera.project_ray_origin(tela)
+	var d := camera.project_ray_normal(tela)
+	var p := o
+	for i in 3000:
+		p += d * 0.1
+		var tx := p.x
+		var ty := -p.z
+		if tx < 0 or ty < 0 or tx >= TILES or ty >= TILES:
+			if p.y < -5.0:
+				break
+			continue
+		if p.y <= altura_em(tx, ty) / 100.0:
+			return Vector2i(int(tx), int(ty))
+	return Vector2i(-1, -1)
 
 
 func _terreno() -> void:
@@ -171,6 +272,8 @@ func mundo_invisivel(m: String) -> bool:
 
 func _mirar() -> void:
 	var a := Vector3(alvo.x, altura_em(alvo.x, alvo.y) / 100.0, -alvo.y)
+	if seguir:
+		a = seguir.global_position + Vector3(0, 1.0, 0)
 	var dir := Vector3(0, 0, 1).rotated(Vector3.RIGHT, -deg_to_rad(inclinacao)).rotated(Vector3.UP, deg_to_rad(giro))
 	camera.position = a + dir * distancia
 	camera.look_at(a, Vector3.UP)
@@ -186,6 +289,13 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 
 func _process(dt: float) -> void:
+	if modo_jogo:
+		var g2 := 0.0
+		if Input.is_key_pressed(KEY_Q): g2 -= 1
+		if Input.is_key_pressed(KEY_E): g2 += 1
+		giro += g2 * 60.0 * dt
+		_mirar()
+		return
 	var m := Vector2.ZERO
 	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP): m.y += 1
 	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN): m.y -= 1

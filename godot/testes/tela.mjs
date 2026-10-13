@@ -30,7 +30,7 @@ for (const v of vistas) {
     if (!fs.existsSync(arq)) return rota.fulfill({ status: 404, body: '' });
     await rota.fulfill({ status: 200, body: fs.readFileSync(arq), headers: { 'content-type': tipos[path.extname(arq)] || 'application/octet-stream' } });
   });
-  await page.goto(`https://mu.local/index.html?x=${x}&y=${y}&giro=${giro}&inclinacao=${inclinacao}&dist=${dist}`);
+  await page.goto(`https://mu.local/index.html?vista=1&x=${x}&y=${y}&giro=${giro}&inclinacao=${inclinacao}&dist=${dist}`);
   for (let i = 0; i < 240 && !pronto; i++) await page.waitForTimeout(500);
   await page.waitForTimeout(6000);
   const foto = path.join(pasta, `${nome}.png`);

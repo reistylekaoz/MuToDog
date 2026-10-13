@@ -1,0 +1,98 @@
+diff --git a/src/ConnectServer/PacketHandler/ServerInfoRequestHandler.cs b/src/ConnectServer/PacketHandler/ServerInfoRequestHandler.cs
+index c142945..bd2f58c 100644
+--- a/src/ConnectServer/PacketHandler/ServerInfoRequestHandler.cs
++++ b/src/ConnectServer/PacketHandler/ServerInfoRequestHandler.cs
+@@ -49,7 +49,7 @@ internal class ServerInfoRequestHandler : IPacketHandler<Client>
+         bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), out var isRunningOnDocker);
+ 
+         // Only if we can't use the cached data.
+-        if (isGameServerOnSameMachineAsConnectServer
++        if (localIpEndPoint is not null && isGameServerOnSameMachineAsConnectServer
+             && !isRunningOnDocker
+             && isClientConnectedOnNonRegisteredAddress)
+         {
+diff --git a/src/Network/Listener.cs b/src/Network/Listener.cs
+index a998260..c76e8e9 100644
+--- a/src/Network/Listener.cs
++++ b/src/Network/Listener.cs
+@@ -23,6 +23,9 @@ public class Listener
+     private readonly ILoggerFactory _loggerFactory;
+     private TcpListener? _clientListener;
+ 
++    // Estudo: com OPENMU_SOCKET_DIR, escuta num socket Unix (<dir>/<porta>) em vez de TCP.
++    private Socket? _unixListener;
++
+     /// <summary>
+     /// Initializes a new instance of the <see cref="Listener" /> class.
+     /// </summary>
+@@ -53,7 +56,7 @@ public class Listener
+     /// <summary>
+     /// Gets a value indicating whether this listener is bound to a specific local port.
+     /// </summary>
+-    public bool IsBound => this._clientListener?.Server.IsBound ?? false;
++    public bool IsBound => this._unixListener?.IsBound ?? this._clientListener?.Server.IsBound ?? false;
+ 
+     /// <summary>
+     /// Starts the tcp listener and begins to accept connections.
+@@ -61,6 +64,17 @@ public class Listener
+     /// <param name="backlog">The maximum length of the pending connections queue.</param>
+     public void Start(int backlog = (int)SocketOptionName.MaxConnections)
+     {
++        if (Environment.GetEnvironmentVariable("OPENMU_SOCKET_DIR") is { Length: > 0 } dir)
++        {
++            var path = System.IO.Path.Combine(dir, this._port.ToString());
++            System.IO.File.Delete(path);
++            this._unixListener = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
++            this._unixListener.Bind(new UnixDomainSocketEndPoint(path));
++            this._unixListener.Listen(backlog);
++            _ = this.AcceptUnixAsync(this._unixListener);
++            return;
++        }
++
+         this._clientListener = new TcpListener(IPAddress.Any, this._port);
+         this._clientListener.Start(backlog);
+         this._clientListener.BeginAcceptSocket(this.OnAccept, null);
+@@ -72,6 +86,7 @@ public class Listener
+     public void Stop()
+     {
+         this._clientListener?.Stop();
++        this._unixListener?.Dispose();
+     }
+ 
+     /// <summary>
+@@ -94,6 +109,35 @@ public class Listener
+         return this._encryptorCreator?.Invoke(writer);
+     }
+ 
++    private async Task AcceptUnixAsync(Socket listener)
++    {
++        while (true)
++        {
++            Socket socket;
++            try
++            {
++                socket = await listener.AcceptAsync().ConfigureAwait(false);
++            }
++            catch (Exception)
++            {
++                return;
++            }
++
++            try
++            {
++                var connection = this.CreateConnection(socket);
++                if (this.ClientAccepted is { } clientAccepted)
++                {
++                    await clientAccepted.Invoke(new ClientAcceptedEventArgs(connection)).ConfigureAwait(false);
++                }
++            }
++            catch (Exception ex)
++            {
++                this._logger.LogError(ex, "Unexpected error accepting a unix socket client.");
++            }
++        }
++    }
++
+     private IConnection CreateConnection(Socket clientSocket)
+     {
+         var socketConnection = SocketConnection.Create(clientSocket);

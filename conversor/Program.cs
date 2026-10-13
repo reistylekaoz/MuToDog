@@ -101,6 +101,9 @@ var feitos = new Dictionary<string, bool>();
 var faltam = new SortedDictionary<int, int>();
 foreach (var o in obj.Objects)
 {
+    // Devias tem objeto com posicao/escala infinita no .obj: o cliente nao mostra, aqui pula
+    if (!float.IsFinite(o.Position.X) || !float.IsFinite(o.Position.Y) || !float.IsFinite(o.Position.Z) || !float.IsFinite(o.Scale)
+        || !float.IsFinite(o.Angle.X) || !float.IsFinite(o.Angle.Y) || !float.IsFinite(o.Angle.Z)) { faltam[-1] = faltam.GetValueOrDefault(-1) + 1; continue; }
     var nome = ArquivoDoTipo(o.Type);
     if (nome == null) { faltam[o.Type] = faltam.GetValueOrDefault(o.Type) + 1; continue; }
     if (!feitos.ContainsKey(nome))

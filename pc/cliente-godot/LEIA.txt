@@ -1,0 +1,34 @@
+MU Estudo - cliente Godot pro OpenMU (Season 6) - estudo interno
+
+Precisa de 2 arquivos da pagina de arquivos:
+  MUEstudo-programa.zip  (o MUEstudo.exe)
+  MUEstudo-dados.zip     (o MUEstudo.pck: mapas, modelos e texturas)
+
+1. Ligue o OpenMU no Docker (ligar.bat do openmu-pc.zip) e espere uns 3 minutos.
+2. Descompacte OS DOIS zips na MESMA pasta (ex.: C:\MUEstudo).
+   O MUEstudo.exe e o MUEstudo.pck tem que ficar lado a lado.
+3. De dois cliques no MUEstudo.exe.
+   Se o Windows avisar "O Windows protegeu o computador": Mais informacoes > Executar assim mesmo
+   (o programa nao tem assinatura digital).
+4. Na tela de entrada:
+     Servidor: 127.127.127.127  (127.0.0.1 tambem serve)
+     Porta:    44405
+     Conta:    test0  (test0 a test9, senha igual ao nome)
+   Clique Entrar, escolha o servidor e o personagem.
+
+No jogo:
+  Clique no chao pra andar (o servidor confere cada passo).
+  Q e E giram a camera, a roda do mouse aproxima e afasta.
+  Sair volta pra tela de entrada.
+
+O que ja tem: login, lista de servidores e de personagens, Lorencia, Dungeon, Devias e Noria
+em 3D, os outros jogadores, NPCs e monstros andando, golpe que voce leva (numero em cima),
+vida, mensagens do servidor, troca de mapa.
+O que ainda nao tem: personagem e monstro com o modelo do MU (por enquanto sao bonecos de cor:
+amarelo voce, azul jogador, vermelho monstro, verde NPC), atacar, itens, inventario, skills,
+som. Os outros mapas aparecem como chao liso, so com as posicoes.
+
+Nao conectou?
+- Confira se o Docker Desktop esta verde e se o OpenMU subiu (http://localhost/ abre o painel).
+- "Login recusado: versao do cliente recusada": me avise, e o numero da versao do cliente.
+- Ele lembra o servidor, a porta e a conta (a senha nao) em %APPDATA%\Godot\app_userdata\MU Estudo.
