@@ -52,7 +52,7 @@ var exp_atual := 0
 var exp_prox := 0
 var meu_zen := 0
 var som: Som
-var brilho := 1.6
+var brilho := 2.0
 
 
 func _ready() -> void:
@@ -464,7 +464,7 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	add_child(mundo)
 	mundo.brilho_mudou.connect(func(v: float) -> void:
 		brilho = v
-		_msg("Brilho %s (o padrao e 1,6)" % str(snappedf(v, 0.1)).replace(".", ",")))
+		_msg("Brilho %s (o padrao e 2,0)" % str(snappedf(v, 0.1)).replace(".", ",")))
 	if not mundo.tem_dados:
 		_msg("[color=#e8b04a]%s ainda nao foi convertido: chao liso, so as posicoes.[/color]" % mapas.get(str(mapa), "Esse mapa"))
 	eu = Entidade.new()

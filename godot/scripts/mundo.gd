@@ -26,7 +26,7 @@ var _lista_objetos: Array = []
 # material do GLB -> o mesmo com a luz do MU (objeto.gdshader), um por textura
 var materiais := {}
 # o cliente nao tem esse fator; aqui ele acerta o tom com o jogo original (teclas - e =)
-var brilho := 1.6
+var brilho := 2.0
 signal brilho_mudou(v: float)
 var _luz_tex: Texture2D
 
