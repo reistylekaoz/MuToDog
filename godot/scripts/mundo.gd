@@ -20,6 +20,15 @@ var seguir: Node3D
 var tem_dados := true
 var atributos := PackedByteArray()
 var grade := AStarGrid2D.new()
+var mapa_img: Image
+var ambiente: Ambiente
+var _lista_objetos: Array = []
+# material do GLB -> o mesmo com a luz do MU (objeto.gdshader), um por textura
+var materiais := {}
+# o cliente nao tem esse fator; aqui ele acerta o tom com o jogo original (teclas - e =)
+var brilho := 1.6
+signal brilho_mudou(v: float)
+var _luz_tex: Texture2D
 
 
 func _ready() -> void:
@@ -37,6 +46,10 @@ func _ready() -> void:
 		altura = (load(pasta + "altura.png") as Texture2D).get_image()
 		_terreno()
 		n = _objetos()
+		ambiente = Ambiente.new()
+		ambiente.name = "Ambiente"
+		add_child(ambiente)
+		ambiente.montar(self, mapa_img, (load(pasta + "luz.png") as Texture2D).get_image(), _lista_objetos)
 	else:
 		# mapa ainda nao convertido: chao liso com grade, so pra ver quem esta onde
 		altura = Image.create(TILES, TILES, false, Image.FORMAT_L8)
@@ -49,7 +62,7 @@ func _ready() -> void:
 	# neblina so de perto (vista de cima fica limpa)
 	$WorldEnvironment.environment.fog_enabled = distancia < 40.0
 	_mirar()
-	print("TESTE mundo %d · objetos %d" % [numero, n])
+	print("TESTE mundo %d · objetos %d · fogos %d · grama %d" % [numero, n, ambiente.fogos if ambiente else 0, ambiente.gramas if ambiente else 0])
 
 
 # ?mundo=1&x=138&y=124&giro=-45&inclinacao=48&dist=12 (navegador) ou -- --x 138 ... (headless)
@@ -147,6 +160,13 @@ func anda(x: int, y: int) -> bool:
 	return atributos[y * TILES + x] & 0x0C == 0
 
 
+# textura da camada 1 no tile (o cliente chama de HeroTile: 4 = chao da taverna na Lorencia)
+func camada1(x: int, y: int) -> int:
+	if mapa_img == null:
+		return -1
+	return int(round(mapa_img.get_pixel(clampi(x, 0, TILES - 1), clampi(y, 0, TILES - 1)).r * 255.0))
+
+
 func zona_segura(x: int, y: int) -> bool:
 	return x >= 0 and y >= 0 and x < TILES and y < TILES and atributos[y * TILES + x] & 0x01 != 0
 
@@ -187,6 +207,7 @@ func tile_na_tela(tela: Vector2) -> Vector2i:
 
 func _terreno() -> void:
 	var mapa := (load(pasta + "mapa.png") as Texture2D).get_image()
+	mapa_img = mapa
 	var luz := (load(pasta + "luz.png") as Texture2D).get_image()
 	var lista: Array = JSON.parse_string(FileAccess.get_file_as_string(pasta + "tiles.json"))
 	var imgs: Array[Image] = []
@@ -236,7 +257,7 @@ func _terreno() -> void:
 	mat.set_shader_parameter("mapa", ImageTexture.create_from_image(mapa))
 	mat.set_shader_parameter("tiles", arr)
 	mat.set_shader_parameter("repete", repete)
-	mat.set_shader_parameter("brilho", 1.6)
+	mat.set_shader_parameter("brilho", brilho)
 	var mi := MeshInstance3D.new()
 	mi.name = "Terreno"
 	mi.mesh = st.commit()
@@ -246,6 +267,7 @@ func _terreno() -> void:
 
 func _objetos() -> int:
 	var lista: Array = JSON.parse_string(FileAccess.get_file_as_string(pasta + "objetos.json"))
+	_lista_objetos = lista
 	var cenas := {}
 	var raiz := Node3D.new()
 	raiz.name = "Objetos"
@@ -263,7 +285,43 @@ func _objetos() -> int:
 		var q := Quaternion(o.q[0], o.q[1], o.q[2], o.q[3])
 		n.transform = Transform3D(Basis(q) * float(o.s), Vector3(o.p[0], o.p[1], o.p[2]))
 		raiz.add_child(n)
+		_luz_do_mu(n)
 	return raiz.get_child_count()
+
+
+# troca o material de cada face pelo da luz do MU (objeto.gdshader)
+func _luz_do_mu(n: Node) -> void:
+	if _luz_tex == null:
+		_luz_tex = load(pasta + "luz.png") as Texture2D
+	for mi: MeshInstance3D in n.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var orig := mi.mesh.surface_get_material(i) as BaseMaterial3D
+			if orig == null:
+				continue
+			if not materiais.has(orig):
+				var m := ShaderMaterial.new()
+				m.shader = preload("res://scripts/objeto.gdshader")
+				m.set_shader_parameter("textura", orig.albedo_texture)
+				m.set_shader_parameter("luz_mapa", _luz_tex)
+				m.set_shader_parameter("brilho", brilho)
+				if orig.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+					m.set_shader_parameter("corte", maxf(orig.alpha_scissor_threshold, 0.25))
+				materiais[orig] = m
+			mi.set_surface_override_material(i, materiais[orig])
+
+
+func definir_brilho(v: float) -> void:
+	brilho = clampf(v, 0.5, 3.0)
+	var t := mu.get_node_or_null("Terreno") as MeshInstance3D
+	if t:
+		t.material_override.set_shader_parameter("brilho", brilho)
+	var g := mu.get_node_or_null("Grama") as MeshInstance3D
+	if g:
+		g.material_override.set_shader_parameter("brilho", brilho)
+	for m: ShaderMaterial in materiais.values():
+		m.set_shader_parameter("brilho", brilho)
 
 
 func mundo_invisivel(m: String) -> bool:
@@ -280,6 +338,10 @@ func _mirar() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
+	if ev is InputEventKey and ev.pressed and ev.keycode in [KEY_MINUS, KEY_EQUAL, KEY_KP_SUBTRACT, KEY_KP_ADD]:
+		definir_brilho(brilho + (0.1 if ev.keycode in [KEY_EQUAL, KEY_KP_ADD] else -0.1))
+		brilho_mudou.emit(brilho)
+		return
 	if ev is InputEventMouseButton and ev.pressed:
 		if ev.button_index == MOUSE_BUTTON_WHEEL_UP:
 			distancia = maxf(3.0, distancia * 0.9)

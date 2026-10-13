@@ -51,6 +51,8 @@ var meu_nivel := 1
 var exp_atual := 0
 var exp_prox := 0
 var meu_zen := 0
+var som: Som
+var brilho := 1.6
 
 
 func _ready() -> void:
@@ -263,7 +265,7 @@ func _montar_ui() -> void:
 	hud_nivel.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
 	hv.add_child(hud_nivel)
 	var ajuda := Label.new()
-	ajuda.text = "Clique no chao pra andar · no monstro pra atacar · no item pra pegar · Q/E gira · roda aproxima"
+	ajuda.text = "Clique no chao pra andar · no monstro pra atacar · no item pra pegar · Q/E gira · roda aproxima · M som · - e = brilho"
 	ajuda.add_theme_font_size_override("font_size", 14)
 	ajuda.add_theme_color_override("font_color", Color(0.65, 0.65, 0.72))
 	hv.add_child(ajuda)
@@ -458,7 +460,11 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	mundo.alvo = Vector2(x + 0.5, y + 0.5)
 	mundo.distancia = 20.0
 	mundo.inclinacao = 50.0
+	mundo.brilho = brilho
 	add_child(mundo)
+	mundo.brilho_mudou.connect(func(v: float) -> void:
+		brilho = v
+		_msg("Brilho %s (o padrao e 1,6)" % str(snappedf(v, 0.1)).replace(".", ",")))
 	if not mundo.tem_dados:
 		_msg("[color=#e8b04a]%s ainda nao foi convertido: chao liso, so as posicoes.[/color]" % mapas.get(str(mapa), "Esse mapa"))
 	eu = Entidade.new()
@@ -550,6 +556,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 		return
 	if ev is InputEventMouseMotion:
 		_sobre(_entidade_na_tela(ev.position))
+	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_M and som:
+		_msg("Som desligado." if som.alternar() else "Som ligado.")
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 		var e := _entidade_na_tela(ev.position)
 		if e and e.tipo == "monstro":
@@ -608,6 +616,10 @@ func _process(dt: float) -> void:
 	if not _restante.is_empty() and eu.tile == _fim_enviado:
 		_mandar_trecho()
 	var seg: bool = mundo.zona_segura(eu.tile.x, eu.tile.y)
+	if som == null:
+		som = Som.new()
+		add_child(som)
+	som.atualizar(mapa_atual, seg, mundo.camada1(eu.tile.x, eu.tile.y))
 	hud_texto.text = "%s  ·  %s  (%d, %d)%s" % [meu_nome, mapas.get(str(mapa_atual), "?"), eu.tile.x, eu.tile.y, "  ·  zona segura" if seg else ""]
 
 

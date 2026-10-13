@@ -1,16 +1,36 @@
 // Chao do MU: cada tile tem 2 texturas (camada 1 e 2) e a mistura vem do vertice.
 // UV = coordenada do tile (0..256). COLOR.rgb = luz pintada do mapa, COLOR.a = mistura.
+// luz_extra = luz do fogo, poste e vela (AddTerrainLight do cliente), piscando por regiao.
+// A textura de agua corre em U (WaterMove: 1 volta a cada 20 s) e ondula em V com o vento.
 shader_type spatial;
 render_mode unshaded, cull_disabled;
 
 uniform sampler2D mapa : filter_nearest;
 uniform sampler2DArray tiles : filter_linear_mipmap, repeat_enable;
+uniform sampler2D luz_extra : filter_nearest, hint_default_black;
 uniform float repete[32];
 uniform float brilho = 1.0;
+uniform int agua = 5;
+
+float sorteio(vec2 p) {
+	return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void vertex() {
+	ivec2 v = clamp(ivec2(round(UV)), ivec2(0), ivec2(255));
+	// a luminosidade do fogo varia 0,6..1,1 a cada quadro do cliente (12,5 por segundo aqui)
+	float pisca = 0.7 + 0.6 * sorteio(vec2(floor(TIME * 12.5)) + floor(vec2(v) / 4.0));
+	COLOR.rgb = min(COLOR.rgb + texelFetch(luz_extra, v, 0).rgb * pisca, vec3(1.0));
+}
 
 vec3 amostra(int i, vec2 uv) {
 	i = clamp(i, 0, 31);
-	return texture(tiles, vec3(uv / repete[i], float(i))).rgb;
+	vec2 t = uv / repete[i];
+	if (i == agua) {
+		t.x += mod(TIME, 20.0) * 0.05;
+		t.y += sin(TIME * 2.0 + uv.x * 5.0) * 0.02;
+	}
+	return texture(tiles, vec3(t, float(i))).rgb;
 }
 
 void fragment() {
