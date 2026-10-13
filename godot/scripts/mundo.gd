@@ -83,6 +83,7 @@ func _ler_parametros() -> void:
 	giro = float(p.get("giro", giro))
 	inclinacao = float(p.get("inclinacao", inclinacao))
 	distancia = float(p.get("dist", distancia))
+	brilho = float(p.get("brilho", brilho))
 
 
 func _ambiente() -> void:

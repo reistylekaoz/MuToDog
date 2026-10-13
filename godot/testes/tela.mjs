@@ -20,7 +20,7 @@ const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.wasm': 'applic
 const nav = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 for (const v of vistas) {
   const [nome, nums] = v.split(':');
-  const [x, y, giro, inclinacao, dist] = nums.split(',');
+  const [x, y, giro, inclinacao, dist, brilho] = nums.split(",");
   const page = await nav.newPage({ viewport: { width: 1280, height: 720 } });
   let pronto = false;
   page.on('console', m => { const t = m.text(); if (/TESTE/.test(t)) pronto = true; if (/error|erro|TESTE/i.test(t)) console.log(`[${nome}]`, t); });
@@ -30,7 +30,7 @@ for (const v of vistas) {
     if (!fs.existsSync(arq)) return rota.fulfill({ status: 404, body: '' });
     await rota.fulfill({ status: 200, body: fs.readFileSync(arq), headers: { 'content-type': tipos[path.extname(arq)] || 'application/octet-stream' } });
   });
-  await page.goto(`https://mu.local/index.html?vista=1&x=${x}&y=${y}&giro=${giro}&inclinacao=${inclinacao}&dist=${dist}`);
+  await page.goto(`https://mu.local/index.html?vista=1&x=${x}&y=${y}&giro=${giro}&inclinacao=${inclinacao}&dist=${dist}${brilho ? `&brilho=${brilho}` : ""}`);
   for (let i = 0; i < 240 && !pronto; i++) await page.waitForTimeout(500);
   await page.waitForTimeout(6000);
   const foto = path.join(pasta, `${nome}.png`);
