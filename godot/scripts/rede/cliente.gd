@@ -19,6 +19,9 @@ signal golpe(id: int, dano: int)
 signal ataque(id: int, alvo: int)
 signal mensagem(texto: String)
 signal mana(atual: int)
+signal sd(atual: int)
+signal ag(atual: int)
+signal maximo(qual: String, v: int)
 signal experiencia(morto: int, ganho: int)
 signal nivel(info: Dictionary)
 signal itens_cairam(lista: Array)
@@ -209,7 +212,9 @@ func _tratar(p: PackedByteArray) -> void:
 					"exp": _ler_be(p, 8, 8), "exp_prox": _ler_be(p, 16, 8), "pontos": p[24] | (p[25] << 8),
 					"zen": p[52] | (p[53] << 8) | (p[54] << 16) | (p[55] << 24),
 					"vida": p[34] | (p[35] << 8), "vida_max": p[36] | (p[37] << 8),
-					"mana": p[38] | (p[39] << 8), "mana_max": p[40] | (p[41] << 8)}
+					"mana": p[38] | (p[39] << 8), "mana_max": p[40] | (p[41] << 8),
+					"sd": p[42] | (p[43] << 8), "sd_max": p[44] | (p[45] << 8),
+					"ag": p[46] | (p[47] << 8), "ag_max": p[48] | (p[49] << 8)}
 				_mudar("jogo")
 				entrou.emit(info)
 				return
@@ -224,9 +229,23 @@ func _tratar(p: PackedByteArray) -> void:
 			return
 		[0x26, 0xFF]:
 			vida.emit((p[4] << 8) | p[5])
+			if p.size() >= 9:
+				sd.emit((p[7] << 8) | p[8])
 			return
 		[0x27, 0xFF]:
 			mana.emit((p[4] << 8) | p[5])
+			if p.size() >= 8:
+				ag.emit((p[6] << 8) | p[7])
+			return
+		[0x26, 0xFE]:
+			maximo.emit("vida", (p[4] << 8) | p[5])
+			if p.size() >= 9:
+				maximo.emit("sd", (p[7] << 8) | p[8])
+			return
+		[0x27, 0xFE]:
+			maximo.emit("mana", (p[4] << 8) | p[5])
+			if p.size() >= 8:
+				maximo.emit("ag", (p[6] << 8) | p[7])
 			return
 		[0xF3, 0x05]:
 			nivel.emit({"nivel": p[4] | (p[5] << 8), "pontos": p[6] | (p[7] << 8),

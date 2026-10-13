@@ -31,11 +31,11 @@ var aviso: Label
 var lista: VBoxContainer
 var hud: Control
 var hud_texto: Label
-var barra_vida: ProgressBar
+var barra_mu: HudMu
+var janela_personagem: PanelContainer
+var texto_personagem: Label
+var meus_pontos := 0
 var registro: RichTextLabel
-var barra_mana: ProgressBar
-var barra_exp: ProgressBar
-var hud_nivel: Label
 
 # combate e itens
 const ALCANCE := 1          # ataque sem skill: do lado do monstro
@@ -81,9 +81,12 @@ func _ready() -> void:
 	cli.objeto_moveu.connect(_objeto_moveu)
 	cli.objeto_morreu.connect(_objeto_morreu)
 	cli.mapa_mudou.connect(_mapa_mudou)
-	cli.vida.connect(func(v): barra_vida.value = v)
+	cli.vida.connect(func(v): barra_mu.vida = v; _hud_nivel())
+	cli.sd.connect(func(v): barra_mu.sd = v; _hud_nivel())
+	cli.ag.connect(func(v): barra_mu.ag = v; _hud_nivel())
+	cli.maximo.connect(func(q, v): barra_mu.set(q + "_max", maxi(v, 1)); _hud_nivel())
 	cli.mensagem.connect(_msg)
-	cli.mana.connect(func(v): barra_mana.value = v)
+	cli.mana.connect(func(v): barra_mu.mana = v; _hud_nivel())
 	cli.experiencia.connect(_experiencia)
 	cli.nivel.connect(_nivel)
 	cli.itens_cairam.connect(_itens_cairam)
@@ -238,37 +241,40 @@ func _montar_ui() -> void:
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud.visible = false
 	raiz.add_child(hud)
-	var caixa := PanelContainer.new()
-	caixa.position = Vector2(12, 12)
-	caixa.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud.add_child(caixa)
+	# canto de cima: onde estou (o MU mostra o mapa e a posicao) e a ajuda
 	var hv := VBoxContainer.new()
-	caixa.add_child(hv)
+	hv.position = Vector2(12, 8)
+	hv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud.add_child(hv)
 	hud_texto = Label.new()
+	hud_texto.add_theme_font_size_override("font_size", 15)
+	hud_texto.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45))
+	hud_texto.add_theme_constant_override("outline_size", 4)
+	hud_texto.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	hv.add_child(hud_texto)
-	barra_vida = ProgressBar.new()
-	barra_vida.custom_minimum_size = Vector2(260, 16)
-	barra_vida.show_percentage = false
-	var fundo := StyleBoxFlat.new()
-	fundo.bg_color = Color(0.2, 0.08, 0.08)
-	var cheio := StyleBoxFlat.new()
-	cheio.bg_color = Color(0.85, 0.2, 0.2)
-	barra_vida.add_theme_stylebox_override("background", fundo)
-	barra_vida.add_theme_stylebox_override("fill", cheio)
-	hv.add_child(barra_vida)
-	barra_mana = _barra(Color(0.25, 0.4, 0.95), Color(0.07, 0.09, 0.22), 10)
-	hv.add_child(barra_mana)
-	barra_exp = _barra(Color(0.95, 0.78, 0.25), Color(0.16, 0.13, 0.05), 6)
-	hv.add_child(barra_exp)
-	hud_nivel = Label.new()
-	hud_nivel.add_theme_font_size_override("font_size", 15)
-	hud_nivel.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
-	hv.add_child(hud_nivel)
 	var ajuda := Label.new()
-	ajuda.text = "Clique no chao pra andar · no monstro pra atacar · no item pra pegar · Q/E gira · roda aproxima · M som · - e = brilho"
-	ajuda.add_theme_font_size_override("font_size", 14)
-	ajuda.add_theme_color_override("font_color", Color(0.65, 0.65, 0.72))
+	ajuda.text = "Clique no chao pra andar · no monstro pra atacar · no item pra pegar · Q/E gira · roda aproxima · C personagem · M som · - e = brilho"
+	ajuda.add_theme_font_size_override("font_size", 12)
+	ajuda.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
+	ajuda.add_theme_constant_override("outline_size", 3)
+	ajuda.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	hv.add_child(ajuda)
+	# a barra do MU embaixo
+	barra_mu = HudMu.new()
+	barra_mu.botao.connect(_botao_barra)
+	hud.add_child(barra_mu)
+	# janela do personagem (C)
+	janela_personagem = PanelContainer.new()
+	janela_personagem.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	janela_personagem.position = Vector2(-300, 60)
+	janela_personagem.custom_minimum_size = Vector2(280, 0)
+	janela_personagem.add_theme_stylebox_override("panel", _estilo(Color(0.05, 0.04, 0.03, 0.88)))
+	janela_personagem.visible = false
+	hud.add_child(janela_personagem)
+	texto_personagem = Label.new()
+	texto_personagem.add_theme_font_size_override("font_size", 15)
+	texto_personagem.add_theme_color_override("font_color", Color(0.95, 0.88, 0.7))
+	janela_personagem.add_child(texto_personagem)
 	var sair := Button.new()
 	sair.text = "Sair"
 	sair.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -277,26 +283,13 @@ func _montar_ui() -> void:
 	hud.add_child(sair)
 	registro = RichTextLabel.new()
 	registro.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	registro.position = Vector2(12, -170)
+	registro.position = Vector2(12, -250)
 	registro.size = Vector2(560, 158)
 	registro.scroll_following = true
 	registro.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	registro.add_theme_stylebox_override("normal", _estilo(Color(0, 0, 0, 0.45)))
 	registro.add_theme_font_size_override("normal_font_size", 15)
 	hud.add_child(registro)
-
-
-func _barra(cor: Color, fundo_cor: Color, alto: int) -> ProgressBar:
-	var b := ProgressBar.new()
-	b.custom_minimum_size = Vector2(260, alto)
-	b.show_percentage = false
-	var fundo := StyleBoxFlat.new()
-	fundo.bg_color = fundo_cor
-	var cheio := StyleBoxFlat.new()
-	cheio.bg_color = cor
-	b.add_theme_stylebox_override("background", fundo)
-	b.add_theme_stylebox_override("fill", cheio)
-	return b
 
 
 func _campo(pai: Control, rotulo: String, valor: String) -> LineEdit:
@@ -418,10 +411,15 @@ func _escolher(nome: String) -> void:
 func _entrou(info: Dictionary) -> void:
 	painel.visible = false
 	hud.visible = true
-	barra_vida.max_value = info.vida_max
-	barra_vida.value = info.vida
-	barra_mana.max_value = info.mana_max
-	barra_mana.value = info.mana
+	barra_mu.vida = info.vida
+	barra_mu.vida_max = maxi(info.vida_max, 1)
+	barra_mu.mana = info.mana
+	barra_mu.mana_max = maxi(info.mana_max, 1)
+	barra_mu.sd = info.sd
+	barra_mu.sd_max = maxi(info.sd_max, 1)
+	barra_mu.ag = info.ag
+	barra_mu.ag_max = maxi(info.ag_max, 1)
+	meus_pontos = info.pontos
 	exp_atual = info.exp
 	exp_prox = info.exp_prox
 	meu_zen = info.zen
@@ -556,6 +554,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 		return
 	if ev is InputEventMouseMotion:
 		_sobre(_entidade_na_tela(ev.position))
+	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_C:
+		_botao_barra("personagem")
 	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_M and som:
 		_msg("Som desligado." if som.alternar() else "Som ligado.")
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
@@ -790,10 +790,11 @@ func _experiencia(_morto: int, ganho: int) -> void:
 func _nivel(info: Dictionary) -> void:
 	meu_nivel = info.nivel
 	print("TESTE nivel %s" % info)
-	barra_vida.max_value = info.vida_max
-	barra_vida.value = info.vida_max
-	barra_mana.max_value = info.mana_max
-	barra_mana.value = info.mana_max
+	barra_mu.vida_max = maxi(info.vida_max, 1)
+	barra_mu.vida = info.vida_max
+	barra_mu.mana_max = maxi(info.mana_max, 1)
+	barra_mu.mana = info.mana_max
+	meus_pontos = info.pontos
 	exp_prox = exp_do_nivel(meu_nivel)
 	_msg("[color=#ffd84a]Subiu pro nivel %d! (%d pontos pra distribuir)[/color]" % [meu_nivel, info.pontos])
 	_hud_nivel()
@@ -809,12 +810,26 @@ static func exp_do_nivel(n: int) -> int:
 
 
 func _hud_nivel() -> void:
-	if hud_nivel == null:
+	if barra_mu == null:
 		return
-	var antes := exp_do_nivel(meu_nivel - 1) if meu_nivel > 1 else 0
-	barra_exp.max_value = maxi(exp_prox - antes, 1)
-	barra_exp.value = clampi(exp_atual - antes, 0, int(barra_exp.max_value))
-	hud_nivel.text = "Nivel %d  ·  Exp %d / %d  ·  Zen %s" % [meu_nivel, exp_atual, exp_prox, ItemChao._milhar(meu_zen)]
+	barra_mu.exp_antes = exp_do_nivel(meu_nivel - 1) if meu_nivel > 1 else 0
+	barra_mu.exp_atual = exp_atual
+	barra_mu.exp_prox = exp_prox
+	barra_mu.atualizar()
+	var nomes_classe := ["Dark Wizard", "Dark Knight", "Fairy Elf", "Magic Gladiator", "Dark Lord", "Summoner", "Rage Fighter"]
+	texto_personagem.text = "%s\n%s\n\nNivel %d\nExp %s / %s\nPontos pra distribuir %d\nZen %s\n\nVida %d / %d\nMana %d / %d\nSD %d / %d\nAG %d / %d" % [
+		meu_nome, nomes_classe[clampi(minha_classe >> 2, 0, 6)], meu_nivel,
+		ItemChao._milhar(exp_atual), ItemChao._milhar(exp_prox), meus_pontos, ItemChao._milhar(meu_zen),
+		barra_mu.vida, barra_mu.vida_max, barra_mu.mana, barra_mu.mana_max,
+		barra_mu.sd, barra_mu.sd_max, barra_mu.ag, barra_mu.ag_max]
+
+
+func _botao_barra(qual: String) -> void:
+	if qual == "personagem":
+		janela_personagem.visible = not janela_personagem.visible
+		_hud_nivel()
+	else:
+		_msg("[color=#9a9ab0]%s ainda nao foi feito neste cliente.[/color]" % HudMu.DICAS[qual].get_slice(" (", 0))
 
 
 func _itens_cairam(lista_itens: Array) -> void:

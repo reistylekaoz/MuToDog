@@ -1,6 +1,7 @@
 // Foto de uma tela do export web, sem porta (page.route serve build/web).
 // Uso: node testes/foto.mjs <foto.png> "<query>" [segundos depois do TESTE] [fotos a mais, de 1 em 1 s]
 // ex.: node testes/foto.mjs /tmp/v.png "vitrine=parado" 4
+// FOTO_ACOES="c;m:180,690": antes das fotos a mais, aperta a tecla c e passa o mouse em (180, 690)
 import { createRequire } from 'module';
 import fs from 'fs';
 import path from 'path';
@@ -26,6 +27,11 @@ await page.waitForTimeout(Number(espera) * 1000);
 fs.mkdirSync(path.dirname(foto), { recursive: true });
 await page.screenshot({ path: foto });
 console.log('foto', foto, pronto ? '' : '(sem TESTE no console)');
+for (const a of (process.env.FOTO_ACOES || '').split(';').filter(Boolean)) {
+  if (a.startsWith('m:')) { const [x, y] = a.slice(2).split(',').map(Number); await page.mouse.move(x, y); }
+  else await page.keyboard.press(a);
+  await page.waitForTimeout(300);
+}
 for (let i = 1; i <= Number(mais); i++) {
   await page.waitForTimeout(1000);
   const f = foto.replace(/\.png$/, `-${i}.png`);
