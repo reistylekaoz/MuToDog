@@ -42,7 +42,7 @@ signal skill_saiu(indice: int, numero: int)
 signal skill_animacao(skill: int, quem: int, alvo: int)
 signal area_animacao(skill: int, quem: int, x: int, y: int, giro: int)
 signal efeito(ativo: bool, quem: int, efeito: int)
-signal aparencia_mudou(quem: int, slot: int, chave: String)
+signal aparencia_mudou(quem: int, slot: int, chave: String, nivel: int)
 signal janela_npc(tipo: int)
 signal loja(itens: Dictionary)
 signal comprou(slot: int, item: Dictionary)
@@ -465,8 +465,9 @@ func _tratar(p: PackedByteArray) -> void:
 			if p.size() >= 17:
 				var it := p.slice(5, 17)
 				var vazio := it[0] == 0xFF and it[5] == 0xFF
+				var g: int = 0 if vazio else it[1] & 0x0F
 				aparencia_mudou.emit(((p[3] << 8) | p[4]) & 0x7FFF, it[1] >> 4,
-					"" if vazio else "%d,%d" % [it[5] >> 4, it[0] | ((it[3] & 0x80) << 1)])
+					"" if vazio else "%d,%d" % [it[5] >> 4, it[0] | ((it[3] & 0x80) << 1)], g * 2 + 1 if g > 0 else 0)
 		0x28:
 			item_removido.emit(p[3])
 		0x2A:
@@ -590,6 +591,14 @@ static func aparencia(a: PackedByteArray) -> Dictionary:
 		e[8] = "13,37"
 	elif a[12] & 0x01:
 		e[8] = "13,4"
+	# nivel: 3 bits por slot (0 a 6) nos bytes 6-8, (nivel - 1) / 2; volta pro menor nivel da faixa
+	var bits: int = (a[6] << 16) | (a[7] << 8) | a[8]
+	var niveis := {}
+	for i in 7:
+		var g := (bits >> (i * 3)) & 7
+		if g > 0 and e.has(i):
+			niveis[i] = g * 2 + 1
+	e["niveis"] = niveis
 	return e
 
 

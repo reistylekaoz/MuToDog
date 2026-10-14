@@ -135,7 +135,8 @@ func _ready() -> void:
 			entidades[id].mostrar_dano(dano))
 	cli.ataque.connect(func(id, alvo):
 		if entidades.has(id) and entidades.has(alvo):
-			entidades[id].olhar_para(entidades[alvo]))
+			entidades[id].olhar_para(entidades[alvo])
+			EfeitoSkill.golpe_comum(mundo, entidades[id], entidades[alvo]))
 	_montar_ui()
 	_ligar_inventario_e_skills()
 	_carregar_config()
@@ -522,6 +523,8 @@ func _entrou(info: Dictionary) -> void:
 	print("TESTE entrou %s" % info)
 	if _parametros().has("chao_teste"):
 		_chao_teste(info.x, info.y)
+	if _parametros().has("efeito_teste"):
+		_efeito_teste(str(_parametros().efeito_teste).split(",", false))
 	if _andar_depois.x >= 0:
 		await get_tree().create_timer(2.0).timeout
 		if eu:
@@ -928,6 +931,7 @@ func _combate(dt: float) -> void:
 	var passo := Vector2i(signi(a.tile.x - eu.tile.x), signi(a.tile.y - eu.tile.y))
 	var dir := maxi(ClienteMU.PASSOS.find(passo), 0)
 	eu.olhar_para(a)
+	EfeitoSkill.golpe_comum(mundo, eu, a)
 	cli.atacar(a.id, 38, dir)
 
 
@@ -1171,6 +1175,26 @@ func _chao_teste(x: int, y: int) -> void:
 	_itens_cairam(l)
 
 
+# testes (?efeito_teste=4,3,41): solta o efeito de cada skill a 3 tiles na frente, uma a cada 3 s
+func _efeito_teste(lista: Array) -> void:
+	# ?lento=0.25: camera lenta, pra foto no navegador de teste (poucos quadros por segundo)
+	Engine.time_scale = float(_parametros().get("lento", "1"))
+	await get_tree().create_timer(4.0).timeout
+	for x in lista:
+		if eu == null:
+			return
+		var n := int(x)
+		var p: Vector3 = mundo.no_tile(eu.tile.x + 3, eu.tile.y - 3)
+		var alvo := Node3D.new()
+		mundo.add_child(alvo)
+		alvo.global_position = p
+		eu.tocar_skill(_acao_skill(n), p)
+		print("TESTE efeito %d" % n)
+		EfeitoSkill.criar(mundo, n, eu, alvo, n in EM_VOLTA or int(_info_skill(n)[2]) in [3, 4, 5])
+		await get_tree().create_timer(3.0).timeout
+		alvo.queue_free()
+
+
 func _itens_sumiram(ids: Array) -> void:
 	for id in ids:
 		if itens.has(id):
@@ -1233,15 +1257,17 @@ func _ligar_inventario_e_skills() -> void:
 		minhas_skills.erase(i)
 		_atualizar_skills())
 	cli.skill_animacao.connect(_skill_de_outro)
-	cli.aparencia_mudou.connect(func(quem, slot, chave):
+	cli.aparencia_mudou.connect(func(quem, slot, chave, nivel):
 		var e: Entidade = entidades.get(quem)
 		if quem == cli.meu_id or e == null or e.boneco == null:
 			return
 		var d: Dictionary = e.boneco.vestido()
 		if chave == "":
 			d.erase(slot)
+			d.niveis.erase(slot)
 		else:
 			d[slot] = chave
+			d.niveis[slot] = nivel
 		e.boneco.vestir(d))
 	cli.area_animacao.connect(func(n, quem, x, y, _giro):
 		if quem == cli.meu_id or not entidades.has(quem) or mundo == null:
@@ -1249,7 +1275,7 @@ func _ligar_inventario_e_skills() -> void:
 		var e: Entidade = entidades[quem]
 		var p: Vector3 = mundo.no_tile(x, y)
 		e.tocar_skill(_acao_skill(n), p)
-		EfeitoSkill.criar(mundo, n, e.position, p, true))
+		EfeitoSkill.criar(mundo, n, e, p, true))
 
 
 # QWER: a pocao escolhida pra tecla, ou a maior da categoria; conta quantas tem
@@ -1502,7 +1528,7 @@ func _skills(dt: float) -> void:
 		var meio := eu.tile if n in EM_VOLTA else ponto
 		cli.skill_area(n, meio.x, meio.y, giro, skill_alvo if tipo == 5 and skill_alvo >= 0 else 0)
 		print("TESTE skill %d em area (%d, %d) giro %d" % [n, meio.x, meio.y, giro])
-	EfeitoSkill.criar(mundo, n, eu.position, eu.position if n in EM_VOLTA else p, tipo in [3, 4, 5])
+	EfeitoSkill.criar(mundo, n, eu, alvo if alvo else p, tipo in [3, 4, 5])
 	# skill que nao e em monstro (buff, area no chao) solta uma vez; no monstro segue com o botao apertado
 	if not (skill_alvo >= 0 and tipo in [0, 3, 5] and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
 		if not _cacar_skill:
@@ -1518,7 +1544,7 @@ func _skill_de_outro(n: int, quem: int, alvo: int) -> void:
 	var e: Entidade = entidades[quem]
 	var a: Entidade = entidades.get(alvo, e)
 	e.tocar_skill(_acao_skill(n), a.position)
-	EfeitoSkill.criar(mundo, n, e.position, a.position)
+	EfeitoSkill.criar(mundo, n, e, a)
 
 
 var _skill_teste := -1
@@ -1530,11 +1556,14 @@ func _vestir_eu() -> void:
 	if eu == null or eu.boneco == null:
 		return
 	var d := {}
+	var niveis := {}
 	for s in 9:
 		if inv.itens.has(s) and s != inv.esperando:
 			d[s] = ItensMU.chave(inv.itens[s])
+			niveis[s] = inv.itens[s].nivel
+	print("TESTE vestido %s niveis %s" % [d, niveis])
+	d["niveis"] = niveis
 	eu.boneco.vestir(d)
-	print("TESTE vestido %s" % [d])
 
 
 # testes: --inventario 1 move o primeiro item da mochila pra outra casa, usa a

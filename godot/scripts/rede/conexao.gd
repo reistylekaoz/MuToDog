@@ -22,6 +22,7 @@ var _desde := 0
 static var _gravar := OS.get_environment("MU_GRAVAR")
 static var _t0 := -1
 static var _fita: Array = []
+static var _tocando := false   # tocando gravacao: mesmo com a fita no fim, nao abre rede de verdade
 
 
 static func tocar(arquivo: String) -> void:
@@ -30,10 +31,11 @@ static func tocar(arquivo: String) -> void:
 		var c := linha.split(" ")
 		_fita.append([int(c[0]), c[1].hex_decode()])
 	_t0 = Time.get_ticks_msec()
+	_tocando = true
 
 
 func abrir(host: String, porta: int) -> void:
-	if not _fita.is_empty():
+	if _tocando:
 		aberta = true
 		return
 	var prog := OS.get_environment("MU_PONTE")
@@ -75,7 +77,7 @@ func fechar() -> void:
 
 # true quando ja da pra mandar; chame todo quadro
 func atualizar() -> bool:
-	if not _fita.is_empty() or (aberta and tcp == null and wsp == null and ponte.is_empty()):
+	if _tocando or (aberta and tcp == null and wsp == null and ponte.is_empty()):
 		return aberta
 	if wsp:
 		wsp.poll()
@@ -121,7 +123,7 @@ func atualizar() -> bool:
 # pacotes que ja chegaram inteiros, abertos
 func pacotes() -> Array[PackedByteArray]:
 	var lista: Array[PackedByteArray] = []
-	if not _fita.is_empty() or (aberta and tcp == null and wsp == null and ponte.is_empty()):
+	if _tocando or (aberta and tcp == null and wsp == null and ponte.is_empty()):
 		var agora := Time.get_ticks_msec() - _t0
 		while not _fita.is_empty() and _fita[0][0] <= agora:
 			lista.append(_fita.pop_front()[1])

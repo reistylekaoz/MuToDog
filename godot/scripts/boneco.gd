@@ -49,7 +49,9 @@ var _fila := ""
 var modelo: Node3D
 var esqueleto: Skeleton3D
 var _equip := {}      # slot do inventario -> "grupo,numero" do que esta vestido
+var _niveis := {}     # slot -> nivel do item (+0 a +15), pro brilho
 var _pecas := {}      # slot -> no posto no boneco
+var _rastros := {}    # slot da mao -> RastroArma
 var _costas := false  # zona segura: arma nas costas
 
 
@@ -124,6 +126,14 @@ func tocar(a: String, depois := "parado") -> void:
 	var vel: float = ritmo.get(real, VELOCIDADE[familia].get(real.trim_suffix("_f"), 0.25))
 	anim.play(real, 0.12, vel * 25.0)
 	acao = real
+	# rastro da arma (CreateWeaponBlur): golpe comum em blur01 na cor do nivel, skill de espada no motion_blur_r
+	if not _rastros.is_empty() and real.trim_suffix("_f") in GOLPES and tem_arma_de_corte():
+		if real.begins_with("espada_s"):
+			rastro(0.5, Color(1, 1, 1), "motion_blur_r")
+		else:
+			var nv: int = _niveis.get(0, 0)
+			var c := Color(1, 0.6, 0.2) if nv >= 7 else Color(0.2, 0.4, 1) if nv >= 5 else Color(1, 0.2, 0.2) if nv >= 3 else Color(0.8, 0.8, 0.8)
+			rastro(0.45, c)
 	_fila = depois if real in NAO_REPETE and real != "morre" else ""
 
 
@@ -144,21 +154,31 @@ const PARTE_SLOT := {2: "helm", 3: "armor", 4: "pant", 5: "glove", 6: "boot"}
 const OSSO_MAO := {0: "osso33", 1: "osso42"}
 
 
+# equip: slot -> "grupo,numero"; equip.niveis (opcional): slot -> nivel, pro brilho
 func vestir(equip: Dictionary) -> void:
 	if esqueleto == null or familia != "jogador":
 		return
+	var niveis: Dictionary = equip.get("niveis", {})
 	for s in 9:
 		var k: String = equip.get(s, "")
+		var nv: int = niveis.get(s, 0)
 		if _equip.get(s, "") == k:
+			if _niveis.get(s, 0) != nv:
+				_niveis[s] = nv
+				if _pecas.has(s) and s <= 6:
+					BrilhoMU.aplicar(_pecas[s], k, nv)
 			continue
 		_equip[s] = k
+		_niveis[s] = nv
 		_tirar(s)
 		if k != "":
 			_por(s, k)
 
 
 func vestido() -> Dictionary:
-	return _equip.duplicate()
+	var d := _equip.duplicate()
+	d["niveis"] = _niveis.duplicate()
+	return d
 
 
 func _tirar(s: int) -> void:
@@ -195,6 +215,7 @@ func _por(s: int, k: String) -> void:
 		no.free()
 		_pecas[s] = suporte
 		_padrao(s, false)
+		BrilhoMU.aplicar(suporte, k, _niveis.get(s, 0))
 	elif OSSO_MAO.has(s):
 		var at := BoneAttachment3D.new()
 		esqueleto.add_child(at)
@@ -204,6 +225,8 @@ func _por(s: int, k: String) -> void:
 		at.add_child(enc)
 		enc.add_child(no)
 		_pecas[s] = at
+		BrilhoMU.aplicar(no, k, _niveis.get(s, 0))
+		_rastros[s] = RastroArma.na_arma(no)
 	elif s == 7:
 		# o cliente poe a origem da asa no osso 47 (costas) mais 15 pra cima no osso,
 		# mas com o giro do boneco (RenderLinkObject sem Link); _process segue o osso
@@ -266,6 +289,56 @@ func _seguir_asa() -> void:
 		return
 	var p := esqueleto.get_bone_global_pose(_osso_asa) * Vector3(0, 0, 15)
 	_pecas[7].position = modelo.to_local(esqueleto.to_global(p))
+
+
+const GOLPES := ["ataque", "soco", "espada", "espada_s1", "espada_s2", "espada_s3", "espada_s4", "espada_s5", "giro", "furia", "estocada"]
+
+
+# grupos das armas na mao (0 espada, 1 machado, 2 maca, 3 lanca, 4 arco, 5 cajado)
+func grupos_arma() -> Array:
+	var l := []
+	for s in [0, 1]:
+		if _equip.has(s):
+			l.append(int(str(_equip[s]).get_slice(",", 0)))
+	return l
+
+
+func tem_arma_de_corte() -> bool:
+	return grupos_arma().any(func(g): return g <= 3)
+
+
+func tem_arco() -> bool:
+	return 4 in grupos_arma()
+
+
+# ponta da arma da mao direita (ou da esquerda) no mundo; sem arma, a altura da mao
+func ponta_arma() -> Vector3:
+	for s in [0, 1]:
+		var r: RastroArma = _rastros.get(s)
+		if r and is_instance_valid(r) and is_instance_valid(r.arma):
+			return r.arma.global_transform * r.ponta
+	return global_position + global_basis * Vector3(0.3, altura * 0.65, -0.4)
+
+
+# copia do modelo da arma (sem o rastro), pro Twisting Slash e o Rageful Blow
+func arma_copia() -> Node3D:
+	for s in [0, 1]:
+		var r: RastroArma = _rastros.get(s)
+		if r and is_instance_valid(r) and is_instance_valid(r.arma):
+			var c: Node3D = r.arma.duplicate()
+			for x in c.get_children():
+				if x is RastroArma:
+					x.free()
+			c.transform = Transform3D.IDENTITY
+			return c
+	return null
+
+
+# rastro das armas na mao por alguns segundos (golpe e skill de arma)
+func rastro(segundos: float, cor := Color(1, 1, 1), tex := "blur01") -> void:
+	for s in _rastros:
+		if is_instance_valid(_rastros[s]):
+			_rastros[s].ligar(segundos, cor, tex)
 
 
 func arma_nas_costas(sim: bool) -> void:

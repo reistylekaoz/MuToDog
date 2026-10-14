@@ -33,7 +33,7 @@ async function foto(nome, camera) {
   await page.screenshot({ path: path.join(pasta, nome + '.png') });
   await page.close();
 }
-await foto('1-frente', '6,20,135');
+await foto('1-frente', process.argv[5] || '6,20,135');
 await foto('2-costas', '6,25,-45');
 await foto('3-lado', '6,10,45');
 await nav.close();

@@ -108,6 +108,8 @@ func _por_modelo(d: Dictionary, marca: Node3D, tw: Tween) -> void:
 			pe.transform = Transform3D(Basis(Vector3(0, 0, 1), randf() * TAU), Vector3(cos(a) * r, sin(a) * r, 0)) * pe.transform
 		pe.add_child(m)
 		base.add_child(pe)
+	if not d.has("zen"):
+		BrilhoMU.aplicar(base, chave, d.nivel)
 	tw.kill()
 	marca.queue_free()
 	if d.get("novo", false):

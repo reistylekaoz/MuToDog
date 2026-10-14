@@ -28,6 +28,7 @@ if (args[0] == "acoes") { await Personagens.Acoes(args[1]); return; }
 if (args[0] == "personagens") { await Personagens.Rodar(args[1], args[2]); return; }
 if (args[0] == "itens") { await Itens.Rodar(args[1], args[2], args[3]); return; }
 if (args[0] == "modelos") { await Modelos.Rodar(args[1], args[2], args[3]); return; }
+if (args[0] == "efeitos") { await Efeitos.Rodar(args[1], args[2]); return; }
 var data = args[0];
 var mundo = int.Parse(args[1]);
 var saida = Path.Combine(args[2], $"mundo{mundo}");
