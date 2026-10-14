@@ -46,6 +46,12 @@ func atualizar(mapa: int, seguro: bool, tile: int) -> void:
 		vento.stop()
 
 
+# volume 0..1 do menu (U); 0,8 e o volume de antes do menu
+func volumes(v_musica: float, v_efeitos: float) -> void:
+	musica.volume_db = -8.0 + linear_to_db(maxf(v_musica, 0.001) / 0.8)
+	vento.volume_db = -14.0 + linear_to_db(maxf(v_efeitos, 0.001) / 0.8)
+
+
 func alternar() -> bool:
 	mudo = not mudo
 	if mudo:

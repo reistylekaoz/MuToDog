@@ -56,6 +56,13 @@ var brilho := 2.0
 
 # inventario e skills
 var inv: Inventario
+# loja do NPC, amigos (F) e menu (U)
+var loja: Loja
+var amigos: Amigos
+var menu: MenuSistema
+var npc_alvo := -1          # NPC que cliquei: anda ate perto e fala
+var npc_falando := -1       # NPC da janela aberta
+var _zen_antes_venda := 0   # o zen novo chega (C3 22 FE) antes da resposta da venda
 var minhas_skills := {}     # indice no servidor -> numero da skill
 var _skill_recarga := 0.0
 var skill_alvo := -1        # monstro (ou ponto) que a skill atual vai pegar quando chegar perto
@@ -122,6 +129,7 @@ func _ready() -> void:
 			print("TESTE zen +%d (total %d)" % [v - meu_zen, v])
 		meu_zen = v
 		_hud_nivel())
+	_ligar_loja_e_amigos()
 	cli.golpe.connect(func(id, dano):
 		if entidades.has(id):
 			entidades[id].mostrar_dano(dano))
@@ -156,6 +164,22 @@ func _ready() -> void:
 		_skill_teste = int(p.skill)
 	if p.has("inventario"):
 		cli.inventario.connect(_teste_inventario, CONNECT_ONE_SHOT)
+	if p.has("loja"):
+		cli.entrou.connect(func(_i): _teste_loja(p.loja), CONNECT_ONE_SHOT)
+	if p.has("amigo"):
+		cli.entrou.connect(func(_i): _teste_amigo(p.amigo), CONNECT_ONE_SHOT)
+	if p.has("aceitar"):
+		cli.pedido_amizade.connect(func(n):
+			await get_tree().create_timer(1.0).timeout
+			print("TESTE aceitando %s" % n)
+			cli.responder_amizade(true, n))
+	if p.has("apagar"):
+		cli.amigos.connect(func(_l, _c):
+			await get_tree().create_timer(2.0).timeout
+			print("TESTE apagando %s" % p.apagar)
+			cli.apagar_amigo(p.apagar), CONNECT_ONE_SHOT)
+	if p.has("trocar"):
+		cli.entrou.connect(func(_i): _teste_trocar(), CONNECT_ONE_SHOT)
 	if p.has("auto"):
 		var c: PackedStringArray = p.auto.split(",")
 		campo_conta.text = c[0]
@@ -283,7 +307,7 @@ func _montar_ui() -> void:
 	hud_texto.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	hv.add_child(hud_texto)
 	var ajuda := Label.new()
-	ajuda.text = "Clique: anda, ataca, pega · botao direito: skill · 1 a 5 troca a skill · Q W E R pocoes · I inventario · C personagem · setas giram · roda aproxima · M som · - = brilho"
+	ajuda.text = "Clique: anda, ataca, pega, fala com NPC · botao direito: skill · 1 a 5 troca a skill · Q W E R pocoes · I inventario · C personagem · F amigos · U menu · setas giram · roda aproxima · M som · - = brilho"
 	ajuda.add_theme_font_size_override("font_size", 12)
 	ajuda.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
 	ajuda.add_theme_constant_override("outline_size", 3)
@@ -302,6 +326,29 @@ func _montar_ui() -> void:
 			cli.mover_item(de, para, inv.itens[de].bytes))
 	inv.usar.connect(func(slot, alvo): cli.usar_item(slot, alvo))
 	hud.add_child(inv)
+	loja = Loja.new()
+	loja.inv = inv
+	loja.comprar.connect(func(slot): cli.comprar(slot))
+	loja.vender.connect(func(slot):
+		_zen_antes_venda = meu_zen
+		cli.vender(slot))
+	loja.fechar.connect(_fechar_loja)
+	hud.add_child(loja)
+	amigos = Amigos.new()
+	amigos.adicionar.connect(func(n): cli.adicionar_amigo(n))
+	amigos.apagar.connect(func(n): cli.apagar_amigo(n))
+	amigos.responder.connect(func(a, n): cli.responder_amizade(a, n))
+	hud.add_child(amigos)
+	menu = MenuSistema.new()
+	menu.musica.connect(func(_v): _volumes())
+	menu.efeitos.connect(func(_v): _volumes())
+	menu.brilho.connect(func(v):
+		if mundo:
+			mundo.definir_brilho(v)
+			brilho = mundo.brilho)
+	menu.trocar_personagem.connect(func(): cli.sair_para(1))
+	menu.sair_jogo.connect(func(): cli.sair_para(0))
+	hud.add_child(menu)
 	# janela do personagem (C)
 	janela_personagem = PanelContainer.new()
 	janela_personagem.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -320,8 +367,12 @@ func _montar_ui() -> void:
 	sair.position = Vector2(-90, 12)
 	sair.pressed.connect(_sair)
 	hud.add_child(sair)
-	# o Sair sai da frente do X do inventario
-	inv.visibility_changed.connect(func(): sair.position.x = hud.size.x - 90 - (inv.size.x * inv.scale.x if inv.visible else 0.0))
+	# o Sair sai da frente do X do inventario e da loja
+	var mover_sair := func():
+		var l := (inv.size.x * inv.scale.x if inv.visible else 0.0) + (loja.size.x * loja.scale.x if loja.visible else 0.0)
+		sair.position.x = hud.size.x - 90 - l
+	inv.visibility_changed.connect(mover_sair)
+	loja.visibility_changed.connect(mover_sair)
 	registro = RichTextLabel.new()
 	registro.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	registro.position = Vector2(12, -250)
@@ -479,6 +530,10 @@ func _entrou(info: Dictionary) -> void:
 
 
 func _limpar_mundo() -> void:
+	if loja:
+		loja.visible = false
+	npc_falando = -1
+	npc_alvo = -1
 	entidades.clear()
 	itens.clear()
 	alvo_id = -1
@@ -636,6 +691,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 		if e and e.tipo == "monstro":
 			mirar(e.id)
 			return
+		if e and e.tipo == "npc":
+			falar_com(e.id)
+			return
 		var t: Vector2i = mundo.tile_na_tela(ev.position)
 		var it := _item_perto(t)
 		if it:
@@ -645,6 +703,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 			return
 		alvo_id = -1
 		item_alvo = -1
+		npc_alvo = -1
 		andar_ate(t)
 
 
@@ -700,6 +759,10 @@ func _process(dt: float) -> void:
 	if som == null:
 		som = Som.new()
 		add_child(som)
+		_volumes()
+	# a loja fecha se eu andar pra longe do NPC (o servidor tambem esquece)
+	if npc_falando >= 0 and (not entidades.has(npc_falando) or _distancia(eu.tile, entidades[npc_falando].tile) > 5):
+		_fechar_loja()
 	som.atualizar(mapa_atual, seg, mundo.camada1(eu.tile.x, eu.tile.y))
 	hud_texto.text = "%s  ·  %s  (%d, %d)%s" % [meu_nome, mapas.get(str(mapa_atual), "?"), eu.tile.x, eu.tile.y, "  ·  zona segura" if seg else ""]
 
@@ -826,6 +889,9 @@ func _combate(dt: float) -> void:
 	_repensar -= dt
 	if eu.morto:
 		return
+	if npc_alvo >= 0:
+		_ir_ao_npc()
+		return
 	if item_alvo >= 0:
 		var it: ItemChao = itens.get(item_alvo)
 		if it == null:
@@ -916,8 +982,169 @@ func _botao_barra(qual: String) -> void:
 		_hud_nivel()
 	elif qual == "inventario":
 		inv.alternar()
+	elif qual == "amigos":
+		amigos.alternar()
+	elif qual == "menu":
+		menu.alternar(brilho)
 	else:
-		_msg("[color=#9a9ab0]%s ainda nao foi feito neste cliente.[/color]" % HudMu.DICAS[qual].get_slice(" (", 0))
+		_msg("[color=#9a9ab0]A loja de cash (X) nao existe no OpenMU. Pra comprar, clique num NPC vendedor (Hanzo, Pasi, Lumen, Amy...).[/color]")
+
+
+# --- loja do NPC, amigos e menu ---------------------------------------------------
+
+func falar_com(id: int) -> void:
+	npc_alvo = id
+	alvo_id = -1
+	item_alvo = -1
+	_repensar = 0.0
+
+
+# anda ate 2 tiles do NPC e fala (C3 30); o servidor responde com a janela (C3 30)
+func _ir_ao_npc() -> void:
+	var n: Entidade = entidades.get(npc_alvo)
+	if n == null:
+		npc_alvo = -1
+		return
+	if _distancia(eu.tile, n.tile) <= 2:
+		if eu.andando():
+			return
+		eu.olhar_para(n)
+		if npc_falando >= 0:
+			_fechar_loja()
+		print("TESTE falando com %s (%d)" % [n.nome, n.id])
+		cli.falar_npc(n.id)
+		npc_falando = n.id
+		npc_alvo = -1
+	elif not eu.andando() or _repensar <= 0.0:
+		_repensar = 0.8
+		_ir_perto(n.tile, 2)
+
+
+func _fechar_loja() -> void:
+	if npc_falando >= 0 and cli:
+		cli.fechar_npc()
+	npc_falando = -1
+	loja.visible = false
+	inv.soltar()
+
+
+func _volumes() -> void:
+	if som and menu:
+		som.volumes(menu.vol_musica, menu.vol_efeitos)
+
+
+func _ligar_loja_e_amigos() -> void:
+	cli.janela_npc.connect(func(tipo):
+		print("TESTE janela do npc %d" % tipo)
+		if tipo > 1:
+			var nomes := {2: "o bau", 3: "a maquina do caos", 6: "o guarda da Arena", 0x0C: "o mercador de cash"}
+			_msg("[color=#9a9ab0]A janela de %s ainda nao foi feita neste cliente.[/color]" % nomes.get(tipo, "esse NPC (tipo %d)" % tipo))
+			_fechar_loja())
+	cli.loja.connect(func(l):
+		print("TESTE loja %d itens" % l.size())
+		var n: Entidade = entidades.get(npc_falando)
+		loja.abrir(n.nome if n else "", l)
+		if not inv.visible:
+			inv.alternar())
+	cli.comprou.connect(func(slot, it):
+		print("TESTE comprou %s no slot %d" % [ItensMU.nome(it), slot])
+		inv.entrou(slot, it)
+		_msg("Comprou %s." % ItensMU.nome(it))
+		_contar_pocoes())
+	cli.compra_falhou.connect(func():
+		print("TESTE compra falhou")
+		_msg("[color=#e8b04a]Nao deu pra comprar (zen ou lugar na mochila).[/color]"))
+	cli.vendeu.connect(func(ok, z):
+		var s := inv.esperando
+		print("TESTE vendeu %s slot %d zen %d" % [ok, s, z])
+		if ok and s >= 0:
+			_msg("Vendeu %s por %s zen." % [ItensMU.nome(inv.itens[s]), ItemChao._milhar(maxi(z - _zen_antes_venda, 0))])
+			inv.removido(s)
+		elif not ok:
+			_msg("[color=#e8b04a]O NPC nao quis esse item.[/color]")
+		inv.nao_moveu()
+		inv.zen = z
+		meu_zen = z
+		_hud_nivel()
+		_vestir_eu()
+		_contar_pocoes())
+	cli.amigos.connect(func(l, cartas):
+		print("TESTE amigos %s" % [l])
+		amigos.definir(l, cartas))
+	cli.amigo_novo.connect(func(n, sv):
+		print("TESTE amigo novo %s" % n)
+		amigos.novo(n, sv))
+	cli.amigo_saiu.connect(func(n):
+		print("TESTE amigo apagado %s" % n)
+		amigos.saiu(n))
+	cli.amigo_estado.connect(func(n, sv):
+		print("TESTE amigo %s no servidor %d" % [n, sv])
+		amigos.estado(n, sv))
+	cli.pedido_amizade.connect(func(n):
+		print("TESTE pedido de amizade de %s" % n)
+		amigos.pedido(n)
+		_msg("[color=#9ad0ff]%s quer ser seu amigo. Aperte F pra responder.[/color]" % n))
+	cli.saiu.connect(func(tipo):
+		print("TESTE saiu %d" % tipo)
+		if tipo == 1:
+			meu_nome = ""
+			_limpar_mundo()
+			hud.visible = false
+			painel.visible = true
+			_limpar_lista()
+			cli.pedir_personagens()
+		else:
+			_sair())
+
+
+# testes: --loja <parte do nome do NPC> anda ate ele, compra o primeiro item e vende
+func _teste_loja(quem: String) -> void:
+	var achou := false
+	for i in 12:
+		await get_tree().create_timer(1.5).timeout
+		for e: Entidade in entidades.values():
+			if e.tipo == "npc" and e.nome.containsn(quem):
+				print("TESTE indo ao npc %s em %s" % [e.nome, e.tile])
+				falar_com(e.id)
+				achou = true
+				break
+		if achou:
+			break
+	var l: Dictionary = (await cli.loja)
+	await get_tree().create_timer(0.5).timeout
+	if _parametros().has("so_abrir"):
+		return
+	var s: int = l.keys().min()
+	print("TESTE comprando %s (zen %d)" % [ItensMU.nome(l[s]), meu_zen])
+	cli.comprar(s)
+	var r: Array = await cli.comprou
+	await get_tree().create_timer(0.5).timeout
+	print("TESTE vendendo slot %d (zen %d)" % [r[0], meu_zen])
+	inv.esperando = r[0]
+	_zen_antes_venda = meu_zen
+	cli.vender(r[0])
+	await cli.vendeu
+	await get_tree().create_timer(0.3).timeout
+	print("TESTE loja ok, zen %d, slot %d %s" % [meu_zen, r[0], "vazio" if not inv.itens.has(r[0]) else "ainda ocupado"])
+	_fechar_loja()
+
+
+# testes: --amigo <nome> pede amizade e mostra a resposta
+func _teste_amigo(nome: String) -> void:
+	await get_tree().create_timer(2.0).timeout
+	print("TESTE pedindo amizade a %s; lista: %s" % [nome, amigos.lista])
+	cli.adicionar_amigo(nome)
+
+
+# testes: --trocar 1 volta pra escolha de personagem e entra de novo
+func _teste_trocar() -> void:
+	await get_tree().create_timer(2.0).timeout
+	var quem := meu_nome
+	cli.sair_para(1)
+	var l: Array = await cli.personagens
+	print("TESTE de volta na escolha: %s" % [l.map(func(x): return x.nome)])
+	await get_tree().create_timer(0.5).timeout
+	_escolher(quem)
 
 
 func _itens_cairam(lista_itens: Array) -> void:
@@ -1065,8 +1292,23 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k in [KEY_I, KEY_V]:
 		inv.alternar()
 		return true
-	if k == KEY_ESCAPE and inv.visible:
-		inv.alternar()
+	if k == KEY_F:
+		amigos.alternar()
+		return true
+	if k == KEY_U:
+		menu.alternar(brilho)
+		return true
+	if k == KEY_ESCAPE:
+		if menu.visible:
+			menu.visible = false
+		elif loja.visible:
+			_fechar_loja()
+		elif inv.visible:
+			inv.alternar()
+		elif amigos.visible:
+			amigos.visible = false
+		else:
+			menu.alternar(brilho)
 		return true
 	var q := [KEY_Q, KEY_W, KEY_E, KEY_R].find(k)
 	if q >= 0:

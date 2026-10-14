@@ -43,6 +43,17 @@ signal skill_animacao(skill: int, quem: int, alvo: int)
 signal area_animacao(skill: int, quem: int, x: int, y: int, giro: int)
 signal efeito(ativo: bool, quem: int, efeito: int)
 signal aparencia_mudou(quem: int, slot: int, chave: String)
+signal janela_npc(tipo: int)
+signal loja(itens: Dictionary)
+signal comprou(slot: int, item: Dictionary)
+signal compra_falhou
+signal vendeu(ok: bool, zen: int)
+signal amigos(lista: Array, cartas: int)
+signal amigo_novo(nome: String, servidor: int)
+signal amigo_saiu(nome: String)
+signal amigo_estado(nome: String, servidor: int)
+signal pedido_amizade(nome: String)
+signal saiu(tipo: int)
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -160,6 +171,61 @@ func skill_acertos(skill: int, x: int, y: int, anim: int, alvos: Array) -> void:
 	for a in alvos:
 		p.append_array(PackedByteArray([(a >> 8) & 0xFF, a & 0xFF, anim]))
 	con.enviar(p)
+
+
+# --- NPC, loja ------------------------------------------------------------------
+
+func falar_npc(id: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x30, (id >> 8) & 0xFF, id & 0xFF]))
+
+
+func fechar_npc() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x31]))
+
+
+func comprar(slot: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x32, slot]))
+
+
+func vender(slot: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x33, slot]))
+
+
+# --- amigos ----------------------------------------------------------------------
+
+func _nome10(nome: String) -> PackedByteArray:
+	var b := nome.to_utf8_buffer().slice(0, 10)
+	b.resize(10)
+	return b
+
+
+func adicionar_amigo(nome: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xC1])
+	p.append_array(_nome10(nome))
+	con.enviar(p)
+
+
+func apagar_amigo(nome: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xC3])
+	p.append_array(_nome10(nome))
+	con.enviar(p)
+
+
+func responder_amizade(aceita: bool, nome: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xC2, 1 if aceita else 0])
+	p.append_array(_nome10(nome))
+	con.enviar(p)
+
+
+# --- sair: 0 fecha o jogo, 1 volta pra escolha de personagem, 2 pra de servidor ----
+
+func sair_para(tipo: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0xF1, 0x02, tipo]))
+
+
+func pedir_personagens() -> void:
+	_mudar("logado")
+	_pedir_lista()
 
 
 func pronto_no_mapa() -> void:
@@ -339,6 +405,22 @@ func _tratar(p: PackedByteArray) -> void:
 		[0x26, 0xFD]:
 			nao_consumiu.emit()
 			return
+		[0xF1, 0x02]:
+			if p[0] == 0xC3:
+				saiu.emit(p[4])
+				return
+		[0x32, 0xFF]:
+			if p.size() == 4:
+				compra_falhou.emit()
+				return
+		[0xC1, 0x01]:
+			if p.size() >= 15:
+				amigo_novo.emit(_ler_texto(p, 4, 10), p[14])
+				return
+		[0xC3, 0x01]:
+			if p.size() >= 14:
+				amigo_saiu.emit(_ler_texto(p, 4, 10))
+				return
 	match cod:
 		0x12:
 			_ler_personagens(p)
@@ -412,6 +494,41 @@ func _tratar(p: PackedByteArray) -> void:
 				mensagem.emit("%s: %s" % [_ler_texto(p, 3, 10), _ler_texto(p, 13, p.size() - 13)])
 		0x71:
 			con.enviar(PackedByteArray([0xC1, 0, 0x71]))
+		0x30:
+			if p[0] == 0xC3:
+				janela_npc.emit(p[3])
+		0x31:
+			# C2 31: tipo da janela, quantidade e itens de 1 + 12 bytes (slot e item)
+			if p[0] == 0xC2:
+				var l := {}
+				for i in p[5]:
+					var o := 6 + i * 13
+					if o + 13 > p.size():
+						break
+					l[p[o]] = item_de(p, o + 1)
+				loja.emit(l)
+		0x32:
+			if p[0] == 0xC1 and p.size() >= 16:
+				comprou.emit(p[3], item_de(p, 4))
+		0x33:
+			if p[0] == 0xC3 and p.size() >= 8:
+				vendeu.emit(p[3] != 0, p[4] | (p[5] << 8) | (p[6] << 16) | (p[7] << 24))
+		0xC0:
+			# C2 C0: cartas, maximo de cartas, amigos (nome 10 + servidor; 0xFF fora)
+			if p[0] == 0xC2:
+				var l := []
+				for i in p[6]:
+					var o := 7 + i * 11
+					if o + 11 > p.size():
+						break
+					l.append({"nome": _ler_texto(p, o, 10), "servidor": p[o + 10]})
+				amigos.emit(l, p[4])
+		0xC2:
+			if p[0] == 0xC1 and p.size() >= 13:
+				pedido_amizade.emit(_ler_texto(p, 3, 10))
+		0xC4:
+			if p[0] == 0xC1 and p.size() >= 14:
+				amigo_estado.emit(_ler_texto(p, 3, 10), p[13])
 
 
 # C2 12: personagens (Season 6: 36 bytes + 1 por efeito)
