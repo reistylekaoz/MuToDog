@@ -42,6 +42,7 @@ signal skill_saiu(indice: int, numero: int)
 signal skill_animacao(skill: int, quem: int, alvo: int)
 signal area_animacao(skill: int, quem: int, x: int, y: int, giro: int)
 signal efeito(ativo: bool, quem: int, efeito: int)
+signal aparencia_mudou(quem: int, slot: int, chave: String)
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -377,6 +378,13 @@ func _tratar(p: PackedByteArray) -> void:
 				item_movido.emit(p[4], item_de(p, 5))
 		0x23:
 			largou.emit(p[3] != 0, p[4])
+		0x25:
+			# C1 25: alguem trocou o que veste; byte 1 do item = slot << 4; item vazio e tudo FF
+			if p.size() >= 17:
+				var it := p.slice(5, 17)
+				var vazio := it[0] == 0xFF and it[5] == 0xFF
+				aparencia_mudou.emit(((p[3] << 8) | p[4]) & 0x7FFF, it[1] >> 4,
+					"" if vazio else "%d,%d" % [it[5] >> 4, it[0] | ((it[3] & 0x80) << 1)])
 		0x28:
 			item_removido.emit(p[3])
 		0x2A:
@@ -415,12 +423,59 @@ func _ler_personagens(p: PackedByteArray) -> void:
 		var id := ((p[o] << 8) | p[o + 1]) & 0x7FFF
 		objeto_entrou.emit({"id": id, "tipo": "eu" if id == meu_id else "jogador",
 			"nome": _ler_texto(p, o + 22, 10), "classe": p[o + 4] >> 3,
-			"x": p[o + 2], "y": p[o + 3], "ax": p[o + 32], "ay": p[o + 33]})
+			"x": p[o + 2], "y": p[o + 3], "ax": p[o + 32], "ay": p[o + 33],
+			"equip": aparencia(p.slice(o + 4, o + 22))})
 		o += 36 + p[o + 35]
 
 
 # C2 20: itens no chao (S6: id, x, y e os 12 bytes do item; zen e o item 14/15 com o valor
 # nos bytes 1..4, big endian: o OpenMU manda 00 00 00 1d pra 29 Zen)
+# aparencia de 18 bytes do OpenMU (AppearanceSerializer, cliente S6): slot -> "grupo,numero"
+const _ASAS := {4: {1: 0, 2: 1, 3: 2, 4: 41}, 8: {1: 3, 2: 4, 3: 5, 4: 6, 5: -30, 6: 42, 7: 49},
+	12: {1: 36, 2: 37, 3: 38, 4: 39, 5: 40, 6: 43, 7: 50}}
+
+
+static func aparencia(a: PackedByteArray) -> Dictionary:
+	var e := {}
+	if a.size() < 18:
+		return e
+	# armas: numero no byte 1 (mao direita) e 2 (esquerda), grupo nos 3 bits de cima do 12 e 13
+	for i in 2:
+		var g: int = a[12 + i] >> 5
+		if a[1 + i] != 0xFF and g != 7:
+			e[i] = "%d,%d" % [g, a[1 + i]]
+	# armaduras: 4 bits + 1 bit no byte 9 + 4 bits (numero ate 511; tudo 1 = vazio)
+	var partes := [[3, true, 0x80, 13, false], [3, false, 0x40, 14, true], [4, true, 0x20, 14, false],
+		[4, false, 0x10, 15, true], [5, true, 0x08, 15, false]]
+	for i in 5:
+		var d: Array = partes[i]
+		var baixo: int = (a[d[0]] >> 4) if d[1] else (a[d[0]] & 0x0F)
+		var meio := 16 if a[9] & d[2] else 0
+		var alto: int = (a[d[3]] >> 4) if d[4] else (a[d[3]] & 0x0F)
+		var n: int = baixo + meio + alto * 32
+		if n != 511:
+			e[2 + i] = "%d,%d" % [7 + i, n]
+	# asa: o tipo nos bits 2-3 do byte 5, qual nos 3 bits de baixo do 9 (as pequenas no 17)
+	var tipo: int = a[5] & 0x0C
+	var qual: int = a[9] & 0x07
+	if _ASAS.has(tipo) and _ASAS[tipo].has(qual):
+		var w: int = _ASAS[tipo][qual]
+		e[7] = "13,30" if w == -30 else "12,%d" % w
+	elif tipo == 12 and a[17] >> 5 > 0:
+		e[7] = "12,%d" % (129 + (a[17] >> 5))
+	# ajudante: 0 anjo, 1 imp, 2 unicornio; 3 = nenhum ou dinorant/cavalo/fenrir
+	var pet: int = a[5] & 0x03
+	if pet < 3:
+		e[8] = "13,%d" % pet
+	elif a[10] & 0x01:
+		e[8] = "13,3"
+	elif a[12] & 0x04:
+		e[8] = "13,37"
+	elif a[12] & 0x01:
+		e[8] = "13,4"
+	return e
+
+
 func _ler_itens(p: PackedByteArray) -> void:
 	var lista := []
 	var o := 5

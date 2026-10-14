@@ -68,7 +68,7 @@ static class Itens
         Console.WriteLine($"itens: {mapa.Count} itens, {feitos.Count} modelos, {erros} erros");
     }
 
-    static byte[] PretoTransparente(byte[] png)
+    internal static byte[] PretoTransparente(byte[] png)
     {
         using var img = SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(png);
         img.ProcessPixelRows(linhas =>
@@ -82,7 +82,7 @@ static class Itens
         return ms.ToArray();
     }
 
-    static string? Arquivo(string raiz, string rel)
+    internal static string? Arquivo(string raiz, string rel)
     {
         var dir = raiz;
         foreach (var parte in rel.Split('/'))
@@ -95,7 +95,7 @@ static class Itens
         return dir;
     }
 
-    static Matrix4x4[] Pose0(BMD bmd)
+    internal static Matrix4x4[] Pose0(BMD bmd)
     {
         var r = new Matrix4x4[bmd.Bones.Length];
         for (int i = 0; i < r.Length; i++)

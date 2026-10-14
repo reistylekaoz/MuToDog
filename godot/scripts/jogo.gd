@@ -88,6 +88,7 @@ func _ready() -> void:
 	classes = _json("res://dados/classes.json")
 	itens_nomes = _json("res://dados/itens.json")
 	RenderingServer.set_default_clear_color(Color(0.04, 0.04, 0.06))
+	add_child(ModelosMU.new())
 	cli = ClienteMU.new()
 	add_child(cli)
 	cli.estado_mudou.connect(_estado)
@@ -468,6 +469,8 @@ func _entrou(info: Dictionary) -> void:
 	_abrir_mapa(info.mapa, info.x, info.y)
 	_msg("Entrou em %s (%d, %d)." % [mapas.get(str(info.mapa), "mapa %d" % info.mapa), info.x, info.y])
 	print("TESTE entrou %s" % info)
+	if _parametros().has("chao_teste"):
+		_chao_teste(info.x, info.y)
 	if _andar_depois.x >= 0:
 		await get_tree().create_timer(2.0).timeout
 		if eu:
@@ -500,6 +503,13 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	mundo.alvo = Vector2(x + 0.5, y + 0.5)
 	mundo.distancia = 20.0
 	mundo.inclinacao = 50.0
+	var cam_t: String = _parametros().get("camera", "")  # testes: camera=dist,inclinacao,giro
+	if cam_t != "":
+		var c := cam_t.split(",")
+		mundo.distancia = float(c[0])
+		mundo.inclinacao = float(c[1])
+		if c.size() > 2:
+			mundo.giro = float(c[2])
 	mundo.brilho = brilho
 	add_child(mundo)
 	mundo.brilho_mudou.connect(func(v: float) -> void:
@@ -512,6 +522,7 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	eu.montar(mundo, cli.meu_id, "eu", meu_nome, x, y, Boneco.da_classe(minha_classe))
 	entidades[cli.meu_id] = eu
 	mundo.seguir = eu
+	_vestir_eu()
 
 
 func _objeto_entrou(o: Dictionary) -> void:
@@ -532,6 +543,8 @@ func _objeto_entrou(o: Dictionary) -> void:
 	e.montar(mundo, o.id, tipo, nome, o.x, o.y,
 		Boneco.do_npc(o.numero) if o.tipo == "npc" else Boneco.da_classe(o.get("classe", 0)))
 	entidades[o.id] = e
+	if e.boneco and o.has("equip"):
+		e.boneco.vestir(o.equip)
 	if Vector2i(o.ax, o.ay) != Vector2i(o.x, o.y):
 		_objeto_andou(o.id, o.ax, o.ay, [])
 
@@ -676,6 +689,13 @@ func _process(dt: float) -> void:
 	_skills(dt)
 	if not _restante.is_empty() and eu.tile == _fim_enviado:
 		_mandar_trecho()
+	_costas_t -= dt
+	if _costas_t <= 0.0:
+		# na zona segura a arma vai pras costas (como no cliente)
+		_costas_t = 0.3
+		for e: Entidade in entidades.values():
+			if is_instance_valid(e) and e.boneco and e.tipo in ["eu", "jogador"]:
+				e.boneco.arma_nas_costas(mundo.zona_segura(e.tile.x, e.tile.y))
 	var seg: bool = mundo.zona_segura(eu.tile.x, eu.tile.y)
 	if som == null:
 		som = Som.new()
@@ -913,6 +933,17 @@ func _itens_cairam(lista_itens: Array) -> void:
 		itens[d.id] = it
 
 
+# testes (?chao_teste=1): uma fileira de itens de mentira no chao em volta de mim, pra foto
+func _chao_teste(x: int, y: int) -> void:
+	var l := []
+	var chaves := ["0,1", "4,0", "6,2", "7,5", "8,5", "9,5", "10,5", "11,5", "14,13", "14,1", "12,36", "5,0"]
+	for k in chaves.size():
+		l.append({"id": 60000 + k, "x": x - 3 + k % 4 * 2, "y": y + 2 + k / 4 * 2, "grupo": int(chaves[k].get_slice(",", 0)),
+			"numero": int(chaves[k].get_slice(",", 1)), "nivel": 0, "exc": 0, "sorte": false})
+	l.append({"id": 60100, "x": x + 5, "y": y + 4, "zen": 5000})
+	_itens_cairam(l)
+
+
 func _itens_sumiram(ids: Array) -> void:
 	for id in ids:
 		if itens.has(id):
@@ -934,10 +965,12 @@ func _ligar_inventario_e_skills() -> void:
 	cli.inventario.connect(func(l):
 		inv.definir(l)
 		print("TESTE inventario %d itens" % l.size())
+		_vestir_eu()
 		_contar_pocoes())
 	cli.item_movido.connect(func(slot, it):
 		print("TESTE movido para %d" % slot)
 		inv.movido(slot, it)
+		_vestir_eu()
 		_contar_pocoes())
 	cli.item_nao_moveu.connect(func():
 		print("TESTE nao moveu")
@@ -946,6 +979,7 @@ func _ligar_inventario_e_skills() -> void:
 	cli.item_removido.connect(func(slot):
 		print("TESTE removido %d" % slot)
 		inv.removido(slot)
+		_vestir_eu()
 		_contar_pocoes())
 	cli.durabilidade.connect(func(slot, v):
 		print("TESTE durabilidade %d = %d" % [slot, v])
@@ -972,6 +1006,16 @@ func _ligar_inventario_e_skills() -> void:
 		minhas_skills.erase(i)
 		_atualizar_skills())
 	cli.skill_animacao.connect(_skill_de_outro)
+	cli.aparencia_mudou.connect(func(quem, slot, chave):
+		var e: Entidade = entidades.get(quem)
+		if quem == cli.meu_id or e == null or e.boneco == null:
+			return
+		var d: Dictionary = e.boneco.vestido()
+		if chave == "":
+			d.erase(slot)
+		else:
+			d[slot] = chave
+		e.boneco.vestir(d))
 	cli.area_animacao.connect(func(n, quem, x, y, _giro):
 		if quem == cli.meu_id or not entidades.has(quem) or mundo == null:
 			return
@@ -1236,6 +1280,19 @@ func _skill_de_outro(n: int, quem: int, alvo: int) -> void:
 
 
 var _skill_teste := -1
+var _costas_t := 0.0
+
+
+# o que eu visto vem do inventario (slots 0 a 8)
+func _vestir_eu() -> void:
+	if eu == null or eu.boneco == null:
+		return
+	var d := {}
+	for s in 9:
+		if inv.itens.has(s) and s != inv.esperando:
+			d[s] = ItensMU.chave(inv.itens[s])
+	eu.boneco.vestir(d)
+	print("TESTE vestido %s" % [d])
 
 
 # testes: --inventario 1 move o primeiro item da mochila pra outra casa, usa a

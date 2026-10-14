@@ -16,7 +16,7 @@ using SharpGLTF.Scenes;
 static class Personagens
 {
     // arma: BMD do item preso no osso da mao; esquerda = Weapon[1] do cliente (escudo ou segunda arma)
-    record Arma(string bmd, int osso, bool esquerda = false);
+    internal record Arma(string bmd, int osso, bool esquerda = false);
     record Def(string esqueleto, string[]? partes, Dictionary<string, int> acoes, int[]? esconde, Arma[]? armas);
 
     public static async Task Rodar(string data, string saida)
@@ -35,7 +35,9 @@ static class Personagens
                 {
                     var arq = Arquivo(data, p);
                     if (arq == null) { Console.WriteLine($"  {nome}: falta {p}"); continue; }
-                    partes.Add((await new BMDReader().Load(arq), Path.GetDirectoryName(arq)!));
+                    var parte = await new BMDReader().Load(arq);
+                    parte.Name = Path.GetFileNameWithoutExtension(arq);
+                    partes.Add((parte, Path.GetDirectoryName(arq)!));
                 }
                 var armas = new List<(BMD bmd, string dir, Arma a)>();
                 foreach (var a in d.armas ?? [])
@@ -124,8 +126,10 @@ static class Personagens
         return m;
     }
 
-    static async Task<Dictionary<string, object>> Glb(BMD esq, List<(BMD bmd, string dir)> partes,
-        List<(BMD bmd, string dir, Arma a)> armas, Dictionary<string, int> acoes, int[] esconde, string destino)
+    // dir de cada parte: uma ou mais pastas de textura separadas por ';' (a primeira que tiver ganha)
+    // preto: textura sem alfa vira transparente onde e escura (asas em jpg, que o cliente soma)
+    internal static async Task<Dictionary<string, object>> Glb(BMD esq, List<(BMD bmd, string dir)> partes,
+        List<(BMD bmd, string dir, Arma a)> armas, Dictionary<string, int> acoes, int[] esconde, string destino, bool preto = false)
     {
         // ossos: um no por osso do MU; osso "dummy" vira no parado na raiz
         var raiz = new NodeBuilder("raiz");
@@ -174,12 +178,19 @@ static class Personagens
             info[nomeAcao] = new { a, quadros };
         }
 
-        var mb = new MeshBuilder<VertexPositionNormal, VertexTexture1, VertexJoints4>("corpo");
+        // uma malha por parte (o nome e o do arquivo: helmclass02, armormale10...): o jogo troca a parte
+        // pela peca equipada; as armas vao juntas numa malha "arma"
+        var malhas = new List<MeshBuilder<VertexPositionNormal, VertexTexture1, VertexJoints4>>();
+        MeshBuilder<VertexPositionNormal, VertexTexture1, VertexJoints4> mb = null!;
         // cada vertice: (osso do esqueleto que o move, matriz da pose de repouso)
         async Task Malha(BMDTextureMesh me, string dir, Func<BMDTextureVertex, (int osso, Matrix4x4 m)> onde)
         {
             var mat = new MaterialBuilder(me.TexturePath).WithDoubleSide(true).WithMetallicRoughness(0, 1);
-            var tex = await Texturas.Textura(dir, me.TexturePath);
+            (byte[] png, bool alfa)? tex = null;
+            foreach (var d in dir.Split(';'))
+                if ((tex = await Texturas.Textura(d, me.TexturePath)) != null) break;
+            if (preto && tex != null && !tex.Value.alfa)
+                tex = (Itens.PretoTransparente(tex.Value.png), true);
             if (tex != null)
             {
                 mat.WithChannelImage(KnownChannel.BaseColor, new SharpGLTF.Memory.MemoryImage(tex.Value.png));
@@ -205,6 +216,10 @@ static class Personagens
         }
         int malha = 0;
         foreach (var (bmd, dir) in partes)
+        {
+            var nomeParte = (bmd.Name ?? "corpo").ToLowerInvariant();
+            if (nomeParte.EndsWith(".bmd")) nomeParte = nomeParte[..^4];
+            malhas.Add(mb = new(nomeParte));
         foreach (var me in bmd.Meshes)
         {
             if (esconde.Contains(malha++)) continue;
@@ -214,6 +229,8 @@ static class Personagens
                 return (osso, mundo.Length > 0 ? mundo[osso] : Matrix4x4.Identity);
             });
         }
+        }
+        if (armas.Count > 0) malhas.Add(mb = new("arma"));
         // armas: pose 0 do item, encaixe da mao, osso da mao; o vertice inteiro segue o osso da mao
         foreach (var (bmd, dir, a) in armas)
         {
@@ -224,7 +241,8 @@ static class Personagens
                 await Malha(me, dir, v => (a.osso, (v.Node >= 0 && v.Node < pose.Length ? pose[v.Node] : Matrix4x4.Identity) * encaixe));
         }
         var cena = new SceneBuilder();
-        cena.AddSkinnedMesh(mb, Matrix4x4.Identity, nos);
+        foreach (var m in malhas)
+            if (m.Primitives.Count > 0) cena.AddSkinnedMesh(m, Matrix4x4.Identity, nos).WithName(m.Name);
         cena.ToGltf2().SaveGLB(destino);
         return info;
     }

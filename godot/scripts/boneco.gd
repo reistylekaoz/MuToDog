@@ -46,6 +46,11 @@ var feminino := false
 var altura := 1.9
 var ritmo := {}   # acao -> PlaySpeed proprio do modelo
 var _fila := ""
+var modelo: Node3D
+var esqueleto: Skeleton3D
+var _equip := {}      # slot do inventario -> "grupo,numero" do que esta vestido
+var _pecas := {}      # slot -> no posto no boneco
+var _costas := false  # zona segura: arma nas costas
 
 
 static func info() -> Dictionary:
@@ -79,6 +84,10 @@ static func novo(nome: String, escala := 1.0) -> Boneco:
 	modelo.rotation_degrees = Vector3(-90, 180, 0)
 	modelo.scale = Vector3.ONE * 0.01 * escala
 	b.add_child(modelo)
+	b.modelo = modelo
+	var ossos := modelo.find_children("*", "Skeleton3D", true, false)
+	if not ossos.is_empty():
+		b.esqueleto = ossos[0]
 	var achou := modelo.find_children("*", "AnimationPlayer", true, false)
 	if not achou.is_empty():
 		b.anim = achou[0]
@@ -123,3 +132,146 @@ func _acabou(_n: StringName) -> void:
 		var f := _fila
 		_fila = ""
 		tocar(f)
+
+
+# --- equipamento -----------------------------------------------------------------
+# slots do inventario: 0 mao direita, 1 mao esquerda, 2 elmo, 3 armadura, 4 calca,
+# 5 luvas, 6 botas, 7 asa, 8 ajudante. Peca de armadura troca a parte padrao da classe
+# (as malhas helmclass02, armorclass02...); arma vai presa no osso da mao (33 e 42 no
+# player.bmd; 47, as costas, na zona segura, como o cliente); asa segue o osso 47
+# sem girar junto, com a animacao propria; anjo e imp voam do lado.
+const PARTE_SLOT := {2: "helm", 3: "armor", 4: "pant", 5: "glove", 6: "boot"}
+const OSSO_MAO := {0: "osso33", 1: "osso42"}
+
+
+func vestir(equip: Dictionary) -> void:
+	if esqueleto == null or familia != "jogador":
+		return
+	for s in 9:
+		var k: String = equip.get(s, "")
+		if _equip.get(s, "") == k:
+			continue
+		_equip[s] = k
+		_tirar(s)
+		if k != "":
+			_por(s, k)
+
+
+func vestido() -> Dictionary:
+	return _equip.duplicate()
+
+
+func _tirar(s: int) -> void:
+	if _pecas.has(s):
+		_pecas[s].queue_free()
+		_pecas.erase(s)
+	if PARTE_SLOT.has(s):
+		_padrao(s, true)
+
+
+func _padrao(s: int, ver: bool) -> void:
+	for m in esqueleto.get_children():
+		if m is MeshInstance3D and str(m.name).begins_with(PARTE_SLOT[s]):
+			m.visible = ver
+
+
+func _por(s: int, k: String) -> void:
+	var no: Node3D = await ModelosMU.eu.instanciar(k) if ModelosMU.eu else null
+	if no == null:
+		return
+	if not is_instance_valid(self) or _equip.get(s, "") != k or _pecas.has(s):
+		no.free()
+		return
+	if PARTE_SLOT.has(s):
+		var suporte := Node3D.new()
+		suporte.name = "peca%d" % s
+		esqueleto.add_child(suporte)
+		for m: MeshInstance3D in no.find_children("*", "MeshInstance3D", true, false):
+			var mi := MeshInstance3D.new()
+			mi.mesh = m.mesh
+			mi.skin = m.skin
+			suporte.add_child(mi)
+			mi.skeleton = mi.get_path_to(esqueleto)
+		no.free()
+		_pecas[s] = suporte
+		_padrao(s, false)
+	elif OSSO_MAO.has(s):
+		var at := BoneAttachment3D.new()
+		esqueleto.add_child(at)
+		at.bone_name = "osso47" if _costas else OSSO_MAO[s]
+		var enc := Node3D.new()
+		enc.transform = _encaixe(k, s == 1)
+		at.add_child(enc)
+		enc.add_child(no)
+		_pecas[s] = at
+	elif s == 7:
+		# o cliente poe a origem da asa no osso 47 (costas) mais 15 pra cima no osso,
+		# mas com o giro do boneco (RenderLinkObject sem Link); _process segue o osso
+		modelo.add_child(no)
+		_voar(no, 0.25)
+		_pecas[s] = no
+		_osso_asa = esqueleto.find_bone("osso47")
+		_seguir_asa()
+	elif s == 8 and k in ["13,0", "13,1"]:
+		# anjo e imp: do lado do ombro, subindo e descendo
+		var p := Node3D.new()
+		add_child(p)
+		p.position = Vector3(0.55, altura * 0.85, 0.2)
+		no.rotation_degrees = Vector3(-90, 180, 0)
+		no.scale = Vector3.ONE * 0.01
+		p.add_child(no)
+		_voar(no, 0.5)
+		var tw := p.create_tween().set_loops()
+		tw.tween_property(p, "position:y", altura * 0.85 + 0.15, 1.2).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(p, "position:y", altura * 0.85, 1.2).set_trans(Tween.TRANS_SINE)
+		_pecas[s] = p
+	else:
+		no.free()
+
+
+static func _voar(no: Node, ritmo_mu: float) -> void:
+	var ap := no.find_children("*", "AnimationPlayer", true, false)
+	if ap.is_empty() or not ap[0].has_animation("voa"):
+		return
+	ap[0].get_animation("voa").loop_mode = Animation.LOOP_LINEAR
+	ap[0].play("voa", -1, ritmo_mu * 25.0)
+
+
+# onde o cliente poe a arma no osso (RenderLinkObject, caso padrao; igual ao conversor)
+static func _encaixe(k: String, esquerda: bool) -> Transform3D:
+	var g := int(k.get_slice(",", 0))
+	var t: Transform3D
+	if g == 6:
+		t = ModelosMU.transf_mu(70, 0, 90, -10, 0, 0)
+	elif g == 4:
+		t = ModelosMU.transf_mu(70, 0, 90, -10, 5, 10)
+	else:
+		t = ModelosMU.transf_mu(70, 0, 90, -20, 5, 40)
+	# segunda arma na mao esquerda: o cliente gira mais e desloca
+	if esquerda and g != 6:
+		t = t * ModelosMU.transf_mu(145, 0, 275, 0, 10, -30)
+	return t
+
+
+var _osso_asa := -1
+
+
+func _process(_d: float) -> void:
+	if _pecas.has(7):
+		_seguir_asa()
+
+
+func _seguir_asa() -> void:
+	if _osso_asa < 0:
+		return
+	var p := esqueleto.get_bone_global_pose(_osso_asa) * Vector3(0, 0, 15)
+	_pecas[7].position = modelo.to_local(esqueleto.to_global(p))
+
+
+func arma_nas_costas(sim: bool) -> void:
+	if sim == _costas:
+		return
+	_costas = sim
+	for s in OSSO_MAO:
+		if _pecas.has(s):
+			_pecas[s].bone_name = "osso47" if sim else OSSO_MAO[s]
