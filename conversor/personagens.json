@@ -116,7 +116,23 @@
    "soco": 38,
    "espada": 39,
    "golpe": 230,
-   "morre": 231
+   "morre": 231,
+   "espada_s1": 60,
+   "espada_s2": 61,
+   "espada_s3": 62,
+   "espada_s4": 63,
+   "espada_s5": 64,
+   "giro": 65,
+   "furia": 66,
+   "estocada": 71,
+   "arco": 50,
+   "magia": 146,
+   "magia2": 147,
+   "magia_arma": 148,
+   "cura": 150,
+   "raio": 152,
+   "inferno": 153,
+   "fogo_inferno": 154
   }
  },
  "classe_dk": {
@@ -138,7 +154,23 @@
    "soco": 38,
    "espada": 39,
    "golpe": 230,
-   "morre": 231
+   "morre": 231,
+   "espada_s1": 60,
+   "espada_s2": 61,
+   "espada_s3": 62,
+   "espada_s4": 63,
+   "espada_s5": 64,
+   "giro": 65,
+   "furia": 66,
+   "estocada": 71,
+   "arco": 50,
+   "magia": 146,
+   "magia2": 147,
+   "magia_arma": 148,
+   "cura": 150,
+   "raio": 152,
+   "inferno": 153,
+   "fogo_inferno": 154
   }
  },
  "classe_elf": {
@@ -160,7 +192,23 @@
    "soco": 38,
    "espada": 39,
    "golpe": 230,
-   "morre": 231
+   "morre": 231,
+   "espada_s1": 60,
+   "espada_s2": 61,
+   "espada_s3": 62,
+   "espada_s4": 63,
+   "espada_s5": 64,
+   "giro": 65,
+   "furia": 66,
+   "estocada": 71,
+   "arco": 50,
+   "magia": 146,
+   "magia2": 147,
+   "magia_arma": 148,
+   "cura": 150,
+   "raio": 152,
+   "inferno": 153,
+   "fogo_inferno": 154
   }
  },
  "classe_mg": {
@@ -182,7 +230,23 @@
    "soco": 38,
    "espada": 39,
    "golpe": 230,
-   "morre": 231
+   "morre": 231,
+   "espada_s1": 60,
+   "espada_s2": 61,
+   "espada_s3": 62,
+   "espada_s4": 63,
+   "espada_s5": 64,
+   "giro": 65,
+   "furia": 66,
+   "estocada": 71,
+   "arco": 50,
+   "magia": 146,
+   "magia2": 147,
+   "magia_arma": 148,
+   "cura": 150,
+   "raio": 152,
+   "inferno": 153,
+   "fogo_inferno": 154
   }
  },
  "classe_dl": {
@@ -204,7 +268,23 @@
    "soco": 38,
    "espada": 39,
    "golpe": 230,
-   "morre": 231
+   "morre": 231,
+   "espada_s1": 60,
+   "espada_s2": 61,
+   "espada_s3": 62,
+   "espada_s4": 63,
+   "espada_s5": 64,
+   "giro": 65,
+   "furia": 66,
+   "estocada": 71,
+   "arco": 50,
+   "magia": 146,
+   "magia2": 147,
+   "magia_arma": 148,
+   "cura": 150,
+   "raio": 152,
+   "inferno": 153,
+   "fogo_inferno": 154
   }
  },
  "classe_sum": {
@@ -226,7 +306,23 @@
    "soco": 38,
    "espada": 39,
    "golpe": 230,
-   "morre": 231
+   "morre": 231,
+   "espada_s1": 60,
+   "espada_s2": 61,
+   "espada_s3": 62,
+   "espada_s4": 63,
+   "espada_s5": 64,
+   "giro": 65,
+   "furia": 66,
+   "estocada": 71,
+   "arco": 50,
+   "magia": 146,
+   "magia2": 147,
+   "magia_arma": 148,
+   "cura": 150,
+   "raio": 152,
+   "inferno": 153,
+   "fogo_inferno": 154
   }
  },
  "classe_rf": {
@@ -248,7 +344,23 @@
    "soco": 38,
    "espada": 39,
    "golpe": 230,
-   "morre": 231
+   "morre": 231,
+   "espada_s1": 60,
+   "espada_s2": 61,
+   "espada_s3": 62,
+   "espada_s4": 63,
+   "espada_s5": 64,
+   "giro": 65,
+   "furia": 66,
+   "estocada": 71,
+   "arco": 50,
+   "magia": 146,
+   "magia2": 147,
+   "magia_arma": 148,
+   "cura": 150,
+   "raio": 152,
+   "inferno": 153,
+   "fogo_inferno": 154
   }
  },
  "placa": {

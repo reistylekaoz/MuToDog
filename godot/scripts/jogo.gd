@@ -54,6 +54,19 @@ var meu_zen := 0
 var som: Som
 var brilho := 2.0
 
+# inventario e skills
+var inv: Inventario
+var minhas_skills := {}     # indice no servidor -> numero da skill
+var _skill_recarga := 0.0
+var skill_alvo := -1        # monstro (ou ponto) que a skill atual vai pegar quando chegar perto
+var skill_ponto := Vector2i(-1, -1)
+var skill_numero := -1
+const RECARGA_SKILL := 0.8
+const EM_VOLTA := [41, 42, 232, 9, 14]   # skills de area em volta de quem solta
+# QWER: categorias de pocao do MU (vida, mana, SD, complexa); a maior primeiro
+const POCOES := [["14,3", "14,2", "14,1", "14,0"], ["14,6", "14,5", "14,4"], ["14,37", "14,36", "14,35"], ["14,40", "14,39", "14,38"]]
+var pocao_escolhida: Array = ["", "", "", ""]   # chave do item que a pessoa pos na tecla
+
 
 func _ready() -> void:
 	# o visualizador de mapa (main.tscn) segue abrindo no navegador com ?vista=1
@@ -63,6 +76,12 @@ func _ready() -> void:
 	# vitrine dos personagens convertidos: ?vitrine=1 (ou -- --vitrine 1)
 	if _parametros().has("vitrine"):
 		get_tree().change_scene_to_file.call_deferred("res://vitrine.tscn")
+		return
+	# atlas dos icones dos itens: so no export "Icones" (testes/icones.mjs)
+	if _parametros().has("icones"):
+		var n := Node.new()
+		n.set_script(load("res://scripts/icones.gd"))
+		add_child(n)
 		return
 	monstros = _json("res://dados/monstros.json")
 	mapas = _json("res://dados/mapas.json")
@@ -94,6 +113,9 @@ func _ready() -> void:
 	cli.pegou.connect(_pegou)
 	cli.nao_pegou.connect(func(m): _msg("[color=#e8b04a]Nao deu pra pegar (%s).[/color]" % {253: "juntou com o que ja tinha", 254: "limite de zen"}.get(m, "inventario cheio ou longe")))
 	cli.zen.connect(func(v):
+		if inv:
+			inv.zen = v
+			inv.queue_redraw()
 		if v > meu_zen:
 			_msg("[color=#f0c860]+%s Zen[/color]" % ItemChao._milhar(v - meu_zen))
 			print("TESTE zen +%d (total %d)" % [v - meu_zen, v])
@@ -106,6 +128,7 @@ func _ready() -> void:
 		if entidades.has(id) and entidades.has(alvo):
 			entidades[id].olhar_para(entidades[alvo]))
 	_montar_ui()
+	_ligar_inventario_e_skills()
 	_carregar_config()
 	# testes: -- --auto conta,senha,personagem --andar x,y --gravacao arquivo
 	# (no navegador: ?auto=...&andar=...&gravacao=1, toca dados/gravacao.txt)
@@ -127,6 +150,11 @@ func _ready() -> void:
 			get_tree().quit())
 	if p.has("cacar"):
 		_cacar = int(p.cacar)
+	if p.has("skill"):
+		_cacar_skill = true
+		_skill_teste = int(p.skill)
+	if p.has("inventario"):
+		cli.inventario.connect(_teste_inventario, CONNECT_ONE_SHOT)
 	if p.has("auto"):
 		var c: PackedStringArray = p.auto.split(",")
 		campo_conta.text = c[0]
@@ -141,6 +169,7 @@ var _auto := false
 var _cacar := 0      # testes: --cacar N mata N monstros sozinho (mira o mais perto, pega o que cair)
 var _mortos := 0
 var _cacar_t := 0.0
+var _tentados := []  # itens do chao que o cacador ja foi pegar
 
 
 func _parametros() -> Dictionary:
@@ -253,7 +282,7 @@ func _montar_ui() -> void:
 	hud_texto.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	hv.add_child(hud_texto)
 	var ajuda := Label.new()
-	ajuda.text = "Clique no chao pra andar · no monstro pra atacar · no item pra pegar · Q/E gira · roda aproxima · C personagem · M som · - e = brilho"
+	ajuda.text = "Clique: anda, ataca, pega · botao direito: skill · 1 a 5 troca a skill · Q W E R pocoes · I inventario · C personagem · setas giram · roda aproxima · M som · - = brilho"
 	ajuda.add_theme_font_size_override("font_size", 12)
 	ajuda.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
 	ajuda.add_theme_constant_override("outline_size", 3)
@@ -262,7 +291,16 @@ func _montar_ui() -> void:
 	# a barra do MU embaixo
 	barra_mu = HudMu.new()
 	barra_mu.botao.connect(_botao_barra)
+	barra_mu.escolheu_skill.connect(_escolher_skill)
+	barra_mu.usar_atalho.connect(_usar_pocao)
 	hud.add_child(barra_mu)
+	inv = Inventario.new()
+	inv.aviso.connect(func(t): _msg("[color=#e8b04a]%s[/color]" % t))
+	inv.mover.connect(func(de, para):
+		if inv.itens.has(de):
+			cli.mover_item(de, para, inv.itens[de].bytes))
+	inv.usar.connect(func(slot, alvo): cli.usar_item(slot, alvo))
+	hud.add_child(inv)
 	# janela do personagem (C)
 	janela_personagem = PanelContainer.new()
 	janela_personagem.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -281,6 +319,8 @@ func _montar_ui() -> void:
 	sair.position = Vector2(-90, 12)
 	sair.pressed.connect(_sair)
 	hud.add_child(sair)
+	# o Sair sai da frente do X do inventario
+	inv.visibility_changed.connect(func(): sair.position.x = hud.size.x - 90 - (inv.size.x * inv.scale.x if inv.visible else 0.0))
 	registro = RichTextLabel.new()
 	registro.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	registro.position = Vector2(12, -250)
@@ -423,6 +463,7 @@ func _entrou(info: Dictionary) -> void:
 	exp_atual = info.exp
 	exp_prox = info.exp_prox
 	meu_zen = info.zen
+	inv.zen = info.zen
 	_hud_nivel()
 	_abrir_mapa(info.mapa, info.x, info.y)
 	_msg("Entrou em %s (%d, %d)." % [mapas.get(str(info.mapa), "mapa %d" % info.mapa), info.x, info.y])
@@ -439,6 +480,7 @@ func _limpar_mundo() -> void:
 	itens.clear()
 	alvo_id = -1
 	item_alvo = -1
+	skill_numero = -1
 	sobre = null
 	eu = null
 	_restante.clear()
@@ -554,6 +596,24 @@ func _unhandled_input(ev: InputEvent) -> void:
 		return
 	if ev is InputEventMouseMotion:
 		_sobre(_entidade_na_tela(ev.position))
+		if inv.visible and inv.na_mao >= 0:
+			inv.mouse_fora(ev.position)
+	if ev is InputEventKey and ev.pressed and not ev.echo and _teclas(ev):
+		return
+	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and inv.visible and inv.na_mao >= 0:
+		# item na mao e clique fora da janela: larga no chao, no tile do mouse
+		var tc: Vector2i = mundo.tile_na_tela(ev.position)
+		if tc.x >= 0:
+			cli.largar_item(tc.x, tc.y, inv.na_mao)
+			inv.esperando = inv.na_mao
+			inv.soltar()
+		return
+	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+		barra_mu.fechar_lista()
+		skill_numero = -1
+	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT:
+		_skill_no_mouse(ev.position)
+		return
 	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_C:
 		_botao_barra("personagem")
 	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_M and som:
@@ -613,6 +673,7 @@ func _process(dt: float) -> void:
 	if eu == null:
 		return
 	_combate(dt)
+	_skills(dt)
 	if not _restante.is_empty() and eu.tile == _fim_enviado:
 		_mandar_trecho()
 	var seg: bool = mundo.zona_segura(eu.tile.x, eu.tile.y)
@@ -710,15 +771,16 @@ func _ir_perto(t: Vector2i, dist: int) -> void:
 
 func _cacador(dt: float) -> void:
 	_cacar_t -= dt
-	if _cacar_t > 0.0 or eu.morto or alvo_id >= 0 or item_alvo >= 0 or eu.andando():
+	if _cacar_t > 0.0 or eu.morto or alvo_id >= 0 or item_alvo >= 0 or skill_numero >= 0 or eu.andando():
 		return
 	_cacar_t = 0.5
 	var melhor_item: ItemChao = null
 	for it: ItemChao in itens.values():
-		if _distancia(it.tile, eu.tile) <= 6:
+		if _distancia(it.tile, eu.tile) <= 6 and it.id not in _tentados:
 			melhor_item = it
 	if melhor_item:
 		print("TESTE indo pegar %s em %s" % [melhor_item.nome, melhor_item.tile])
+		_tentados.append(melhor_item.id)
 		pegar_item(melhor_item.id)
 		return
 	if _mortos >= _cacar:
@@ -730,7 +792,11 @@ func _cacador(dt: float) -> void:
 				melhor = e
 	if melhor:
 		print("TESTE mirando %s (%d) em %s" % [melhor.nome, melhor.id, melhor.tile])
-		mirar(melhor.id)
+		if _cacar_skill:
+			skill_numero = _skill_teste
+			skill_alvo = melhor.id
+		else:
+			mirar(melhor.id)
 
 
 func _combate(dt: float) -> void:
@@ -828,6 +894,8 @@ func _botao_barra(qual: String) -> void:
 	if qual == "personagem":
 		janela_personagem.visible = not janela_personagem.visible
 		_hud_nivel()
+	elif qual == "inventario":
+		inv.alternar()
 	else:
 		_msg("[color=#9a9ab0]%s ainda nao foi feito neste cliente.[/color]" % HudMu.DICAS[qual].get_slice(" (", 0))
 
@@ -852,7 +920,350 @@ func _itens_sumiram(ids: Array) -> void:
 			itens.erase(id)
 
 
-func _pegou(_slot: int, item: Dictionary) -> void:
+func _pegou(slot: int, item: Dictionary) -> void:
+	inv.entrou(slot, item)
+	_contar_pocoes()
 	var n: String = itens_nomes.get("%d,%d" % [item.grupo, item.numero], "item")
 	_msg("[color=#9fe0a0]Pegou %s%s.[/color]" % [n, " +%d" % item.nivel if item.nivel > 0 else ""])
 	print("TESTE pegou %s" % n)
+
+
+# --- inventario --------------------------------------------------------------------
+
+func _ligar_inventario_e_skills() -> void:
+	cli.inventario.connect(func(l):
+		inv.definir(l)
+		print("TESTE inventario %d itens" % l.size())
+		_contar_pocoes())
+	cli.item_movido.connect(func(slot, it):
+		print("TESTE movido para %d" % slot)
+		inv.movido(slot, it)
+		_contar_pocoes())
+	cli.item_nao_moveu.connect(func():
+		print("TESTE nao moveu")
+		inv.nao_moveu()
+		_msg("[color=#e8b04a]O servidor nao deixou mover esse item.[/color]"))
+	cli.item_removido.connect(func(slot):
+		print("TESTE removido %d" % slot)
+		inv.removido(slot)
+		_contar_pocoes())
+	cli.durabilidade.connect(func(slot, v):
+		print("TESTE durabilidade %d = %d" % [slot, v])
+		inv.durabilidade(slot, v)
+		_contar_pocoes())
+	cli.largou.connect(func(ok, slot):
+		print("TESTE largou %s %d" % [ok, slot])
+		if ok:
+			inv.removido(slot)
+		inv.nao_moveu()
+		_contar_pocoes())
+	cli.nao_consumiu.connect(func(): _msg("[color=#e8b04a]Nao deu pra usar esse item agora.[/color]"))
+	cli.skills.connect(func(l):
+		minhas_skills.clear()
+		for k in l:
+			minhas_skills[k.indice] = k.numero
+		print("TESTE skills %s" % [minhas_skills.values()])
+		_atualizar_skills())
+	cli.skill_nova.connect(func(i, n):
+		minhas_skills[i] = n
+		_msg("[color=#9fe0a0]Aprendeu %s.[/color]" % _info_skill(n)[0])
+		_atualizar_skills())
+	cli.skill_saiu.connect(func(i, _n):
+		minhas_skills.erase(i)
+		_atualizar_skills())
+	cli.skill_animacao.connect(_skill_de_outro)
+	cli.area_animacao.connect(func(n, quem, x, y, _giro):
+		if quem == cli.meu_id or not entidades.has(quem) or mundo == null:
+			return
+		var e: Entidade = entidades[quem]
+		var p: Vector3 = mundo.no_tile(x, y)
+		e.tocar_skill(_acao_skill(n), p)
+		EfeitoSkill.criar(mundo, n, e.position, p, true))
+
+
+# QWER: a pocao escolhida pra tecla, ou a maior da categoria; conta quantas tem
+func _contar_pocoes() -> void:
+	for i in 4:
+		var opcoes: Array = POCOES[i].duplicate()
+		if pocao_escolhida[i] != "":
+			opcoes.push_front(pocao_escolhida[i])
+		var achou := {}
+		var total := 0
+		for k in opcoes:
+			for s in inv.itens:
+				var it: Dictionary = inv.itens[s]
+				if s >= Inventario.MOCHILA and ItensMU.chave(it) == k:
+					if achou.is_empty():
+						achou = it
+					if ItensMU.chave(achou) == k:
+						total += maxi(it.durabilidade, 1)
+			if not achou.is_empty():
+				break
+		barra_mu.pocoes[i] = [achou, total]
+	barra_mu.queue_redraw()
+
+
+func _usar_pocao(i: int) -> void:
+	var it: Dictionary = barra_mu.pocoes[i][0]
+	if it.is_empty():
+		_msg("[color=#9a9ab0]Sem pocao na tecla %s.[/color]" % "QWER"[i])
+		return
+	for s in inv.itens:
+		if s >= Inventario.MOCHILA and ItensMU.chave(inv.itens[s]) == ItensMU.chave(it):
+			print("TESTE usando %s do slot %d" % [ItensMU.nome(it), s])
+			cli.usar_item(s)
+			return
+
+
+# teclas do jogo; devolve true se usou a tecla
+func _teclas(ev: InputEventKey) -> bool:
+	var k := ev.keycode
+	if k in [KEY_I, KEY_V]:
+		inv.alternar()
+		return true
+	if k == KEY_ESCAPE and inv.visible:
+		inv.alternar()
+		return true
+	var q := [KEY_Q, KEY_W, KEY_E, KEY_R].find(k)
+	if q >= 0:
+		# mouse em cima de uma pocao no inventario: ela vai pra tecla
+		var s := inv.slot_sob_mouse() if inv.visible else -1
+		if s >= Inventario.MOCHILA and ItensMU.consome(inv.itens[s]):
+			pocao_escolhida[q] = ItensMU.chave(inv.itens[s])
+			_msg("%s na tecla %s." % [ItensMU.nome(inv.itens[s]), "QWER"[q]])
+			_contar_pocoes()
+		else:
+			_usar_pocao(q)
+		return true
+	var n := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0].find(k)
+	if n >= 0:
+		var sob := barra_mu.skill_sob_mouse() if barra_mu.lista_aberta else -1
+		if sob >= 0:
+			var velho := barra_mu.atalhos.find(sob)
+			if velho >= 0:
+				barra_mu.atalhos[velho] = -1
+			barra_mu.atalhos[n] = sob
+			_salvar_atalhos()
+			_msg("%s no %d." % [_info_skill(sob)[0], (n + 1) % 10])
+			barra_mu.queue_redraw()
+		elif barra_mu.atalhos[n] in barra_mu.skills:
+			_escolher_skill(barra_mu.atalhos[n])
+		return true
+	return false
+
+
+# --- skills ------------------------------------------------------------------------
+
+# [nome, alcance, tipo, alvo, mana, ag, anda ate o alvo]
+func _info_skill(n: int) -> Array:
+	return barra_mu.info_skills.get(str(n), ["Skill %d" % n, 1, 0, 0, 0, 0, false])
+
+
+func _atualizar_skills() -> void:
+	var l := []
+	var idx := minhas_skills.keys()
+	idx.sort()
+	for i in idx:
+		var n: int = minhas_skills[i]
+		if int(_info_skill(n)[2]) != 20 and n not in l:   # passiva nao vai na barra
+			l.append(n)
+	barra_mu.skills = l
+	_carregar_atalhos()
+	if barra_mu.skill_atual not in l:
+		barra_mu.skill_atual = l[0] if not l.is_empty() else -1
+	barra_mu.queue_redraw()
+
+
+func _arquivo_atalhos() -> String:
+	return "user://atalhos_%s.cfg" % meu_nome.validate_filename()
+
+
+func _carregar_atalhos() -> void:
+	var c := ConfigFile.new()
+	var a: Array = []
+	if c.load(_arquivo_atalhos()) == OK:
+		a = c.get_value("skills", "atalhos", [])
+		barra_mu.skill_atual = c.get_value("skills", "atual", -1)
+		for i in 4:
+			pocao_escolhida[i] = c.get_value("pocoes", "q%d" % i, "")
+	a.resize(10)
+	for i in 10:
+		if a[i] == null:
+			a[i] = -1
+	# sem nada salvo: as primeiras skills vao no 1..5
+	if a.count(-1) == 10:
+		for i in mini(5, barra_mu.skills.size()):
+			a[i] = barra_mu.skills[i]
+	barra_mu.atalhos = a
+
+
+func _salvar_atalhos() -> void:
+	var c := ConfigFile.new()
+	c.set_value("skills", "atalhos", barra_mu.atalhos)
+	c.set_value("skills", "atual", barra_mu.skill_atual)
+	for i in 4:
+		c.set_value("pocoes", "q%d" % i, pocao_escolhida[i])
+	c.save(_arquivo_atalhos())
+
+
+func _escolher_skill(n: int) -> void:
+	barra_mu.skill_atual = n
+	barra_mu.queue_redraw()
+	_salvar_atalhos()
+	_msg("Skill: %s" % _info_skill(n)[0])
+
+
+# acao do boneco pra cada skill (o cliente tem uma por skill; aqui as parecidas)
+func _acao_skill(n: int) -> String:
+	var a := {19: "espada_s1", 20: "espada_s2", 21: "espada_s3", 22: "espada_s4", 23: "espada_s5",
+		41: "giro", 42: "furia", 43: "estocada", 232: "furia", 44: "estocada", 47: "estocada",
+		14: "inferno", 10: "fogo_inferno", 12: "raio", 26: "cura", 27: "cura", 28: "cura", 48: "cura",
+		24: "arco", 52: "arco", 46: "arco", 51: "arco", 235: "arco"}
+	if a.has(n):
+		return a[n]
+	return "magia2" if n in [5, 9, 13, 38, 39] else "magia"
+
+
+# botao direito: solta a skill atual no monstro do mouse (ou no chao, se for de area)
+func _skill_no_mouse(tela: Vector2) -> void:
+	var n: int = barra_mu.skill_atual
+	if n < 0:
+		_msg("[color=#9a9ab0]Esse personagem nao tem skill. Clique no quadro verde da barra pra ver a lista.[/color]")
+		return
+	var info := _info_skill(n)
+	var tipo := int(info[2])
+	var e := _entidade_na_tela(tela)
+	skill_numero = n
+	skill_alvo = -1
+	skill_ponto = Vector2i(-1, -1)
+	if tipo in [10, 11]:
+		# buff e cura: no aliado do mouse, ou em mim
+		skill_alvo = e.id if e and e.tipo == "jogador" else cli.meu_id
+	elif tipo == 0:
+		if e == null or e.tipo != "monstro":
+			_msg("[color=#9a9ab0]%s precisa de um monstro: aponte nele e clique com o botao direito.[/color]" % info[0])
+			skill_numero = -1
+			return
+		skill_alvo = e.id
+	elif tipo in [3, 4, 5]:
+		if e and e.tipo == "monstro":
+			skill_alvo = e.id
+		else:
+			skill_ponto = mundo.tile_na_tela(tela)
+			if skill_ponto.x < 0:
+				skill_numero = -1
+				return
+	elif tipo == 20:
+		_msg("%s e passiva: ja vale sozinha." % info[0])
+		skill_numero = -1
+		return
+	else:
+		_msg("[color=#9a9ab0]%s ainda nao foi feita neste cliente.[/color]" % info[0])
+		skill_numero = -1
+		return
+	alvo_id = -1
+	item_alvo = -1
+	_repensar = 0.0
+
+
+# segura o botao direito: repete a skill no mesmo alvo
+func _skills(dt: float) -> void:
+	_skill_recarga -= dt
+	if skill_numero < 0 or eu.morto:
+		return
+	var n := skill_numero
+	var info := _info_skill(n)
+	var tipo := int(info[2])
+	var alcance := maxi(int(info[1]), 1)
+	var alvo: Entidade = entidades.get(skill_alvo)
+	var ponto := skill_ponto
+	if skill_alvo >= 0:
+		if alvo == null or alvo.morto:
+			skill_numero = -1
+			return
+		ponto = alvo.tile
+	if _distancia(eu.tile, ponto) > alcance:
+		if not eu.andando() or _repensar <= 0.0:
+			_repensar = 0.6
+			_ir_perto(ponto, alcance)
+		return
+	if eu.andando() or _skill_recarga > 0.0:
+		return
+	if tipo not in [10, 11] and mundo.zona_segura(eu.tile.x, eu.tile.y):
+		_msg("[color=#e8b04a]Na zona segura nao da pra atacar.[/color]")
+		skill_numero = -1
+		return
+	if barra_mu.mana < int(info[4]):
+		_msg("[color=#e8b04a]Falta mana pra %s.[/color]" % info[0])
+		skill_numero = -1
+		return
+	if barra_mu.ag < int(info[5]):
+		_msg("[color=#e8b04a]Falta AG pra %s.[/color]" % info[0])
+		skill_numero = -1
+		return
+	_skill_recarga = RECARGA_SKILL
+	var p: Vector3 = alvo.position if alvo else mundo.no_tile(ponto.x, ponto.y)
+	eu.tocar_skill(_acao_skill(n), p)
+	if tipo in [0, 10, 11]:
+		cli.skill_alvo(n, skill_alvo)
+		print("TESTE skill %d no alvo %d" % [n, skill_alvo])
+	else:
+		var d := ponto - eu.tile
+		var giro := 0
+		if d != Vector2i.ZERO:
+			var th := rad_to_deg(atan2(-d.x, d.y))
+			giro = int(round(fposmod(th - 180.0, 360.0) * 256.0 / 360.0)) & 0xFF
+		var meio := eu.tile if n in EM_VOLTA else ponto
+		cli.skill_area(n, meio.x, meio.y, giro, skill_alvo if tipo == 5 and skill_alvo >= 0 else 0)
+		print("TESTE skill %d em area (%d, %d) giro %d" % [n, meio.x, meio.y, giro])
+	EfeitoSkill.criar(mundo, n, eu.position, eu.position if n in EM_VOLTA else p, tipo in [3, 4, 5])
+	# skill que nao e em monstro (buff, area no chao) solta uma vez; no monstro segue com o botao apertado
+	if not (skill_alvo >= 0 and tipo in [0, 3, 5] and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
+		if not _cacar_skill:
+			skill_numero = -1
+
+
+var _cacar_skill := false   # testes: --skill N usa a skill N no lugar do golpe comum
+
+
+func _skill_de_outro(n: int, quem: int, alvo: int) -> void:
+	if quem == cli.meu_id or mundo == null or not entidades.has(quem):
+		return
+	var e: Entidade = entidades[quem]
+	var a: Entidade = entidades.get(alvo, e)
+	e.tocar_skill(_acao_skill(n), a.position)
+	EfeitoSkill.criar(mundo, n, e.position, a.position)
+
+
+var _skill_teste := -1
+
+
+# testes: --inventario 1 move o primeiro item da mochila pra outra casa, usa a
+# pocao do Q e tira e poe de volta a arma da mao
+func _teste_inventario(_l: Dictionary) -> void:
+	await get_tree().create_timer(2.0).timeout
+	var s := -1
+	for k in inv.itens:
+		if k >= Inventario.MOCHILA and not ItensMU.consome(inv.itens[k]):
+			s = k
+			break
+	if s >= 0:
+		var para := inv.lugar_livre(inv.itens[s])
+		print("TESTE movendo %s de %d pra %d" % [ItensMU.nome(inv.itens[s]), s, para])
+		inv.esperando = s
+		cli.mover_item(s, para, inv.itens[s].bytes)
+		await get_tree().create_timer(1.5).timeout
+	print("TESTE pocoes %s" % [barra_mu.pocoes.map(func(x): return [ItensMU.nome(x[0]) if not x[0].is_empty() else "-", x[1]])])
+	_usar_pocao(0)
+	await get_tree().create_timer(1.5).timeout
+	# tira a arma da mao (se tiver) e poe de volta
+	if inv.itens.has(0):
+		var livre := inv.lugar_livre(inv.itens[0])
+		print("TESTE tirando a arma pra %d" % livre)
+		inv.usar_ou_equipar(0)
+		await get_tree().create_timer(1.5).timeout
+		if inv.itens.has(livre):
+			print("TESTE pondo a arma de volta")
+			inv.usar_ou_equipar(livre)
+			await get_tree().create_timer(1.5).timeout
+	print("TESTE equipado %s" % [inv.itens.keys().filter(func(k): return k < Inventario.MOCHILA)])

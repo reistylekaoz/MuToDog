@@ -10,14 +10,19 @@ const PASTA := "res://dados/personagens/"
 const VELOCIDADE := {
 	"monstro": {"parado": 0.25, "parado2": 0.2, "anda": 0.34, "ataque": 0.33, "ataque2": 0.33, "golpe": 0.5, "morre": 0.55},
 	"jogador": {"parado": 0.28, "parado_f": 0.28, "voa": 0.28, "anda": 0.3, "anda_f": 0.3, "corre": 0.3,
-		"soco": 0.35, "espada": 0.35, "golpe": 0.4, "morre": 0.45},
+		"soco": 0.35, "espada": 0.35, "golpe": 0.4, "morre": 0.45,
+		"espada_s1": 0.3, "espada_s2": 0.3, "espada_s3": 0.3, "espada_s4": 0.3, "espada_s5": 0.3,
+		"giro": 0.4, "furia": 0.3, "estocada": 0.3, "arco": 0.3, "magia": 0.3, "magia2": 0.3,
+		"magia_arma": 0.3, "cura": 0.25, "raio": 0.3, "inferno": 0.3, "fogo_inferno": 0.3},
 	"npc": {},
 }
 # acao pedida -> a que existe no modelo (o jogador nao tem "ataque", tem "soco")
 const TROCA := {"ataque": ["ataque", "soco", "parado"], "ataque2": ["ataque2", "ataque", "soco"],
 	"golpe": ["golpe", "parado"], "morre": ["morre", "golpe", "parado"], "anda": ["anda", "parado"],
 	"corre": ["corre", "anda"], "parado2": ["parado2", "parado"]}
-const NAO_REPETE := ["morre", "golpe", "ataque", "ataque2", "soco", "espada"]
+const NAO_REPETE := ["morre", "golpe", "ataque", "ataque2", "soco", "espada", "espada_s1", "espada_s2",
+	"espada_s3", "espada_s4", "espada_s5", "giro", "furia", "estocada", "arco", "magia", "magia2", "magia_arma",
+	"cura", "raio", "inferno", "fogo_inferno"]
 
 # numero do monstro/NPC no OpenMU -> [modelo, escala], tirado do CreateMonster
 # do cliente S6 (ZzzCharacter.cpp). So a Lorencia por enquanto.

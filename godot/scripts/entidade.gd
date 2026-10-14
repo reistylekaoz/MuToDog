@@ -210,6 +210,16 @@ func olhar_para(outro: Node3D) -> void:
 		tw.tween_property(_corpo, "position:z", 0.0, 0.15)
 
 
+# skill: vira pro ponto e toca a acao (se o modelo nao tiver, o ataque comum)
+func tocar_skill(acao: String, ponto: Vector3) -> void:
+	var d := ponto - position
+	if Vector2(d.x, d.z).length() > 0.01:
+		rotation.y = atan2(-d.x, -d.z)
+	if boneco:
+		var a := acao if boneco.tem(acao) or boneco.tem(acao + "_f") else "ataque"
+		boneco.tocar(a, "anda" if andando() else "parado")
+
+
 # numero do dano subindo e sumindo em cima da cabeca
 func mostrar_dano(dano: int) -> void:
 	if boneco and dano > 0 and not andando() and boneco.acao in ["parado", "parado_f", "parado2"]:

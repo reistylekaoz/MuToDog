@@ -29,6 +29,19 @@ signal itens_sumiram(ids: Array)
 signal pegou(slot: int, item: Dictionary)
 signal nao_pegou(motivo: int)
 signal zen(valor: int)
+signal inventario(itens: Dictionary)
+signal item_movido(slot: int, item: Dictionary)
+signal item_nao_moveu
+signal item_removido(slot: int)
+signal durabilidade(slot: int, valor: int)
+signal largou(ok: bool, slot: int)
+signal nao_consumiu
+signal skills(lista: Array)
+signal skill_nova(indice: int, numero: int)
+signal skill_saiu(indice: int, numero: int)
+signal skill_animacao(skill: int, quem: int, alvo: int)
+signal area_animacao(skill: int, quem: int, x: int, y: int, giro: int)
+signal efeito(ativo: bool, quem: int, efeito: int)
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -103,6 +116,49 @@ func atacar(alvo: int, acao: int, direcao: int) -> void:
 
 func pegar(item: int) -> void:
 	con.enviar(PackedByteArray([0xC3, 0, 0x22, (item >> 8) & 0xFF, item & 0xFF]))
+
+
+# itens: inventario e 0 (equipamento 0..11, mochila 12..75)
+func mover_item(de: int, para: int, dados: PackedByteArray) -> void:
+	var p := PackedByteArray([0xC3, 0, 0x24, 0, de])
+	p.append_array(dados)
+	p.append_array(PackedByteArray([0, para]))
+	con.enviar(p)
+
+
+func usar_item(slot: int, alvo := 0) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x26, slot, alvo, 0]))
+
+
+func largar_item(x: int, y: int, slot: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x23, x, y, slot]))
+
+
+# skill num alvo (ataque, cura, buff; o alvo pode ser eu mesmo)
+func skill_alvo(skill: int, alvo: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x19, (skill >> 8) & 0xFF, skill & 0xFF, (alvo >> 8) & 0xFF, alvo & 0xFF]))
+
+
+# skill de area: centro (x, y), giro 0..255 e o contador de animacao (1..50, um por pedido)
+var _contador := 1
+
+
+func skill_area(skill: int, x: int, y: int, giro: int, extra := 0) -> int:
+	var c := _contador
+	_contador = 1 if _contador >= 0x32 else _contador + 1
+	con.enviar(PackedByteArray([0xC3, 0, 0x1E, (skill >> 8) & 0xFF, skill & 0xFF, x, y, giro & 0xFF, 0, 0,
+		(extra >> 8) & 0xFF, extra & 0xFF, c]))
+	return c
+
+
+# acertos de uma skill de area que o cliente escolhe (AreaSkillExplicitHits)
+func skill_acertos(skill: int, x: int, y: int, anim: int, alvos: Array) -> void:
+	var c := _contador
+	_contador = 1 if _contador >= 0x32 else _contador + 1
+	var p := PackedByteArray([0xC3, 0, 0xDB, (skill >> 8) & 0xFF, skill & 0xFF, x, y, c, alvos.size()])
+	for a in alvos:
+		p.append_array(PackedByteArray([(a >> 8) & 0xFF, a & 0xFF, anim]))
+	con.enviar(p)
 
 
 func pronto_no_mapa() -> void:
@@ -255,6 +311,33 @@ func _tratar(p: PackedByteArray) -> void:
 			if p[0] == 0xC3:
 				zen.emit(_ler_be(p, 4, 4))
 				return
+		[0xF3, 0x10]:
+			# C4: tamanho em 2 bytes; quantidade e itens de 1 + 12 bytes
+			var itens := {}
+			for i in p[5]:
+				var o := 6 + i * 13
+				if o + 13 > p.size():
+					break
+				itens[p[o]] = item_de(p, o + 1)
+			inventario.emit(itens)
+			return
+		[0xF3, 0x11]:
+			if p[4] == 0xFE:
+				skill_nova.emit(p[6], p[7] | (p[8] << 8))
+			elif p[4] == 0xFF:
+				skill_saiu.emit(p[6], p[7] | (p[8] << 8))
+			else:
+				var lista := []
+				for i in p[4]:
+					var o := 6 + i * 4
+					if o + 4 > p.size():
+						break
+					lista.append({"indice": p[o], "numero": p[o + 1] | (p[o + 2] << 8), "nivel": p[o + 3]})
+				skills.emit(lista)
+			return
+		[0x26, 0xFD]:
+			nao_consumiu.emit()
+			return
 	match cod:
 		0x12:
 			_ler_personagens(p)
@@ -287,6 +370,26 @@ func _tratar(p: PackedByteArray) -> void:
 				for i in p[4]:
 					ids.append(((p[5 + i * 2] << 8) | p[6 + i * 2]) & 0x7FFF)
 				itens_sumiram.emit(ids)
+		0x24:
+			if p[3] == 0xFF:
+				item_nao_moveu.emit()
+			elif p.size() >= 17:
+				item_movido.emit(p[4], item_de(p, 5))
+		0x23:
+			largou.emit(p[3] != 0, p[4])
+		0x28:
+			item_removido.emit(p[3])
+		0x2A:
+			durabilidade.emit(p[3], p[4])
+		0x19:
+			if p.size() >= 9:
+				skill_animacao.emit((p[3] << 8) | p[4], ((p[5] << 8) | p[6]) & 0x7FFF, ((p[7] << 8) | p[8]) & 0x7FFF)
+		0x1E:
+			if p.size() >= 10:
+				area_animacao.emit((p[3] << 8) | p[4], ((p[5] << 8) | p[6]) & 0x7FFF, p[7], p[8], p[9])
+		0x07:
+			if p.size() >= 7:
+				efeito.emit(p[3] != 0, ((p[4] << 8) | p[5]) & 0x7FFF, p[6])
 		0x22:
 			if p.size() == 4:
 				nao_pegou.emit(p[3])
@@ -340,7 +443,8 @@ func _ler_itens(p: PackedByteArray) -> void:
 static func item_de(p: PackedByteArray, o: int) -> Dictionary:
 	return {"numero": p[o] | ((p[o + 3] & 0x80) << 1), "grupo": p[o + 5] >> 4, "nivel": (p[o + 1] >> 3) & 0x0F,
 		"sorte": (p[o + 1] & 0x04) != 0, "skill": (p[o + 1] & 0x80) != 0, "exc": p[o + 3] & 0x3F,
-		"durabilidade": p[o + 2]}
+		"durabilidade": p[o + 2], "opcao": (p[o + 1] & 0x03) | ((p[o + 3] & 0x40) >> 4), "anc": p[o + 4],
+		"bytes": p.slice(o, o + 12)}
 
 
 static func _ler_be(p: PackedByteArray, o: int, n: int) -> int:

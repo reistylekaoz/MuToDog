@@ -354,8 +354,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 func _process(dt: float) -> void:
 	if modo_jogo:
 		var g2 := 0.0
-		if Input.is_key_pressed(KEY_Q): g2 -= 1
-		if Input.is_key_pressed(KEY_E): g2 += 1
+		# no jogo Q W E R sao as pocoes (como no MU): a camera gira nas setas
+		if Input.is_key_pressed(KEY_LEFT): g2 -= 1
+		if Input.is_key_pressed(KEY_RIGHT): g2 += 1
 		giro += g2 * 60.0 * dt
 		_mirar()
 		return
