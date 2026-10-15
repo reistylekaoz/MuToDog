@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('/usr/local/lib/node_modules/playwright');
 
 const [foto, query = '', espera = '5', mais = '0'] = process.argv.slice(2);
-const web = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'build', 'web');
+const web = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'build', process.env.WEB || 'web');
 const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.wasm': 'application/wasm', '.pck': 'application/octet-stream', '.png': 'image/png' };
 const nav = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const page = await nav.newPage({ viewport: { width: 1280, height: 720 } });

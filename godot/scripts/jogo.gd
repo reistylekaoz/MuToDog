@@ -60,6 +60,8 @@ var inv: Inventario
 var loja: Loja
 var amigos: Amigos
 var menu: MenuSistema
+var mover_janela: Movimento   # janela Move (M)
+var _portal_pisado := -1      # portal em que ja pedi pra entrar (so pede de novo depois de sair dele)
 var npc_alvo := -1          # NPC que cliquei: anda ate perto e fala
 var npc_falando := -1       # NPC da janela aberta
 var _zen_antes_venda := 0   # o zen novo chega (C3 22 FE) antes da resposta da venda
@@ -179,6 +181,12 @@ func _ready() -> void:
 			await get_tree().create_timer(2.0).timeout
 			print("TESTE apagando %s" % p.apagar)
 			cli.apagar_amigo(p.apagar), CONNECT_ONE_SHOT)
+	if p.has("mover"):
+		# testes: --mover 4 (Devias) ou --mover 4,3 (Devias e depois Noria), 4 s entre um e outro
+		cli.entrou.connect(func(_i):
+			for idx in str(p.mover).split(","):
+				await get_tree().create_timer(4.0).timeout
+				_mover_para(int(idx), "teste %s" % idx), CONNECT_ONE_SHOT)
 	if p.has("trocar"):
 		cli.entrou.connect(func(_i): _teste_trocar(), CONNECT_ONE_SHOT)
 	if p.has("auto"):
@@ -349,7 +357,12 @@ func _montar_ui() -> void:
 			brilho = mundo.brilho)
 	menu.trocar_personagem.connect(func(): cli.sair_para(1))
 	menu.sair_jogo.connect(func(): cli.sair_para(0))
+	menu.mover.connect(func(): mover_janela.abrir(meu_nivel, meu_zen, minha_classe))
 	hud.add_child(menu)
+	mover_janela = Movimento.new()
+	mover_janela.mapas = mapas
+	mover_janela.ir.connect(_mover_para)
+	hud.add_child(mover_janela)
 	# janela do personagem (C)
 	janela_personagem = PanelContainer.new()
 	janela_personagem.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -581,6 +594,9 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	entidades[cli.meu_id] = eu
 	mundo.seguir = eu
 	_vestir_eu()
+	# chegou em cima de um portal (saida de outro): so conta depois de sair dele
+	var g := mover_janela.portal_em(mapa, x, y)
+	_portal_pisado = int(g[0]) if not g.is_empty() else -1
 
 
 func _objeto_entrou(o: Dictionary) -> void:
@@ -643,12 +659,50 @@ func _objeto_morreu(id: int) -> void:
 
 
 func _mapa_mudou(mapa: int, x: int, y: int) -> void:
+	print("TESTE mapa mudou %d (%d, %d)" % [mapa, x, y])
 	if mapa != mapa_atual:
 		_abrir_mapa(mapa, x, y)
 		_msg("Foi pra %s (%d, %d)." % [mapas.get(str(mapa), "mapa %d" % mapa), x, y])
 	elif eu:
 		eu.teleportar(x, y)
 		_restante.clear()
+
+
+# --- mover de mapa ----------------------------------------------------------------
+
+# janela Move: o servidor confere nivel e zen; se der, chega o MapChanged (_mapa_mudou)
+func _mover_para(indice: int, nome: String) -> void:
+	if eu == null or eu.morto:
+		return
+	_restante.clear()
+	alvo_id = -1
+	item_alvo = -1
+	print("TESTE mover %d %s" % [indice, nome])
+	_msg("Indo pra %s..." % nome)
+	cli.mover_para(indice)
+
+
+# portal do mapa (EnterGate): pisou no retangulo, pede pra entrar, uma vez por pisada
+func _conferir_portal() -> void:
+	if eu == null or eu.morto:
+		return
+	var g := mover_janela.portal_em(mapa_atual, eu.tile.x, eu.tile.y)
+	if g.is_empty():
+		_portal_pisado = -1
+		return
+	if int(g[0]) == _portal_pisado:
+		return
+	_portal_pisado = int(g[0])
+	var precisa := mover_janela.nivel_pedido(int(g[5]), minha_classe)
+	var destino: String = mapas.get(str(int(g[6])), "mapa %d" % g[6])
+	if meu_nivel < precisa:
+		print("TESTE portal %d sem nivel (%d < %d)" % [g[0], meu_nivel, precisa])
+		_msg("[color=#e8b04a]Precisa do nivel %d pra entrar em %s.[/color]" % [precisa, destino])
+		return
+	print("TESTE portal %d pra %s, pisado em %s" % [g[0], destino, eu.tile])
+	_restante.clear()
+	_msg("Entrando em %s..." % destino)
+	cli.entrar_portal(int(g[0]))
 
 
 func _msg(t: String) -> void:
@@ -687,8 +741,6 @@ func _unhandled_input(ev: InputEvent) -> void:
 		return
 	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_C:
 		_botao_barra("personagem")
-	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_M and som:
-		_msg("Som desligado." if som.alternar() else "Som ligado.")
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 		var e := _entidade_na_tela(ev.position)
 		if e and e.tipo == "monstro":
@@ -723,14 +775,20 @@ func andar_ate(t: Vector2i) -> void:
 	_mandar_trecho()
 
 
-# manda ate 15 passos por pacote; o resto vai quando chegar no fim do trecho
+# manda ate 7 passos por pacote; o resto vai quando chegar no fim do trecho.
+# Fora da zona segura o OpenMU (SpeedHackDetectPlugIn) da no maximo 2 s de "credito"
+# e cobra ~250 ms por tile andado desde o pacote anterior: com 15 passos ele acha que e
+# speedhack, corta o caminho e, no 3o aviso, derruba a conexao. Com 7 cabe sempre.
+const PASSOS_POR_PACOTE := 7
+
+
 func _mandar_trecho() -> void:
 	if _restante.is_empty():
 		return
 	var de: Vector2i = eu.tile
 	var dirs := []
 	var ant: Vector2i = de
-	while not _restante.is_empty() and dirs.size() < 15:
+	while not _restante.is_empty() and dirs.size() < PASSOS_POR_PACOTE:
 		var p: Vector2i = _restante[0]
 		var i := ClienteMU.PASSOS.find(p - ant)
 		if i < 0:
@@ -766,7 +824,8 @@ func _process(dt: float) -> void:
 	# a loja fecha se eu andar pra longe do NPC (o servidor tambem esquece)
 	if npc_falando >= 0 and (not entidades.has(npc_falando) or _distancia(eu.tile, entidades[npc_falando].tile) > 5):
 		_fechar_loja()
-	som.atualizar(mapa_atual, seg, mundo.camada1(eu.tile.x, eu.tile.y))
+	som.atualizar(mapa_atual, seg, mundo.camada1(eu.tile.x, eu.tile.y), eu.tile.x, eu.tile.y)
+	_conferir_portal()
 	hud_texto.text = "%s  ·  %s  (%d, %d)%s" % [meu_nome, mapas.get(str(mapa_atual), "?"), eu.tile.x, eu.tile.y, "  ·  zona segura" if seg else ""]
 
 
@@ -1324,9 +1383,14 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k == KEY_U:
 		menu.alternar(brilho)
 		return true
+	if k == KEY_M:
+		mover_janela.alternar(meu_nivel, meu_zen, minha_classe)
+		return true
 	if k == KEY_ESCAPE:
 		if menu.visible:
 			menu.visible = false
+		elif mover_janela.visible:
+			mover_janela.visible = false
 		elif loja.visible:
 			_fechar_loja()
 		elif inv.visible:

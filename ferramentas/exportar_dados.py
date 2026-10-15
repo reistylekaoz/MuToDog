@@ -1,6 +1,9 @@
-"""Tira do banco do OpenMU o que o cliente precisa saber de itens e skills.
-Grava godot/dados/itens_info.json ("grupo,numero" -> [largura, altura, slots, durabilidade, consome, skill])
-e godot/dados/skills.json (numero -> [nome, alcance, tipo, alvo, mana, ag, move_ate_alvo]).
+"""Tira do banco do OpenMU o que o cliente precisa saber de itens, skills e mapas.
+Grava godot/dados/itens_info.json ("grupo,numero" -> [largura, altura, slots, durabilidade, consome, skill]),
+godot/dados/skills.json (numero -> [nome, alcance, tipo, alvo, mana, ag, move_ate_alvo])
+e godot/dados/movimento.json: "lista" = a janela Move (M) [indice, nome, zen, nivel, mapa],
+"portais" = mapa -> [[numero, x1, y1, x2, y2, nivel, mapa de destino]] (EnterGate: pisou, entra),
+"reducao" = classe -> % a menos no nivel pedido (o Magic Gladiator e o Dark Lord pedem 2/3).
 Uso: python3 ferramentas/exportar_dados.py (com o Postgres do OpenMU ligado: ./servidor.sh ligar)"""
 import json, os, subprocess
 
@@ -30,7 +33,23 @@ for s in consulta('''select s."Number" n, split_part(s."Name", '||', 1) nome, s.
     from config."Skill" s'''):
     skills[str(s["n"])] = [s["nome"], s["alcance"], s["tipo"], s["alvo"], s["mana"], s["ag"], s["move"]]
 
+lista = [[w["i"], w["nome"], w["zen"], w["nivel"], w["mapa"]] for w in consulta('''select w."Index" i,
+    split_part(w."Name", '||', 1) nome, w."Costs" zen, w."LevelRequirement" nivel, m."Number" mapa
+    from config."WarpInfo" w join config."ExitGate" x on x."Id" = w."GateId"
+    join config."GameMapDefinition" m on m."Id" = x."MapId" order by w."Index"''')]
+portais = {}
+for g in consulta('''select m."Number" mapa, e."Number" n, e."X1" x1, e."Y1" y1, e."X2" x2, e."Y2" y2,
+    e."LevelRequirement" nivel, tm."Number" destino
+    from config."EnterGate" e join config."GameMapDefinition" m on m."Id" = e."GameMapDefinitionId"
+    join config."ExitGate" t on t."Id" = e."TargetGateId" join config."GameMapDefinition" tm on tm."Id" = t."MapId"
+    order by 1, 2'''):
+    portais.setdefault(str(g["mapa"]), []).append([g["n"], g["x1"], g["y1"], g["x2"], g["y2"], g["nivel"], g["destino"]])
+reducao = {str(c["n"]): c["r"] for c in consulta('''select "Number" n, "LevelWarpRequirementReductionPercent" r
+    from config."CharacterClass" where "LevelWarpRequirementReductionPercent" > 0''')}
+
 dados = os.path.join(AQUI, "godot", "dados")
+json.dump({"lista": lista, "portais": portais, "reducao": reducao}, open(os.path.join(dados, "movimento.json"), "w"),
+          separators=(",", ":"), ensure_ascii=False)
 json.dump(itens, open(os.path.join(dados, "itens_info.json"), "w"), separators=(",", ":"), sort_keys=True)
 json.dump(skills, open(os.path.join(dados, "skills.json"), "w"), separators=(",", ":"), sort_keys=True)
-print(f"{len(itens)} itens, {len(skills)} skills")
+print(f"{len(itens)} itens, {len(skills)} skills, {len(lista)} destinos no Move, {sum(len(v) for v in portais.values())} portais")

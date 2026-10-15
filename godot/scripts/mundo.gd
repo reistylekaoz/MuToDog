@@ -23,6 +23,8 @@ var grade := AStarGrid2D.new()
 var mapa_img: Image
 var ambiente: Ambiente
 var _lista_objetos: Array = []
+# [no, objeto do json] de cada objeto desenhado (o Ambiente acha porta, brilho e fogo por aqui)
+var nos_objetos: Array = []
 # material do GLB -> o mesmo com a luz do MU (objeto.gdshader), um por textura
 var materiais := {}
 # o cliente nao tem esse fator; aqui ele acerta o tom com o jogo original (teclas - e =)
@@ -258,7 +260,7 @@ func _terreno() -> void:
 	mat.set_shader_parameter("mapa", ImageTexture.create_from_image(mapa))
 	mat.set_shader_parameter("tiles", arr)
 	mat.set_shader_parameter("repete", repete)
-	mat.set_shader_parameter("brilho", brilho)
+	mat.set_shader_parameter("brilho", brilho_mapa())
 	var mi := MeshInstance3D.new()
 	mi.name = "Terreno"
 	mi.mesh = st.commit()
@@ -275,7 +277,7 @@ func _objetos() -> int:
 	mu.add_child(raiz)
 	for o in lista:
 		# marcadores de luz e de pose: o cliente original nao desenha
-		if mundo_invisivel(o.m):
+		if mundo_invisivel(o.m) or int(o.t) in Ambiente.ESCONDER.get(numero, []):
 			continue
 		if not cenas.has(o.m):
 			cenas[o.m] = load(pasta + "modelos/%s.glb" % o.m)
@@ -287,6 +289,7 @@ func _objetos() -> int:
 		n.transform = Transform3D(Basis(q) * float(o.s), Vector3(o.p[0], o.p[1], o.p[2]))
 		raiz.add_child(n)
 		_luz_do_mu(n)
+		nos_objetos.append([n, o])
 	return raiz.get_child_count()
 
 
@@ -306,23 +309,29 @@ func _luz_do_mu(n: Node) -> void:
 				m.shader = preload("res://scripts/objeto.gdshader")
 				m.set_shader_parameter("textura", orig.albedo_texture)
 				m.set_shader_parameter("luz_mapa", _luz_tex)
-				m.set_shader_parameter("brilho", brilho)
+				m.set_shader_parameter("brilho", brilho_mapa())
 				if orig.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
 					m.set_shader_parameter("corte", maxf(orig.alpha_scissor_threshold, 0.25))
 				materiais[orig] = m
 			mi.set_surface_override_material(i, materiais[orig])
 
 
+# o brilho escolhido (2,0 na Lorencia) vezes o acerto do mapa: Devias e neve quase branca
+# e a luz pintada dela ja e clara, entao com 2,0 estoura (Ambiente.BRILHO_MAPA)
+func brilho_mapa() -> float:
+	return brilho * float(Ambiente.BRILHO_MAPA.get(numero, 1.0))
+
+
 func definir_brilho(v: float) -> void:
 	brilho = clampf(v, 0.5, 3.0)
 	var t := mu.get_node_or_null("Terreno") as MeshInstance3D
 	if t:
-		t.material_override.set_shader_parameter("brilho", brilho)
-	var g := mu.get_node_or_null("Grama") as MeshInstance3D
-	if g:
-		g.material_override.set_shader_parameter("brilho", brilho)
+		t.material_override.set_shader_parameter("brilho", brilho_mapa())
+	for g in mu.get_children():
+		if g.name.begins_with("Grama"):
+			(g as MeshInstance3D).material_override.set_shader_parameter("brilho", brilho_mapa())
 	for m: ShaderMaterial in materiais.values():
-		m.set_shader_parameter("brilho", brilho)
+		m.set_shader_parameter("brilho", brilho_mapa())
 
 
 func mundo_invisivel(m: String) -> bool:

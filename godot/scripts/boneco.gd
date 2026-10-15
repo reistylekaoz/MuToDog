@@ -29,10 +29,20 @@ const NAO_REPETE := ["morre", "golpe", "ataque", "ataque2", "soco", "espada", "e
 const NPCS := {
 	0: ["monster01_sem0", 0.8], 1: ["monster02_sem0", 0.85], 2: ["monster03", 0.5], 3: ["monster10", 0.4],
 	4: ["monster01", 1.15], 6: ["monster05", 0.85], 7: ["monster06", 1.6], 14: ["esqueleto1", 0.95],
-	226: ["treinador", 1.0], 229: ["placa", 1.0], 230: ["alex", 1.0], 236: ["esqueleto2", 1.0],
+	226: ["treinador", 1.0], 229: ["marlon", 1.0], 230: ["alex", 1.0], 236: ["esqueleto2", 1.0],
 	240: ["baz", 1.0], 247: ["guarda_besta", 1.0], 248: ["martin", 1.0], 249: ["placa", 1.0], 250: ["harold", 1.0],
 	251: ["hanzo", 0.95], 253: ["amy", 1.0], 254: ["pasi", 1.0], 255: ["lumen", 1.0], 257: ["espirito", 1.0],
 	371: ["leo", 1.0], 375: ["leo", 1.0], 543: ["duprian", 1.0], 547: ["julia", 1.0], 568: ["zyro", 0.8],
+	# Devias e Noria (CreateMonster do cliente S6: modelo, escala e, em 3o, a malha que brilha somada)
+	20: ["monster14", 1.4], 21: ["monster15", 0.95], 22: ["monster16", 1.0, 0], 23: ["monster17", 1.15],
+	24: ["monster18", 1.0], 25: ["monster19", 1.1, 2], 26: ["monster20", 0.8], 27: ["monster21", 1.1],
+	28: ["monster22", 0.8, 1], 29: ["monster23", 0.95], 30: ["monster24", 0.75], 31: ["monster25", 1.3],
+	32: ["monster26", 1.0], 33: ["monster20_chefe", 1.2],
+	233: ["mensageiro", 1.0, 2], 235: ["sevina", 1.0], 237: ["charon", 1.0],
+	238: ["goblin_caos", 1.0, 1], 241: ["mestre_guilda", 1.0], 242: ["lala", 1.0, 1], 243: ["eo", 1.0],
+	244: ["caren", 1.0], 245: ["izabel", 1.0], 246: ["zienna", 1.0], 256: ["lahap", 1.0], 379: ["fogos", 1.0],
+	385: ["mirage", 0.95], 406: ["devin", 1.0], 450: ["cerejeira", 1.0], 451: ["cerejeira_arvore", 1.0], 478: ["lahap", 1.0],
+	522: ["jerinteu", 1.0], 540: ["lugard", 1.0], 544: ["vanert", 1.0], 566: ["felicia", 1.0],
 }
 # classe do OpenMU (classes.json) >> 2 -> corpo padrao da classe
 const CLASSES := ["classe_dw", "classe_dk", "classe_elf", "classe_mg", "classe_dl", "classe_sum", "classe_rf"]
@@ -63,7 +73,12 @@ static func info() -> Dictionary:
 
 static func do_npc(numero: int) -> Boneco:
 	var m: Array = NPCS.get(numero, [])
-	return novo(m[0], m[1]) if not m.is_empty() else null
+	if m.is_empty():
+		return null
+	var b := novo(m[0], m[1])
+	if b and m.size() > 2:
+		b.somar_malha(m[2])
+	return b
 
 
 static func da_classe(classe: int) -> Boneco:
@@ -101,6 +116,25 @@ static func novo(nome: String, escala := 1.0) -> Boneco:
 			if n == "morre":
 				a.length = maxf(a.length - 1.0, 0.1)
 	return b
+
+
+# BlendMesh do cliente: a malha n desenha somada (brilha), como gelo, asa de besouro e o caldeirao do Goblin
+func somar_malha(n: int) -> void:
+	var i := 0
+	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for s in mi.mesh.get_surface_count():
+			var orig := mi.mesh.surface_get_material(s) as BaseMaterial3D
+			if i == n and orig:
+				var m := orig.duplicate() as BaseMaterial3D
+				m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+				m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+				m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+				m.cull_mode = BaseMaterial3D.CULL_DISABLED
+				mi.set_surface_override_material(s, m)
+			i += 1
 
 
 func tem(a: String) -> bool:

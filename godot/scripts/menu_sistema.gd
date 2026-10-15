@@ -8,6 +8,7 @@ signal musica(v: float)
 signal efeitos(v: float)
 signal brilho(v: float)
 signal trocar_personagem
+signal mover
 signal sair_jogo
 
 const ARQ := "user://opcoes.cfg"
@@ -45,7 +46,7 @@ func _ready() -> void:
 	var b := _barra("Brilho (- e = tambem mudam)", 2.0, 0.5, 3.0, func(x): brilho.emit(x))
 	_brilho = b.get_child(1)
 	v.add_child(b)
-	for par in [["Escolher outro personagem", trocar_personagem], ["Sair do jogo", sair_jogo]]:
+	for par in [["Mover de mapa (M)", mover], ["Escolher outro personagem", trocar_personagem], ["Sair do jogo", sair_jogo]]:
 		var bt := Button.new()
 		bt.text = par[0]
 		var sinal: Signal = par[1]

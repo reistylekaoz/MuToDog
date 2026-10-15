@@ -35,6 +35,12 @@ func _ready() -> void:
 	var col := mini(8, nomes.size())
 	for i in nomes.size():
 		var b := Boneco.novo(nomes[i])
+		# a malha que brilha somada, como no jogo (Boneco.NPCS, 3o valor)
+		for k in Boneco.NPCS:
+			var m: Array = Boneco.NPCS[k]
+			if b and m[0] == nomes[i] and m.size() > 2:
+				b.somar_malha(m[2])
+				break
 		if b == null:
 			continue
 		b.rotation_degrees.y = 180

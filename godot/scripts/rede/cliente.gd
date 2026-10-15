@@ -173,6 +173,18 @@ func skill_acertos(skill: int, x: int, y: int, anim: int, alvos: Array) -> void:
 	con.enviar(p)
 
 
+# --- mover de mapa --------------------------------------------------------------
+
+# pisou num portal (EnterGate do mapa): o servidor confere nivel e posicao e manda MapChanged
+func entrar_portal(numero: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x1C, 0, numero & 0xFF, (numero >> 8) & 0xFF, 0, 0]))
+
+
+# janela Move (M): indice da lista do servidor (WarpInfo); paga o zen se puder ir
+func mover_para(indice: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x8E, 0x02, 0, 0, 0, 0, indice & 0xFF, (indice >> 8) & 0xFF]))
+
+
 # --- NPC, loja ------------------------------------------------------------------
 
 func falar_npc(id: int) -> void:

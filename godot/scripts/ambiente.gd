@@ -1,10 +1,15 @@
 class_name Ambiente
 extends Node3D
 # O que da vida ao mapa, no jeito do cliente S6 (ZzzLodTerrain, ZzzObject, ZzzEffect):
-# - grama: um "cartao" em pe em cada tile de grama sem mistura, balancando no vento;
-# - fogo e fumaca nos objetos que o cliente acende (tocha, fogueira, ponte, portao);
+# - grama: um "cartao" em pe em cada tile de grama sem mistura, balancando no vento
+#   (textura do proprio mapa, camada 1 = 0, 1 ou 2: TileGrass01..03.tga);
+# - fogo e fumaca nos objetos que o cliente acende (tocha, fogueira, ponte, portao, lareira);
 # - luz do fogo pintada no chao (AddTerrainLight, raio de 4 tiles), piscando;
-# - a bica d'agua da praca com a textura correndo.
+# - a bica d'agua da praca com a textura correndo;
+# - a malha que o cliente soma (BlendMesh: janela, cristal, flor que brilha) e a textura
+#   que corre (agua, cachoeira);
+# - Devias: neve caindo, porta que abre quando o personagem chega perto, portal;
+# - Noria: folhas no vento e o portal.
 # A agua do chao corre no proprio shader do terreno (terreno.gdshader).
 
 const PASTA := "res://dados/ambiente/"
@@ -19,15 +24,42 @@ const FOGOS := {
 		"doungeongate01": [[0, -150, -150, 140], [0, 150, -150, 140]],
 		"firelight01": [[0, 0, 0, 200]], "firelight02": [[0, 0, -30, 60]], "bonfire01": [[0, 0, 0, 60]],
 	},
+	# Devias: lareira (30, fogo e fumaca a 160) e tocha (66, CreateFire a 50)
+	3: {"object31": [[0, 0, 0, 160], [1, 0, 0, 160]], "object67": [[0, 0, 0, 50]]},
 }
 # luz que nao e fogo: poste e vela (cor media do cliente e raio em tiles)
 const LUZES := {
 	1: {"streetlight01": [Color(0.65, 0.52, 0.39), 3], "candle01": [Color(0.45, 0.27, 0.09), 3]},
 }
+# objeto que o cliente nao desenha (HiddenMesh = -2): marcador de pose e de som (tipo do .obj)
+const ESCONDER := {3: [91, 100], 4: [38]}
+# brilho do mapa sobre o escolhido (a neve de Devias estoura com o 2,0 da Lorencia)
+const BRILHO_MAPA := {3: 0.5}
+# tipo -> [malha somada (BlendMesh), rolagem da textura em U e V por segundo]
+# (CreateObject e MoveObject do ZzzObject.cpp; a Lorencia segue como foi aprovada)
+const SOMA := {
+	3: {19: [0, Vector2.ZERO], 92: [0, Vector2.ZERO], 93: [0, Vector2.ZERO], 54: [1, Vector2.ZERO],
+		56: [1, Vector2.ZERO], 78: [3, Vector2.ZERO]},
+	4: {1: [1, Vector2.ZERO], 9: [3, Vector2.ZERO], 17: [0, Vector2.ZERO], 37: [0, Vector2.ZERO],
+		19: [0, Vector2.ZERO], 18: [2, Vector2(0, 1)], 39: [1, Vector2.ZERO], 41: [0, Vector2(0, 0.5)]},
+}
+# tipo -> [malha, rolagem] da textura que corre sem somar (StreamMesh: a agua da Noria)
+const CORRE := {4: {42: [0, Vector2(-2, 0)], 43: [0, Vector2(2, 0)]}}
+# portal (MODEL_WARP do MapManager.cpp): posicao em unidades do MU e altura das pecas
+const PORTAL := {3: [Vector2(53 * 100 + 50, 92 * 100 + 20), 360.0], 4: [Vector2(223 * 100, 30 * 100), 350.0]}
+# Devias: porta que corre (86) e porta que gira (20, 65, 88) quando o heroi chega a 2 tiles
+const PORTAS := {3: [86, 20, 65, 88]}
 const COR_FOGO := Color(0.85, 0.51, 0.34)   # Luminosity media 0,85 x (1, 0,6, 0,4)
 
 var mundo: Node3D
 var _bica: Array[ShaderMaterial] = []
+var _correm: Array = []        # [material, rolagem por segundo, parametro]
+var _piscam: Array[ShaderMaterial] = []
+var _portas: Array = []        # [no, tipo, posicao original, giro original (graus), aberta]
+var _portal: Node3D
+var _cai: CPUParticles3D       # neve (Devias) ou folhas (Noria) em volta do heroi
+var _cai2: CPUParticles3D
+var som_porta: AudioStreamPlayer
 var _t := 0.0
 var fogos := 0
 var gramas := 0
@@ -56,6 +88,9 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 			_luz(extra, p, luzes_mapa[o.m][0], luzes_mapa[o.m][1])
 		if o.m == "waterspout01":
 			_bica_agua(o)
+	_malhas_especiais(m)
+	_montar_portal(m)
+	_queda(m)
 	var img := Image.create_from_data(TILES, TILES, false, Image.FORMAT_RGBF, extra.to_byte_array())
 	var tex_extra := ImageTexture.create_from_image(img)
 	var terreno := m.mu.get_node_or_null("Terreno") as MeshInstance3D
@@ -64,6 +99,7 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 	for mat: ShaderMaterial in m.materiais.values():
 		mat.set_shader_parameter("luz_extra", tex_extra)
 	_grama(mapa, luz, img)
+	print("TESTE ambiente %d · somadas %d · correm %d · portas %d · portal %s · queda %s" % [m.numero, _somadas, _correm.size(), _portas.size(), _portal != null, _cai != null])
 
 
 # AddTerrainLight: soma a luz nos vertices em volta, caindo em linha reta ate o raio
@@ -187,72 +223,315 @@ func _bica_agua(o: Dictionary) -> void:
 				_bica.append(copia)
 
 
-# TERRAIN_MAP_GRASS: em cada tile de grama (camada 1 = 0) sem mistura, um cartao
-# em pe na borda de baixo do tile, 128 de altura, topo puxado -50 em X, textura
-# com deslocamento sorteado por linha. O vento mexe o topo no shader.
+# TERRAIN_MAP_GRASS: em cada tile de grama (camada 1 = 0, 1 ou 2, com a textura
+# TileGrass01..03 do mapa) sem mistura, um cartao em pe na borda de baixo do tile,
+# altura = 2x a da textura, topo puxado -50 em X, textura com deslocamento sorteado
+# por linha. O vento mexe o topo no shader.
 func _grama(mapa: Image, luz: Image, extra: Image) -> void:
-	var tex := load(PASTA + "grama.png") as Texture2D
-	if tex == null:
-		return
-	var alto := float(tex.get_height()) * 2.0
-	var largura := 64.0 / float(tex.get_width())
+	var texs := {}
+	for i in 3:
+		var c: String = mundo.pasta + "grama/%d.png" % i
+		if ResourceLoader.exists(c):
+			texs[i] = load(c)
+	if texs.is_empty() and mundo.numero == 1 and ResourceLoader.exists(PASTA + "grama.png"):
+		texs[0] = load(PASTA + "grama.png")
 	var desloc := PackedFloat32Array()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1
 	for y in TILES:
 		desloc.append(float(rng.randi() % 4) / 4.0)
-	var vs := PackedVector3Array()
-	var uvs := PackedVector2Array()
-	var cores := PackedColorArray()
-	var idx := PackedInt32Array()
-	for y in TILES - 1:
-		for x in TILES - 1:
-			if int(round(mapa.get_pixel(x, y).r * 255.0)) != 0:
+	for camada in texs:
+		var tex: Texture2D = texs[camada]
+		var alto := float(tex.get_height()) * 2.0
+		var largura := 64.0 / float(tex.get_width())
+		var vs := PackedVector3Array()
+		var uvs := PackedVector2Array()
+		var cores := PackedColorArray()
+		var idx := PackedInt32Array()
+		for y in TILES - 1:
+			for x in TILES - 1:
+				if int(round(mapa.get_pixel(x, y).r * 255.0)) != camada:
+					continue
+				if mapa.get_pixel(x, y).b > 0.0 or mapa.get_pixel(x + 1, y).b > 0.0 \
+						or mapa.get_pixel(x, y + 1).b > 0.0 or mapa.get_pixel(x + 1, y + 1).b > 0.0:
+					continue
+				# sem chao (TW_NOGROUND) o cliente nem desenha o tile
+				if mundo.atributos.size() > 0 and int(round(mapa.get_pixel(x, y).a * 255.0)) & 0x08:
+					continue
+				var su := x * largura + desloc[y]
+				var b0 := Vector3(x * 100.0, (y + 1) * 100.0, mundo.altura_em(x, y + 1))
+				var b1 := Vector3((x + 1) * 100.0, (y + 1) * 100.0, mundo.altura_em(x + 1, y + 1))
+				var n := vs.size()
+				vs.append(b0 + Vector3(-50, 0, alto))
+				vs.append(b1 + Vector3(-50, 0, alto))
+				vs.append(b1)
+				vs.append(b0)
+				uvs.append(Vector2(su, 0))
+				uvs.append(Vector2(su + largura, 0))
+				uvs.append(Vector2(su + largura, 1))
+				uvs.append(Vector2(su, 1))
+				# luz do vertice: a do mapa mais a do fogo (o cliente usa a do tile e do vizinho)
+				for c in [Vector2i(x, y), Vector2i(x + 1, y), Vector2i(x + 1, y + 1), Vector2i(x, y + 1)]:
+					var l := luz.get_pixel(c.x, c.y) + extra.get_pixel(c.x, c.y)
+					cores.append(Color(minf(l.r, 1.0), minf(l.g, 1.0), minf(l.b, 1.0)))
+				idx.append_array([n, n + 1, n + 2, n, n + 2, n + 3])
+		if vs.is_empty():
+			continue
+		gramas += vs.size() / 4
+		var arr := []
+		arr.resize(Mesh.ARRAY_MAX)
+		arr[Mesh.ARRAY_VERTEX] = vs
+		arr[Mesh.ARRAY_TEX_UV] = uvs
+		arr[Mesh.ARRAY_COLOR] = cores
+		arr[Mesh.ARRAY_INDEX] = idx
+		var malha := ArrayMesh.new()
+		malha.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+		var mat := ShaderMaterial.new()
+		mat.shader = load("res://scripts/grama.gdshader")
+		mat.set_shader_parameter("textura", tex)
+		mat.set_shader_parameter("brilho", mundo.brilho_mapa())
+		var mi := MeshInstance3D.new()
+		mi.name = "Grama" if camada == 0 else "Grama%d" % camada
+		mi.mesh = malha
+		mi.material_override = mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mundo.mu.add_child(mi)
+
+
+var _somadas := 0
+
+
+# BlendMesh: a malha n do objeto vai somada (RENDER_BRIGHT), sem a luz do chao;
+# StreamMesh: a textura corre. Um material por textura do modelo, como no mundo.gd.
+func _malhas_especiais(m: Node3D) -> void:
+	var soma: Dictionary = SOMA.get(m.numero, {})
+	var corre: Dictionary = CORRE.get(m.numero, {})
+	var portas: Array = PORTAS.get(m.numero, [])
+	var feitos := {}
+	for par in m.nos_objetos:
+		var n: Node3D = par[0]
+		var t := int(par[1].t)
+		if t in portas:
+			var q: Array = par[1].q
+			var giro := fposmod(rad_to_deg(2.0 * atan2(q[2], q[3])), 360.0)
+			_portas.append([n, t, n.transform.origin, roundf(giro), false])
+		if not soma.has(t) and not corre.has(t):
+			continue
+		var info: Array = soma[t] if soma.has(t) else corre[t]
+		var somar := soma.has(t)
+		var i := 0
+		for mi: MeshInstance3D in n.find_children("*", "MeshInstance3D", true, false):
+			if mi.mesh == null:
 				continue
-			if mapa.get_pixel(x, y).b > 0.0 or mapa.get_pixel(x + 1, y).b > 0.0 \
-					or mapa.get_pixel(x, y + 1).b > 0.0 or mapa.get_pixel(x + 1, y + 1).b > 0.0:
-				continue
-			var su := x * largura + desloc[y]
-			var b0 := Vector3(x * 100.0, (y + 1) * 100.0, mundo.altura_em(x, y + 1))
-			var b1 := Vector3((x + 1) * 100.0, (y + 1) * 100.0, mundo.altura_em(x + 1, y + 1))
-			var n := vs.size()
-			vs.append(b0 + Vector3(-50, 0, alto))
-			vs.append(b1 + Vector3(-50, 0, alto))
-			vs.append(b1)
-			vs.append(b0)
-			uvs.append(Vector2(su, 0))
-			uvs.append(Vector2(su + largura, 0))
-			uvs.append(Vector2(su + largura, 1))
-			uvs.append(Vector2(su, 1))
-			# luz do vertice: a do mapa mais a do fogo (o cliente usa a do tile e do vizinho)
-			for c in [Vector2i(x, y), Vector2i(x + 1, y), Vector2i(x + 1, y + 1), Vector2i(x, y + 1)]:
-				var l := luz.get_pixel(c.x, c.y) + extra.get_pixel(c.x, c.y)
-				cores.append(Color(minf(l.r, 1.0), minf(l.g, 1.0), minf(l.b, 1.0)))
-			idx.append_array([n, n + 1, n + 2, n, n + 2, n + 3])
-	gramas = vs.size() / 4
-	if gramas == 0:
+			for s in mi.mesh.get_surface_count():
+				if i == info[0]:
+					var orig := mi.mesh.surface_get_material(s) as BaseMaterial3D
+					if orig == null:
+						continue
+					var chave := [orig, somar]
+					if not feitos.has(chave):
+						feitos[chave] = _material_especial(m, orig, somar, info[1], t)
+					mi.set_surface_override_material(s, feitos[chave])
+					_somadas += 1 if somar else 0
+				i += 1
+
+
+func _material_especial(m: Node3D, orig: BaseMaterial3D, somar: bool, rolagem: Vector2, t: int) -> ShaderMaterial:
+	var mat: ShaderMaterial
+	if somar:
+		mat = ShaderMaterial.new()
+		mat.shader = EfeitoMU.SHADER
+		mat.set_shader_parameter("tex", orig.albedo_texture)
+		mat.set_shader_parameter("modo", 1)
+		mat.set_shader_parameter("cor", Color(1, 1, 1))
+		if rolagem != Vector2.ZERO:
+			_correm.append([mat, rolagem, "uv_desl"])
+		# Devias 78: a luz da malha somada pisca 0,4..0,7 (BlendMeshLight sorteado a cada quadro)
+		if m.numero == 3 and t == 78:
+			_piscam.append(mat)
+	else:
+		mat = (m.materiais[orig] as ShaderMaterial).duplicate()
+		m.materiais[orig.duplicate()] = mat   # segue o brilho (teclas - e =)
+		_correm.append([mat, rolagem, "rolagem"])
+	return mat
+
+
+# MODEL_WARP: tres discos somados um atras do outro (warp01, warp02, warp03), girando
+func _montar_portal(m: Node3D) -> void:
+	if not PORTAL.has(m.numero) or not ResourceLoader.exists(m.pasta + "warp01.glb"):
 		return
-	var arr := []
-	arr.resize(Mesh.ARRAY_MAX)
-	arr[Mesh.ARRAY_VERTEX] = vs
-	arr[Mesh.ARRAY_TEX_UV] = uvs
-	arr[Mesh.ARRAY_COLOR] = cores
-	arr[Mesh.ARRAY_INDEX] = idx
-	var malha := ArrayMesh.new()
-	malha.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://scripts/grama.gdshader")
-	mat.set_shader_parameter("textura", tex)
-	mat.set_shader_parameter("brilho", mundo.brilho)
-	var mi := MeshInstance3D.new()
-	mi.name = "Grama"
-	mi.mesh = malha
-	mi.material_override = mat
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mundo.mu.add_child(mi)
+	var xy: Vector2 = PORTAL[m.numero][0]
+	var z: float = m.altura_em(xy.x / 100.0, xy.y / 100.0) + PORTAL[m.numero][1]
+	_portal = Node3D.new()
+	_portal.name = "Portal"
+	add_child(_portal)
+	_portal.position = _no_mundo(Vector3(xy.x, xy.y, z))
+	_portal.rotation_degrees.y = 10.0   # Angle (0, 0, 10) do cliente
+	# Devias: warp01, 02, 03 a 0, 4 e 20 de Y; Noria: 01, 02, 01, 02, 03 a 0, 4, 8, 12 e 20
+	var pecas: Array = [[1, 0.0], [2, 4.0], [3, 20.0]] if m.numero == 3 else [[1, 0.0], [2, 4.0], [1, 8.0], [2, 12.0], [3, 20.0]]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = m.numero
+	for p in pecas:
+		var cena := load(m.pasta + "warp0%d.glb" % p[0]) as PackedScene
+		var no: Node3D = cena.instantiate()
+		no.rotation_degrees = Vector3(-90, 180, 0)
+		var base := Node3D.new()
+		base.position = Vector3(0, 0, -p[1] / 100.0)
+		# o cliente sorteia o tamanho (1,3..1,8) e a velocidade de cada peca
+		var esc := 1.3 + rng.randf() * 0.5
+		base.scale = Vector3.ONE * 0.01 * esc
+		base.set_meta("vel", (rng.randf() * 0.1 + 0.01) * 25.0 * (1.0 if p[0] != 2 else -1.0))
+		base.add_child(no)
+		_portal.add_child(base)
+		for mi: MeshInstance3D in no.find_children("*", "MeshInstance3D", true, false):
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			for s in mi.mesh.get_surface_count():
+				var orig := mi.get_active_material(s) as BaseMaterial3D
+				var mat := ShaderMaterial.new()
+				mat.shader = EfeitoMU.SHADER
+				mat.set_shader_parameter("tex", orig.albedo_texture if orig else null)
+				mat.set_shader_parameter("modo", 1)
+				mat.set_shader_parameter("cor", Color(0.8, 0.8, 0.8))
+				mi.set_surface_override_material(s, mat)
+
+
+# Devias: neve (leaf01 e, 1 em 10, leaf02 maior) caindo inclinada em volta do heroi
+# (CreateDeviasSnow: 8..23 por quadro de 1/25 s, angulo -30 em X); Noria: folhas
+# soltas no vento pra -X (CreateAtlanseLeaf). 80 de cada vez, como o cliente.
+func _queda(m: Node3D) -> void:
+	if not m.modo_jogo or not ResourceLoader.exists(m.pasta + "folha1.png"):
+		return
+	if m.numero == 3:
+		_cai = _particulas(load(m.pasta + "folha1.png"), 72, 0.08, true)
+		if ResourceLoader.exists(m.pasta + "folha2.png"):
+			_cai2 = _particulas(load(m.pasta + "folha2.png"), 8, 0.16, true)
+	elif m.numero == 4:
+		_cai = _particulas(load(m.pasta + "folha1.png"), 80, 0.14, false)
+
+
+func _particulas(tex: Texture2D, n: int, tam: float, neve: bool) -> CPUParticles3D:
+	var c := CPUParticles3D.new()
+	c.amount = n
+	c.local_coords = false
+	c.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	var q := QuadMesh.new()
+	q.size = Vector2(tam, tam)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_texture = tex
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	q.material = mat
+	c.mesh = q
+	var g := Gradient.new()
+	if neve:
+		# cai de 2 a 4 m acima do heroi a 2..5,75 m/s e apaga no chao
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		c.lifetime = 1.4
+		c.emission_box_extents = Vector3(8, 1, 7)
+		c.direction = Vector3(0, -1, 0).rotated(Vector3.RIGHT, deg_to_rad(30))
+		c.spread = 4.0
+		c.initial_velocity_min = 2.0
+		c.initial_velocity_max = 5.75
+		c.gravity = Vector3.ZERO
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.add_point(0.75, Color(1, 1, 1, 1))
+		g.set_color(g.get_point_count() - 1, Color(1, 1, 1, 0))
+	else:
+		# folha: voa pra -X a 1,6..3,2 m/s, sobe e desce devagar e gira
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		c.lifetime = 6.0
+		c.emission_box_extents = Vector3(8, 1.5, 7)
+		c.direction = Vector3(-1, 0, 0)
+		c.spread = 15.0
+		c.initial_velocity_min = 1.6
+		c.initial_velocity_max = 3.2
+		c.gravity = Vector3(0, -0.15, 0)
+		c.angular_velocity_min = -180.0
+		c.angular_velocity_max = 180.0
+		c.angle_min = 0.0
+		c.angle_max = 360.0
+		mat.particles_anim_h_frames = 1
+		g.set_color(0, Color(1, 1, 1, 0))
+		g.add_point(0.1, Color(1, 1, 1, 1))
+		g.add_point(0.85, Color(1, 1, 1, 1))
+		g.set_color(g.get_point_count() - 1, Color(1, 1, 1, 0))
+	c.color_ramp = g
+	c.preprocess = c.lifetime
+	add_child(c)
+	return c
+
+
+# porta de Devias (MoveObject): a 200 do heroi a de correr anda (200 - d) * 2 pro lado
+# que ela aponta; a de girar vai pra 30 - (200 - d) * 0,5 graus (ou o equivalente do lado
+# dela). Longe, volta: o giro pelo TurnAngle2 de 10 graus e a posicao 20% por quadro.
+func _mexer_portas(dt: float) -> void:
+	var heroi: Node3D = mundo.seguir
+	if heroi == null or not is_instance_valid(heroi):
+		return
+	var hp := Vector2(heroi.global_position.x, -heroi.global_position.z) * 100.0
+	var k := minf(dt * 25.0, 1.0)
+	for p in _portas:
+		var n: Node3D = p[0]
+		var orig: Vector3 = p[2]
+		var giro0: float = p[3]
+		var d := hp.distance_to(Vector2(orig.x, orig.y))
+		var b := n.transform.basis
+		var esc := b.get_scale().x
+		if d < 200.0:
+			if not p[4]:
+				p[4] = true
+				_tocar_porta(p[1] == 86)
+			if p[1] == 86:
+				var desl := {90.0: Vector3(0, 1, 0), 270.0: Vector3(0, -1, 0), 0.0: Vector3(1, 0, 0), 180.0: Vector3(-1, 0, 0)}
+				n.transform.origin = orig + desl.get(giro0, Vector3.ZERO) * (200.0 - d) * 2.0
+			else:
+				var alvo := {90.0: 30.0 - (200.0 - d) * 0.5, 270.0: 330.0 + (200.0 - d) * 0.5,
+					0.0: 300.0 - (200.0 - d) * 0.5, 180.0: 240.0 + (200.0 - d) * 0.5}
+				n.transform.basis = Basis(Vector3(0, 0, 1), deg_to_rad(alvo.get(giro0, giro0))) * esc
+		else:
+			p[4] = false
+			n.transform.origin = n.transform.origin.lerp(orig, 0.2 * k)
+			if p[1] != 86:
+				var atual := fposmod(rad_to_deg(2.0 * atan2(n.quaternion.z, n.quaternion.w)), 360.0)
+				var dif := wrapf(giro0 - atual, -180.0, 180.0)
+				var passo := clampf(dif, -10.0 * k, 10.0 * k)
+				n.transform.basis = Basis(Vector3(0, 0, 1), deg_to_rad(atual + passo)) * esc
+
+
+func _tocar_porta(correr: bool) -> void:
+	if som_porta == null:
+		som_porta = AudioStreamPlayer.new()
+		som_porta.volume_db = -10.0
+		add_child(som_porta)
+	var c := PASTA + ("porta_castelo.wav" if correr else "porta.wav")
+	if ResourceLoader.exists(c):
+		som_porta.stream = load(c)
+		som_porta.play()
 
 
 func _process(dt: float) -> void:
 	_t += dt
 	for m in _bica:
 		m.set_shader_parameter("rolagem", Vector2(0, -fmod(_t, 1.0)))
+	for c in _correm:
+		var r: Vector2 = c[1] * _t
+		(c[0] as ShaderMaterial).set_shader_parameter(c[2], Vector2(fposmod(r.x, 1.0), fposmod(r.y, 1.0)))
+	if not _piscam.is_empty():
+		var l := randf_range(0.4, 0.8)
+		for m in _piscam:
+			m.set_shader_parameter("cor", Color(l, l, l))
+	if not _portas.is_empty():
+		_mexer_portas(dt)
+	if _portal:
+		for b: Node3D in _portal.get_children():
+			b.rotate_object_local(Vector3(0, 0, 1), deg_to_rad(float(b.get_meta("vel")) * 10.0) * dt)
+	# a neve e as folhas nascem em volta do heroi: de -8 a +8 m em X, de -5 a +9 m em Y do MU
+	if _cai and mundo.seguir and is_instance_valid(mundo.seguir):
+		var h: Vector3 = mundo.seguir.global_position
+		var alto := 3.0 if mundo.numero == 3 else 2.0
+		for c in [_cai, _cai2]:
+			if c:
+				c.global_position = h + Vector3(0, alto, -2.0)
