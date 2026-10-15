@@ -162,6 +162,8 @@ func _process(dt: float) -> void:
 func _animar(a: String) -> void:
 	if boneco == null or morto or boneco.acao == a or boneco.acao.trim_suffix("_f") == a:
 		return
+	if boneco.nadar and boneco.acao == Boneco.NADO.get(a, ""):
+		return
 	if a == "parado" and boneco.acao in Boneco.NAO_REPETE:
 		boneco._fila = "parado"
 		return

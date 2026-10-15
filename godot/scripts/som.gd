@@ -7,11 +7,14 @@ extends Node
 # ate o fim e nao volta; trocou de mapa, para.
 # Vento (aWind.wav): Lorencia menos na taverna, Devias menos no chao 3 e do 10 pra cima
 # (dentro das casas), Noria sempre, com a floresta (aForest.wav) de vez em quando.
+# Lost Tower (lost_tower_a.mp3 + aTower.wav) e Atlans (atlans.mp3 + aWater.wav): musica
+# e fundo no mapa todo, sem parar; os dois moram no pacote do mapa (dados/mundo<N>/).
 
 const PASTA := "res://dados/ambiente/"
 var musica := AudioStreamPlayer.new()
 var vento := AudioStreamPlayer.new()
 var floresta := AudioStreamPlayer.new()
+var fundo := AudioStreamPlayer.new()
 var mudo := false
 var _faixa := ""
 var _mapa := -1
@@ -24,6 +27,8 @@ func _ready() -> void:
 	add_child(musica)
 	add_child(vento)
 	add_child(floresta)
+	fundo.volume_db = -12.0
+	add_child(fundo)
 	var w := load(PASTA + "vento.wav") as AudioStreamWAV
 	if w:
 		w.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -40,7 +45,25 @@ func atualizar(mapa: int, seguro: bool, tile: int, x := 0, y := 0) -> void:
 		_mapa = mapa
 		musica.stop()
 		floresta.stop()
+		fundo.stop()
+		vento.stop()
 		_faixa = ""
+		var pasta := "res://dados/mundo%d/" % (mapa + 1)
+		if ResourceLoader.exists(pasta + "fundo.wav"):
+			var w := load(pasta + "fundo.wav") as AudioStreamWAV
+			w.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			w.loop_end = int(w.get_length() * w.mix_rate)
+			fundo.stream = w
+			fundo.play()
+			print("TESTE fundo %d" % mapa)
+	if mapa in [4, 7] and (_faixa == "" or not musica.playing):
+		var mp := "res://dados/mundo%d/musica.mp3" % (mapa + 1)
+		if ResourceLoader.exists(mp):
+			_faixa = mp
+			musica.stream = load(mp)
+			musica.play()
+			print("TESTE musica %d" % mapa)
+		return
 	var quer := ""
 	if seguro:
 		match mapa:
@@ -71,6 +94,7 @@ func volumes(v_musica: float, v_efeitos: float) -> void:
 	musica.volume_db = -8.0 + linear_to_db(maxf(v_musica, 0.001) / 0.8)
 	vento.volume_db = -14.0 + linear_to_db(maxf(v_efeitos, 0.001) / 0.8)
 	floresta.volume_db = -12.0 + linear_to_db(maxf(v_efeitos, 0.001) / 0.8)
+	fundo.volume_db = floresta.volume_db
 
 
 func alternar() -> bool:
@@ -79,5 +103,7 @@ func alternar() -> bool:
 		musica.stop()
 		vento.stop()
 		floresta.stop()
+		fundo.stop()
 		_faixa = ""
+		_mapa = -1
 	return mudo

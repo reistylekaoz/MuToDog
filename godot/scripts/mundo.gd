@@ -36,6 +36,7 @@ var _luz_tex: Texture2D
 func _ready() -> void:
 	if not modo_jogo:
 		_ler_parametros()
+		await PacoteMapa.carregar(self, numero)
 	pasta = "res://dados/mundo%d/" % numero
 	mu = Node3D.new()
 	mu.name = "MU"
@@ -261,6 +262,17 @@ func _terreno() -> void:
 	mat.set_shader_parameter("tiles", arr)
 	mat.set_shader_parameter("repete", repete)
 	mat.set_shader_parameter("brilho", brilho_mapa())
+	if ResourceLoader.exists(pasta + "agua/0.png"):
+		var quadros: Array[Image] = []
+		for i in 32:
+			var q := (load(pasta + "agua/%d.png" % i) as Texture2D).get_image()
+			q.convert(Image.FORMAT_RGBA8)
+			q.generate_mipmaps()
+			quadros.append(q)
+		var aq := Texture2DArray.new()
+		aq.create_from_images(quadros)
+		mat.set_shader_parameter("agua_quadros", aq)
+		mat.set_shader_parameter("agua_soma", true)
 	var mi := MeshInstance3D.new()
 	mi.name = "Terreno"
 	mi.mesh = st.commit()

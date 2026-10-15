@@ -88,7 +88,7 @@ func abrir(nivel: int, zen: int, classe: int) -> void:
 	var pode := 0
 	for w in lista:
 		var precisa := nivel_pedido(int(w[3]), classe)
-		var tem_mapa := ResourceLoader.exists("res://dados/mundo%d/altura.png" % (int(w[4]) + 1))
+		var tem_mapa := PacoteMapa.tem(int(w[4]) + 1)
 		var falta_nivel := nivel < precisa
 		var falta_zen := zen < int(w[2])
 		var b := Button.new()

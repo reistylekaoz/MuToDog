@@ -11,6 +11,10 @@ uniform sampler2D luz_extra : filter_nearest, hint_default_black;
 uniform float repete[32];
 uniform float brilho = 1.0;
 uniform int agua = 5;
+// Atlans: onde a camada 2 e agua, a camada 1 fica inteira e a agua (wt00..31 do Object8,
+// 25 quadros por segundo, 4 tiles por textura) vai somada na forca da mistura (RenderFaceBlend)
+uniform bool agua_soma = false;
+uniform sampler2DArray agua_quadros : filter_linear_mipmap, repeat_enable;
 
 float sorteio(vec2 p) {
 	return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
@@ -39,6 +43,12 @@ void fragment() {
 	vec3 c1 = amostra(int(m.r * 255.0 + 0.5), UV);
 	vec3 c2 = amostra(int(m.g * 255.0 + 0.5), UV);
 	// a conta do MU e feita em sRGB (como no cliente original); converte so no fim
-	vec3 c = mix(c1, c2, COLOR.a) * COLOR.rgb * brilho;
+	vec3 c;
+	if (agua_soma && int(m.g * 255.0 + 0.5) == agua) {
+		float q = mod(floor(TIME * 25.0), 32.0);
+		c = c1 * COLOR.rgb * brilho + texture(agua_quadros, vec3(UV / 4.0, q)).rgb * COLOR.a;
+	} else {
+		c = mix(c1, c2, COLOR.a) * COLOR.rgb * brilho;
+	}
 	ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2));
 }

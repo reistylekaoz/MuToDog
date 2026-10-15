@@ -4,6 +4,9 @@
 //   grama/<i>.png  cartao de grama da camada 1 = i (World<N>/TileGrass0<i+1>.OZT; so os que existem)
 //   folha1.png, folha2.png  neve (Devias) ou folha (Lorencia, Noria): leaf01 e leaf02
 //   warp0<1..3>.glb  portal de Devias e Noria (Data/Npc/warp0X.bmd, com a acao 0 como "anda")
+//   agua/<0..31>.png, bolha.png  Atlans: agua que corre no chao e bolha
+//   musica.mp3, fundo.wav  Lost Tower e Atlans: musica do mapa todo e o som de fundo
+//     (SceneManager.cpp; vao no pacote do mapa, o pck principal do navegador esta no limite)
 using Client.Data.BMD;
 using Client.Data.Texture;
 using SixLabors.ImageSharp;
@@ -38,6 +41,22 @@ static class Extras
         foreach (var n in folha1)
             if (Achar(pasta, n) is { } f) { await Png(f, Path.Combine(dest, "folha1.png")); break; }
         if (Achar(pasta, "leaf02.OZJ") is { } f2) await Png(f2, Path.Combine(dest, "folha2.png"));
+        // Atlans: agua do chao em 32 quadros (Object8/wt00..31) e a bolha (Object8/drop01)
+        if (mundo == 8)
+        {
+            var obj8 = Achar(data, "Object8") ?? throw new Exception("sem Object8");
+            Directory.CreateDirectory(Path.Combine(dest, "agua"));
+            for (int i = 0; i < 32; i++)
+                await Png(Achar(obj8, $"wt{i:00}.OZJ")!, Path.Combine(dest, "agua", $"{i}.png"));
+            await Png(Achar(obj8, "drop01.OZJ")!, Path.Combine(dest, "bolha.png"));
+        }
+        var sons = mundo switch { 5 => ("lost_tower_a.mp3", "aTower.wav"), 8 => ("atlans.mp3", "aWater.wav"), _ => default };
+        if (sons != default)
+        {
+            File.Copy(Achar(Achar(data, "Music")!, sons.Item1)!, Path.Combine(dest, "musica.mp3"), true);
+            File.Copy(Achar(Achar(data, "Sound")!, sons.Item2)!, Path.Combine(dest, "fundo.wav"), true);
+            Console.WriteLine($"  {sons.Item1}, {sons.Item2} -> musica.mp3, fundo.wav");
+        }
         if (mundo is 3 or 4)
         {
             var npc = Achar(data, "NPC") ?? throw new Exception("sem NPC");

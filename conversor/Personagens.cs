@@ -15,8 +15,10 @@ using SharpGLTF.Scenes;
 
 static class Personagens
 {
-    // arma: BMD do item preso no osso da mao; esquerda = Weapon[1] do cliente (escudo ou segunda arma)
-    internal record Arma(string bmd, int osso, bool esquerda = false);
+    // arma: BMD do item preso no osso da mao; esquerda = Weapon[1] do cliente (escudo ou segunda arma);
+    // soma: malhas da arma que o cliente desenha somadas (BlendMesh do item em ZzzObject.cpp; -1 = todas,
+    // o BlendMesh -2); o material sai com o nome "soma:<textura>" e o jogo troca pelo somado
+    internal record Arma(string bmd, int osso, bool esquerda = false, int[]? soma = null);
     record Def(string esqueleto, string[]? partes, Dictionary<string, int> acoes, int[]? esconde, Arma[]? armas);
 
     public static async Task Rodar(string data, string saida)
@@ -183,9 +185,9 @@ static class Personagens
         var malhas = new List<MeshBuilder<VertexPositionNormal, VertexTexture1, VertexJoints4>>();
         MeshBuilder<VertexPositionNormal, VertexTexture1, VertexJoints4> mb = null!;
         // cada vertice: (osso do esqueleto que o move, matriz da pose de repouso)
-        async Task Malha(BMDTextureMesh me, string dir, Func<BMDTextureVertex, (int osso, Matrix4x4 m)> onde)
+        async Task Malha(BMDTextureMesh me, string dir, Func<BMDTextureVertex, (int osso, Matrix4x4 m)> onde, bool soma = false)
         {
-            var mat = new MaterialBuilder(me.TexturePath).WithDoubleSide(true).WithMetallicRoughness(0, 1);
+            var mat = new MaterialBuilder((soma ? "soma:" : "") + me.TexturePath).WithDoubleSide(true).WithMetallicRoughness(0, 1);
             (byte[] png, bool alfa)? tex = null;
             foreach (var d in dir.Split(';'))
                 if ((tex = await Texturas.Textura(d, me.TexturePath)) != null) break;
@@ -237,8 +239,9 @@ static class Personagens
             if (a.osso < 0 || a.osso >= mundo.Length) { Console.WriteLine($"  osso {a.osso} fora do esqueleto"); continue; }
             var pose = Pose0(bmd);
             var encaixe = Encaixe(a.bmd, a.esquerda) * mundo[a.osso];
-            foreach (var me in bmd.Meshes)
-                await Malha(me, dir, v => (a.osso, (v.Node >= 0 && v.Node < pose.Length ? pose[v.Node] : Matrix4x4.Identity) * encaixe));
+            for (int k = 0; k < bmd.Meshes.Length; k++)
+                await Malha(bmd.Meshes[k], dir, v => (a.osso, (v.Node >= 0 && v.Node < pose.Length ? pose[v.Node] : Matrix4x4.Identity) * encaixe),
+                    a.soma != null && (a.soma.Contains(-1) || a.soma.Contains(k)));
         }
         var cena = new SceneBuilder();
         foreach (var m in malhas)

@@ -531,7 +531,7 @@ func _entrou(info: Dictionary) -> void:
 	meu_zen = info.zen
 	inv.zen = info.zen
 	_hud_nivel()
-	_abrir_mapa(info.mapa, info.x, info.y)
+	await _abrir_mapa(info.mapa, info.x, info.y)
 	_msg("Entrou em %s (%d, %d)." % [mapas.get(str(info.mapa), "mapa %d" % info.mapa), info.x, info.y])
 	print("TESTE entrou %s" % info)
 	if _parametros().has("chao_teste"):
@@ -567,6 +567,14 @@ func _limpar_mundo() -> void:
 func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	_limpar_mundo()
 	mapa_atual = mapa
+	# navegador: Lost Tower e Atlans vem num pacote a parte; a rede espera ele baixar
+	if PacoteMapa.precisa(mapa + 1):
+		_msg("Carregando %s..." % mapas.get(str(mapa), "o mapa"))
+		cli.segurar = true
+		await PacoteMapa.carregar(self, mapa + 1)
+		cli.segurar = false
+		if mapa_atual != mapa:
+			return
 	mundo = Node3D.new()
 	mundo.set_script(load("res://scripts/mundo.gd"))
 	mundo.modo_jogo = true
@@ -617,6 +625,9 @@ func _objeto_entrou(o: Dictionary) -> void:
 	e.montar(mundo, o.id, tipo, nome, o.x, o.y,
 		Boneco.do_npc(o.numero) if o.tipo == "npc" else Boneco.da_classe(o.get("classe", 0)))
 	entidades[o.id] = e
+	# armadilha (Meteorite Trap da Lost Tower, as da Dungeon): o cliente nao desenha
+	if tipo == "outro":
+		e.visible = false
 	if e.boneco and o.has("equip"):
 		e.boneco.vestir(o.equip)
 	if Vector2i(o.ax, o.ay) != Vector2i(o.x, o.y):
@@ -815,7 +826,9 @@ func _process(dt: float) -> void:
 		_costas_t = 0.3
 		for e: Entidade in entidades.values():
 			if is_instance_valid(e) and e.boneco and e.tipo in ["eu", "jogador"]:
-				e.boneco.arma_nas_costas(mundo.zona_segura(e.tile.x, e.tile.y))
+				var segura: bool = mundo.zona_segura(e.tile.x, e.tile.y)
+				e.boneco.arma_nas_costas(segura)
+				e.boneco.nadando(mapa_atual == 7 and not segura)
 	var seg: bool = mundo.zona_segura(eu.tile.x, eu.tile.y)
 	if som == null:
 		som = Som.new()

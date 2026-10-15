@@ -132,7 +132,9 @@
    "cura": 150,
    "raio": 152,
    "inferno": 153,
-   "fogo_inferno": 154
+   "fogo_inferno": 154,
+   "nada": 24,
+   "nada_corre": 33
   }
  },
  "classe_dk": {
@@ -170,7 +172,9 @@
    "cura": 150,
    "raio": 152,
    "inferno": 153,
-   "fogo_inferno": 154
+   "fogo_inferno": 154,
+   "nada": 24,
+   "nada_corre": 33
   }
  },
  "classe_elf": {
@@ -208,7 +212,9 @@
    "cura": 150,
    "raio": 152,
    "inferno": 153,
-   "fogo_inferno": 154
+   "fogo_inferno": 154,
+   "nada": 24,
+   "nada_corre": 33
   }
  },
  "classe_mg": {
@@ -246,7 +252,9 @@
    "cura": 150,
    "raio": 152,
    "inferno": 153,
-   "fogo_inferno": 154
+   "fogo_inferno": 154,
+   "nada": 24,
+   "nada_corre": 33
   }
  },
  "classe_dl": {
@@ -284,7 +292,9 @@
    "cura": 150,
    "raio": 152,
    "inferno": 153,
-   "fogo_inferno": 154
+   "fogo_inferno": 154,
+   "nada": 24,
+   "nada_corre": 33
   }
  },
  "classe_sum": {
@@ -322,7 +332,9 @@
    "cura": 150,
    "raio": 152,
    "inferno": 153,
-   "fogo_inferno": 154
+   "fogo_inferno": 154,
+   "nada": 24,
+   "nada_corre": 33
   }
  },
  "classe_rf": {
@@ -360,7 +372,9 @@
    "cura": 150,
    "raio": 152,
    "inferno": 153,
-   "fogo_inferno": 154
+   "fogo_inferno": 154,
+   "nada": 24,
+   "nada_corre": 33
   }
  },
  "placa": {
@@ -1105,6 +1119,185 @@
    "parado": 0,
    "parado2": 1,
    "anda": 2
+  }
+ },
+ "monster12_morte": {
+  "esqueleto": "Monster/Monster12.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Axe09.bmd",
+    "osso": 30,
+    "esquerda": false
+   },
+   {
+    "bmd": "Item/Axe09.bmd",
+    "osso": 39,
+    "esquerda": true
+   }
+  ]
+ },
+ "monster27": {
+  "esqueleto": "Monster/Monster27.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster28": {
+  "esqueleto": "Monster/Monster28.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Spear10.bmd",
+    "osso": 17,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster29": {
+  "esqueleto": "Monster/Monster29.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster30": {
+  "esqueleto": "Monster/Monster30.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Sword15.bmd", "soma": [1],
+    "osso": 30,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster31": {
+  "esqueleto": "Monster/Monster31.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Mace04.bmd",
+    "osso": 42,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster34": {
+  "esqueleto": "Monster/Monster34.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster35": {
+  "esqueleto": "Monster/Monster35.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster36": {
+  "esqueleto": "Monster/Monster36.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/CrossBow06.bmd", "soma": [-1],
+    "osso": 30,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster37": {
+  "esqueleto": "Monster/Monster37.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Staff07.bmd", "soma": [-1],
+    "osso": 52,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster38": {
+  "esqueleto": "Monster/Monster38.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
   }
  }
 }

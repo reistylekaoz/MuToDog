@@ -1,6 +1,7 @@
 extends Node3D
 # Vitrine dos personagens convertidos (dados/personagens): todos em fila,
 # trocando de acao a cada 3 s. No navegador: ?vitrine=1 (ou ?vitrine=parado).
+# ?npc=34,35: os monstros pelo numero do OpenMU, montados como no jogo (Boneco.do_npc).
 
 var bonecos: Array[Boneco] = []
 var _t := 0.0
@@ -32,13 +33,18 @@ func _ready() -> void:
 	var so := _param("so")
 	if so != "":
 		nomes = Array(so.split(","))
+	var npcs := _param("npc")
+	if npcs != "":
+		add_child(ModelosMU.new())
+		nomes = Array(npcs.split(","))
+		so = npcs
 	var col := mini(8, nomes.size())
 	for i in nomes.size():
-		var b := Boneco.novo(nomes[i])
+		var b := Boneco.do_npc(int(nomes[i])) if npcs != "" else Boneco.novo(nomes[i])
 		# a malha que brilha somada, como no jogo (Boneco.NPCS, 3o valor)
 		for k in Boneco.NPCS:
 			var m: Array = Boneco.NPCS[k]
-			if b and m[0] == nomes[i] and m.size() > 2:
+			if b and npcs == "" and m[0] == nomes[i] and m.size() > 2:
 				b.somar_malha(m[2])
 				break
 		if b == null:

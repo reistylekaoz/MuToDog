@@ -10,6 +10,9 @@ extends Node3D
 #   que corre (agua, cachoeira);
 # - Devias: neve caindo, porta que abre quando o personagem chega perto, portal;
 # - Noria: folhas no vento e o portal.
+# - Lost Tower: blocos de fogo com a textura correndo e a luz girando em cima, chama no chao;
+# - Atlans: agua do chao em 32 quadros (terreno.gdshader), bolhas subindo dos pontos do mapa
+#   e de quem anda fora da cidade, luzes que pulsam e o po brilhante na agua.
 # A agua do chao corre no proprio shader do terreno (terreno.gdshader).
 
 const PASTA := "res://dados/ambiente/"
@@ -32,9 +35,10 @@ const LUZES := {
 	1: {"streetlight01": [Color(0.65, 0.52, 0.39), 3], "candle01": [Color(0.45, 0.27, 0.09), 3]},
 }
 # objeto que o cliente nao desenha (HiddenMesh = -2): marcador de pose e de som (tipo do .obj)
-const ESCONDER := {3: [91, 100], 4: [38]}
-# brilho do mapa sobre o escolhido (a neve de Devias estoura com o 2,0 da Lorencia)
-const BRILHO_MAPA := {3: 0.5}
+const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39]}
+# brilho do mapa sobre o escolhido (a neve de Devias estoura com o 2,0 da Lorencia; a luz
+# pintada da Lost Tower e bem mais escura que a da Lorencia e o chao some)
+const BRILHO_MAPA := {3: 0.5, 5: 1.3}
 # tipo -> [malha somada (BlendMesh), rolagem da textura em U e V por segundo]
 # (CreateObject e MoveObject do ZzzObject.cpp; a Lorencia segue como foi aprovada)
 const SOMA := {
@@ -42,9 +46,15 @@ const SOMA := {
 		56: [1, Vector2.ZERO], 78: [3, Vector2.ZERO]},
 	4: {1: [1, Vector2.ZERO], 9: [3, Vector2.ZERO], 17: [0, Vector2.ZERO], 37: [0, Vector2.ZERO],
 		19: [0, Vector2.ZERO], 18: [2, Vector2(0, 1)], 39: [1, Vector2.ZERO], 41: [0, Vector2(0, 0.5)]},
+	5: {18: [1, Vector2.ZERO], 23: [1, Vector2.ZERO], 19: [4, Vector2(-1, 0)], 20: [4, Vector2(-1, 0)]},
+	8: {23: [0, Vector2.ZERO], 32: [1, Vector2.ZERO], 34: [1, Vector2.ZERO], 38: [0, Vector2.ZERO], 40: [0, Vector2.ZERO]},
 }
+# Atlans: malha somada que pulsa (BlendMeshLight = sin(WorldTime * f) * a + b): tipo -> [f por segundo, a, b]
+const PULSA := {8: {23: [2.0, 0.3, 0.5], 32: [4.0, 0.5, 0.5], 34: [4.0, 0.5, 0.5], 40: [4.0, 0.3, 0.5]}}
+# Lost Tower: luz girando em cima do bloco de fogo (19 vermelha, 20 azul; Magic_Ground2 e lightning2)
+const GIRA := {5: {19: ["magic_ground2", Color(1, 0.2, 0)], 20: ["lightning2", Color(0.4, 0.8, 1)]}}
 # tipo -> [malha, rolagem] da textura que corre sem somar (StreamMesh: a agua da Noria)
-const CORRE := {4: {42: [0, Vector2(-2, 0)], 43: [0, Vector2(2, 0)]}}
+const CORRE := {4: {42: [0, Vector2(-2, 0)], 43: [0, Vector2(2, 0)]}, 5: {3: [1, Vector2(-1, 0)], 4: [1, Vector2(-1, 0)]}}
 # portal (MODEL_WARP do MapManager.cpp): posicao em unidades do MU e altura das pecas
 const PORTAL := {3: [Vector2(53 * 100 + 50, 92 * 100 + 20), 360.0], 4: [Vector2(223 * 100, 30 * 100), 350.0]}
 # Devias: porta que corre (86) e porta que gira (20, 65, 88) quando o heroi chega a 2 tiles
@@ -55,6 +65,11 @@ var mundo: Node3D
 var _bica: Array[ShaderMaterial] = []
 var _correm: Array = []        # [material, rolagem por segundo, parametro]
 var _piscam: Array[ShaderMaterial] = []
+var _pulsam: Array = []        # [material, f, a, b]
+var _agua: Array = []          # materiais da agua de Atlans (textura troca 25 vezes por segundo)
+var _quadros_agua: Array[Texture2D] = []
+var _giram: Array = []         # [sprite, sentido]
+var _bolhas: CPUParticles3D    # Atlans: dos pontos do mapa (tipo 22)
 var _portas: Array = []        # [no, tipo, posicao original, giro original (graus), aberta]
 var _portal: Node3D
 var _cai: CPUParticles3D       # neve (Devias) ou folhas (Noria) em volta do heroi
@@ -91,6 +106,17 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 	_malhas_especiais(m)
 	_montar_portal(m)
 	_queda(m)
+	_luzes_girando(m, objetos)
+	_bolhas_do_mapa(m, objetos)
+	if m.numero == 5:
+		# Lost Tower 24: chama no chao de vez em quando (CreateEffect BITMAP_FLAME, 1 em 64 quadros)
+		for o in objetos:
+			if int(o.t) == 24:
+				var c := _fogo(tex_fogo, Vector3(o.p[0], o.p[1], o.p[2]))
+				c.amount = 3
+				c.lifetime = 1.6
+				add_child(c)
+				fogos += 1
 	var img := Image.create_from_data(TILES, TILES, false, Image.FORMAT_RGBF, extra.to_byte_array())
 	var tex_extra := ImageTexture.create_from_image(img)
 	var terreno := m.mu.get_node_or_null("Terreno") as MeshInstance3D
@@ -349,6 +375,12 @@ func _material_especial(m: Node3D, orig: BaseMaterial3D, somar: bool, rolagem: V
 		# Devias 78: a luz da malha somada pisca 0,4..0,7 (BlendMeshLight sorteado a cada quadro)
 		if m.numero == 3 and t == 78:
 			_piscam.append(mat)
+		var pulsa: Dictionary = PULSA.get(m.numero, {})
+		if pulsa.has(t):
+			_pulsam.append([mat] + pulsa[t])
+		# Atlans 23: a agua do modelo (wt00) troca de quadro como a do chao
+		if m.numero == 8 and t == 23:
+			_agua.append(mat)
 	else:
 		mat = (m.materiais[orig] as ShaderMaterial).duplicate()
 		m.materiais[orig.duplicate()] = mat   # segue o brilho (teclas - e =)
@@ -395,6 +427,94 @@ func _montar_portal(m: Node3D) -> void:
 				mi.set_surface_override_material(s, mat)
 
 
+# Lost Tower 19 e 20: duas luzes girando em sentidos contrarios em cima do bloco de fogo
+# (CreateSprite com Rotation = WorldTime * 0,1 graus). O cliente poe nos ossos 15, 19 e 21
+# do modelo; aqui a maior (1,5) vai no topo do modelo.
+func _luzes_girando(m: Node3D, _objetos: Array) -> void:
+	var gira: Dictionary = GIRA.get(m.numero, {})
+	if gira.is_empty():
+		return
+	for par in m.nos_objetos:
+		var t := int(par[1].t)
+		if not gira.has(t):
+			continue
+		var n: Node3D = par[0]
+		var caixa := AABB()
+		var primeira := true
+		for mi: MeshInstance3D in n.find_children("*", "MeshInstance3D", true, false):
+			var c := mi.global_transform * mi.get_aabb()
+			caixa = c if primeira else caixa.merge(c)
+			primeira = false
+		if primeira:
+			continue
+		var topo := caixa.get_center() + Vector3(0, caixa.size.y * 0.5, 0)
+		for sentido in [1.0, -1.0]:
+			var sp := MeshInstance3D.new()
+			var q := QuadMesh.new()
+			q.size = Vector2.ONE * 0.64 * 1.5   # sprite de 64 px na escala 1,5
+			sp.mesh = q
+			sp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			var mat := ShaderMaterial.new()
+			mat.shader = EfeitoMU.SHADER
+			mat.set_shader_parameter("tex", EfeitoMU.textura(gira[t][0]))
+			mat.set_shader_parameter("cor", gira[t][1])
+			mat.set_shader_parameter("modo", 0)
+			sp.material_override = mat
+			add_child(sp)
+			sp.global_position = topo
+			_giram.append([mat, sentido])
+
+
+# Atlans 22: ponto escondido que solta bolha metade do tempo (Timer de 0 a 10, solta acima de 5)
+func _bolhas_do_mapa(m: Node3D, objetos: Array) -> void:
+	if m.numero != 8 or not ResourceLoader.exists(m.pasta + "bolha.png"):
+		return
+	var pontos := PackedVector3Array()
+	for o in objetos:
+		if int(o.t) == 22:
+			pontos.append(_no_mundo(Vector3(o.p[0], o.p[1], o.p[2])) - global_position)
+	if pontos.is_empty():
+		return
+	_bolhas = bolhas(m, 600)
+	_bolhas.emission_shape = CPUParticles3D.EMISSION_SHAPE_POINTS
+	_bolhas.emission_points = pontos
+	add_child(_bolhas)
+
+
+# BITMAP_BUBBLE: drop01 em 3x3 quadros, vive 30..40 quadros (1,2..1,6 s), sobe 25..75 por
+# quadro na escala 0,12..0,27 e treme pros lados; somada
+static func bolhas(m: Node3D, n: int) -> CPUParticles3D:
+	var img := (load(m.pasta + "bolha.png") as Texture2D).get_image()
+	img = img.get_region(Rect2i(0, 0, 48, 48))
+	var c := CPUParticles3D.new()
+	c.amount = n
+	c.lifetime = 1.4
+	c.local_coords = false
+	c.direction = Vector3.UP
+	c.spread = 20.0
+	c.initial_velocity_min = 1.0
+	c.initial_velocity_max = 3.0
+	c.gravity = Vector3.ZERO
+	c.scale_amount_min = 0.6
+	c.scale_amount_max = 1.4
+	c.anim_offset_max = 1.0
+	c.anim_speed_min = 0.0
+	c.anim_speed_max = 0.0
+	var q := QuadMesh.new()
+	q.size = Vector2(0.16, 0.16)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.particles_anim_h_frames = 3
+	mat.particles_anim_v_frames = 3
+	mat.albedo_texture = ImageTexture.create_from_image(img)
+	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	q.material = mat
+	c.mesh = q
+	return c
+
+
 # Devias: neve (leaf01 e, 1 em 10, leaf02 maior) caindo inclinada em volta do heroi
 # (CreateDeviasSnow: 8..23 por quadro de 1/25 s, angulo -30 em X); Noria: folhas
 # soltas no vento pra -X (CreateAtlanseLeaf). 80 de cada vez, como o cliente.
@@ -407,6 +527,12 @@ func _queda(m: Node3D) -> void:
 			_cai2 = _particulas(load(m.pasta + "folha2.png"), 8, 0.16, true)
 	elif m.numero == 4:
 		_cai = _particulas(load(m.pasta + "folha1.png"), 80, 0.14, false)
+	elif m.numero == 8:
+		# Atlans: o mesmo vento da Noria (CreateAtlanseLeaf), com o po brilhante somado
+		_cai = _particulas(load(m.pasta + "folha1.png"), 80, 0.14, false)
+		var mat := (_cai.mesh as QuadMesh).material as StandardMaterial3D
+		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
 
 
 func _particulas(tex: Texture2D, n: int, tam: float, neve: bool) -> CPUParticles3D:
@@ -523,6 +649,18 @@ func _process(dt: float) -> void:
 		var l := randf_range(0.4, 0.8)
 		for m in _piscam:
 			m.set_shader_parameter("cor", Color(l, l, l))
+	for p in _pulsam:
+		var l: float = sin(_t * p[1]) * p[2] + p[3]
+		(p[0] as ShaderMaterial).set_shader_parameter("cor", Color(l, l, l))
+	if not _agua.is_empty():
+		if _quadros_agua.is_empty():
+			for i in 32:
+				_quadros_agua.append(load(mundo.pasta + "agua/%d.png" % i))
+		var q := _quadros_agua[int(_t * 25.0) % 32]
+		for m in _agua:
+			m.set_shader_parameter("tex", q)
+	for g in _giram:
+		(g[0] as ShaderMaterial).set_shader_parameter("giro", deg_to_rad(fmod(_t * 100.0, 360.0)) * g[1])
 	if not _portas.is_empty():
 		_mexer_portas(dt)
 	if _portal:

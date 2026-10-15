@@ -258,6 +258,11 @@ func _fechar() -> void:
 	con = null
 
 
+# true enquanto o mapa novo baixa (PacoteMapa): os pacotes ficam guardados, na ordem
+var segurar := false
+var _guardados: Array[PackedByteArray] = []
+
+
 func _process(dt: float) -> void:
 	if con == null:
 		return
@@ -270,9 +275,15 @@ func _process(dt: float) -> void:
 	if not ok:
 		return
 	var atual := con
-	for p in con.pacotes():
+	var lista: Array[PackedByteArray] = _guardados + con.pacotes()
+	_guardados = []
+	for p in lista:
 		if con != atual:
 			break  # trocou de servidor no meio: o resto era da conexao velha
+		# o jogo esta baixando o mapa novo: o que chega espera ele ficar pronto
+		if segurar:
+			_guardados.append(p)
+			continue
 		if _depurar:
 			log_rede("<- " + p.slice(0, 12).hex_encode() + (" (%d)" % p.size()))
 		_tratar(p)

@@ -9,7 +9,7 @@ const PASTA := "res://dados/personagens/"
 # PlaySpeed padrao do cliente S6 (ZzzOpenData.cpp)
 const VELOCIDADE := {
 	"monstro": {"parado": 0.25, "parado2": 0.2, "anda": 0.34, "ataque": 0.33, "ataque2": 0.33, "golpe": 0.5, "morre": 0.55},
-	"jogador": {"parado": 0.28, "parado_f": 0.28, "voa": 0.28, "anda": 0.3, "anda_f": 0.3, "corre": 0.3,
+	"jogador": {"parado": 0.28, "parado_f": 0.28, "voa": 0.28, "nada": 0.35, "nada_corre": 0.35, "anda": 0.3, "anda_f": 0.3, "corre": 0.3,
 		"soco": 0.35, "espada": 0.35, "golpe": 0.4, "morre": 0.45,
 		"espada_s1": 0.3, "espada_s2": 0.3, "espada_s3": 0.3, "espada_s4": 0.3, "espada_s5": 0.3,
 		"giro": 0.4, "furia": 0.3, "estocada": 0.3, "arco": 0.3, "magia": 0.3, "magia2": 0.3,
@@ -25,7 +25,7 @@ const NAO_REPETE := ["morre", "golpe", "ataque", "ataque2", "soco", "espada", "e
 	"cura", "raio", "inferno", "fogo_inferno"]
 
 # numero do monstro/NPC no OpenMU -> [modelo, escala], tirado do CreateMonster
-# do cliente S6 (ZzzCharacter.cpp). So a Lorencia por enquanto.
+# do cliente S6 (ZzzCharacter.cpp). Lorencia, Dungeon, Devias, Noria, Lost Tower e Atlans.
 const NPCS := {
 	0: ["monster01_sem0", 0.8], 1: ["monster02_sem0", 0.85], 2: ["monster03", 0.5], 3: ["monster10", 0.4],
 	4: ["monster01", 1.15], 6: ["monster05", 0.85], 7: ["monster06", 1.6], 14: ["esqueleto1", 0.95],
@@ -43,7 +43,35 @@ const NPCS := {
 	244: ["caren", 1.0], 245: ["izabel", 1.0], 246: ["zienna", 1.0], 256: ["lahap", 1.0], 379: ["fogos", 1.0],
 	385: ["mirage", 0.95], 406: ["devin", 1.0], 450: ["cerejeira", 1.0], 451: ["cerejeira_arvore", 1.0], 478: ["lahap", 1.0],
 	522: ["jerinteu", 1.0], 540: ["lugard", 1.0], 544: ["vanert", 1.0], 566: ["felicia", 1.0],
+	# Lost Tower e Atlans
+	35: ["monster12_morte", 1.3, 1], 36: ["monster29", 1.2], 37: ["monster27", 1.1], 38: ["monster28", 1.6],
+	39: ["monster29", 1.2], 40: ["monster30", 1.3], 41: ["monster31", 1.1],
+	45: ["monster34", 0.6], 46: ["monster35", 1.0], 47: ["monster36", 1.1, 0], 48: ["monster37", 1.4],
+	49: ["monster38", 1.0], 51: ["monster34", 1.0], 52: ["monster36", 1.4],
 }
+# monstro que e um jogador vestido (Cursed Wizard: Legendary +9, cajado e escudo)
+const VESTIDOS := {
+	34: ["classe_dw", {0: "5,5", 1: "6,14", 2: "7,3", 3: "8,3", 4: "9,3", 5: "10,3", 6: "11,3",
+		"niveis": {0: 9, 1: 9, 2: 9, 3: 9, 4: 9, 5: 9, 6: 9}}],
+}
+# sprites presos nos ossos (RenderLight, RenderEye e o corpo de luz do Shadow no
+# RenderCharacter do cliente): [textura, escala, ossos ("todos" = menos 15-20 e 27-32),
+# deslocamento no osso, cor (null = RenderLight, que pulsa laranja; "olho" = branco pulsando;
+# "menos" = subtrai, a aura escura do Shadow)]
+const LUZES := {
+	36: [["shiny02", 2.5, "todos", Vector3.ZERO, "menos"]],
+	39: [["magic_ground2", 0.8, "todos", Vector3.ZERO, Color(0.2, 0.7, 0.1)]],
+	41: [["eye01", 1.0, [22], Vector3(5, 0, 0), "olho"], ["eye01", 1.0, [23], Vector3(-5, 0, 0), "olho"]],
+	45: [["spark02", 4.0, [9], Vector3(0, 0, 5), null], ["shiny03", 3.0, [9], Vector3(0, 0, 5), null]],
+	51: [["spark02", 4.0, [9], Vector3(0, 0, 5), null], ["shiny03", 3.0, [9], Vector3(0, 0, 5), null]],
+	46: [["lightning2", 0.5, [30, 39], Vector3(0, 0, -5), null], ["spark02", 4.0, [30, 39], Vector3(0, 0, -5), null],
+		["shiny03", 2.0, [30, 39], Vector3(0, 0, -5), null]],
+	48: [["eye01", 1.0, [42], Vector3(5, 0, 0), "olho"], ["eye01", 1.0, [43], Vector3(-5, 0, 0), "olho"],
+		["spark02", 2.0, [26, 31, 36, 41], Vector3.ZERO, null], ["shiny03", 1.0, [26, 31, 36, 41], Vector3.ZERO, null]],
+	49: [["lightning2", 1.0, [63], Vector3(0, 0, 20), null], ["shiny03", 4.0, [63], Vector3(0, 0, 20), null]],
+}
+# malha que o cliente desenha somada com luz 0 (some): a Hydra so acende a 5 no ataque
+const APAGADAS := {49: 5}
 # classe do OpenMU (classes.json) >> 2 -> corpo padrao da classe
 const CLASSES := ["classe_dw", "classe_dk", "classe_elf", "classe_mg", "classe_dl", "classe_sum", "classe_rf"]
 
@@ -63,6 +91,8 @@ var _niveis := {}     # slot -> nivel do item (+0 a +15), pro brilho
 var _pecas := {}      # slot -> no posto no boneco
 var _rastros := {}    # slot da mao -> RastroArma
 var _costas := false  # zona segura: arma nas costas
+var nadar := false    # Atlans fora da cidade: parado flutua, andar e nadar
+const NADO := {"parado": "voa", "anda": "nada", "corre": "nada_corre"}
 
 
 static func info() -> Dictionary:
@@ -72,12 +102,23 @@ static func info() -> Dictionary:
 
 
 static func do_npc(numero: int) -> Boneco:
+	if VESTIDOS.has(numero):
+		var v: Array = VESTIDOS[numero]
+		var j := novo(v[0])
+		if j:
+			j.vestir(v[1])
+		return j
 	var m: Array = NPCS.get(numero, [])
 	if m.is_empty():
 		return null
 	var b := novo(m[0], m[1])
 	if b and m.size() > 2:
 		b.somar_malha(m[2])
+	if b and APAGADAS.has(numero):
+		b.apagar_malha(APAGADAS[numero])
+	if b and LUZES.has(numero):
+		for l in LUZES[numero]:
+			b.luz_no_osso(l[0], l[1], l[2], l[3], l[4], m[1])
 	return b
 
 
@@ -115,10 +156,12 @@ static func novo(nome: String, escala := 1.0) -> Boneco:
 			# o conversor fecha o laco com o quadro 0 no fim; quem morre para no penultimo
 			if n == "morre":
 				a.length = maxf(a.length - 1.0, 0.1)
+	b.somar_malha(-1)
 	return b
 
 
-# BlendMesh do cliente: a malha n desenha somada (brilha), como gelo, asa de besouro e o caldeirao do Goblin
+# BlendMesh do cliente: a malha n desenha somada (brilha), como gelo, asa de besouro e o caldeirao do Goblin;
+# n = -1: as da arma que o conversor marcou "soma:" (cajado do Lizard King, besta da Valkyrie)
 func somar_malha(n: int) -> void:
 	var i := 0
 	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
@@ -126,15 +169,76 @@ func somar_malha(n: int) -> void:
 			continue
 		for s in mi.mesh.get_surface_count():
 			var orig := mi.mesh.surface_get_material(s) as BaseMaterial3D
-			if i == n and orig:
-				var m := orig.duplicate() as BaseMaterial3D
-				m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-				m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			if (i == n or (n < 0 and orig and orig.resource_name.begins_with("soma:"))) and orig:
+				mi.set_surface_override_material(s, _somado(orig))
+			i += 1
+
+
+static func _somado(orig: BaseMaterial3D) -> BaseMaterial3D:
+	var m := orig.duplicate() as BaseMaterial3D
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return m
+
+
+func apagar_malha(n: int) -> void:
+	var i := 0
+	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for s in mi.mesh.get_surface_count():
+			if i == n:
+				var m := StandardMaterial3D.new()
 				m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-				m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
-				m.cull_mode = BaseMaterial3D.CULL_DISABLED
+				m.albedo_color = Color(0, 0, 0, 0)
 				mi.set_surface_override_material(s, m)
 			i += 1
+
+
+var _luzes: Array = []   # [material, cor] das luzes que pulsam
+var _t := 0.0
+
+
+# CreateSprite no osso: o tamanho e o da textura vezes a escala (em unidades do MU),
+# sem crescer com o monstro
+func luz_no_osso(tex: String, esc: float, ossos, desl: Vector3, cor, escala_monstro: float) -> void:
+	if esqueleto == null:
+		return
+	var t := EfeitoMU.textura(tex)
+	if t == null:
+		return
+	var lista: Array = []
+	if ossos is String:
+		for i in esqueleto.get_bone_count():
+			if not (i >= 15 and i <= 20) and not (i >= 27 and i <= 32):
+				lista.append(i)
+	else:
+		lista = ossos
+	var q := QuadMesh.new()
+	q.size = Vector2(t.get_width(), t.get_height()) * esc / escala_monstro
+	var mat := ShaderMaterial.new()
+	mat.shader = EfeitoMU.SHADER_MENOS if cor is String and cor == "menos" else EfeitoMU.SHADER
+	mat.set_shader_parameter("tex", t)
+	mat.set_shader_parameter("modo", 0)
+	mat.set_shader_parameter("cor", cor if cor is Color else Color(1, 1, 1) if cor is String else Color(1, 0.6, 0.4))
+	if not (cor is Color) and cor != "menos":
+		_luzes.append([mat, cor])
+	for i: int in lista:
+		var nome := "osso%d" % i
+		if esqueleto.find_bone(nome) < 0:
+			continue
+		var at := BoneAttachment3D.new()
+		esqueleto.add_child(at)
+		at.bone_name = nome
+		var sp := MeshInstance3D.new()
+		sp.mesh = q
+		sp.material_override = mat
+		sp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		sp.position = desl
+		at.add_child(sp)
 
 
 func tem(a: String) -> bool:
@@ -146,6 +250,8 @@ func tem(a: String) -> bool:
 func tocar(a: String, depois := "parado") -> void:
 	if anim == null:
 		return
+	if nadar and familia == "jogador" and NADO.has(a):
+		a = NADO[a]
 	if feminino and tem(a + "_f"):
 		a += "_f"
 	var real := a
@@ -313,7 +419,12 @@ static func _encaixe(k: String, esquerda: bool) -> Transform3D:
 var _osso_asa := -1
 
 
-func _process(_d: float) -> void:
+func _process(d: float) -> void:
+	if not _luzes.is_empty():
+		_t += d
+		for l in _luzes:
+			var k: float = sin(_t * 2.0) * 0.3 + (0.8 if l[1] == "olho" else 0.7)
+			l[0].set_shader_parameter("cor", Color(k, k, k) if l[1] == "olho" else Color(k, k * 0.6, k * 0.4))
 	if _pecas.has(7):
 		_seguir_asa()
 
@@ -373,6 +484,19 @@ func rastro(segundos: float, cor := Color(1, 1, 1), tex := "blur01") -> void:
 	for s in _rastros:
 		if is_instance_valid(_rastros[s]):
 			_rastros[s].ligar(segundos, cor, tex)
+
+
+# entra e sai da agua de Atlans: troca a acao de parado/andar na hora
+func nadando(sim: bool) -> void:
+	if sim == nadar or familia != "jogador":
+		return
+	nadar = sim
+	print("TESTE nadando %s" % sim)
+	var base := acao.trim_suffix("_f")
+	for k in NADO:
+		if base == k or base == NADO[k]:
+			tocar(k)
+			return
 
 
 func arma_nas_costas(sim: bool) -> void:
