@@ -2,7 +2,7 @@ extends Node3D
 # Vitrine dos personagens convertidos (dados/personagens): todos em fila,
 # trocando de acao a cada 3 s. No navegador: ?vitrine=1 (ou ?vitrine=parado).
 # ?npc=34,35: os monstros pelo numero do OpenMU, montados como no jogo (Boneco.do_npc).
-# ?giro=90 vira todos de lado. ?monta=13,2;13,3;13,4;13,37: um Dark Knight com espada montado em cada (13,37:blue = Fenrir azul).
+# ?giro=90 vira todos de lado. ?pacote=34,35: baixa antes os pacotes desses mapas (monstros dos mapas novos). ?monta=13,2;13,3;13,4;13,37: um Dark Knight com espada montado em cada (13,37:blue = Fenrir azul).
 
 var bonecos: Array[Boneco] = []
 var _t := 0.0
@@ -28,6 +28,8 @@ func _ready() -> void:
 	mc.albedo_color = Color(0.18, 0.2, 0.16)
 	pm.material = mc
 	add_child(chao)
+	for n in _param("pacote").split(",", false):
+		await PacoteMapa.carregar(self, int(n))
 	var nomes: Array = Boneco.info().keys()
 	nomes.sort()
 	# ?so=a,b,c: so esses, de perto

@@ -16,6 +16,7 @@ extends Node3D
 # - Tarkan: lava e cristal somados que pulsam e pintam o chao de laranja, areia que corre,
 #   brilho (Impack03) nas pedras 63 e 64, fumaca dos buracos e o geiser (70, 76, 83).
 # - Noria: luz azul presa nos ossos das plantas e postes (CreateSprite BITMAP_LIGHT no osso);
+# - Icarus: sem chao, fundo azul escuro e as nuvens nos pontos do mapa;
 # - bichos em volta do heroi (bichos.gd): passaro, morcego, borboleta, rato, peixe, besouro.
 # A agua do chao corre no proprio shader do terreno (terreno.gdshader).
 
@@ -38,8 +39,26 @@ const FOGOS := {
 const LUZES := {
 	1: {"streetlight01": [Color(0.65, 0.52, 0.39), 3], "candle01": [Color(0.45, 0.27, 0.09), 3]},
 }
+# mapas novos (Arena ate Karutan, mundo 7 e 31 em diante), tirados do CreateObject, MoveObject e
+# RenderObject de cada GM*.cpp: escondido inclui o 67, que o codigo do Loren Market some em quase
+# todo mapa; na soma, malha -1 = o objeto inteiro, lista = varias malhas, 3o valor = luz da malha
 # objeto que o cliente nao desenha (HiddenMesh = -2): marcador de pose e de som (tipo do .obj)
-const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 64, 70, 76, 83]}
+const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 64, 70, 76, 83],
+	7: [38, 67],
+	31: [0, 4, 11, 37, 39, 41, 42, 43, 44, 45, 46, 47, 48, 52, 53, 54, 66, 67, 68, 69, 71, 72, 73, 74, 75, 76, 88],
+	32: [1, 3, 42, 44, 45, 53, 67],
+	34: [56, 57, 58, 59, 60, 62, 63, 67, 70],
+	35: [57, 71, 72, 73, 74, 77, 78, 81, 82, 83, 84],
+	38: [37, 59, 60, 61, 62, 81, 82, 83, 97, 107, 108],
+	39: [45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 65],
+	52: [0, 54, 58, 59, 60, 61, 62, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147],
+	57: [57, 67, 71, 72, 73, 74, 77, 78],
+	58: [67, 70, 80],
+	64: [0, 1, 2, 3, 4, 5, 6, 67],
+	80: [54, 55, 56, 57, 58, 67],
+	81: [67, 113, 114, 115, 116, 118],
+	82: [67, 113, 114, 115, 116, 118],
+}
 # brilho do mapa sobre o escolhido (a neve de Devias estoura com o 2,0 da Lorencia; a luz
 # pintada da Lost Tower e bem mais escura que a da Lorencia e o chao some; a areia de Tarkan
 # estoura no 2,0)
@@ -55,10 +74,31 @@ const SOMA := {
 	8: {23: [0, Vector2.ZERO], 32: [1, Vector2.ZERO], 34: [1, Vector2.ZERO], 38: [0, Vector2.ZERO], 40: [0, Vector2.ZERO]},
 	9: {2: [0, Vector2(-1, 0)], 7: [0, Vector2.ZERO], 61: [1, Vector2(0, -1)], 65: [1, Vector2(0, -1)],
 		66: [1, Vector2(0, -1)], 72: [0, Vector2(0, -0.2)], 82: [0, Vector2.ZERO]},
+	7: {21: [3, Vector2(0.0, -1.0)]},
+	31: {19: [-1, Vector2.ZERO], 51: [-1, Vector2(-0.2, 0.0)], 66: [-1, Vector2(0.0, 1.0)], 81: [1, Vector2(0.0, 0.2)], 83: [1, Vector2(0.0, -0.4)]},
+	34: {41: [0, Vector2.ZERO]},
+	35: {81: [0, Vector2.ZERO]},
+	38: {76: [0, Vector2(-0.01, 0.0)], 85: [3, Vector2.ZERO], 95: [0, Vector2.ZERO], 103: [1, Vector2.ZERO], 105: [1, Vector2.ZERO]},
+	39: {1: [1, Vector2.ZERO], 2: [1, Vector2.ZERO], 8: [1, Vector2.ZERO], 10: [2, Vector2.ZERO], 12: [0, Vector2(1.0, 1.0)], 27: [2, Vector2(0.0, -1.0)], 31: [0, Vector2.ZERO], 35: [1, Vector2.ZERO], 36: [1, Vector2.ZERO], 76: [0, Vector2.ZERO]},
+	52: {56: [0, Vector2.ZERO], 73: [-1, Vector2.ZERO], 78: [0, Vector2.ZERO], 79: [0, Vector2.ZERO], 104: [4, Vector2.ZERO], 110: [[0, 1, 2], Vector2.ZERO], 113: [9, Vector2.ZERO], 114: [9, Vector2.ZERO], 121: [1, Vector2.ZERO]},
+	58: {20: [1, Vector2.ZERO], 68: [0, Vector2.ZERO], 69: [0, Vector2.ZERO], 71: [0, Vector2.ZERO]},
+	64: {16: [0, Vector2.ZERO], 67: [0, Vector2(0.0, 0.1), 0.2], 68: [0, Vector2(0.0, 0.1), 0.2]},
+	80: {8: [[0, 1], Vector2(0.0, -1.0), 0.3]},
+	81: {1: [0, Vector2.ZERO], 54: [0, Vector2.ZERO], 55: [0, Vector2(0.0, 0.1)], 57: [0, Vector2(0.0, 0.1)], 58: [[1, 2], Vector2.ZERO], 63: [[0, 2], Vector2.ZERO], 66: [1, Vector2.ZERO], 119: [1, Vector2.ZERO]},
+	82: {1: [0, Vector2.ZERO], 54: [0, Vector2.ZERO], 55: [0, Vector2(0.0, 0.1)], 57: [0, Vector2(0.0, 0.1)], 58: [[1, 2], Vector2.ZERO], 63: [[0, 2], Vector2.ZERO], 66: [1, Vector2.ZERO], 119: [1, Vector2.ZERO]},
 }
 # Atlans: malha somada que pulsa (BlendMeshLight = sin(WorldTime * f) * a + b): tipo -> [f por segundo, a, b]
 const PULSA := {8: {23: [2.0, 0.3, 0.5], 32: [4.0, 0.5, 0.5], 34: [4.0, 0.5, 0.5], 40: [4.0, 0.3, 0.5]},
-	9: {7: [2.0, 0.35, 0.65]}}
+	9: {7: [2.0, 0.35, 0.65]},
+	31: {66: [1.0, 0.2, 0.3]},
+	38: {103: [2.0, 0.5, 0.5]},
+	39: {1: [2.0, 0.5, 0.5], 2: [2.0, 0.5, 0.5], 10: [1.5, 0.4, 0.5]},
+	52: {56: [3.0, 0.3, 0.5], 104: [2.0, 0.5, 0.5], 121: [2.0, 0.5, 0.5]},
+	58: {68: [1.0, 0.5, 0.8], 69: [1.0, 0.5, 0.8], 71: [1.0, 0.5, 0.8]},
+	64: {16: [2.0, 0.5, 0.5]},
+	81: {54: [2.0, 0.5, 1.25], 58: [1.0, 0.5, 0.5], 63: [1.0, 0.5, 0.5], 119: [1.0, 0.5, 0.5]},
+	82: {54: [2.0, 0.5, 1.25], 58: [1.0, 0.5, 0.5], 63: [1.0, 0.5, 0.5], 119: [1.0, 0.5, 0.5]},
+}
 # Tarkan: luz laranja no chao em volta da lava (AddTerrainLight com a media do pulso): tipo -> raio
 const LUZ_TIPO := {9: {7: 3, 61: 2, 65: 2, 66: 2}}
 const COR_LAVA := Color(0.65, 0.39, 0.13)
@@ -72,7 +112,13 @@ const GIRA := {5: {19: ["magic_ground2", Color(1, 0.2, 0)], 20: ["lightning2", C
 # tipo -> [malha, rolagem] da textura que corre sem somar (StreamMesh: a agua da Noria)
 const CORRE := {4: {42: [0, Vector2(-2, 0)], 43: [0, Vector2(2, 0)]}, 5: {3: [1, Vector2(-1, 0)], 4: [1, Vector2(-1, 0)]},
 	9: {11: [0, Vector2(0, -0.2)], 13: [0, Vector2(0, -0.2)], 73: [0, Vector2(0, -0.2)], 75: [0, Vector2(0, -0.2)],
-		79: [0, Vector2(0, -0.2)], 12: [0, Vector2(-0.05, -0.05)]}}
+		79: [0, Vector2(0, -0.2)], 12: [0, Vector2(-0.05, -0.05)]},
+	31: {17: [0, Vector2(0.0, 0.2)]},
+	34: {65: [0, Vector2(-0.05, 0.0)], 66: [0, Vector2(-0.05, 0.0)], 77: [0, Vector2(0.2, 0.0)], 78: [0, Vector2(0.2, 0.0)]},
+	38: {96: [0, Vector2(0.0, -0.05)]},
+	39: {13: [1, Vector2(0.0, -1.0)], 14: [1, Vector2(0.0, -1.0)], 15: [3, Vector2(0.0, -1.0)], 16: [3, Vector2(0.0, -1.0)]},
+	64: {15: [0, Vector2(0.0, -0.1)]},
+}
 # portal (MODEL_WARP do MapManager.cpp): posicao em unidades do MU e altura das pecas
 const PORTAL := {3: [Vector2(53 * 100 + 50, 92 * 100 + 20), 360.0], 4: [Vector2(223 * 100, 30 * 100), 350.0]}
 # Devias: porta que corre (86) e porta que gira (20, 65, 88) quando o heroi chega a 2 tiles
@@ -82,6 +128,12 @@ const PORTAS := {3: [86, 20, 65, 88]}
 const LUZ_OSSO := {4: {1: [[2, 4, 6], 0.5], 9: [[1], 1.5], 17: [[4, 7, 10, 13], 1.0], 35: [[3], 1.5],
 	39: [[61, 62, 63, 64, 65], 1.0]}}
 const COR_FOGO := Color(0.85, 0.51, 0.34)   # Luminosity media 0,85 x (1, 0,6, 0,4)
+# cor do fundo (SetWorldClearColor) e mapa sem chao desenhado (Icarus: so ilhas no ceu)
+const CEU := {11: Color8(3, 25, 44), 52: Color8(178, 178, 178)}
+const SEM_CHAO := [11]
+# Icarus: objeto 0 a 5 nao aparece; vira 20 nuvens (BITMAP_CLOUD, Effect/clouds.jpg) somadas
+# em volta dele, a +-250 unidades, 20 a 40 acima, do tamanho da textura x 1,8 a 2,0
+const NUVENS := {11: [0, 1, 2, 3, 4, 5]}
 
 var mundo: Node3D
 var _bica: Array[ShaderMaterial] = []
@@ -160,6 +212,7 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 	add_child(bi)
 	_luzes_girando(m, objetos)
 	_bolhas_do_mapa(m, objetos)
+	_nuvens(m, objetos)
 	if m.numero == 5:
 		# Lost Tower 24: chama no chao de vez em quando (CreateEffect BITMAP_FLAME, 1 em 64 quadros)
 		for o in objetos:
@@ -178,6 +231,46 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 		mat.set_shader_parameter("luz_extra", tex_extra)
 	_grama(mapa, luz, img)
 	print("TESTE ambiente %d · somadas %d · correm %d · portas %d · portal %s · queda %s" % [m.numero, _somadas, _correm.size(), _portas.size(), _portal != null, _cai != null])
+
+
+func _nuvens(m: Node3D, objetos: Array) -> void:
+	var tipos: Array = NUVENS.get(m.numero, [])
+	if tipos.is_empty() or not ResourceLoader.exists(m.pasta + "nuvem.png"):
+		return
+	var pontos: Array[Vector3] = []
+	for o in objetos:
+		if int(o.t) in tipos:
+			var p := Vector3(o.p[0], o.p[1], o.p[2])
+			for i in 20:
+				pontos.append(p + Vector3(randf_range(-250, 250), randf_range(-250, 250), randf_range(20, 40)))
+	var q := QuadMesh.new()
+	q.size = Vector2.ONE * 2.56
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_texture = load(m.pasta + "nuvem.png")
+	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	mat.disable_fog = true   # somada: a neblina pintava o quadrado inteiro de azul
+	q.material = mat
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.mesh = q
+	mm.instance_count = pontos.size()
+	for i in pontos.size():
+		var esc := randf_range(1.8, 2.0)
+		var b := Basis(Vector3.BACK, randf() * TAU).scaled(Vector3.ONE * esc)
+		mm.set_instance_transform(i, Transform3D(b, _no_mundo(pontos[i])))
+		mm.set_instance_color(i, Color(0.12, 0.12, 0.12))
+	var mi := MultiMeshInstance3D.new()
+	mi.name = "Nuvens"
+	mi.multimesh = mm
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+	fogos += pontos.size()
 
 
 # CreateSprite BITMAP_IMPACT em cima da pedra: escala e luz = sin(t * 2 + fase) * 0,3 + 0,7
@@ -229,6 +322,7 @@ static func _material_particula(tex: Texture2D, quadros: int) -> StandardMateria
 	mat.vertex_color_use_as_albedo = true
 	mat.albedo_texture = tex
 	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	mat.disable_fog = true
 	return mat
 
 
@@ -429,13 +523,16 @@ func _malhas_especiais(m: Node3D) -> void:
 			if mi.mesh == null:
 				continue
 			for s in mi.mesh.get_surface_count():
-				if i == info[0]:
+				var alvo = info[0]
+				if (alvo is Array and i in alvo) or (alvo is int and (alvo == -1 or i == alvo)):
 					var orig := mi.mesh.surface_get_material(s) as BaseMaterial3D
 					if orig == null:
 						continue
 					var chave := [orig, somar]
 					if not feitos.has(chave):
 						feitos[chave] = _material_especial(m, orig, somar, info[1], t)
+						if somar and info.size() > 2:
+							feitos[chave].set_shader_parameter("cor", Color(info[2], info[2], info[2]))
 					mi.set_surface_override_material(s, feitos[chave])
 					_somadas += 1 if somar else 0
 				i += 1
@@ -645,6 +742,7 @@ static func bolhas(m: Node3D, n: int) -> CPUParticles3D:
 # soltas no vento pra -X (CreateAtlanseLeaf). 80 de cada vez, como o cliente.
 func _queda(m: Node3D) -> void:
 	if not m.modo_jogo or not ResourceLoader.exists(m.pasta + "folha1.png"):
+		_chuva(m)
 		return
 	if m.numero == 3:
 		_cai = _particulas(load(m.pasta + "folha1.png"), 72, 0.08, true)
@@ -658,6 +756,47 @@ func _queda(m: Node3D) -> void:
 		var mat := (_cai.mesh as QuadMesh).material as StandardMaterial3D
 		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 		mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	elif m.numero == 58:
+		# Raklion (CGM_Raklion::CreateSnow): neve de 3 a 12 de escala caindo a 30..50 por quadro,
+		# inclinada 50 a 80 graus
+		_cai = _particulas(load(m.pasta + "folha1.png"), 120, 0.1, true)
+		_cai.initial_velocity_min = 7.5
+		_cai.initial_velocity_max = 12.5
+		_cai.direction = Vector3(0, -1, 0).rotated(Vector3.RIGHT, deg_to_rad(65))
+		_cai.spread = 15.0
+		_cai.lifetime = 0.6
+	_chuva(m)
+
+
+# chuva (CreateHeavenRain em Icarus, CreateRain no Mercado de Loren): rain01.tga do World1 em
+# pe, de 2 a 4 m acima do heroi, caindo a 20..43 por quadro inclinada 30 graus; faisca de
+# Vulcanus (CGM_PK_Field::CreateFireSpark): FireSnuff somado voando de lado
+func _chuva(m: Node3D) -> void:
+	if not m.modo_jogo:
+		return
+	if m.numero in [11, 80] and ResourceLoader.exists(m.pasta + "chuva.png"):
+		var c := _particulas(load(m.pasta + "chuva.png"), 110, 0.05, true)
+		var q := c.mesh as QuadMesh
+		q.size = Vector2(0.04, 0.5)
+		(q.material as StandardMaterial3D).billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
+		c.initial_velocity_min = 5.0
+		c.initial_velocity_max = 10.75
+		c.lifetime = 0.6
+		c.preprocess = c.lifetime
+		_cai2 = c
+	elif m.numero == 64 and ResourceLoader.exists(m.pasta + "faisca.png"):
+		var c := _particulas(load(m.pasta + "faisca.png"), 60, 0.12, false)
+		var mat := (c.mesh as QuadMesh).material as StandardMaterial3D
+		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+		mat.albedo_color = Color(1, 0.35, 0.1)
+		c.emission_box_extents = Vector3(8, 1.5, 7)
+		c.initial_velocity_min = 1.6
+		c.initial_velocity_max = 3.2
+		c.gravity = Vector3(0, 0.1, 0)
+		c.lifetime = 3.0
+		c.preprocess = c.lifetime
+		_cai2 = c
 
 
 func _particulas(tex: Texture2D, n: int, tam: float, neve: bool) -> CPUParticles3D:
@@ -673,6 +812,7 @@ func _particulas(tex: Texture2D, n: int, tam: float, neve: bool) -> CPUParticles
 	mat.vertex_color_use_as_albedo = true
 	mat.albedo_texture = tex
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.disable_fog = true
 	q.material = mat
 	c.mesh = q
 	var g := Gradient.new()
@@ -806,9 +946,9 @@ func _process(dt: float) -> void:
 		for mt in _portal_mats:
 			mt.set_shader_parameter("cor", cor)
 	# a neve e as folhas nascem em volta do heroi: de -8 a +8 m em X, de -5 a +9 m em Y do MU
-	if _cai and mundo.seguir and is_instance_valid(mundo.seguir):
+	if (_cai or _cai2) and mundo.seguir and is_instance_valid(mundo.seguir):
 		var h: Vector3 = mundo.seguir.global_position
-		var alto := 3.0 if mundo.numero == 3 else 2.0
+		var alto := 3.0 if mundo.numero in [3, 11, 80] else 2.0
 		for c in [_cai, _cai2]:
 			if c:
 				c.global_position = h + Vector3(0, alto, -2.0)

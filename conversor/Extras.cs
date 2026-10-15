@@ -50,12 +50,20 @@ static class Extras
                 await Png(Achar(obj8, $"wt{i:00}.OZJ")!, Path.Combine(dest, "agua", $"{i}.png"));
             await Png(Achar(obj8, "drop01.OZJ")!, Path.Combine(dest, "bolha.png"));
         }
+        // musica e som de fundo do mapa todo (PlayBGM e PlayWorldAmbientSounds do SceneManager.cpp do cliente)
         var sons = mundo switch { 2 => ("Dungeon.mp3", "aDungeon.wav"), 5 => ("lost_tower_a.mp3", "aTower.wav"),
-            8 => ("atlans.mp3", "aWater.wav"), 9 => ("tarkan.mp3", "desert.wav"), _ => default };
+            8 => ("atlans.mp3", "aWater.wav"), 9 => ("tarkan.mp3", "desert.wav"),
+            11 => ("icarus.mp3", "aHeaven.wav"), 31 => ("castle.mp3", ""), 32 => ("huntingground.mp3", ""),
+            34 => ("Aida.mp3", ""), 35 => ("crywolf1st.mp3", ""), 38 => ("kanturu_1st.mp3", ""), 39 => ("kanturu_2nd.mp3", ""),
+            52 => ("elbeland.mp3", ""), 57 => ("SwampOfCalmness.mp3", ""), 58 => ("Raklion.mp3", ""), 64 => ("PK_Field.mp3", ""),
+            80 => ("iDoppelganger.mp3", "aWind.wav"), 81 => ("Karutan_A.mp3", "Karutan/Karutan_desert_env.wav"),
+            82 => ("Karutan_B.mp3", "Karutan/Karutan_desert_env.wav"), _ => default };
         if (sons != default)
         {
             File.Copy(Achar(Achar(data, "Music")!, sons.Item1)!, Path.Combine(dest, "musica.mp3"), true);
-            File.Copy(Achar(Achar(data, "Sound")!, sons.Item2)!, Path.Combine(dest, "fundo.wav"), true);
+            var som = Achar(data, "Sound")!;
+            foreach (var parte in sons.Item2.Split('/', StringSplitOptions.RemoveEmptyEntries)) som = Achar(som, parte)!;
+            if (sons.Item2 != "") File.Copy(som, Path.Combine(dest, "fundo.wav"), true);
             Console.WriteLine($"  {sons.Item1}, {sons.Item2} -> musica.mp3, fundo.wav");
         }
         if (mundo is 3 or 4)

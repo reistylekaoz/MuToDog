@@ -14,11 +14,20 @@ import os, re, sys
 cfg = open('export_presets.cfg').read()
 cfg = re.split(r'\n\[preset\.\d+\]\n\nname="Mapa', cfg)[0].rstrip('\n') + '\n'
 # o Web deixa de fora os mapas que vao em pacote
-cfg = re.sub(r'exclude_filter="(dados/mundo\d+/\*,)*', 'exclude_filter="' + ''.join(f'dados/mundo{n}/*,' for n in sys.argv[1:]), cfg, count=1)
+# os monstros de cada mapa novo (dados/monstros_mapa.json) vao no pacote do mapa, nao no index.pck
+import json
+mons = json.load(open('dados/monstros_mapa.json')) if os.path.exists('dados/monstros_mapa.json') else {}
+import glob
+# o modelo e as texturas que o conversor tirou dele (<nome>_0.png, <nome>_1.png ...)
+def arquivos_mons(m):
+    return [f'dados/personagens/{m}.glb'] + sorted(f for f in glob.glob(f'dados/personagens/{m}_*.png') if re.fullmatch(re.escape(m) + r'_\d+\.png', os.path.basename(f)))
+fora_mons = sorted({a for n in sys.argv[1:] for m in mons.get(n, []) for a in arquivos_mons(m)})
+cfg = re.sub(r'exclude_filter="((dados/mundo\d+/\*|dados/personagens/\w+\.(glb|png)),)*', 'exclude_filter="' + ''.join(f'dados/mundo{n}/*,' for n in sys.argv[1:]) + ''.join(f'{a},' for a in fora_mons), cfg, count=1)
 base = max(int(i) for i in re.findall(r'^\[preset\.(\d+)\]', cfg, re.M)) + 1
 opcoes = re.search(r'\[preset\.0\.options\]\n(.*?)(?=\n\[|\Z)', cfg, re.S).group(1).strip()
 for k, n in enumerate(sys.argv[1:]):
     fs = sorted('res://' + os.path.join(r, x) for r, _, f in os.walk(f'dados/mundo{n}') for x in f if x.endswith(('.png', '.glb', '.mp3', '.wav')))
+    fs += ['res://' + a for m in mons.get(n, []) for a in arquivos_mons(m)]
     i = base + k
     cfg += f'''
 [preset.{i}]

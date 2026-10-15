@@ -1,0 +1,151 @@
+{
+ "7": [
+  "npc_ball01",
+  "npc_tournament01"
+ ],
+ "11": [
+  "monster51",
+  "monster52",
+  "monster53",
+  "monster54",
+  "monster55",
+  "monster56"
+ ],
+ "31": [
+  "npc_npccrown",
+  "npc_npccheckfloor",
+  "monster78",
+  "npc_npcsenatus",
+  "npc_npcclerk",
+  "npc_npcpharmercy1",
+  "npc_npcpharmercy2"
+ ],
+ "32": [
+  "monster82",
+  "monster83",
+  "monster84",
+  "monster85",
+  "monster86",
+  "monster88"
+ ],
+ "34": [
+  "monster101",
+  "monster102",
+  "monster103",
+  "monster104",
+  "monster105",
+  "monster106",
+  "npc_os",
+  "npc_je",
+  "monster194",
+  "monster195",
+  "monster196",
+  "monster197"
+ ],
+ "35": [
+  "npc_object82",
+  "npc_object57",
+  "npc_npcclerk",
+  "monster92",
+  "monster98",
+  "monster97",
+  "monster96",
+  "monster99",
+  "monster93",
+  "monster95",
+  "monster94",
+  "monster100",
+  "monster90",
+  "npc_werequarrel"
+ ],
+ "38": [
+  "monster107",
+  "monster108",
+  "monster109",
+  "monster110",
+  "monster111",
+  "monster112",
+  "monster113",
+  "monster114",
+  "monster198",
+  "monster199",
+  "monster200",
+  "monster201"
+ ],
+ "39": [
+  "monster115",
+  "monster116",
+  "monster117",
+  "npc_to3gate"
+ ],
+ "52": [
+  "npc_silvia",
+  "npc_rhea",
+  "npc_marce",
+  "monster129",
+  "monster130",
+  "monster131",
+  "monster132",
+  "monster133",
+  "monster134",
+  "monster135",
+  "monster136",
+  "npc_goblinmaster",
+  "npc_seedgoblin",
+  "npc_gambler_moss"
+ ],
+ "57": [
+  "monster137",
+  "monster138",
+  "monster139",
+  "monster140",
+  "monster141",
+  "monster142",
+  "monster143",
+  "monster144",
+  "monster145",
+  "monster202",
+  "monster203",
+  "monster204"
+ ],
+ "58": [
+  "monster146",
+  "monster147",
+  "monster148",
+  "monster149",
+  "monster150",
+  "monster206",
+  "monster207",
+  "monster208",
+  "monster209"
+ ],
+ "64": [
+  "npc_titus",
+  "monster158",
+  "monster159",
+  "monster160",
+  "monster161",
+  "monster162",
+  "monster164",
+  "monster163"
+ ],
+ "80": [
+  "npc_unitedmarketplace_christine",
+  "npc_unitedmarkedplace_raul"
+ ],
+ "81": [
+  "monster210",
+  "monster211",
+  "monster212",
+  "monster214",
+  "monster215",
+  "npc_unitedmarketplace_christine",
+  "npc_volvo"
+ ],
+ "82": [
+  "monster212",
+  "monster213",
+  "monster216",
+  "monster217"
+ ]
+}

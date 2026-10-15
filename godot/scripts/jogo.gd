@@ -187,11 +187,19 @@ func _ready() -> void:
 			print("TESTE apagando %s" % p.apagar)
 			cli.apagar_amigo(p.apagar), CONNECT_ONE_SHOT)
 	if p.has("mover"):
-		# testes: --mover 4 (Devias) ou --mover 4,3 (Devias e depois Noria), 4 s entre um e outro
+		# testes: --mover 4 (Devias) ou --mover 4,3 (Devias e depois Noria), 4 s entre um e outro;
+		# com --andar, anda depois de chegar no ultimo mapa
+		var depois := _andar_depois
+		_andar_depois = Vector2i(-1, -1)
 		cli.entrou.connect(func(_i):
 			for idx in str(p.mover).split(","):
 				await get_tree().create_timer(4.0).timeout
-				_mover_para(int(idx), "teste %s" % idx), CONNECT_ONE_SHOT)
+				_mover_para(int(idx), "teste %s" % idx)
+			if depois.x >= 0:
+				await get_tree().create_timer(6.0).timeout
+				if eu:
+					andar_ate(depois)
+					print("TESTE andando de %s ate %s (%d passos)" % [eu.tile, depois, eu.fila.size()]), CONNECT_ONE_SHOT)
 	if p.has("trocar"):
 		cli.entrou.connect(func(_i): _teste_trocar(), CONNECT_ONE_SHOT)
 	if p.has("auto"):
@@ -704,8 +712,16 @@ func _objeto_morreu(id: int) -> void:
 func _mapa_mudou(mapa: int, x: int, y: int) -> void:
 	print("TESTE mapa mudou %d (%d, %d)" % [mapa, x, y])
 	if mapa != mapa_atual:
-		_abrir_mapa(mapa, x, y)
+		await _abrir_mapa(mapa, x, y)
 		_msg("Foi pra %s (%d, %d)." % [mapas.get(str(mapa), "mapa %d" % mapa), x, y])
+		# gravacao com --andar (a gravacao do --mover): anda de novo no mapa novo, como no teste
+		var p := _parametros()
+		if p.has("gravacao") and p.has("andar"):
+			var xy: PackedStringArray = str(p.andar).split(",")
+			await get_tree().create_timer(6.0).timeout
+			if eu:
+				andar_ate(Vector2i(int(xy[0]), int(xy[1])))
+				print("TESTE andando de %s ate %s (%d passos)" % [eu.tile, p.andar, eu.fila.size()])
 	elif eu:
 		eu.teleportar(x, y)
 		_restante.clear()

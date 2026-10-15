@@ -53,6 +53,11 @@ func _ready() -> void:
 		ambiente.name = "Ambiente"
 		add_child(ambiente)
 		ambiente.montar(self, mapa_img, (load(pasta + "luz.png") as Texture2D).get_image(), _lista_objetos)
+		if numero in Ambiente.SEM_CHAO:
+			mu.get_node("Terreno").visible = false
+		if Ambiente.CEU.has(numero):
+			$WorldEnvironment.environment.background_color = Ambiente.CEU[numero]
+			$WorldEnvironment.environment.fog_light_color = Ambiente.CEU[numero]
 	else:
 		# mapa ainda nao convertido: chao liso com grade, so pra ver quem esta onde
 		altura = Image.create(TILES, TILES, false, Image.FORMAT_L8)
@@ -291,7 +296,7 @@ func _objetos() -> int:
 	mu.add_child(raiz)
 	for o in lista:
 		# marcadores de luz e de pose: o cliente original nao desenha
-		if mundo_invisivel(o.m) or int(o.t) in Ambiente.ESCONDER.get(numero, []):
+		if mundo_invisivel(o.m) or int(o.t) in Ambiente.ESCONDER.get(numero, []) or int(o.t) in Ambiente.NUVENS.get(numero, []):
 			continue
 		if not cenas.has(o.m):
 			cenas[o.m] = load(pasta + "modelos/%s.glb" % o.m)
