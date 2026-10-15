@@ -316,7 +316,7 @@ func _montar_ui() -> void:
 	hud_texto.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	hv.add_child(hud_texto)
 	var ajuda := Label.new()
-	ajuda.text = "Clique: anda, ataca, pega, fala com NPC · botao direito: skill · 1 a 5 troca a skill · Q W E R pocoes · I inventario · C personagem · F amigos · U menu · setas giram · roda aproxima · M som · - = brilho"
+	ajuda.text = "Clique: anda, ataca, pega, fala com NPC · botao direito: skill · 1 a 5 troca a skill · Q W E R pocoes · I inventario · C personagem · F amigos · U menu · setas giram · roda aproxima · M mover de mapa · - = brilho"
 	ajuda.add_theme_font_size_override("font_size", 12)
 	ajuda.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
 	ajuda.add_theme_constant_override("outline_size", 3)
