@@ -58,6 +58,8 @@ var brilho := 2.0
 var inv: Inventario
 # loja do NPC, amigos (F) e menu (U)
 var loja: Loja
+var guarda: Guarda          # bau e maquina do caos
+var _janela_npc := 0        # tipo da janela que o servidor abriu (0 loja, 2 bau, 3 maquina do caos)
 var amigos: Amigos
 var menu: MenuSistema
 var mover_janela: Movimento   # janela Move (M)
@@ -78,6 +80,7 @@ var pocao_escolhida: Array = ["", "", "", ""]   # chave do item que a pessoa pos
 
 
 func _ready() -> void:
+	PacoteMapa.montar_pc()
 	# o visualizador de mapa (main.tscn) segue abrindo no navegador com ?vista=1
 	if OS.has_feature("web") and str(JavaScriptBridge.eval("location.search")).contains("vista="):
 		get_tree().change_scene_to_file.call_deferred("res://main.tscn")
@@ -171,6 +174,8 @@ func _ready() -> void:
 		cli.entrou.connect(func(_i): _teste_loja(p.loja), CONNECT_ONE_SHOT)
 	if p.has("amigo"):
 		cli.entrou.connect(func(_i): _teste_amigo(p.amigo), CONNECT_ONE_SHOT)
+	if p.has("guarda"):
+		cli.entrou.connect(func(_i): _teste_guarda(p.guarda), CONNECT_ONE_SHOT)
 	if p.has("aceitar"):
 		cli.pedido_amizade.connect(func(n):
 			await get_tree().create_timer(1.0).timeout
@@ -343,6 +348,31 @@ func _montar_ui() -> void:
 		cli.vender(slot))
 	loja.fechar.connect(_fechar_loja)
 	hud.add_child(loja)
+	guarda = Guarda.new()
+	guarda.inv = inv
+	guarda.guardar.connect(func(de, para):
+		if inv.itens.has(de):
+			cli.mover_item(de, para, inv.itens[de].bytes, 0, 2 if guarda.modo == "bau" else 3))
+	guarda.retirar.connect(func(s):
+		var para := inv.lugar_livre(guarda.itens[s])
+		if para < 0:
+			guarda.esperando = -1
+			_msg("[color=#e8b04a]Mochila cheia.[/color]")
+			return
+		cli.mover_item(s, para, guarda.itens[s].bytes, 2 if guarda.modo == "bau" else 3, 0))
+	guarda.zen_guardar.connect(func(v):
+		if v <= 0 or v > meu_zen:
+			_msg("[color=#e8b04a]Escreva quanto zen guardar (voce tem %s).[/color]" % ItemChao._milhar(meu_zen))
+		else:
+			cli.zen_bau(0, v))
+	guarda.zen_tirar.connect(func(v):
+		if v <= 0 or v > guarda.zen_bau:
+			_msg("[color=#e8b04a]Escreva quanto zen tirar (o bau tem %s).[/color]" % ItemChao._milhar(guarda.zen_bau))
+		else:
+			cli.zen_bau(1, v))
+	guarda.combinar.connect(func(): cli.misturar())
+	guarda.fechar.connect(_fechar_loja)
+	hud.add_child(guarda)
 	amigos = Amigos.new()
 	amigos.adicionar.connect(func(n): cli.adicionar_amigo(n))
 	amigos.apagar.connect(func(n): cli.apagar_amigo(n))
@@ -383,10 +413,11 @@ func _montar_ui() -> void:
 	hud.add_child(sair)
 	# o Sair sai da frente do X do inventario e da loja
 	var mover_sair := func():
-		var l := (inv.size.x * inv.scale.x if inv.visible else 0.0) + (loja.size.x * loja.scale.x if loja.visible else 0.0)
+		var l := (inv.size.x * inv.scale.x if inv.visible else 0.0) + (loja.size.x * loja.scale.x if loja.visible or guarda.visible else 0.0)
 		sair.position.x = hud.size.x - 90 - l
 	inv.visibility_changed.connect(mover_sair)
 	loja.visibility_changed.connect(mover_sair)
+	guarda.visibility_changed.connect(mover_sair)
 	registro = RichTextLabel.new()
 	registro.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	registro.position = Vector2(12, -250)
@@ -548,6 +579,7 @@ func _entrou(info: Dictionary) -> void:
 func _limpar_mundo() -> void:
 	if loja:
 		loja.visible = false
+		guarda.visible = false
 	npc_falando = -1
 	npc_alvo = -1
 	entidades.clear()
@@ -1098,9 +1130,17 @@ func _ir_ao_npc() -> void:
 
 func _fechar_loja() -> void:
 	if npc_falando >= 0 and cli:
-		cli.fechar_npc()
+		# o bau e a maquina do caos tem o fechar proprio (C1 82 e C1 87)
+		if _janela_npc == 2:
+			cli.fechar_bau()
+		elif _janela_npc == 3:
+			cli.fechar_mistura()
+		else:
+			cli.fechar_npc()
 	npc_falando = -1
+	_janela_npc = 0
 	loja.visible = false
+	guarda.visible = false
 	inv.soltar()
 
 
@@ -1112,16 +1152,49 @@ func _volumes() -> void:
 func _ligar_loja_e_amigos() -> void:
 	cli.janela_npc.connect(func(tipo):
 		print("TESTE janela do npc %d" % tipo)
-		if tipo > 1:
-			var nomes := {2: "o bau", 3: "a maquina do caos", 6: "o guarda da Arena", 0x0C: "o mercador de cash"}
+		_janela_npc = tipo
+		if tipo == 3:
+			# a maquina vazia nao vem com lista: abre ja (a lista, se vier, preenche)
+			var gob: Entidade = entidades.get(npc_falando)
+			guarda.abrir_guarda("caos", gob.nome if gob else "", {})
+			if not inv.visible:
+				inv.alternar()
+		if tipo > 3:
+			var nomes := {6: "o guarda da Arena", 0x0C: "o mercador de cash"}
 			_msg("[color=#9a9ab0]A janela de %s ainda nao foi feita neste cliente.[/color]" % nomes.get(tipo, "esse NPC (tipo %d)" % tipo))
 			_fechar_loja())
-	cli.loja.connect(func(l):
-		print("TESTE loja %d itens" % l.size())
+	cli.loja.connect(func(l, tipo):
+		print("TESTE loja %d itens (tipo %d, janela %d)" % [l.size(), tipo, _janela_npc])
 		var n: Entidade = entidades.get(npc_falando)
-		loja.abrir(n.nome if n else "", l)
+		if _janela_npc in [2, 3] or tipo == 3:
+			if guarda.visible and guarda.modo == "caos":
+				guarda.itens = l   # o que esta na maquina (ao abrir e depois de combinar)
+				guarda.esperando = -1
+				guarda.queue_redraw()
+			else:
+				guarda.abrir_guarda("bau" if _janela_npc == 2 else "caos", n.nome if n else "", l)
+		else:
+			loja.abrir(n.nome if n else "", l)
 		if not inv.visible:
 			inv.alternar())
+	cli.bau_zen.connect(func(no_bau, mochila):
+		print("TESTE zen do bau %d mochila %d" % [no_bau, mochila])
+		guarda.zen_bau = no_bau
+		guarda.queue_redraw()
+		inv.zen = mochila
+		inv.queue_redraw()
+		meu_zen = mochila
+		_hud_nivel())
+	cli.mistura.connect(func(r, it):
+		var textos := {0: "Nao deu certo: os itens se perderam.", 1: "Deu certo!", 2: "Falta zen pra combinar.",
+			3: "Itens demais na maquina.", 4: "Nivel baixo pra essa receita.", 6: "Falta item na receita.",
+			7: "Esses itens nao formam receita.", 8: "O nivel do item nao serve pra essa receita."}
+		print("TESTE mistura %d %s" % [r, ItensMU.nome(it) if not it.is_empty() else ""])
+		guarda.aviso = textos.get(r, "Nao deu (codigo %d)." % r)
+		if r == 1 and not it.is_empty():
+			guarda.aviso = "Deu certo: %s" % ItensMU.nome(it)
+		_msg(guarda.aviso)
+		guarda.queue_redraw())
 	cli.comprou.connect(func(slot, it):
 		print("TESTE comprou %s no slot %d" % [ItensMU.nome(it), slot])
 		inv.entrou(slot, it)
@@ -1203,6 +1276,78 @@ func _teste_loja(quem: String) -> void:
 	await get_tree().create_timer(0.3).timeout
 	print("TESTE loja ok, zen %d, slot %d %s" % [meu_zen, r[0], "vazio" if not inv.itens.has(r[0]) else "ainda ocupado"])
 	_fechar_loja()
+
+
+# testes: --guarda Baz (bau) ou --guarda Goblin (maquina do caos): abre, guarda e tira 1 zen
+# (so no bau), poe o primeiro item da mochila na grade, combina (so na maquina) e traz de volta
+func _teste_guarda(quem: String) -> void:
+	await get_tree().create_timer(1.5).timeout
+	for i in 12:
+		var achou := false
+		for e: Entidade in entidades.values():
+			if e.tipo == "npc" and e.nome.containsn(quem):
+				print("TESTE indo ao npc %s em %s" % [e.nome, e.tile])
+				falar_com(e.id)
+				achou = true
+				break
+		if achou:
+			break
+		await get_tree().create_timer(1.5).timeout
+	await cli.janela_npc
+	await get_tree().create_timer(1.5).timeout
+	print("TESTE guarda aberta: %s, %d itens, zen no bau %d" % [guarda.modo, guarda.itens.size(), guarda.zen_bau])
+	if _parametros().has("so_abrir"):
+		return
+	if guarda.modo == "bau":
+		var antes := meu_zen
+		guarda.zen_guardar.emit(1)
+		await cli.bau_zen
+		print("TESTE guardou 1 zen: bau %d, mochila %d (antes %d)" % [guarda.zen_bau, meu_zen, antes])
+		guarda.zen_tirar.emit(1)
+		await cli.bau_zen
+		print("TESTE tirou 1 zen: bau %d, mochila %d" % [guarda.zen_bau, meu_zen])
+	var s := -1
+	for k in inv.itens:
+		if k >= Inventario.MOCHILA:
+			s = k
+			break
+	if s < 0:
+		print("TESTE guarda: mochila vazia")
+		_fechar_loja()
+		return
+	var it: Dictionary = inv.itens[s]
+	var para := guarda.lugar_livre(it)
+	print("TESTE guardando %s (mochila %d) na casa %d" % [ItensMU.nome(it), s, para])
+	inv.esperando = s
+	guarda.guardar.emit(s, para)
+	await cli.item_movido
+	await get_tree().create_timer(0.5).timeout
+	print("TESTE guardou: grade %s, mochila %d %s" % [guarda.itens.keys(), s, "vazia" if not inv.itens.has(s) else "ainda ocupada"])
+	if guarda.modo == "caos":
+		guarda.combinar.emit()
+		await cli.mistura
+		await get_tree().create_timer(1.0).timeout
+		print("TESTE depois de combinar: %s, grade %s" % [guarda.aviso, guarda.itens.keys()])
+	if _parametros().has("deixar"):
+		return
+	var g := -1
+	for k in guarda.itens:
+		if ItensMU.chave(guarda.itens[k]) == ItensMU.chave(it):
+			g = k
+	if g < 0 and not guarda.itens.is_empty():
+		g = guarda.itens.keys()[0]   # combinou: traz o que saiu
+		it = guarda.itens[g]
+	if g < 0:
+		print("TESTE guarda: o item sumiu da grade")
+		_fechar_loja()
+		return
+	guarda.esperando = g
+	guarda.retirar.emit(g)
+	await cli.item_movido
+	await get_tree().create_timer(0.5).timeout
+	print("TESTE trouxe de volta: grade %s, mochila tem %s" % [guarda.itens.keys(), ItensMU.nome(it) if inv.itens.values().any(func(x): return ItensMU.chave(x) == ItensMU.chave(it)) else "nada"])
+	_fechar_loja()
+	print("TESTE guarda ok")
 
 
 # testes: --amigo <nome> pede amizade e mostra a resposta
@@ -1290,14 +1435,27 @@ func _ligar_inventario_e_skills() -> void:
 		print("TESTE inventario %d itens" % l.size())
 		_vestir_eu()
 		_contar_pocoes())
-	cli.item_movido.connect(func(slot, it):
-		print("TESTE movido para %d" % slot)
-		inv.movido(slot, it)
+	cli.item_movido.connect(func(slot, it, arm):
+		print("TESTE movido para %d (armazem %d)" % [slot, arm])
+		if arm in [2, 3]:
+			# da mochila (ou de outro lugar da grade) pro bau ou pra maquina
+			if inv.esperando >= 0:
+				inv.removido(inv.esperando)
+				inv.nao_moveu()
+			guarda.entrou(slot, it)
+		elif guarda.esperando >= 0 and guarda.visible:
+			# do bau ou da maquina pra mochila
+			guarda.saiu(guarda.esperando)
+			inv.entrou(slot, it)
+		else:
+			inv.movido(slot, it)
 		_vestir_eu()
 		_contar_pocoes())
 	cli.item_nao_moveu.connect(func():
 		print("TESTE nao moveu")
 		inv.nao_moveu()
+		guarda.esperando = -1
+		guarda.queue_redraw()
 		_msg("[color=#e8b04a]O servidor nao deixou mover esse item.[/color]"))
 	cli.item_removido.connect(func(slot):
 		print("TESTE removido %d" % slot)
@@ -1404,7 +1562,7 @@ func _teclas(ev: InputEventKey) -> bool:
 			menu.visible = false
 		elif mover_janela.visible:
 			mover_janela.visible = false
-		elif loja.visible:
+		elif loja.visible or guarda.visible:
 			_fechar_loja()
 		elif inv.visible:
 			inv.alternar()
@@ -1638,6 +1796,9 @@ func _vestir_eu() -> void:
 		if inv.itens.has(s) and s != inv.esperando:
 			d[s] = ItensMU.chave(inv.itens[s])
 			niveis[s] = inv.itens[s].nivel
+	if d.get(8, "") == "13,37":
+		var x: int = inv.itens[8].exc
+		d["fenrir"] = "black" if x & 1 else ("blue" if x & 2 else ("gold" if x & 4 else "red"))
 	print("TESTE vestido %s niveis %s" % [d, niveis])
 	d["niveis"] = niveis
 	eu.boneco.vestir(d)

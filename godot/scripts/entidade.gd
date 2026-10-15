@@ -43,6 +43,14 @@ func montar(m: Node3D, i: int, t: String, n: String, x: int, y: int, b: Boneco =
 		add_child(b)
 		b.tocar("parado")
 		topo = b.altura
+		# Atlans: 4 bolhas por quadro em volta de quem esta no mapa (64 pra cada lado, ate 256
+		# de altura); aqui um tanto menos pra nao pesar com o mapa cheio
+		if int(m.numero) == 8 and ResourceLoader.exists(m.pasta + "bolha.png"):
+			var bo := Ambiente.bolhas(m, 24)
+			bo.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+			bo.emission_box_extents = Vector3(0.64, 1.28, 0.64)
+			bo.position = Vector3(0, 1.28, 0)
+			add_child(bo)
 	else:
 		var tamanho := 1.0 if tipo != "monstro" else 0.9
 		_corpo = MeshInstance3D.new()
@@ -161,6 +169,8 @@ func _process(dt: float) -> void:
 # troca so entre parado e andando: ataque, golpe e morte terminam sozinhos
 func _animar(a: String) -> void:
 	if boneco == null or morto or boneco.acao == a or boneco.acao.trim_suffix("_f") == a:
+		return
+	if boneco.montado() and boneco.pedida == a:
 		return
 	if boneco.nadar and boneco.acao == Boneco.NADO.get(a, ""):
 		return

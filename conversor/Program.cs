@@ -30,6 +30,8 @@ if (args[0] == "itens") { await Itens.Rodar(args[1], args[2], args[3]); return; 
 if (args[0] == "modelos") { await Modelos.Rodar(args[1], args[2], args[3]); return; }
 if (args[0] == "extras") { await Extras.Rodar(args[1], int.Parse(args[2]), args[3]); return; }
 if (args[0] == "efeitos") { await Efeitos.Rodar(args[1], args[2]); return; }
+// conversor textura <arquivo .OZJ/.OZT> <destino.png>: uma textura avulsa (as capas, de Player e Item)
+if (args[0] == "textura") { await Extras.Png(args[1], args[2]); return; }
 var data = args[0];
 var mundo = int.Parse(args[1]);
 var saida = Path.Combine(args[2], $"mundo{mundo}");
@@ -124,6 +126,8 @@ foreach (var o in obj.Objects)
     lista.Add(new { m = nome, t = o.Type, p = new[] { o.Position.X, o.Position.Y, o.Position.Z }, q = new[] { q.X, q.Y, q.Z, q.W }, s = o.Scale });
 }
 File.WriteAllText(Path.Combine(saida, "objetos.json"), JsonSerializer.Serialize(lista));
+// ossos na pose 0 de cada modelo (o cliente prende luz e faisca no osso: CreateSprite em BoneTransform[n])
+File.WriteAllText(Path.Combine(saida, "ossos.json"), JsonSerializer.Serialize(OssosPose.Todos));
 Console.WriteLine($"objetos: {lista.Count} de {obj.Objects.Length} · modelos: {feitos.Count(f => f.Value)} ok, {feitos.Count(f => !f.Value)} com erro");
 if (faltam.Count > 0) Console.WriteLine("tipos sem arquivo: " + string.Join(" ", faltam.Select(f => $"{f.Key}x{f.Value}")));
 
@@ -157,6 +161,7 @@ static async Task Glb(string arquivo, string destino)
         local.Translation = bm.Position[0];
         ossos[i] = b.Parent >= 0 && b.Parent < i ? local * ossos[b.Parent] : local;
     }
+    OssosPose.Todos[Path.GetFileNameWithoutExtension(destino)] = ossos.Select(m => new[] { m.Translation.X, m.Translation.Y, m.Translation.Z }).ToArray();
 
     var mb = new MeshBuilder<VertexPositionNormal, VertexTexture1>(bmd.Name);
     foreach (var me in bmd.Meshes)
@@ -189,4 +194,9 @@ static async Task Glb(string arquivo, string destino)
     var cena = new SharpGLTF.Scenes.SceneBuilder();
     cena.AddRigidMesh(mb, Matrix4x4.Identity);
     cena.ToGltf2().SaveGLB(destino);
+}
+
+static class OssosPose
+{
+    public static readonly Dictionary<string, float[][]> Todos = new();
 }

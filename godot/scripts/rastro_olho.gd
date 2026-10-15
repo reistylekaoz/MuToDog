@@ -51,10 +51,11 @@ func _process(d: float) -> void:
 	for i in n:
 		var p := _pontos[i]
 		var dir := (_pontos[maxi(i - 1, 0)] - _pontos[mini(i + 1, n - 1)])
-		var lado := dir.cross(cam.global_position - p).normalized() * largura * 0.5
-		if lado == Vector3.ZERO:
-			lado = Vector3(0, largura * 0.5, 0)
 		var f := 1.0 - float(i) / (n - 1)
+		# afina ate a ponta; olho parado (sem rumo) nao desenha fita
+		var lado := Vector3.ZERO
+		if dir.length() > 0.02:
+			lado = dir.cross(cam.global_position - p).normalized() * largura * 0.5 * (0.3 + 0.7 * f)
 		im.surface_set_color(Color(f, f, f))
 		im.surface_set_uv(Vector2(float(i) / (n - 1), 0))
 		im.surface_add_vertex(p + lado)

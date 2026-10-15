@@ -2,6 +2,7 @@ extends Node3D
 # Vitrine dos personagens convertidos (dados/personagens): todos em fila,
 # trocando de acao a cada 3 s. No navegador: ?vitrine=1 (ou ?vitrine=parado).
 # ?npc=34,35: os monstros pelo numero do OpenMU, montados como no jogo (Boneco.do_npc).
+# ?giro=90 vira todos de lado. ?monta=13,2;13,3;13,4;13,37: um Dark Knight com espada montado em cada (13,37:blue = Fenrir azul).
 
 var bonecos: Array[Boneco] = []
 var _t := 0.0
@@ -38,6 +39,15 @@ func _ready() -> void:
 		add_child(ModelosMU.new())
 		nomes = Array(npcs.split(","))
 		so = npcs
+	var monta := _param("monta")
+	var montas: Array = []
+	if monta != "":
+		add_child(ModelosMU.new())
+		montas = Array(monta.split(";"))
+		nomes = []
+		for m in montas:
+			nomes.append("classe_dk")
+		so = monta
 	var col := mini(8, nomes.size())
 	for i in nomes.size():
 		var b := Boneco.do_npc(int(nomes[i])) if npcs != "" else Boneco.novo(nomes[i])
@@ -49,11 +59,16 @@ func _ready() -> void:
 				break
 		if b == null:
 			continue
-		b.rotation_degrees.y = 180
+		if not montas.is_empty():
+			var mk: String = montas[i].get_slice(":", 0)
+			var eq := {0: "0,5", "fenrir": montas[i].get_slice(":", 1) if ":" in montas[i] else "red"}
+			eq[7 if mk.begins_with("12,") or mk == "13,30" else 8] = mk   # capa vai no slot da asa
+			b.vestir(eq)
+		b.rotation_degrees.y = 180 + float(_param("giro"))   # ?giro=90: de lado
 		b.position = Vector3((i % col - col / 2.0 + 0.5) * (3.2 if so == "" else 1.8), 0, -(i / col) * 4.0 + 4)
 		add_child(b)
 		var l := Label3D.new()
-		l.text = nomes[i]
+		l.text = montas[i] if not montas.is_empty() else nomes[i]
 		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		l.pixel_size = 0.01
 		l.font_size = 40

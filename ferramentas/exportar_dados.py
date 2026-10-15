@@ -1,5 +1,6 @@
 """Tira do banco do OpenMU o que o cliente precisa saber de itens, skills e mapas.
-Grava godot/dados/itens_info.json ("grupo,numero" -> [largura, altura, slots, durabilidade, consome, skill]),
+Grava godot/dados/itens_info.json ("grupo,numero" -> [largura, altura, slots, durabilidade, consome, skill,
+valor, nivel de drop], os dois ultimos pro preco da loja),
 godot/dados/skills.json (numero -> [nome, alcance, tipo, alvo, mana, ag, move_ate_alvo])
 e godot/dados/movimento.json: "lista" = a janela Move (M) [indice, nome, zen, nivel, mapa],
 "portais" = mapa -> [[numero, x1, y1, x2, y2, nivel, mapa de destino]] (EnterGate: pisou, entra),
@@ -17,11 +18,12 @@ def consulta(sql):
 
 itens = {}
 for i in consulta('''select d."Group" g, d."Number" n, d."Width" w, d."Height" h, coalesce(t."ItemSlots", '') slots,
-    d."Durability" dur, d."ConsumeEffectId" is not null or d."Group" = 14 consome, coalesce(s."Number", -1) skill
+    d."Durability" dur, d."ConsumeEffectId" is not null or d."Group" = 14 consome, coalesce(s."Number", -1) skill,
+    d."Value" valor, d."DropLevel" drop
     from config."ItemDefinition" d left join config."ItemSlotType" t on t."Id" = d."ItemSlotId"
     left join config."Skill" s on s."Id" = d."SkillId"'''):
     slots = [int(x) for x in i["slots"].split(";") if x != ""]
-    itens[f'{i["g"]},{i["n"]}'] = [i["w"], i["h"], slots, i["dur"], i["consome"], i["skill"]]
+    itens[f'{i["g"]},{i["n"]}'] = [i["w"], i["h"], slots, i["dur"], i["consome"], i["skill"], i["valor"], i["drop"]]
 
 skills = {}
 for s in consulta('''select s."Number" n, split_part(s."Name", '||', 1) nome, s."Range" alcance, s."SkillType" tipo,

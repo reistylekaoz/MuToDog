@@ -122,6 +122,7 @@ func _texto(f: Font, p: Vector2, t: String, largura: float, tam: int, cor: Color
 # dica do item a esquerda da janela, como no inventario
 func _dica(f: Font, it: Dictionary, r: Rect2) -> void:
 	var l := ItensMU.linhas(it)
+	l.append(["Preco: %s Zen" % ItemChao._milhar(ItensMU.preco(it)), Color(1, 0.86, 0.45)])
 	l.append(["Clique pra comprar", Color(1, 0.86, 0.45)])
 	var larg := 0.0
 	for x in l:

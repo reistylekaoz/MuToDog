@@ -19,7 +19,8 @@ static class Personagens
     // soma: malhas da arma que o cliente desenha somadas (BlendMesh do item em ZzzObject.cpp; -1 = todas,
     // o BlendMesh -2); o material sai com o nome "soma:<textura>" e o jogo troca pelo somado
     internal record Arma(string bmd, int osso, bool esquerda = false, int[]? soma = null);
-    record Def(string esqueleto, string[]? partes, Dictionary<string, int> acoes, int[]? esconde, Arma[]? armas);
+    // texturas: pasta a mais onde procurar textura (a Uniria le as dela de Data/Item)
+    record Def(string esqueleto, string[]? partes, Dictionary<string, int> acoes, int[]? esconde, Arma[]? armas, string? texturas = null);
 
     public static async Task Rodar(string data, string saida)
     {
@@ -39,7 +40,8 @@ static class Personagens
                     if (arq == null) { Console.WriteLine($"  {nome}: falta {p}"); continue; }
                     var parte = await new BMDReader().Load(arq);
                     parte.Name = Path.GetFileNameWithoutExtension(arq);
-                    partes.Add((parte, Path.GetDirectoryName(arq)!));
+                    var extra = d.texturas != null ? Arquivo(data, d.texturas) : null;
+                    partes.Add((parte, Path.GetDirectoryName(arq)! + (extra != null ? ";" + extra : "")));
                 }
                 var armas = new List<(BMD bmd, string dir, Arma a)>();
                 foreach (var a in d.armas ?? [])

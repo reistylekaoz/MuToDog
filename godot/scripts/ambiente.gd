@@ -15,6 +15,8 @@ extends Node3D
 #   e de quem anda fora da cidade, luzes que pulsam e o po brilhante na agua.
 # - Tarkan: lava e cristal somados que pulsam e pintam o chao de laranja, areia que corre,
 #   brilho (Impack03) nas pedras 63 e 64, fumaca dos buracos e o geiser (70, 76, 83).
+# - Noria: luz azul presa nos ossos das plantas e postes (CreateSprite BITMAP_LIGHT no osso);
+# - bichos em volta do heroi (bichos.gd): passaro, morcego, borboleta, rato, peixe, besouro.
 # A agua do chao corre no proprio shader do terreno (terreno.gdshader).
 
 const PASTA := "res://dados/ambiente/"
@@ -75,6 +77,10 @@ const CORRE := {4: {42: [0, Vector2(-2, 0)], 43: [0, Vector2(2, 0)]}, 5: {3: [1,
 const PORTAL := {3: [Vector2(53 * 100 + 50, 92 * 100 + 20), 360.0], 4: [Vector2(223 * 100, 30 * 100), 350.0]}
 # Devias: porta que corre (86) e porta que gira (20, 65, 88) quando o heroi chega a 2 tiles
 const PORTAS := {3: [86, 20, 65, 88]}
+# Noria: luz (flare01) no osso do objeto, cor (0,4 0,7 1) x Luminosity sorteada 0,7..1,0 a cada
+# quadro: tipo -> [[ossos], escala]; 39 ainda tem duas lightning2 girando no osso 57
+const LUZ_OSSO := {4: {1: [[2, 4, 6], 0.5], 9: [[1], 1.5], 17: [[4, 7, 10, 13], 1.0], 35: [[3], 1.5],
+	39: [[61, 62, 63, 64, 65], 1.0]}}
 const COR_FOGO := Color(0.85, 0.51, 0.34)   # Luminosity media 0,85 x (1, 0,6, 0,4)
 
 var mundo: Node3D
@@ -86,6 +92,8 @@ var _agua: Array = []          # materiais da agua de Atlans (textura troca 25 v
 var _quadros_agua: Array[Texture2D] = []
 var _giram: Array = []         # [sprite, sentido]
 var _brilhos: Array = []       # [material, cor, fase]
+var _luz_osso: Array[ShaderMaterial] = []
+var _portal_mats: Array[ShaderMaterial] = []
 var _fumacas: Array = []       # [particulas, segundos ligada, ciclo, fase]
 var _bolhas: CPUParticles3D    # Atlans: dos pontos do mapa (tipo 22)
 var _portas: Array = []        # [no, tipo, posicao original, giro original (graus), aberta]
@@ -145,6 +153,11 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 	_malhas_especiais(m)
 	_montar_portal(m)
 	_queda(m)
+	_luzes_nos_ossos(m)
+	var bi := Bichos.new()
+	bi.name = "Bichos"
+	bi.mundo = m
+	add_child(bi)
 	_luzes_girando(m, objetos)
 	_bolhas_do_mapa(m, objetos)
 	if m.numero == 5:
@@ -478,7 +491,8 @@ func _montar_portal(m: Node3D) -> void:
 		# o cliente sorteia o tamanho (1,3..1,8) e a velocidade de cada peca
 		var esc := 1.3 + rng.randf() * 0.5
 		base.scale = Vector3.ONE * 0.01 * esc
-		base.set_meta("vel", (rng.randf() * 0.1 + 0.01) * 25.0 * (1.0 if p[0] != 2 else -1.0))
+		# Move_MODEL_WARP3: gira (4 + Gravity) graus por quadro, Gravity sorteado 0..8
+		base.set_meta("vel", (4.0 + rng.randf() * 8.0) * 25.0 * (1.0 if p[0] != 2 else -1.0))
 		base.add_child(no)
 		_portal.add_child(base)
 		for mi: MeshInstance3D in no.find_children("*", "MeshInstance3D", true, false):
@@ -491,6 +505,51 @@ func _montar_portal(m: Node3D) -> void:
 				mat.set_shader_parameter("modo", 1)
 				mat.set_shader_parameter("cor", Color(0.8, 0.8, 0.8))
 				mi.set_surface_override_material(s, mat)
+				_portal_mats.append(mat)
+
+
+func _luzes_nos_ossos(m: Node3D) -> void:
+	var tabela: Dictionary = LUZ_OSSO.get(m.numero, {})
+	if tabela.is_empty() or not FileAccess.file_exists(m.pasta + "ossos.json"):
+		return
+	var ossos: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(m.pasta + "ossos.json"))
+	var tex := EfeitoMU.textura("flare01")
+	var raio := EfeitoMU.textura("lightning2")
+	for par in m.nos_objetos:
+		var t := int(par[1].t)
+		if not tabela.has(t) or not ossos.has(par[1].m):
+			continue
+		var pose: Array = ossos[par[1].m]
+		var o: Dictionary = par[1]
+		var tr := Transform3D(Basis(Quaternion(o.q[0], o.q[1], o.q[2], o.q[3])) * float(o.s), Vector3(o.p[0], o.p[1], o.p[2]))
+		var lista: Array = tabela[t][0].duplicate()
+		var esc: float = tabela[t][1]
+		if m.numero == 4 and t == 39:
+			lista.append(57)
+		for i: int in lista:
+			if i >= pose.size():
+				continue
+			var p := _no_mundo(tr * Vector3(pose[i][0], pose[i][1], pose[i][2]))
+			var girando: bool = m.numero == 4 and t == 39 and i == 57
+			for sentido in ([1.0, -1.0] if girando else [0.0]):
+				var t2 := raio if girando else tex
+				var sp := MeshInstance3D.new()
+				var q := QuadMesh.new()
+				q.size = Vector2(t2.get_width(), t2.get_height()) * esc * 0.01
+				sp.mesh = q
+				sp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				var mat := ShaderMaterial.new()
+				mat.shader = EfeitoMU.SHADER
+				mat.set_shader_parameter("tex", t2)
+				mat.set_shader_parameter("modo", 0)
+				mat.set_shader_parameter("cor", Color(0.4, 0.8, 1) if girando else Color(0.34, 0.6, 0.85))
+				sp.material_override = mat
+				add_child(sp)
+				sp.global_position = p
+				if girando:
+					_giram.append([mat, sentido])
+				else:
+					_luz_osso.append(mat)
 
 
 # Lost Tower 19 e 20: duas luzes girando em sentidos contrarios em cima do bloco de fogo
@@ -731,13 +790,21 @@ func _process(dt: float) -> void:
 		(b[3] as Node3D).scale = Vector3.ONE * l
 	for f in _fumacas:
 		(f[0] as CPUParticles3D).emitting = fmod(_t + f[3], f[2]) < f[1]
+	if not _luz_osso.is_empty():
+		var l := randf_range(0.7, 1.0)
+		for mt in _luz_osso:
+			mt.set_shader_parameter("cor", Color(0.4 * l, 0.7 * l, l))
 	for g in _giram:
 		(g[0] as ShaderMaterial).set_shader_parameter("giro", deg_to_rad(fmod(_t * 100.0, 360.0)) * g[1])
 	if not _portas.is_empty():
 		_mexer_portas(dt)
 	if _portal:
 		for b: Node3D in _portal.get_children():
-			b.rotate_object_local(Vector3(0, 0, 1), deg_to_rad(float(b.get_meta("vel")) * 10.0) * dt)
+			b.rotate_object_local(Vector3(0, 0, 1), deg_to_rad(float(b.get_meta("vel"))) * dt)
+		# a luz do portal passeia entre as cores (sin de 1,1, 1,7 e 1,3 por segundo em cada canal)
+		var cor := Color(0.25 + 0.55 * (sin(_t * 1.1) * 0.5 + 0.5), 0.25 + 0.55 * (sin(_t * 1.7) * 0.5 + 0.5), 0.25 + 0.55 * (sin(_t * 1.3) * 0.5 + 0.5))
+		for mt in _portal_mats:
+			mt.set_shader_parameter("cor", cor)
 	# a neve e as folhas nascem em volta do heroi: de -8 a +8 m em X, de -5 a +9 m em Y do MU
 	if _cai and mundo.seguir and is_instance_valid(mundo.seguir):
 		var h: Vector3 = mundo.seguir.global_position

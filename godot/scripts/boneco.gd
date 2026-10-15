@@ -13,7 +13,11 @@ const VELOCIDADE := {
 		"soco": 0.35, "espada": 0.35, "golpe": 0.4, "morre": 0.45,
 		"espada_s1": 0.3, "espada_s2": 0.3, "espada_s3": 0.3, "espada_s4": 0.3, "espada_s5": 0.3,
 		"giro": 0.4, "furia": 0.3, "estocada": 0.3, "arco": 0.3, "magia": 0.3, "magia2": 0.3,
-		"magia_arma": 0.3, "cura": 0.25, "raio": 0.3, "inferno": 0.3, "fogo_inferno": 0.3},
+		"magia_arma": 0.3, "cura": 0.25, "raio": 0.3, "inferno": 0.3, "fogo_inferno": 0.3,
+		"monta_parado": 0.28, "monta_parado_a": 0.28, "monta_corre": 0.34, "monta_corre_a": 0.34, "monta_ataque": 0.35,
+		"cavalo_parado": 0.3, "cavalo_corre": 0.33, "cavalo_ataque": 0.28,
+		"fenrir_parado": 0.28, "fenrir_parado_a": 0.28, "fenrir_anda": 0.3, "fenrir_anda_a": 0.3,
+		"fenrir_corre": 0.34, "fenrir_corre_a": 0.34, "fenrir_ataque": 0.3, "fenrir_ataque_a": 0.3},
 	"npc": {},
 }
 # acao pedida -> a que existe no modelo (o jogador nao tem "ataque", tem "soco")
@@ -22,7 +26,7 @@ const TROCA := {"ataque": ["ataque", "soco", "parado"], "ataque2": ["ataque2", "
 	"corre": ["corre", "anda"], "parado2": ["parado2", "parado"]}
 const NAO_REPETE := ["morre", "golpe", "ataque", "ataque2", "soco", "espada", "espada_s1", "espada_s2",
 	"espada_s3", "espada_s4", "espada_s5", "giro", "furia", "estocada", "arco", "magia", "magia2", "magia_arma",
-	"cura", "raio", "inferno", "fogo_inferno"]
+	"cura", "raio", "inferno", "fogo_inferno", "monta_ataque", "cavalo_ataque", "fenrir_ataque", "fenrir_ataque_a"]
 
 # numero do monstro/NPC no OpenMU -> [modelo, escala], tirado do CreateMonster
 # do cliente S6 (ZzzCharacter.cpp). Lorencia, Dungeon, Devias, Noria, Lost Tower e Atlans.
@@ -63,7 +67,18 @@ const TRANSPARENTES := {11: 0.4}
 const PARTICULAS := {
 	35: [["fogo", "corpo", 60]], 40: [["fogo", 2, 12]], 59: [["fogo", 6, 24], ["fogo", 13, 24]],
 	10: [["fumaca", "pes", 4]], 12: [["fumaca", "pes", 4]], 51: [["fumaca", "pes", 4]],
+	# Tarkan: Beam Knight com chama nas maos (ossos 62 e 77), Death Beam Knight pegando fogo (asas e
+	# corpo); areia levantando em volta de quem anda (MonsterMoveSandSmoke, 1 por quadro andando)
+	61: [["fogo", 62, 6], ["fogo", 77, 6], ["areia", "pes", 20]], 63: [["fogo", "corpo", 70]],
+	57: [["areia", "pes", 20]], 58: [["areia", "pes", 20]], 60: [["areia", "pes", 20]], 62: [["areia", "pes", 20]],
 }
+# NPC que fica no ar (CreateMonster: Position[2] = chao + 140): a Lala da Noria
+const FLUTUA := {242: 1.4}
+# cor do corpo (BodyLight): o Poison Bull nasce envenenado (eDeBuff_Poison = 0,3 1 0,5)
+const TINTA := {8: Color(0.3, 1, 0.5)}
+# luz que o monstro pinta no chao em volta (AddTerrainLight): [cor (negativa escurece), raio em tiles]
+# Death Gorgon vermelha piscando; Zaikan e Death Beam Knight escurecem (-1,3)
+const LUZ_CHAO := {35: [Color(0.55, 0.11, 0), 2], 59: [Color(-1.3, -1.3, -1.3), 3], 63: [Color(-1.3, -1.3, -1.3), 3]}
 # olhos que deixam rastro de luz (MoveEye + CreateJoint BITMAP_JOINT_ENERGY 2 e 3): [osso direito, esquerdo]
 const OLHOS := {57: [8, 9], 58: [24, 25], 59: [24, 25], 60: [11, 12], 61: [8, 9], 62: [8, 9], 63: [8, 9]}
 # monstro que e um jogador vestido (Cursed Wizard: Legendary +9, cajado e escudo)
@@ -110,6 +125,26 @@ var _rastros := {}    # slot da mao -> RastroArma
 var _costas := false  # zona segura: arma nas costas
 var nadar := false    # Atlans fora da cidade: parado flutua, andar e nadar
 const NADO := {"parado": "voa", "anda": "nada", "corre": "nada_corre"}
+# montarias no slot do ajudante (CreateMount/MoveMount do cliente): item -> [modelo, escala, jeito].
+# Fora da zona segura o bicho vai embaixo do jogador e o jogador troca pras acoes de montado
+# (SetPlayerStop/SetPlayerWalk); na cidade a montaria some e ele anda a pe.
+const MONTARIAS := {"13,2": ["montaria_uniria", 0.9, "monta"], "13,3": ["montaria_dinorant", 0.9, "monta"],
+	"13,4": ["montaria_cavalo", 1.0, "cavalo"], "13,37": ["montaria_fenrir_", 0.9, "fenrir"]}   # + red (sem opcao), black, blue ou gold
+# acao do jogador -> [acao montado, acao da montaria]; "_a" = com arma na mao
+const MONTADO := {
+	"monta": {"parado": ["monta_parado", "parado"], "anda": ["monta_corre", "anda"], "corre": ["monta_corre", "anda"], "ataque": ["monta_ataque", "ataque"]},
+	"cavalo": {"parado": ["cavalo_parado", "parado"], "anda": ["cavalo_corre", "anda"], "corre": ["cavalo_corre", "anda"], "ataque": ["cavalo_ataque", "ataque"]},
+	"fenrir": {"parado": ["fenrir_parado", "parado"], "anda": ["fenrir_anda", "anda"], "corre": ["fenrir_corre", "corre"], "ataque": ["fenrir_ataque", "ataque"]},
+}
+const RITMO_MONTARIA := {
+	"monta": {"parado": 0.34, "anda": 0.34, "ataque": 0.34},
+	"cavalo": {"parado": 0.34, "anda": 0.34, "ataque": 0.34},
+	"fenrir": {"parado": 0.4, "anda": 1.0, "corre": 0.6, "ataque": 0.4},
+}
+var montaria: Boneco
+var _jeito_montaria := ""
+var pedida := ""   # a acao que pediram (antes de virar a de montado)
+var _fenrir := "red"
 
 
 static func info() -> Dictionary:
@@ -136,6 +171,13 @@ static func do_npc(numero: int) -> Boneco:
 	if b and LUZES.has(numero):
 		for l in LUZES[numero]:
 			b.luz_no_osso(l[0], l[1], l[2], l[3], l[4], m[1])
+	if b and FLUTUA.has(numero):
+		b.modelo.position.y += FLUTUA[numero]
+		b.altura += FLUTUA[numero]
+	if b and TINTA.has(numero):
+		b.tingir(TINTA[numero])
+	if b and LUZ_CHAO.has(numero):
+		b.luz_chao(LUZ_CHAO[numero][0], LUZ_CHAO[numero][1])
 	if b and TRANSPARENTES.has(numero):
 		b.transparente(TRANSPARENTES[numero])
 	if b and PARTICULAS.has(numero):
@@ -242,6 +284,53 @@ func transparente(alfa: float) -> void:
 
 
 var _particulas: Array = []   # [CPUParticles3D, no que ela segue (osso) ou null]
+var _areia: CPUParticles3D       # so solta andando
+var _chao: ShaderMaterial        # luz no chao que pisca (Death Gorgon)
+var _cor_chao := Color()
+
+
+func tingir(cor: Color) -> void:
+	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for s in mi.mesh.get_surface_count():
+			var orig := (mi.get_surface_override_material(s) if mi.get_surface_override_material(s) else mi.mesh.surface_get_material(s)) as BaseMaterial3D
+			if orig:
+				var m := orig.duplicate() as BaseMaterial3D
+				m.albedo_color = Color(orig.albedo_color.r * cor.r, orig.albedo_color.g * cor.g, orig.albedo_color.b * cor.b, orig.albedo_color.a)
+				mi.set_surface_override_material(s, m)
+
+
+# AddTerrainLight em volta do monstro: um disco deitado no chao que soma (ou subtrai) a cor,
+# caindo em linha reta ate o raio, como a luz pintada nos vertices do terreno
+func luz_chao(cor: Color, raio: float) -> void:
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1))
+	g.set_color(1, Color(0, 0, 0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = g
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = 64
+	tex.height = 64
+	var menos := cor.r < 0.0
+	var mat := ShaderMaterial.new()
+	mat.shader = EfeitoMU.SHADER_MENOS if menos else EfeitoMU.SHADER
+	mat.set_shader_parameter("tex", tex)
+	mat.set_shader_parameter("modo", 1)
+	_cor_chao = Color(absf(cor.r), absf(cor.g), absf(cor.b))
+	mat.set_shader_parameter("cor", _cor_chao)
+	if not menos:
+		_chao = mat
+	var q := PlaneMesh.new()
+	q.size = Vector2.ONE * raio * 2.0
+	var mi := MeshInstance3D.new()
+	mi.mesh = q
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.position = Vector3(0, 0.06, 0)
+	add_child(mi)
 
 
 # fogo (BITMAP_FIRE) e fumaca (BITMAP_SMOKE) do Ambiente, soltos no mundo e seguindo o osso
@@ -253,7 +342,18 @@ func particulas(tipo: String, onde, n: int) -> void:
 	c.preprocess = 0.0
 	add_child(c)
 	var segue: Node3D = null
-	if onde is String and onde == "corpo":
+	if tipo == "areia":
+		# BITMAP_SMOKE + 1: poeira cor de areia num quadrado de 2 tiles em volta, so andando
+		c.position = Vector3(0, 0.05, 0)
+		c.emission_box_extents = Vector3(1.0, 0.05, 1.0)
+		var g := Gradient.new()
+		g.set_color(0, Color(0.45, 0.38, 0.28))
+		g.set_color(1, Color(0, 0, 0))
+		c.color_ramp = g
+		c.lifetime = 1.0
+		c.emitting = false
+		_areia = c
+	elif onde is String and onde == "corpo":
 		c.position = Vector3(0, altura * 0.5, 0)
 		c.emission_box_extents = Vector3(altura * 0.2, altura * 0.35, altura * 0.2)
 	elif onde is String:
@@ -319,7 +419,17 @@ func tem(a: String) -> bool:
 func tocar(a: String, depois := "parado") -> void:
 	if anim == null:
 		return
-	if nadar and familia == "jogador" and NADO.has(a):
+	pedida = a
+	if montado():
+		var m: Dictionary = MONTADO[_jeito_montaria]
+		var chave := a if m.has(a) else ("ataque" if a in NAO_REPETE and a not in ["morre", "golpe"] else "")
+		if chave != "":
+			var ar: String = m[chave][0]
+			if (not _equip.get(0, "").is_empty() or not _equip.get(1, "").is_empty()) and tem(ar + "_a"):
+				ar += "_a"
+			montaria.tocar(m[chave][1])
+			a = ar
+	elif nadar and familia == "jogador" and NADO.has(a):
 		a = NADO[a]
 	if feminino and tem(a + "_f"):
 		a += "_f"
@@ -368,6 +478,10 @@ func vestir(equip: Dictionary) -> void:
 	if esqueleto == null or familia != "jogador":
 		return
 	var niveis: Dictionary = equip.get("niveis", {})
+	var cor: String = equip.get("fenrir", "red")
+	if cor != _fenrir and _equip.get(8, "") == "13,37":
+		_equip.erase(8)   # troca de cor: monta de novo
+	_fenrir = cor
 	for s in 9:
 		var k: String = equip.get(s, "")
 		var nv: int = niveis.get(s, 0)
@@ -391,6 +505,10 @@ func vestido() -> Dictionary:
 
 
 func _tirar(s: int) -> void:
+	if s == 8 and montaria:
+		montaria = null
+		_jeito_montaria = ""
+		_montar()
 	if _pecas.has(s):
 		_pecas[s].queue_free()
 		_pecas.erase(s)
@@ -436,6 +554,14 @@ func _por(s: int, k: String) -> void:
 		_pecas[s] = at
 		BrilhoMU.aplicar(no, k, _niveis.get(s, 0))
 		_rastros[s] = RastroArma.na_arma(no)
+	elif s == 7 and Capa.TIPOS.has(k):
+		# capa: so o pano preso nas costas (o cliente nao desenha o modelo do item)
+		no.free()
+		var c := Capa.nova(esqueleto, k)
+		var suporte := Node3D.new()
+		add_child(suporte)
+		suporte.add_child(c)
+		_pecas[s] = suporte
 	elif s == 7:
 		# o cliente poe a origem da asa no osso 47 (costas) mais 15 pra cima no osso,
 		# mas com o giro do boneco (RenderLinkObject sem Link); _process segue o osso
@@ -444,6 +570,20 @@ func _por(s: int, k: String) -> void:
 		_pecas[s] = no
 		_osso_asa = esqueleto.find_bone("osso47")
 		_seguir_asa()
+	elif s == 8 and MONTARIAS.has(k):
+		no.free()
+		var cfg: Array = MONTARIAS[k]
+		var b := Boneco.novo(cfg[0] + (_fenrir if k == "13,37" else ""), cfg[1])
+		if b == null:
+			return
+		b.ritmo = RITMO_MONTARIA[cfg[2]]
+		add_child(b)
+		if k == "13,3":
+			b.position.y = -0.3   # Dinorant: o cliente desce 30 (10 em Tarkan)
+		montaria = b
+		_jeito_montaria = cfg[2]
+		_pecas[s] = b
+		_montar()
 	elif s == 8 and k in ["13,0", "13,1"]:
 		# anjo e imp: do lado do ombro, subindo e descendo
 		var p := Node3D.new()
@@ -492,12 +632,17 @@ func _process(d: float) -> void:
 	for pt in _particulas:
 		if pt[1]:
 			pt[0].global_position = pt[1].global_position
+	if _areia:
+		_areia.emitting = acao == "anda" or acao == "corre"
+	if _chao:
+		var k := randf_range(0.2, 0.9) / 0.55   # Luminosity sorteada a cada quadro (0,2..0,9)
+		_chao.set_shader_parameter("cor", Color(_cor_chao.r * k, _cor_chao.g * k, _cor_chao.b * k))
 	if not _luzes.is_empty():
 		_t += d
 		for l in _luzes:
 			var k: float = sin(_t * 2.0) * 0.3 + (0.8 if l[1] == "olho" else 0.7)
 			l[0].set_shader_parameter("cor", Color(k, k, k) if l[1] == "olho" else Color(k, k * 0.6, k * 0.4))
-	if _pecas.has(7):
+	if _pecas.has(7) and not Capa.TIPOS.has(_equip.get(7, "")):
 		_seguir_asa()
 
 
@@ -571,10 +716,27 @@ func nadando(sim: bool) -> void:
 			return
 
 
+# montado so fora da zona segura (o cliente esconde a montaria na cidade)
+func montado() -> bool:
+	return montaria != null and is_instance_valid(montaria) and not _costas and familia == "jogador"
+
+
+# monta ou desmonta na hora: a montaria aparece ou some e a acao atual troca
+func _montar() -> void:
+	if montaria and is_instance_valid(montaria):
+		montaria.visible = not _costas
+	print("TESTE montado %s %s" % [montado(), _jeito_montaria])
+	var base := pedida if pedida != "" else "parado"
+	if base in ["parado", "anda", "corre"]:
+		tocar(base)
+
+
 func arma_nas_costas(sim: bool) -> void:
 	if sim == _costas:
 		return
 	_costas = sim
+	if montaria:
+		_montar()
 	for s in OSSO_MAO:
 		if _pecas.has(s):
 			_pecas[s].bone_name = "osso47" if sim else OSSO_MAO[s]

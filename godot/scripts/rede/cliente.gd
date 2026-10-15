@@ -30,7 +30,7 @@ signal pegou(slot: int, item: Dictionary)
 signal nao_pegou(motivo: int)
 signal zen(valor: int)
 signal inventario(itens: Dictionary)
-signal item_movido(slot: int, item: Dictionary)
+signal item_movido(slot: int, item: Dictionary, armazem: int)   # armazem: 0 inventario, 2 bau, 3 maquina do caos
 signal item_nao_moveu
 signal item_removido(slot: int)
 signal durabilidade(slot: int, valor: int)
@@ -44,7 +44,9 @@ signal area_animacao(skill: int, quem: int, x: int, y: int, giro: int)
 signal efeito(ativo: bool, quem: int, efeito: int)
 signal aparencia_mudou(quem: int, slot: int, chave: String, nivel: int)
 signal janela_npc(tipo: int)
-signal loja(itens: Dictionary)
+signal loja(itens: Dictionary, tipo: int)   # tipo 0 normal (loja ou bau), 3 maquina do caos
+signal bau_zen(no_bau: int, na_mochila: int)
+signal mistura(resultado: int, item: Dictionary)   # 0 falhou, 1 deu certo, 2 falta zen, 3 itens demais...
 signal comprou(slot: int, item: Dictionary)
 signal compra_falhou
 signal vendeu(ok: bool, zen: int)
@@ -130,11 +132,11 @@ func pegar(item: int) -> void:
 	con.enviar(PackedByteArray([0xC3, 0, 0x22, (item >> 8) & 0xFF, item & 0xFF]))
 
 
-# itens: inventario e 0 (equipamento 0..11, mochila 12..75)
-func mover_item(de: int, para: int, dados: PackedByteArray) -> void:
-	var p := PackedByteArray([0xC3, 0, 0x24, 0, de])
+# itens: inventario e 0 (equipamento 0..11, mochila 12..75), bau 2 (0..119), maquina do caos 3 (0..31)
+func mover_item(de: int, para: int, dados: PackedByteArray, de_arm := 0, para_arm := 0) -> void:
+	var p := PackedByteArray([0xC3, 0, 0x24, de_arm, de])
 	p.append_array(dados)
-	p.append_array(PackedByteArray([0, para]))
+	p.append_array(PackedByteArray([para_arm, para]))
 	con.enviar(p)
 
 
@@ -201,6 +203,24 @@ func comprar(slot: int) -> void:
 
 func vender(slot: int) -> void:
 	con.enviar(PackedByteArray([0xC3, 0, 0x33, slot]))
+
+
+# zen do bau: direcao 0 guarda (mochila -> bau), 1 tira
+func zen_bau(direcao: int, valor: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x81, direcao, valor & 0xFF, (valor >> 8) & 0xFF, (valor >> 16) & 0xFF, (valor >> 24) & 0xFF]))
+
+
+func fechar_bau() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x82]))
+
+
+# combinar sem dizer a receita (C1 03 86): o OpenMU acha a receita pelos itens da maquina
+func misturar() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x86]))
+
+
+func fechar_mistura() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x87]))
 
 
 # --- amigos ----------------------------------------------------------------------
@@ -480,7 +500,7 @@ func _tratar(p: PackedByteArray) -> void:
 			if p[3] == 0xFF:
 				item_nao_moveu.emit()
 			elif p.size() >= 17:
-				item_movido.emit(p[4], item_de(p, 5))
+				item_movido.emit(p[4], item_de(p, 5), p[3])
 		0x23:
 			largou.emit(p[3] != 0, p[4])
 		0x25:
@@ -530,7 +550,13 @@ func _tratar(p: PackedByteArray) -> void:
 					if o + 13 > p.size():
 						break
 					l[p[o]] = item_de(p, o + 1)
-				loja.emit(l)
+				loja.emit(l, p[4])
+		0x81:
+			if p[0] == 0xC1 and p.size() >= 12:
+				bau_zen.emit(_ler_le(p, 4), _ler_le(p, 8))
+		0x86:
+			if p[0] == 0xC1 and p.size() >= 4:
+				mistura.emit(p[3], item_de(p, 4) if p.size() >= 16 else {})
 		0x32:
 			if p[0] == 0xC1 and p.size() >= 16:
 				comprou.emit(p[3], item_de(p, 4))
@@ -612,6 +638,8 @@ static func aparencia(a: PackedByteArray) -> Dictionary:
 		e[8] = "13,3"
 	elif a[12] & 0x04:
 		e[8] = "13,37"
+		# cor do Fenrir: sem opcao vermelho; bit 0 do 16 preto, bit 1 azul, bit 0 do 17 dourado
+		e["fenrir"] = "black" if a[16] & 0x01 else ("blue" if a[16] & 0x02 else ("gold" if a[17] & 0x01 else "red"))
 	elif a[12] & 0x01:
 		e[8] = "13,4"
 	# nivel: 3 bits por slot (0 a 6) nos bytes 6-8, (nivel - 1) / 2; volta pro menor nivel da faixa
@@ -694,3 +722,7 @@ static func _ler_texto(p: PackedByteArray, ini: int, n: int) -> String:
 	if z >= 0:
 		b = b.slice(0, z)
 	return b.get_string_from_utf8()
+
+
+static func _ler_le(p: PackedByteArray, o: int) -> int:
+	return p[o] | (p[o + 1] << 8) | (p[o + 2] << 16) | (p[o + 3] << 24)

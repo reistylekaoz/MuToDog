@@ -134,7 +134,23 @@
    "inferno": 153,
    "fogo_inferno": 154,
    "nada": 24,
-   "nada_corre": 33
+   "nada_corre": 33,
+   "monta_parado": 13,
+   "monta_parado_a": 14,
+   "monta_corre": 36,
+   "monta_corre_a": 37,
+   "monta_ataque": 54,
+   "cavalo_parado": 78,
+   "cavalo_corre": 79,
+   "cavalo_ataque": 84,
+   "fenrir_parado": 122,
+   "fenrir_parado_a": 124,
+   "fenrir_anda": 126,
+   "fenrir_anda_a": 128,
+   "fenrir_corre": 110,
+   "fenrir_corre_a": 112,
+   "fenrir_ataque": 90,
+   "fenrir_ataque_a": 100
   }
  },
  "classe_dk": {
@@ -174,7 +190,23 @@
    "inferno": 153,
    "fogo_inferno": 154,
    "nada": 24,
-   "nada_corre": 33
+   "nada_corre": 33,
+   "monta_parado": 13,
+   "monta_parado_a": 14,
+   "monta_corre": 36,
+   "monta_corre_a": 37,
+   "monta_ataque": 54,
+   "cavalo_parado": 78,
+   "cavalo_corre": 79,
+   "cavalo_ataque": 84,
+   "fenrir_parado": 122,
+   "fenrir_parado_a": 124,
+   "fenrir_anda": 126,
+   "fenrir_anda_a": 128,
+   "fenrir_corre": 110,
+   "fenrir_corre_a": 112,
+   "fenrir_ataque": 90,
+   "fenrir_ataque_a": 100
   }
  },
  "classe_elf": {
@@ -214,7 +246,23 @@
    "inferno": 153,
    "fogo_inferno": 154,
    "nada": 24,
-   "nada_corre": 33
+   "nada_corre": 33,
+   "monta_parado": 13,
+   "monta_parado_a": 14,
+   "monta_corre": 36,
+   "monta_corre_a": 37,
+   "monta_ataque": 54,
+   "cavalo_parado": 78,
+   "cavalo_corre": 79,
+   "cavalo_ataque": 84,
+   "fenrir_parado": 122,
+   "fenrir_parado_a": 124,
+   "fenrir_anda": 126,
+   "fenrir_anda_a": 128,
+   "fenrir_corre": 110,
+   "fenrir_corre_a": 112,
+   "fenrir_ataque": 90,
+   "fenrir_ataque_a": 100
   }
  },
  "classe_mg": {
@@ -254,7 +302,23 @@
    "inferno": 153,
    "fogo_inferno": 154,
    "nada": 24,
-   "nada_corre": 33
+   "nada_corre": 33,
+   "monta_parado": 13,
+   "monta_parado_a": 14,
+   "monta_corre": 36,
+   "monta_corre_a": 37,
+   "monta_ataque": 54,
+   "cavalo_parado": 78,
+   "cavalo_corre": 79,
+   "cavalo_ataque": 84,
+   "fenrir_parado": 122,
+   "fenrir_parado_a": 124,
+   "fenrir_anda": 126,
+   "fenrir_anda_a": 128,
+   "fenrir_corre": 110,
+   "fenrir_corre_a": 112,
+   "fenrir_ataque": 90,
+   "fenrir_ataque_a": 100
   }
  },
  "classe_dl": {
@@ -294,7 +358,23 @@
    "inferno": 153,
    "fogo_inferno": 154,
    "nada": 24,
-   "nada_corre": 33
+   "nada_corre": 33,
+   "monta_parado": 13,
+   "monta_parado_a": 14,
+   "monta_corre": 36,
+   "monta_corre_a": 37,
+   "monta_ataque": 54,
+   "cavalo_parado": 78,
+   "cavalo_corre": 79,
+   "cavalo_ataque": 84,
+   "fenrir_parado": 122,
+   "fenrir_parado_a": 124,
+   "fenrir_anda": 126,
+   "fenrir_anda_a": 128,
+   "fenrir_corre": 110,
+   "fenrir_corre_a": 112,
+   "fenrir_ataque": 90,
+   "fenrir_ataque_a": 100
   }
  },
  "classe_sum": {
@@ -334,7 +414,23 @@
    "inferno": 153,
    "fogo_inferno": 154,
    "nada": 24,
-   "nada_corre": 33
+   "nada_corre": 33,
+   "monta_parado": 13,
+   "monta_parado_a": 14,
+   "monta_corre": 36,
+   "monta_corre_a": 37,
+   "monta_ataque": 54,
+   "cavalo_parado": 78,
+   "cavalo_corre": 79,
+   "cavalo_ataque": 84,
+   "fenrir_parado": 122,
+   "fenrir_parado_a": 124,
+   "fenrir_anda": 126,
+   "fenrir_anda_a": 128,
+   "fenrir_corre": 110,
+   "fenrir_corre_a": 112,
+   "fenrir_ataque": 90,
+   "fenrir_ataque_a": 100
   }
  },
  "classe_rf": {
@@ -374,7 +470,23 @@
    "inferno": 153,
    "fogo_inferno": 154,
    "nada": 24,
-   "nada_corre": 33
+   "nada_corre": 33,
+   "monta_parado": 13,
+   "monta_parado_a": 14,
+   "monta_corre": 36,
+   "monta_corre_a": 37,
+   "monta_ataque": 54,
+   "cavalo_parado": 78,
+   "cavalo_corre": 79,
+   "cavalo_ataque": 84,
+   "fenrir_parado": 122,
+   "fenrir_parado_a": 124,
+   "fenrir_anda": 126,
+   "fenrir_anda_a": 128,
+   "fenrir_corre": 110,
+   "fenrir_corre_a": 112,
+   "fenrir_ataque": 90,
+   "fenrir_ataque_a": 100
   }
  },
  "placa": {
@@ -1631,6 +1743,165 @@
    "ataque2": 4,
    "golpe": 5,
    "morre": 6
+  }
+ },
+ "bicho_passaro": {
+  "esqueleto": "Object1/Bird01.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_peixe": {
+  "esqueleto": "Object1/Fish01.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_borboleta": {
+  "esqueleto": "Object1/Butterfly01.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_morcego": {
+  "esqueleto": "Object2/Bat01.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_rato": {
+  "esqueleto": "Object2/Rat01.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_besouro": {
+  "esqueleto": "Object9/Bug02.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_peixe4": {
+  "esqueleto": "Object8/Fish04.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_peixe5": {
+  "esqueleto": "Object8/Fish05.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_peixe6": {
+  "esqueleto": "Object8/Fish06.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_peixe7": {
+  "esqueleto": "Object8/Fish07.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_peixe8": {
+  "esqueleto": "Object8/Fish08.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_peixe9": {
+  "esqueleto": "Object8/Fish09.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_peixe2": {
+  "esqueleto": "Object8/Fish02.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "bicho_peixe3": {
+  "esqueleto": "Object8/Fish03.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1
+  }
+ },
+ "montaria_uniria": {
+  "esqueleto": "Skill/Rider01.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 2,
+   "ataque": 3
+  },
+  "texturas": "Item"
+ },
+ "montaria_dinorant": {
+  "esqueleto": "Skill/Rider02.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 2,
+   "ataque": 4
+  }
+ },
+ "montaria_cavalo": {
+  "esqueleto": "Skill/DarkHorse.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1,
+   "ataque": 3
+  }
+ },
+ "montaria_fenrir_black": {
+  "esqueleto": "Skill/fenril_black.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1,
+   "corre": 2,
+   "ataque": 3
+  }
+ },
+ "montaria_fenrir_red": {
+  "esqueleto": "Skill/fenril_red.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1,
+   "corre": 2,
+   "ataque": 3
+  }
+ },
+ "montaria_fenrir_blue": {
+  "esqueleto": "Skill/fenril_blue.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1,
+   "corre": 2,
+   "ataque": 3
+  }
+ },
+ "montaria_fenrir_gold": {
+  "esqueleto": "Skill/fenril_gold.bmd",
+  "acoes": {
+   "parado": 0,
+   "anda": 1,
+   "corre": 2,
+   "ataque": 3
   }
  }
 }

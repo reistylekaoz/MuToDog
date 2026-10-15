@@ -16,7 +16,7 @@ static class Extras
     static string? Achar(string dir, string nome) =>
         Directory.EnumerateFileSystemEntries(dir).FirstOrDefault(p => Path.GetFileName(p).Equals(nome, StringComparison.OrdinalIgnoreCase));
 
-    static async Task<bool> Png(string arquivo, string destino)
+    internal static async Task<bool> Png(string arquivo, string destino)
     {
         TextureData t = arquivo.EndsWith(".OZT", StringComparison.OrdinalIgnoreCase)
             ? await new OZTReader().Load(arquivo) : await new OZJReader().Load(arquivo);
