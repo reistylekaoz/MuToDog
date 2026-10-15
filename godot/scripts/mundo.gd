@@ -262,6 +262,8 @@ func _terreno() -> void:
 	mat.set_shader_parameter("tiles", arr)
 	mat.set_shader_parameter("repete", repete)
 	mat.set_shader_parameter("brilho", brilho_mapa())
+	if numero == 9:
+		mat.set_shader_parameter("agua_vel", 0.025)   # Tarkan: a agua corre na metade
 	if ResourceLoader.exists(pasta + "agua/0.png"):
 		var quadros: Array[Image] = []
 		for i in 32:

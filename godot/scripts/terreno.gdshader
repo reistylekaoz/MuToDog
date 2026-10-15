@@ -14,6 +14,7 @@ uniform int agua = 5;
 // Atlans: onde a camada 2 e agua, a camada 1 fica inteira e a agua (wt00..31 do Object8,
 // 25 quadros por segundo, 4 tiles por textura) vai somada na forca da mistura (RenderFaceBlend)
 uniform bool agua_soma = false;
+uniform float agua_vel = 0.05;   // rolagem da agua por segundo (Tarkan 0,025)
 uniform sampler2DArray agua_quadros : filter_linear_mipmap, repeat_enable;
 
 float sorteio(vec2 p) {
@@ -31,7 +32,7 @@ vec3 amostra(int i, vec2 uv) {
 	i = clamp(i, 0, 31);
 	vec2 t = uv / repete[i];
 	if (i == agua) {
-		t.x += mod(TIME, 20.0) * 0.05;
+		t.x += mod(TIME * agua_vel, 1.0);
 		t.y += sin(TIME * 2.0 + uv.x * 5.0) * 0.02;
 	}
 	return texture(tiles, vec3(t, float(i))).rgb;

@@ -25,6 +25,8 @@ static func _carregar() -> void:
 static func nivel_visivel(chave: String, nivel: int) -> int:
 	_carregar()
 	var c: Array = _cores.get(chave, [])
+	if c.size() > 2 and c[2] is Array:   # flecha, chave e olho do Devil Square: tabela por nivel
+		return int(c[2][clampi(nivel, 0, c[2].size() - 1)])
 	if c.size() > 2 and c[2] >= 0:
 		return int(c[2])
 	return nivel

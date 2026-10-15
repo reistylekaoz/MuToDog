@@ -7,8 +7,9 @@ extends Node
 # ate o fim e nao volta; trocou de mapa, para.
 # Vento (aWind.wav): Lorencia menos na taverna, Devias menos no chao 3 e do 10 pra cima
 # (dentro das casas), Noria sempre, com a floresta (aForest.wav) de vez em quando.
-# Lost Tower (lost_tower_a.mp3 + aTower.wav) e Atlans (atlans.mp3 + aWater.wav): musica
-# e fundo no mapa todo, sem parar; os dois moram no pacote do mapa (dados/mundo<N>/).
+# Dungeon (Dungeon.mp3 + aDungeon.wav), Lost Tower (lost_tower_a.mp3 + aTower.wav), Atlans
+# (atlans.mp3 + aWater.wav) e Tarkan (tarkan.mp3 + desert.wav): musica
+# e fundo no mapa todo, sem parar; moram no pacote do mapa (dados/mundo<N>/).
 
 const PASTA := "res://dados/ambiente/"
 var musica := AudioStreamPlayer.new()
@@ -56,7 +57,7 @@ func atualizar(mapa: int, seguro: bool, tile: int, x := 0, y := 0) -> void:
 			fundo.stream = w
 			fundo.play()
 			print("TESTE fundo %d" % mapa)
-	if mapa in [4, 7] and (_faixa == "" or not musica.playing):
+	if mapa in [1, 4, 7, 8] and (_faixa == "" or not musica.playing):
 		var mp := "res://dados/mundo%d/musica.mp3" % (mapa + 1)
 		if ResourceLoader.exists(mp):
 			_faixa = mp

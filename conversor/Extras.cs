@@ -5,7 +5,7 @@
 //   folha1.png, folha2.png  neve (Devias) ou folha (Lorencia, Noria): leaf01 e leaf02
 //   warp0<1..3>.glb  portal de Devias e Noria (Data/Npc/warp0X.bmd, com a acao 0 como "anda")
 //   agua/<0..31>.png, bolha.png  Atlans: agua que corre no chao e bolha
-//   musica.mp3, fundo.wav  Lost Tower e Atlans: musica do mapa todo e o som de fundo
+//   musica.mp3, fundo.wav  Dungeon, Lost Tower, Atlans e Tarkan: musica do mapa todo e o som de fundo
 //     (SceneManager.cpp; vao no pacote do mapa, o pck principal do navegador esta no limite)
 using Client.Data.BMD;
 using Client.Data.Texture;
@@ -50,7 +50,8 @@ static class Extras
                 await Png(Achar(obj8, $"wt{i:00}.OZJ")!, Path.Combine(dest, "agua", $"{i}.png"));
             await Png(Achar(obj8, "drop01.OZJ")!, Path.Combine(dest, "bolha.png"));
         }
-        var sons = mundo switch { 5 => ("lost_tower_a.mp3", "aTower.wav"), 8 => ("atlans.mp3", "aWater.wav"), _ => default };
+        var sons = mundo switch { 2 => ("Dungeon.mp3", "aDungeon.wav"), 5 => ("lost_tower_a.mp3", "aTower.wav"),
+            8 => ("atlans.mp3", "aWater.wav"), 9 => ("tarkan.mp3", "desert.wav"), _ => default };
         if (sons != default)
         {
             File.Copy(Achar(Achar(data, "Music")!, sons.Item1)!, Path.Combine(dest, "musica.mp3"), true);

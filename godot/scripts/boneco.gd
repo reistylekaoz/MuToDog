@@ -45,10 +45,27 @@ const NPCS := {
 	522: ["jerinteu", 1.0], 540: ["lugard", 1.0], 544: ["vanert", 1.0], 566: ["felicia", 1.0],
 	# Lost Tower e Atlans
 	35: ["monster12_morte", 1.3, 1], 36: ["monster29", 1.2], 37: ["monster27", 1.1], 38: ["monster28", 1.6],
-	39: ["monster29", 1.2], 40: ["monster30", 1.3], 41: ["monster31", 1.1],
+	39: ["monster29", 1.2], 40: ["monster30", 1.3, 3], 41: ["monster31", 1.1],
 	45: ["monster34", 0.6], 46: ["monster35", 1.0], 47: ["monster36", 1.1, 0], 48: ["monster37", 1.4],
 	49: ["monster38", 1.0], 51: ["monster34", 1.0], 52: ["monster36", 1.4],
+	# Dungeon
+	5: ["monster02_sem1", 1.1], 8: ["monster01_veneno", 1.0], 9: ["monster05_trovao", 1.1], 10: ["monster04", 0.8],
+	11: ["monster08", 1.0], 12: ["monster07", 0.6], 13: ["monster09", 1.1], 15: ["esqueleto2_arco", 1.1],
+	16: ["esqueleto3", 1.2], 17: ["monster11", 1.0], 18: ["monster12", 1.5, 1],
+	# Tarkan (-2: o corpo inteiro somado, o BlendMesh -2 do Death Beam Knight)
+	57: ["monster42", 1.4], 58: ["monster43", 1.8, 2], 59: ["monster43_zaikan", 2.1, 2], 60: ["monster44", 2.2],
+	61: ["monster45", 1.5], 62: ["monster46", 1.5], 63: ["monster45", 1.9, -2],
 }
+# transparencia (AlphaTarget): o Ghost da Dungeon
+const TRANSPARENTES := {11: 0.4}
+# fogo e fumaca saindo do corpo (MoveCharacter do cliente): [tipo, osso ("corpo" = osso ao
+# acaso, "pes" = em volta dos pes), quantas no ar]
+const PARTICULAS := {
+	35: [["fogo", "corpo", 60]], 40: [["fogo", 2, 12]], 59: [["fogo", 6, 24], ["fogo", 13, 24]],
+	10: [["fumaca", "pes", 4]], 12: [["fumaca", "pes", 4]], 51: [["fumaca", "pes", 4]],
+}
+# olhos que deixam rastro de luz (MoveEye + CreateJoint BITMAP_JOINT_ENERGY 2 e 3): [osso direito, esquerdo]
+const OLHOS := {57: [8, 9], 58: [24, 25], 59: [24, 25], 60: [11, 12], 61: [8, 9], 62: [8, 9], 63: [8, 9]}
 # monstro que e um jogador vestido (Cursed Wizard: Legendary +9, cajado e escudo)
 const VESTIDOS := {
 	34: ["classe_dw", {0: "5,5", 1: "6,14", 2: "7,3", 3: "8,3", 4: "9,3", 5: "10,3", 6: "11,3",
@@ -119,6 +136,19 @@ static func do_npc(numero: int) -> Boneco:
 	if b and LUZES.has(numero):
 		for l in LUZES[numero]:
 			b.luz_no_osso(l[0], l[1], l[2], l[3], l[4], m[1])
+	if b and TRANSPARENTES.has(numero):
+		b.transparente(TRANSPARENTES[numero])
+	if b and PARTICULAS.has(numero):
+		for pt in PARTICULAS[numero]:
+			b.particulas(pt[0], pt[1], pt[2])
+	if b and OLHOS.has(numero):
+		for k in 2:
+			var osso := b.esqueleto.find_bone("osso%d" % OLHOS[numero][k]) if b.esqueleto else -1
+			if osso >= 0:
+				var at := BoneAttachment3D.new()
+				b.esqueleto.add_child(at)
+				at.bone_idx = osso
+				RastroOlho.no_olho(at, 8 if k == 0 else 20)
 	return b
 
 
@@ -161,7 +191,7 @@ static func novo(nome: String, escala := 1.0) -> Boneco:
 
 
 # BlendMesh do cliente: a malha n desenha somada (brilha), como gelo, asa de besouro e o caldeirao do Goblin;
-# n = -1: as da arma que o conversor marcou "soma:" (cajado do Lizard King, besta da Valkyrie)
+# n = -1: as da arma que o conversor marcou "soma:" (cajado do Lizard King, besta da Valkyrie); -2: todas
 func somar_malha(n: int) -> void:
 	var i := 0
 	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
@@ -169,7 +199,7 @@ func somar_malha(n: int) -> void:
 			continue
 		for s in mi.mesh.get_surface_count():
 			var orig := mi.mesh.surface_get_material(s) as BaseMaterial3D
-			if (i == n or (n < 0 and orig and orig.resource_name.begins_with("soma:"))) and orig:
+			if (i == n or n == -2 or (n == -1 and orig and orig.resource_name.begins_with("soma:"))) and orig:
 				mi.set_surface_override_material(s, _somado(orig))
 			i += 1
 
@@ -196,6 +226,45 @@ func apagar_malha(n: int) -> void:
 				m.albedo_color = Color(0, 0, 0, 0)
 				mi.set_surface_override_material(s, m)
 			i += 1
+
+
+func transparente(alfa: float) -> void:
+	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for s in mi.mesh.get_surface_count():
+			var orig := (mi.get_surface_override_material(s) if mi.get_surface_override_material(s) else mi.mesh.surface_get_material(s)) as BaseMaterial3D
+			if orig:
+				var m := orig.duplicate() as BaseMaterial3D
+				m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+				m.albedo_color.a = alfa
+				mi.set_surface_override_material(s, m)
+
+
+var _particulas: Array = []   # [CPUParticles3D, no que ela segue (osso) ou null]
+
+
+# fogo (BITMAP_FIRE) e fumaca (BITMAP_SMOKE) do Ambiente, soltos no mundo e seguindo o osso
+func particulas(tipo: String, onde, n: int) -> void:
+	var tex: Texture2D = load(Ambiente.PASTA + ("fogo.png" if tipo == "fogo" else "fumaca.png"))
+	var c := Ambiente.fogo(tex) if tipo == "fogo" else Ambiente.fumaca(tex)
+	c.amount = n
+	c.local_coords = false
+	c.preprocess = 0.0
+	add_child(c)
+	var segue: Node3D = null
+	if onde is String and onde == "corpo":
+		c.position = Vector3(0, altura * 0.5, 0)
+		c.emission_box_extents = Vector3(altura * 0.2, altura * 0.35, altura * 0.2)
+	elif onde is String:
+		c.position = Vector3(0, 0.1, 0)
+		c.emission_box_extents = Vector3(0.32, 0.16, 0.32)
+	elif esqueleto and esqueleto.find_bone("osso%d" % onde) >= 0:
+		var at := BoneAttachment3D.new()
+		esqueleto.add_child(at)
+		at.bone_name = "osso%d" % onde
+		segue = at
+	_particulas.append([c, segue])
 
 
 var _luzes: Array = []   # [material, cor] das luzes que pulsam
@@ -420,6 +489,9 @@ var _osso_asa := -1
 
 
 func _process(d: float) -> void:
+	for pt in _particulas:
+		if pt[1]:
+			pt[0].global_position = pt[1].global_position
 	if not _luzes.is_empty():
 		_t += d
 		for l in _luzes:

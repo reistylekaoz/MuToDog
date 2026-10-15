@@ -1201,7 +1201,10 @@
   },
   "armas": [
    {
-    "bmd": "Item/Sword15.bmd", "soma": [1],
+    "bmd": "Item/Sword15.bmd",
+    "soma": [
+     1
+    ],
     "osso": 30,
     "esquerda": false
    }
@@ -1263,7 +1266,10 @@
   },
   "armas": [
    {
-    "bmd": "Item/CrossBow06.bmd", "soma": [-1],
+    "bmd": "Item/CrossBow06.bmd",
+    "soma": [
+     -1
+    ],
     "osso": 30,
     "esquerda": false
    }
@@ -1282,7 +1288,10 @@
   },
   "armas": [
    {
-    "bmd": "Item/Staff07.bmd", "soma": [-1],
+    "bmd": "Item/Staff07.bmd",
+    "soma": [
+     -1
+    ],
     "osso": 52,
     "esquerda": false
    }
@@ -1290,6 +1299,330 @@
  },
  "monster38": {
   "esqueleto": "Monster/Monster38.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster02_sem1": {
+  "esqueleto": "Monster/Monster02.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "esconde": [
+   1
+  ],
+  "armas": [
+   {
+    "bmd": "Item/Sword08.bmd",
+    "osso": 19,
+    "esquerda": false
+   },
+   {
+    "bmd": "Item/Shield10.bmd",
+    "osso": 14,
+    "esquerda": true
+   }
+  ]
+ },
+ "monster01_veneno": {
+  "esqueleto": "Monster/Monster01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Spear09.bmd",
+    "osso": 42,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster05_trovao": {
+  "esqueleto": "Monster/Monster05.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Staff04.bmd",
+    "osso": 41,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster04": {
+  "esqueleto": "Monster/Monster04.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Sword14.bmd",
+    "osso": 26,
+    "esquerda": false,
+    "soma": [
+     1
+    ]
+   }
+  ]
+ },
+ "monster07": {
+  "esqueleto": "Monster/Monster07.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster08": {
+  "esqueleto": "Monster/Monster08.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster09": {
+  "esqueleto": "Monster/Monster09.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Staff03.bmd",
+    "osso": 29,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster11": {
+  "esqueleto": "Monster/Monster11.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Axe09.bmd",
+    "osso": 41,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster12": {
+  "esqueleto": "Monster/Monster12.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Staff05.bmd",
+    "osso": 30,
+    "esquerda": false
+   }
+  ]
+ },
+ "esqueleto2_arco": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Skill/Skeleton02.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231,
+   "arco": 50,
+   "ataque": 50
+  },
+  "armas": [
+   {
+    "bmd": "Item/Bow03.bmd",
+    "osso": 42,
+    "esquerda": true
+   }
+  ]
+ },
+ "esqueleto3": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Skill/Skeleton03.bmd"
+  ],
+  "acoes": {
+   "parado": 1,
+   "parado_f": 2,
+   "voa": 11,
+   "anda": 15,
+   "anda_f": 16,
+   "corre": 25,
+   "soco": 38,
+   "espada": 39,
+   "golpe": 230,
+   "morre": 231
+  },
+  "armas": [
+   {
+    "bmd": "Item/Axe04.bmd",
+    "osso": 33,
+    "esquerda": false
+   },
+   {
+    "bmd": "Item/Shield07.bmd",
+    "osso": 42,
+    "esquerda": true
+   }
+  ]
+ },
+ "monster42": {
+  "esqueleto": "Monster/Monster42.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/CrossBow07.bmd",
+    "osso": 23,
+    "esquerda": false,
+    "soma": [
+     -1
+    ]
+   }
+  ]
+ },
+ "monster43": {
+  "esqueleto": "Monster/Monster43.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Sword17.bmd",
+    "osso": 43,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster43_zaikan": {
+  "esqueleto": "Monster/Monster43.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/Staff09.bmd",
+    "osso": 43,
+    "esquerda": false,
+    "soma": [
+     -1
+    ]
+   }
+  ]
+ },
+ "monster44": {
+  "esqueleto": "Monster/Monster44.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster45": {
+  "esqueleto": "Monster/Monster45.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster46": {
+  "esqueleto": "Monster/Monster46.bmd",
   "acoes": {
    "parado": 0,
    "parado2": 1,

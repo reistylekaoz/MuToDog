@@ -6,7 +6,7 @@ extends RefCounted
 # estao no projeto e nada e baixado.
 # Uso: await PacoteMapa.carregar(no_qualquer, numero_do_mundo)
 
-const FORA := [5, 8]
+const FORA := [2, 5, 8, 9]
 static var _prontos := {}
 
 

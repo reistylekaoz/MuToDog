@@ -13,6 +13,8 @@ python3 - $FORA <<'PY'
 import os, re, sys
 cfg = open('export_presets.cfg').read()
 cfg = re.split(r'\n\[preset\.\d+\]\n\nname="Mapa', cfg)[0].rstrip('\n') + '\n'
+# o Web deixa de fora os mapas que vao em pacote
+cfg = re.sub(r'exclude_filter="(dados/mundo\d+/\*,)*', 'exclude_filter="' + ''.join(f'dados/mundo{n}/*,' for n in sys.argv[1:]), cfg, count=1)
 base = max(int(i) for i in re.findall(r'^\[preset\.(\d+)\]', cfg, re.M)) + 1
 opcoes = re.search(r'\[preset\.0\.options\]\n(.*?)(?=\n\[|\Z)', cfg, re.S).group(1).strip()
 for k, n in enumerate(sys.argv[1:]):

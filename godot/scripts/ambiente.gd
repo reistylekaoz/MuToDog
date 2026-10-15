@@ -13,6 +13,8 @@ extends Node3D
 # - Lost Tower: blocos de fogo com a textura correndo e a luz girando em cima, chama no chao;
 # - Atlans: agua do chao em 32 quadros (terreno.gdshader), bolhas subindo dos pontos do mapa
 #   e de quem anda fora da cidade, luzes que pulsam e o po brilhante na agua.
+# - Tarkan: lava e cristal somados que pulsam e pintam o chao de laranja, areia que corre,
+#   brilho (Impack03) nas pedras 63 e 64, fumaca dos buracos e o geiser (70, 76, 83).
 # A agua do chao corre no proprio shader do terreno (terreno.gdshader).
 
 const PASTA := "res://dados/ambiente/"
@@ -35,10 +37,11 @@ const LUZES := {
 	1: {"streetlight01": [Color(0.65, 0.52, 0.39), 3], "candle01": [Color(0.45, 0.27, 0.09), 3]},
 }
 # objeto que o cliente nao desenha (HiddenMesh = -2): marcador de pose e de som (tipo do .obj)
-const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39]}
+const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 64, 70, 76, 83]}
 # brilho do mapa sobre o escolhido (a neve de Devias estoura com o 2,0 da Lorencia; a luz
-# pintada da Lost Tower e bem mais escura que a da Lorencia e o chao some)
-const BRILHO_MAPA := {3: 0.5, 5: 1.3}
+# pintada da Lost Tower e bem mais escura que a da Lorencia e o chao some; a areia de Tarkan
+# estoura no 2,0)
+const BRILHO_MAPA := {3: 0.5, 5: 1.3, 9: 0.65}
 # tipo -> [malha somada (BlendMesh), rolagem da textura em U e V por segundo]
 # (CreateObject e MoveObject do ZzzObject.cpp; a Lorencia segue como foi aprovada)
 const SOMA := {
@@ -48,13 +51,26 @@ const SOMA := {
 		19: [0, Vector2.ZERO], 18: [2, Vector2(0, 1)], 39: [1, Vector2.ZERO], 41: [0, Vector2(0, 0.5)]},
 	5: {18: [1, Vector2.ZERO], 23: [1, Vector2.ZERO], 19: [4, Vector2(-1, 0)], 20: [4, Vector2(-1, 0)]},
 	8: {23: [0, Vector2.ZERO], 32: [1, Vector2.ZERO], 34: [1, Vector2.ZERO], 38: [0, Vector2.ZERO], 40: [0, Vector2.ZERO]},
+	9: {2: [0, Vector2(-1, 0)], 7: [0, Vector2.ZERO], 61: [1, Vector2(0, -1)], 65: [1, Vector2(0, -1)],
+		66: [1, Vector2(0, -1)], 72: [0, Vector2(0, -0.2)], 82: [0, Vector2.ZERO]},
 }
 # Atlans: malha somada que pulsa (BlendMeshLight = sin(WorldTime * f) * a + b): tipo -> [f por segundo, a, b]
-const PULSA := {8: {23: [2.0, 0.3, 0.5], 32: [4.0, 0.5, 0.5], 34: [4.0, 0.5, 0.5], 40: [4.0, 0.3, 0.5]}}
+const PULSA := {8: {23: [2.0, 0.3, 0.5], 32: [4.0, 0.5, 0.5], 34: [4.0, 0.5, 0.5], 40: [4.0, 0.3, 0.5]},
+	9: {7: [2.0, 0.35, 0.65]}}
+# Tarkan: luz laranja no chao em volta da lava (AddTerrainLight com a media do pulso): tipo -> raio
+const LUZ_TIPO := {9: {7: 3, 61: 2, 65: 2, 66: 2}}
+const COR_LAVA := Color(0.65, 0.39, 0.13)
+# Tarkan 63 e 64: brilho Impack03 pulsando na pedra (63 azulado, 64 vermelho)
+const BRILHO := {9: {63: Color(1 / 1.7, 1, 1), 64: Color(1, 0.32, 0.32)}}
+# Tarkan: fumaca dos pontos escondidos: tipo -> [por segundo, segundos ligada a cada ciclo, ciclo]
+# (70 solta 1 a cada 5 quadros; 76 meio segundo a cada 5; 83 o geiser, meio segundo a cada 10)
+const FUMACA_TIPO := {9: {70: [5.0, 0.0, 0.0], 76: [25.0, 0.5, 5.0], 83: [25.0, 0.5, 10.0]}}
 # Lost Tower: luz girando em cima do bloco de fogo (19 vermelha, 20 azul; Magic_Ground2 e lightning2)
 const GIRA := {5: {19: ["magic_ground2", Color(1, 0.2, 0)], 20: ["lightning2", Color(0.4, 0.8, 1)]}}
 # tipo -> [malha, rolagem] da textura que corre sem somar (StreamMesh: a agua da Noria)
-const CORRE := {4: {42: [0, Vector2(-2, 0)], 43: [0, Vector2(2, 0)]}, 5: {3: [1, Vector2(-1, 0)], 4: [1, Vector2(-1, 0)]}}
+const CORRE := {4: {42: [0, Vector2(-2, 0)], 43: [0, Vector2(2, 0)]}, 5: {3: [1, Vector2(-1, 0)], 4: [1, Vector2(-1, 0)]},
+	9: {11: [0, Vector2(0, -0.2)], 13: [0, Vector2(0, -0.2)], 73: [0, Vector2(0, -0.2)], 75: [0, Vector2(0, -0.2)],
+		79: [0, Vector2(0, -0.2)], 12: [0, Vector2(-0.05, -0.05)]}}
 # portal (MODEL_WARP do MapManager.cpp): posicao em unidades do MU e altura das pecas
 const PORTAL := {3: [Vector2(53 * 100 + 50, 92 * 100 + 20), 360.0], 4: [Vector2(223 * 100, 30 * 100), 350.0]}
 # Devias: porta que corre (86) e porta que gira (20, 65, 88) quando o heroi chega a 2 tiles
@@ -69,6 +85,8 @@ var _pulsam: Array = []        # [material, f, a, b]
 var _agua: Array = []          # materiais da agua de Atlans (textura troca 25 vezes por segundo)
 var _quadros_agua: Array[Texture2D] = []
 var _giram: Array = []         # [sprite, sentido]
+var _brilhos: Array = []       # [material, cor, fase]
+var _fumacas: Array = []       # [particulas, segundos ligada, ciclo, fase]
 var _bolhas: CPUParticles3D    # Atlans: dos pontos do mapa (tipo 22)
 var _portas: Array = []        # [no, tipo, posicao original, giro original (graus), aberta]
 var _portal: Node3D
@@ -88,6 +106,9 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 	var tex_fumaca := load(PASTA + "fumaca.png") as Texture2D
 	var fogos_mapa: Dictionary = FOGOS.get(m.numero, {})
 	var luzes_mapa: Dictionary = LUZES.get(m.numero, {})
+	var luz_tipo: Dictionary = LUZ_TIPO.get(m.numero, {})
+	var brilho: Dictionary = BRILHO.get(m.numero, {})
+	var fumaca_tipo: Dictionary = FUMACA_TIPO.get(m.numero, {})
 	for o in objetos:
 		var p := Vector3(o.p[0], o.p[1], o.p[2])
 		var b := Basis(Quaternion(o.q[0], o.q[1], o.q[2], o.q[3]))
@@ -103,6 +124,24 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 			_luz(extra, p, luzes_mapa[o.m][0], luzes_mapa[o.m][1])
 		if o.m == "waterspout01":
 			_bica_agua(o)
+		var t := int(o.t)
+		if luz_tipo.has(t):
+			_luz(extra, p, COR_LAVA, luz_tipo[t])
+		if brilho.has(t):
+			_brilho(p, brilho[t], (o.q[2] if o.q.size() > 2 else 0.0))
+		if fumaca_tipo.has(t):
+			var ft: Array = fumaca_tipo[t]
+			var c := _fumaca(tex_fumaca, p)
+			c.amount = maxi(int(ft[0] * c.lifetime), 2)
+			c.scale_amount_min *= 2.0
+			c.scale_amount_max *= 2.5
+			c.lifetime *= 2.0
+			c.amount *= 2
+			add_child(c)
+			if ft[2] > 0.0:
+				c.emitting = false
+				_fumacas.append([c, ft[1], ft[2], randf() * ft[2]])
+			fogos += 1
 	_malhas_especiais(m)
 	_montar_portal(m)
 	_queda(m)
@@ -128,6 +167,23 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 	print("TESTE ambiente %d · somadas %d · correm %d · portas %d · portal %s · queda %s" % [m.numero, _somadas, _correm.size(), _portas.size(), _portal != null, _cai != null])
 
 
+# CreateSprite BITMAP_IMPACT em cima da pedra: escala e luz = sin(t * 2 + fase) * 0,3 + 0,7
+func _brilho(pos_mu: Vector3, cor: Color, fase: float) -> void:
+	var sp := MeshInstance3D.new()
+	var q := QuadMesh.new()
+	q.size = Vector2.ONE * 0.64 * 1.5
+	sp.mesh = q
+	sp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mat := ShaderMaterial.new()
+	mat.shader = EfeitoMU.SHADER
+	mat.set_shader_parameter("tex", EfeitoMU.textura("impack03"))
+	mat.set_shader_parameter("modo", 0)
+	sp.material_override = mat
+	sp.position = _no_mundo(pos_mu + Vector3(0, 0, 40))
+	add_child(sp)
+	_brilhos.append([mat, cor, fase, sp])
+
+
 # AddTerrainLight: soma a luz nos vertices em volta, caindo em linha reta ate o raio
 func _luz(buf: PackedFloat32Array, pos: Vector3, cor: Color, raio: int) -> void:
 	var xf := pos.x / 100.0
@@ -149,7 +205,7 @@ func _no_mundo(pos_mu: Vector3) -> Vector3:
 	return mundo.mu.transform * pos_mu
 
 
-func _material_particula(tex: Texture2D, quadros: int) -> StandardMaterial3D:
+static func _material_particula(tex: Texture2D, quadros: int) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
@@ -165,8 +221,13 @@ func _material_particula(tex: Texture2D, quadros: int) -> StandardMaterial3D:
 
 # BITMAP_FIRE subtipo 0: 24 quadros de vida, 4 desenhos da tira, encolhe e apaga subindo
 func _fogo(tex: Texture2D, pos_mu: Vector3) -> CPUParticles3D:
-	var c := CPUParticles3D.new()
+	var c := fogo(tex)
 	c.position = _no_mundo(pos_mu)
+	return c
+
+
+static func fogo(tex: Texture2D) -> CPUParticles3D:
+	var c := CPUParticles3D.new()
 	c.amount = 12
 	c.lifetime = 0.96
 	c.preprocess = 1.0
@@ -195,8 +256,13 @@ func _fogo(tex: Texture2D, pos_mu: Vector3) -> CPUParticles3D:
 
 # BITMAP_SMOKE: 16 quadros de vida, cresce, sobe acelerando e apaga
 func _fumaca(tex: Texture2D, pos_mu: Vector3) -> CPUParticles3D:
-	var c := CPUParticles3D.new()
+	var c := fumaca(tex)
 	c.position = _no_mundo(pos_mu)
+	return c
+
+
+static func fumaca(tex: Texture2D) -> CPUParticles3D:
+	var c := CPUParticles3D.new()
 	c.amount = 8
 	c.lifetime = 0.64
 	c.preprocess = 1.0
@@ -225,7 +291,7 @@ func _fumaca(tex: Texture2D, pos_mu: Vector3) -> CPUParticles3D:
 	return c
 
 
-func _curva(de: float, ate: float) -> Curve:
+static func _curva(de: float, ate: float) -> Curve:
 	var cv := Curve.new()
 	cv.max_value = maxf(de, ate)
 	cv.add_point(Vector2(0, de))
@@ -659,6 +725,12 @@ func _process(dt: float) -> void:
 		var q := _quadros_agua[int(_t * 25.0) % 32]
 		for m in _agua:
 			m.set_shader_parameter("tex", q)
+	for b in _brilhos:
+		var l: float = sin(_t * 2.0 + b[2]) * 0.3 + 0.7
+		(b[0] as ShaderMaterial).set_shader_parameter("cor", Color(b[1].r * l, b[1].g * l, b[1].b * l))
+		(b[3] as Node3D).scale = Vector3.ONE * l
+	for f in _fumacas:
+		(f[0] as CPUParticles3D).emitting = fmod(_t + f[3], f[2]) < f[1]
 	for g in _giram:
 		(g[0] as ShaderMaterial).set_shader_parameter("giro", deg_to_rad(fmod(_t * 100.0, 360.0)) * g[1])
 	if not _portas.is_empty():
