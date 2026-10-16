@@ -1085,12 +1085,25 @@ func _por(s: int, k: String) -> void:
 		if not _municao(k):
 			_rastros[s] = RastroArma.na_arma(no)
 	elif s == 7 and Capa.TIPOS.has(k):
-		# capa: so o pano preso nas costas (o cliente nao desenha o modelo do item)
-		no.free()
-		var c := Capa.nova(esqueleto, k)
+		# capa: os panos presos nas costas; Cape of Emperor e Overrule tambem desenham o
+		# modelo do item no osso 19 (a gola), as outras nao
 		var suporte := Node3D.new()
 		add_child(suporte)
-		suporte.add_child(c)
+		for i in Capa.TIPOS[k].size():
+			suporte.add_child(Capa.nova(esqueleto, k, i))
+		if Capa.GOLA.has(k):
+			var e: Array = Capa.GOLA[k]
+			var at := BoneAttachment3D.new()
+			at.bone_name = "osso19"
+			esqueleto.add_child(at)
+			var enc := Node3D.new()
+			enc.transform = ModelosMU.transf_mu(e[0], e[1], e[2], e[3], e[4], e[5])
+			at.add_child(enc)
+			enc.add_child(no)
+			_voar(no, 0.25)
+			suporte.tree_exiting.connect(at.queue_free)
+		else:
+			no.free()
 		_pecas[s] = suporte
 	elif s == 7:
 		# o cliente poe a origem da asa no osso 47 (costas) mais 15 pra cima no osso,
