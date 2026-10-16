@@ -61,45 +61,46 @@ const NPCS := {
 	61: ["monster45", 1.5], 62: ["monster46", 1.5], 63: ["monster45", 1.9, -2],
 	# mapas novos (Arena ate Karutan): modelo e escala do CreateMonster do cliente, tirados por
 	# ferramentas/monstros_cliente.py (case do ZzzCharacter.cpp e dos GM*.cpp de cada mapa)
-	69: ["monster51", 1], 70: ["monster52", 1.3], 71: ["monster53", 1.1], 72: ["monster54", 1.45],
-	73: ["monster55", 1], 74: ["monster53", 1.1], 75: ["monster55", 1], 77: ["monster56", 1],
+	69: ["monster51", 1, 0], 70: ["monster52", 1.3, -2], 71: ["monster53", 1.1, 1], 72: ["monster54", 1.45],
+	73: ["monster55", 0.8], 74: ["monster53", 1.3, 1], 75: ["monster55", 1], 77: ["monster56", 1],
 	200: ["npc_ball01", 1.8], 204: ["npc_object82", 1], 205: ["npc_object57", 1], 206: ["npc_object57", 1],
 	207: ["npc_object57", 1], 208: ["npc_object57", 1], 209: ["npc_object57", 1], 216: ["npc_npccrown", 1],
 	217: ["npc_npccheckfloor", 1], 218: ["npc_npccheckfloor", 1], 220: ["monster78", 1.1], 223: ["npc_npcsenatus", 1.1],
 	224: ["npc_npcclerk", 1], 239: ["npc_tournament01", 1], 290: ["monster82", 1.2], 291: ["monster83", 1.8],
 	292: ["monster84", 1.4], 293: ["monster85", 1.4], 294: ["monster86", 0.7], 295: ["monster88", 2],
 	304: ["monster101", 1.4], 305: ["monster102", 1.35], 306: ["monster103", 1.1], 307: ["monster104", 1.15],
-	308: ["monster105", 1.2], 309: ["monster106", 1.8], 310: ["monster92", 1.25], 311: ["monster98", 1.2],
-	312: ["monster97", 1.2], 313: ["monster96", 1.25], 314: ["monster99", 1.6], 315: ["monster96", 1.25],
-	316: ["monster97", 1.2], 317: ["monster98", 1.2], 340: ["monster93", 1.5], 341: ["monster95", 1.3],
+	308: ["monster105", 1.2], 309: ["monster106", 1.8], 310: ["monster99", 1.2], 311: ["monster98", 1.2],
+	312: ["monster97", 1.2], 313: ["monster96", 1.25], 314: ["monster99", 1.6], 315: ["monster96", 1.65],
+	316: ["monster92", 1.25], 317: ["monster95", 1.3], 340: ["monster93", 1.5], 341: ["monster95", 1.3],
 	344: ["monster92", 1.25], 345: ["monster94", 1.25], 348: ["monster100", 1], 349: ["monster90", 2],
 	350: ["monster107", 0.95], 351: ["monster108", 0.8], 352: ["monster109", 1.3], 353: ["monster110", 1.3],
-	354: ["monster111", 1.3], 355: ["monster112", 1.1], 356: ["monster113", 1.2], 357: ["monster114", 1.2],
+	354: ["monster111", 1.3], 355: ["monster112", 1.1], 356: ["monster113", 1.2, 1], 357: ["monster114", 1.2],
 	358: ["monster115", 1], 359: ["monster116", 1.3], 360: ["monster117", 1.3], 367: ["npc_to3gate", 4.76],
 	369: ["npc_os", 1], 370: ["npc_je", 1], 376: ["npc_npcpharmercy1", 1], 377: ["npc_npcpharmercy2", 1],
 	407: ["npc_werequarrel", 1.9], 415: ["npc_silvia", 1], 416: ["npc_rhea", 1], 417: ["npc_marce", 1.05],
-	418: ["monster129", 1], 419: ["monster130", 0.8], 420: ["monster131", 1], 421: ["monster132", 0.8],
-	422: ["monster133", 1], 423: ["monster134", 0.17], 424: ["monster135", 1.2], 425: ["monster136", 1.3],
+	418: ["monster129", 0.95], 419: ["monster130", 0.76], 420: ["monster131", 0.95], 421: ["monster132", 0.88],
+	422: ["monster133", 0.95], 423: ["monster134", 0.1615], 424: ["monster135", 1.14], 425: ["monster136", 1.235],
 	441: ["monster137", 1], 442: ["monster138", 1], 443: ["monster139", 1], 444: ["monster140", 1.1],
 	445: ["monster141", 1.1], 446: ["monster142", 1.3], 447: ["monster143", 0.95], 448: ["monster144", 0.95],
-	449: ["monster145", 0.95], 452: ["npc_goblinmaster", 1.1], 453: ["npc_seedgoblin", 0.9], 454: ["monster146", 1],
-	455: ["monster147", 1.7], 456: ["monster148", 1], 457: ["monster149", 1], 458: ["monster150", 1.5],
-	479: ["npc_titus", 1.1], 480: ["monster158", 1], 481: ["monster158", 1], 482: ["monster159", 1],
-	483: ["monster159", 1], 484: ["monster160", 0.7], 485: ["monster160", 0.7], 486: ["monster161", 1],
-	487: ["monster162", 1], 488: ["monster162", 1], 489: ["monster164", 1], 490: ["monster163", 1],
+	449: ["monster145", 0.95], 452: ["npc_goblinmaster", 1.1], 453: ["npc_seedgoblin", 0.9], 454: ["monster146", 1.2, 1],
+	455: ["monster147", 1.7], 456: ["monster148", 1], 457: ["monster149", 1, 1], 458: ["monster150", 1.5, 1],
+	479: ["npc_titus", 1.1], 480: ["monster158", 1, 0], 481: ["monster158", 1, 0], 482: ["monster159", 1, 0],
+	483: ["monster159", 1, 0], 484: ["monster160", 0.7], 485: ["monster160", 0.7], 486: ["monster161", 1, 2],
+	487: ["monster162", 1, 2], 488: ["monster162", 1, 2], 489: ["monster164", 1], 490: ["monster163", 1],
 	491: ["monster163", 1], 492: ["npc_gambler_moss", 0.8], 545: ["npc_unitedmarketplace_christine", 1.1], 546: ["npc_unitedmarkedplace_raul", 1],
-	549: ["monster194", 1.15], 550: ["monster195", 1.1], 551: ["monster196", 1.35], 552: ["monster197", 1.4],
-	553: ["monster198", 0.95], 554: ["monster199", 1.1], 555: ["monster200", 1.2], 556: ["monster201", 1.2],
-	557: ["monster202", 1.5], 558: ["monster203", 1.1], 559: ["monster204", 1.56], 562: ["monster206", 1.7],
-	563: ["monster207", 1], 564: ["monster208", 1], 565: ["monster209", 1.5], 569: ["monster210", 1],
+	549: ["monster194", 1.35], 550: ["monster195", 1.2], 551: ["monster196", 1.4], 552: ["monster197", 1.75],
+	553: ["monster198", 1.15], 554: ["monster199", 1.3], 555: ["monster200", 1.5, 1], 556: ["monster201", 1.35],
+	557: ["monster202", 1.5], 558: ["monster203", 1.1], 559: ["monster204", 1.56], 562: ["monster206", 1.9],
+	563: ["monster207", 1.1], 564: ["monster208", 1.3, 1], 565: ["monster209", 1.8, 1], 569: ["monster210", 1],
 	570: ["monster211", 0.58], 571: ["monster212", 0.64], 572: ["monster213", 1.5], 573: ["monster214", 1.5],
-	574: ["monster215", 1.25], 575: ["monster216", 1.45], 576: ["monster217", 1.55], 577: ["npc_unitedmarketplace_christine", 1.1],
+	574: ["monster215", 1.25, 3], 575: ["monster216", 1.45, 3], 576: ["monster217", 1.55, 0], 577: ["npc_unitedmarketplace_christine", 1.1],
 	578: ["npc_volvo", 0.9],
 }
 # transparencia (AlphaTarget): o Ghost da Dungeon
 const TRANSPARENTES := {11: 0.4}
 # fogo e fumaca saindo do corpo (MoveCharacter do cliente): [tipo, osso ("corpo" = osso ao
-# acaso, "pes" = em volta dos pes), quantas no ar]
+# acaso, "pes" = em volta dos pes), quantas no ar, cor (opcional: a do fogo no comeco, ou a da
+# fumaca, que sai a 0,45 dela)]. "faisca" = Spark03 parada que pisca; "agua" = Waterfall2 caindo
 const PARTICULAS := {
 	35: [["fogo", "corpo", 60]], 40: [["fogo", 2, 12]], 59: [["fogo", 6, 24], ["fogo", 13, 24]],
 	10: [["fumaca", "pes", 4]], 12: [["fumaca", "pes", 4]], 51: [["fumaca", "pes", 4]],
@@ -107,16 +108,133 @@ const PARTICULAS := {
 	# corpo); areia levantando em volta de quem anda (MonsterMoveSandSmoke, 1 por quadro andando)
 	61: [["fogo", 62, 6], ["fogo", 77, 6], ["areia", "pes", 20]], 63: [["fogo", "corpo", 70]],
 	57: [["areia", "pes", 20]], 58: [["areia", "pes", 20]], 60: [["areia", "pes", 20]], 62: [["areia", "pes", 20]],
+	# Icarus: faiscas do Alquamos, fogo na cabeca do Great Drakan
+	69: [["faisca", "corpo", 15, Color(0.5, 0.6, 0.7)]], 75: [["fogo", 18, 24]],
+	# Terra das Provas: Fire Golem com fogo e fumaca nas maos e no olho, fumaca verde do Poison Golem
+	291: [["fogo", 34, 24], ["fogo", 45, 24], ["fogo", 48, 12], ["fumaca", 34, 30], ["fumaca", 45, 30],
+		["fumaca", 48, 12], ["fumaca", 46, 12]],
+	293: [["fumaca", 53, 2, Color(0.4, 1, 0.7)], ["fumaca", 54, 2, Color(0.4, 1, 0.7)], ["fumaca", 55, 2, Color(0.4, 1, 0.7)]],
+	294: [["areia", "pes", 3]],
+	# Aida: agua caindo do Blue Golem, faiscas verdes do Death Rider, fogo vermelho do Hell Maine
+	305: [["agua", 12, 30], ["agua", 20, 30], ["agua", 6, 30]], 551: [["agua", 12, 30], ["agua", 20, 30], ["agua", 6, 30]],
+	306: [["faisca", 6, 30, Color(0.3, 1, 0.3)]], 550: [["faisca", 6, 30, Color(0.3, 1, 0.3)]],
+	309: [["fogo", 20, 32, Color(1, 0.12, 0.08)], ["fogo", 39, 32, Color(1, 0.12, 0.08)]],
+	# Crywolf: poeira de quem anda
+	310: [["areia", "pes", 3]], 313: [["areia", "pes", 6]], 314: [["areia", "pes", 3]], 315: [["areia", "pes", 6]],
+	316: [["areia", "pes", 3]], 317: [["areia", "pes", 3]], 341: [["areia", "pes", 3]], 344: [["areia", "pes", 3]],
+	345: [["areia", "pes", 3]], 349: [["areia", "pes", 3]],
+	# Kanturu: fumaca do Berserker e do Dreadfear, faiscas do Iron Rider, nevoa azul da Persona
+	350: [["fumaca", 9, 16]], 553: [["fumaca", 9, 16]],
+	352: [["faisca", 52, 20, Color(0.8, 1, 0.8)], ["faisca", 47, 20, Color(0.8, 1, 0.8)]],
+	354: [["areia", "pes", 2]], 355: [["areia", "pes", 2]], 554: [["areia", "pes", 2]],
+	357: [["areia", "pes", 20]], 556: [["areia", "pes", 20]],
+	358: [["fumaca", "pes", 10, Color(0.43, 0.51, 0.85)]],
+	360: [["fumaca", 71, 13], ["fumaca", 68, 13], ["fumaca", 50, 13], ["fumaca", 47, 13]],
+	# Elbeland
+	422: [["fogo", 30, 54]], 423: [["areia", "pes", 20]],
+	# Pantano: fumaca colorida das Shadows, verde do Ghost Napin, fogo do Blaze e do Ice Napin
+	444: [["fumaca", "corpo", 20, Color(1, 0.1, 0.1)]], 445: [["fumaca", "corpo", 20, Color(0.3, 0.6, 1)]],
+	446: [["fumaca", "corpo", 20, Color(0.5, 1, 0.5)]], 559: [["fumaca", "corpo", 20, Color(1, 1, 1)]],
+	448: [["fumaca", 21, 25, Color(0.4, 1, 0.4)], ["fumaca", 37, 25, Color(0.4, 1, 0.4)],
+		["fumaca", 65, 25, Color(0.4, 1, 0.4)], ["fumaca", 66, 25, Color(0.4, 1, 0.4)],
+		["fumaca", 77, 25, Color(0.4, 1, 0.4)], ["fumaca", 78, 25, Color(0.4, 1, 0.4)], ["fumaca", 79, 25, Color(0.4, 1, 0.4)]],
+	449: [["fogo", 10, 20], ["fogo", 61, 20], ["fogo", 72, 20], ["fogo", 21, 20], ["fogo", 122, 15], ["fogo", 116, 15]],
+	558: [["fogo", 10, 20, Color(0.25, 0.6, 0.7)], ["fogo", 61, 20, Color(0.25, 0.6, 0.7)],
+		["fogo", 72, 20, Color(0.25, 0.6, 0.7)], ["fogo", 21, 20, Color(0.25, 0.6, 0.7)],
+		["fogo", 122, 15, Color(0.25, 0.6, 0.7)], ["fogo", 116, 15, Color(0.25, 0.6, 0.7)]],
+	# Raklion: fumaca fria do Iron Knight
+	458: [["fumaca", 20, 3, Color(0.3, 0.6, 1)], ["fumaca", 37, 3, Color(0.3, 0.6, 1)], ["fumaca", 45, 3, Color(0.3, 0.6, 1)], ["fumaca", 51, 3, Color(0.3, 0.6, 1)]],
+	565: [["fumaca", 20, 3, Color(0.3, 0.6, 1)], ["fumaca", 37, 3, Color(0.3, 0.6, 1)], ["fumaca", 45, 3, Color(0.3, 0.6, 1)], ["fumaca", 51, 3, Color(0.3, 0.6, 1)]],
+	# Vulcanus: Slaughterer, Assassins (vermelho e verde) e Lava Giants (laranja e roxo)
+	484: [["fumaca", 6, 4]], 485: [["fumaca", 6, 4]],
+	486: [["fumaca", 37, 5, Color(1, 0.2, 0.1)], ["fumaca", 11, 5, Color(1, 0.2, 0.1)], ["fumaca", 70, 5, Color(1, 0.2, 0.1)], ["fumaca", 65, 5, Color(1, 0.2, 0.1)]],
+	487: [["fumaca", 37, 5, Color(0.3, 1, 0.3)], ["fumaca", 11, 5, Color(0.3, 1, 0.3)], ["fumaca", 70, 5, Color(0.3, 1, 0.3)], ["fumaca", 65, 5, Color(0.3, 1, 0.3)]],
+	488: [["fumaca", 37, 5, Color(0.3, 1, 0.3)], ["fumaca", 11, 5, Color(0.3, 1, 0.3)], ["fumaca", 70, 5, Color(0.3, 1, 0.3)], ["fumaca", 65, 5, Color(0.3, 1, 0.3)]],
+	489: [["fumaca", 7, 4, Color(1, 0.5, 0.15)]], 490: [["fumaca", 7, 4, Color(0.6, 0.2, 1)]], 491: [["fumaca", 7, 4, Color(0.6, 0.2, 1)]],
+	# Karutan: poeira do Gollock
+	572: [["areia", "pes", 20]],
 }
 # NPC que fica no ar (CreateMonster: Position[2] = chao + 140): a Lala da Noria
 const FLUTUA := {242: 1.4}
-# cor do corpo (BodyLight): o Poison Bull nasce envenenado (eDeBuff_Poison = 0,3 1 0,5)
-const TINTA := {8: Color(0.3, 1, 0.5)}
-# luz que o monstro pinta no chao em volta (AddTerrainLight): [cor (negativa escurece), raio em tiles]
-# Death Gorgon vermelha piscando; Zaikan e Death Beam Knight escurecem (-1,3)
-const LUZ_CHAO := {35: [Color(0.55, 0.11, 0), 2], 59: [Color(-1.3, -1.3, -1.3), 3], 63: [Color(-1.3, -1.3, -1.3), 3]}
+# cor do corpo (BodyLight): o Poison Bull nasce envenenado (eDeBuff_Poison = 0,3 1 0,5);
+# Alpha Crust verde agua, Dark Phoenix sem luz do chao, os Hero de Crywolf azulados
+const TINTA := {8: Color(0.3, 1, 0.5), 74: Color(0.1, 1.0, 0.8), 77: Color(0.6, 0.6, 0.6),
+	314: Color(0.5, 0.5, 0.6), 315: Color(0.5, 0.5, 0.8), 359: Color(0.9, 0.9, 1.0)}
+# cor de uma malha so (o cliente troca a BodyLight antes de cada RenderMesh): {malha: cor}
+const TINTA_MALHA := {
+	75: {0: Color(0.1, 0.1, 0.1), 1: Color(1, 0.1, 0.1), 2: Color(0.1, 0.1, 0.1), 3: Color(0.1, 0.1, 0.1), 4: Color(0.1, 0.1, 0.1)},
+	290: {1: Color(0.6, 0.4, 0.4)}, 294: {0: Color(0.5, 0.6, 0.8), 1: Color(0.5, 0.8, 0.6)}, 293: {1: Color(0.1, 1, 0.1)},
+}
+# alfa de uma malha so (o manto das Shadows do Pantano)
+const ALFA_MALHA := {444: {3: 0.7}, 445: {3: 0.7}, 446: {4: 0.7}}
+# textura correndo na malha (BlendMeshTexCoordU/V e StreamMesh): {malha: UV por segundo}
+const CORRE := {71: {1: Vector2(-0.4, 0)}, 74: {1: Vector2(-0.4, 0)}, 77: {0: Vector2(0, 0.1)},
+	291: {0: Vector2(0.2, 0.2)}, 293: {1: Vector2(0.2, 0.2)}, 305: {0: Vector2(-0.3, -0.3)}, 551: {0: Vector2(-0.3, -0.3)},
+	306: {3: Vector2(-0.6, -0.6)}, 550: {3: Vector2(-0.6, -0.6)}, 345: {2: Vector2(0.5, 0)}}
+# malha que so desenha somada com o brilho pulsando: [malha, base, amp, w], luz = base + amp * sin(w t)
+const SOMADAS := {
+	351: [[2, 0.5, 0.5, 2.0], [3, 0.5, 0.5, 2.0]], 345: [[2, 0.3, 0.0, 0.0]], 291: [[0, 0.9, 0.4, 1.2]],
+	480: [[0, 0.6, 0.4, 4.0]], 481: [[0, 0.6, 0.4, 4.0]], 482: [[0, 0.6, 0.4, 4.0]], 483: [[0, 0.6, 0.4, 4.0]],
+}
+# passada somada por cima da malha normal (scripts/camada.gdshader): [malhas (-1 = todas),
+# textura ("" = a da malha), jeito ("" = UV da malha, "chrome" e "chrome2" = presa na normal),
+# cor, pulso [base, amp, w] (opcional), UV correndo por segundo (opcional)]
+const CAMADAS := {
+	72: [[-1, "bab2", "chrome", Color(0.9, 0.8, 1.0)]],
+	73: [[[1, 2], "", "chrome", Color(0.2, 0.2, 0.8)], [[1, 2], "", "chrome2", Color(1, 1, 1)]],
+	75: [[[1, 2], "", "chrome", Color(1.0, 0.1, 0.1)]],
+	77: [[-1, "", "chrome", Color(1.0, 0.5, 0.0), [0.65, 0.35, 1.0]]],
+	292: [[0, "", "chrome", Color(0.8, 0.6, 1.0)]],
+	295: [[4, "", "chrome", Color(1.0, 0.5, 0.0)], [[0, 1, 3], "", "chrome", Color(0.75, 0.65, 0.5)],
+		[0, "bossmap1_r", "", Color(1, 1, 1), [0.6, 0.3, 1.2]]],
+	305: [[0, "", "chrome", Color(0.9, 0.9, 0.9)]], 551: [[0, "", "chrome", Color(0.9, 0.9, 0.9)]],
+	306: [[3, "", "chrome", Color(0.9, 0.9, 0.9)]], 550: [[3, "", "chrome", Color(0.9, 0.9, 0.9)]],
+	309: [[0, "", "chrome", Color(1, 0, 0)], [2, "", "chrome", Color(0.5, 0, 0)]],
+	314: [[-1, "chrome01", "chrome", Color(0.5, 0.5, 0.6)]],
+	315: [[-1, "chrome01", "chrome", Color(0.5, 0.5, 0.8)]],
+	349: [[-1, "chrome03", "chrome2", Color(1, 1, 1)]],
+	350: [[0, "buserbody_r", "", Color(1, 1, 1), [1, 1, 2]], [1, "busersword_r", "", Color(1, 1, 1), [1, 1, 2]]],
+	553: [[0, "buserbody_r", "", Color(1, 1, 1), [1, 1, 2]], [1, "busersword_r", "", Color(1, 1, 1), [1, 1, 2]]],
+	353: [[1, "", "", Color(1, 1, 1), [1, 0, 0], Vector2(0, 0.5)], [3, "chrome01", "chrome", Color(1, 1, 1)],
+		[4, "", "", Color(1, 1, 1), [0.5, 0.5, 1]]],
+	354: [[0, "bladeeff2_r", "", Color(1, 1, 1), [1, 1, 2]]],
+	355: [[1, "", "", Color(1, 1, 1), [0.5, 0.5, 2]], [1, "chrome02", "chrome2", Color(1, 1, 1)]],
+	554: [[1, "", "", Color(1, 1, 1), [0.5, 0.5, 2]], [1, "chrome02", "chrome2", Color(1, 1, 1)]],
+	358: [[0, "prsona_r", "", Color(1, 1, 1), [0.5, 0.5, 2]], [2, "prsonass_r", "", Color(1, 1, 1), [0.5, 0.5, 2]]],
+	359: [[2, "illumi_r", "", Color(1, 1, 1), [1, 1, 2]], [3, "", "", Color(1, 1, 1), [0.5, 0.5, 2]]],
+	444: [[4, "red_shadows", "", Color(2, 2, 2), [0.6, 0.5, 2]]],
+	445: [[4, "blue_shadows", "", Color(2, 2, 2), [0.6, 0.5, 2]]],
+	446: [[0, "green_shadows", "", Color(2, 2, 2), [0.6, 0.5, 2]]],
+	455: [[1, "chrome06", "chrome", Color(1, 1, 1)]], 562: [[1, "chrome06", "chrome", Color(1, 1, 1)]],
+	456: [[[1, 3], "", "", Color(1, 1, 1)], [3, "chrome01", "chrome", Color(1, 1, 1)]],
+	563: [[[1, 3], "", "", Color(1, 1, 1)], [3, "chrome01", "chrome", Color(1, 1, 1)]],
+	458: [[0, "icenightlight", "", Color(1, 1, 1), [0.6, 0.4, 10]]], 565: [[0, "icenightlight", "", Color(1, 1, 1), [0.6, 0.4, 10]]],
+	484: [[0, "bugbear_r", "", Color(1, 1, 1), [0.5, 0.5, 3]]], 485: [[0, "bugbear_r", "", Color(1, 1, 1), [0.5, 0.5, 3]]],
+	486: [[1, "pk_mon03_red", "", Color(1, 1, 1), [0.6, 0.3, 5]], [3, "pk_mon02_fire", "", Color(1, 1, 1), [0.6, 0.3, 5]]],
+	487: [[1, "pk_mon03_green", "", Color(1, 1, 1), [0.6, 0.3, 5]], [3, "pk_mon02_green", "", Color(1, 1, 1), [0.6, 0.3, 5]]],
+	488: [[1, "pk_mon03_green", "", Color(1, 1, 1), [0.6, 0.3, 5]], [3, "pk_mon02_green", "", Color(1, 1, 1), [0.6, 0.3, 5]]],
+	489: [[0, "lavagiantaa_e", "", Color(1, 1, 1), [0.5, 1.5, 1]]],
+	490: [[0, "lavagiantba_e", "", Color(1, 1, 1), [0.5, 1.5, 1]]], 491: [[0, "lavagiantba_e", "", Color(1, 1, 1), [0.5, 1.5, 1]]],
+	570: [[0, "bonese", "", Color(1, 1, 1), [0.5, 1, 2]]],
+	573: [[0, "kryptaball2", "", Color(1, 1, 1), [1, 1, 2]]],
+	575: [[0, "bora_golem_effect", "", Color(1, 1, 1), [1, 1, 2]], [1, "bora_golem2_effect", "", Color(1, 1, 1), [1, 1, 2]]],
+	576: [[2, "king_golem01_effect", "", Color(1, 1, 1), [1, 1, 2]], [3, "king_golem02_effect", "", Color(1, 1, 1), [1, 1, 2]],
+		[1, "king_golem03_effect", "", Color(1, 1, 1), [1, 1, 2]]],
+}
+# raio azul entre ossos, refeito todo quadro (BITMAP_JOINT_THUNDER subtipo 7): [largura em m, pares]
+const RAIOS := {
+	70: [0.14, [[2, 3], [3, 4], [4, 5], [2, 10], [10, 11], [2, 18], [18, 22], [22, 23], [23, 24], [24, 25], [18, 31], [31, 32], [32, 33], [33, 34]]],
+	73: [0.2, [[13, 14], [14, 15], [15, 16], [22, 23]]],
+}
+# luz que o monstro pinta no chao em volta (AddTerrainLight): [cor (negativa escurece), raio em
+# tiles, pisca (falta = sim)]. Death Gorgon vermelha piscando; Zaikan e Death Beam Knight escurecem
+# (-1,3); os golens e bruxas de Aida e da Terra das Provas com luz fixa
+const LUZ_CHAO := {35: [Color(0.55, 0.11, 0), 2], 59: [Color(-1.3, -1.3, -1.3), 3], 63: [Color(-1.3, -1.3, -1.3), 3],
+	291: [Color(1.0, 0.2, 0.1), 3, false], 304: [Color(0.7, 0.1, 0.1), 3, false], 552: [Color(0.7, 0.1, 0.1), 3, false],
+	305: [Color(0, 0, 0.7), 3, false], 551: [Color(0, 0, 0.7), 3, false], 309: [Color(1.0, 0, 0), 3, false]}
 # olhos que deixam rastro de luz (MoveEye + CreateJoint BITMAP_JOINT_ENERGY 2 e 3): [osso direito, esquerdo]
-const OLHOS := {57: [8, 9], 58: [24, 25], 59: [24, 25], 60: [11, 12], 61: [8, 9], 62: [8, 9], 63: [8, 9]}
+const OLHOS := {57: [8, 9], 58: [24, 25], 59: [24, 25], 60: [11, 12], 61: [8, 9], 62: [8, 9], 63: [8, 9],
+	349: [9, 10], 351: [16, 17], 576: [9, 9]}
 # monstro que e um jogador vestido (Cursed Wizard: Legendary +9, cajado e escudo)
 const VESTIDOS := {
 	34: ["classe_dw", {0: "5,5", 1: "6,14", 2: "7,3", 3: "8,3", 4: "9,3", 5: "10,3", 6: "11,3",
@@ -137,6 +255,57 @@ const LUZES := {
 	48: [["eye01", 1.0, [42], Vector3(5, 0, 0), "olho"], ["eye01", 1.0, [43], Vector3(-5, 0, 0), "olho"],
 		["spark02", 2.0, [26, 31, 36, 41], Vector3.ZERO, null], ["shiny03", 1.0, [26, 31, 36, 41], Vector3.ZERO, null]],
 	49: [["lightning2", 1.0, [63], Vector3(0, 0, 20), null], ["shiny03", 4.0, [63], Vector3(0, 0, 20), null]],
+	# Icarus
+	69: [["flare01", 0.6, [10, 18, 37, 38, 51, 52, 58, 59, 66], Vector3.ZERO, Color(0.68, 0.77, 0.85)]],
+	70: [["flare01", 0.8, [20], Vector3.ZERO, Color(1, 1, 1)]],
+	71: [["eye01", 2.0, [26], Vector3(5, 0, 0), "olho"], ["eye01", 2.0, [27], Vector3(-5, 0, 0), "olho"]],
+	74: [["eye01", 2.0, [26], Vector3(5, 0, 0), "olho"], ["eye01", 2.0, [27], Vector3(-5, 0, 0), "olho"]],
+	73: [["flare01", 0.8, [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 52, 53, 54, 55, 56, 57, 58],
+		Vector3.ZERO, Color(0.1, 0.1, 1.0)]],
+	# Terra das Provas
+	290: [["flare01", 0.5, [29, 30], Vector3.ZERO, Color(0.9, 0.2, 0.1)]],
+	294: [["flare01", 0.7, [18, 19], Vector3.ZERO, Color(0.9, 0.2, 0.1)]],
+	295: [["flare01", 0.5, [8, 9], Vector3(0, -2, 0), Color(1.8, 0.4, 0.2)]],
+	# Aida
+	304: [["impack03", 0.8, [76, 110], Vector3.ZERO, Color(1.25, 0.7, 1.25)], ["impack03", 1.1, [107], Vector3.ZERO, Color(1.25, 0.7, 1.25)],
+		["impack03", 1.0, [108], Vector3.ZERO, Color(1.25, 0.7, 1.25)], ["impack03", 1.7, [109], Vector3.ZERO, Color(1.25, 0.7, 1.25)],
+		["shiny02", 4.0, [0], Vector3(0, 0, -65), Color(0.7, 0.5, 0.7)]],
+	552: [["impack03", 0.8, [76, 110], Vector3.ZERO, Color(1.25, 0.7, 1.25)], ["impack03", 1.1, [107], Vector3.ZERO, Color(1.25, 0.7, 1.25)],
+		["impack03", 1.0, [108], Vector3.ZERO, Color(1.25, 0.7, 1.25)], ["impack03", 1.7, [109], Vector3.ZERO, Color(1.25, 0.7, 1.25)],
+		["shiny02", 4.0, [0], Vector3(0, 0, -65), Color(0.7, 0.5, 0.7)]],
+	306: [["impack03", 3.0, [6], Vector3(60, -30, 0), Color(0, 0.25, 0)]],
+	550: [["impack03", 3.0, [6], Vector3(60, -30, 0), Color(0, 0.25, 0)]],
+	308: [["impack03", 0.4, [37, 38, 39, 40, 44, 45], Vector3.ZERO, Color(0.4, 0.85, 0.5)]],
+	309: [["impack03", 0.3, [9, 10], Vector3.ZERO, Color(0.95, 0, 0)], ["impack03", 1.0, [33, 34, 35], Vector3.ZERO, Color(0.95, 0, 0)]],
+	# Crywolf
+	312: [["flare01", 1.0, [28], Vector3.ZERO, Color(0, 1.3, 0.26)], ["shiny02", 0.5, [27, 29], Vector3.ZERO, Color(2, 2, 2)]],
+	313: [["flare01", 3.5, [6], Vector3.ZERO, Color(1.8, 0.4, 0.2)]],
+	315: [["flare01", 3.5, [6], Vector3.ZERO, Color(1.8, 0.4, 0.2)]],
+	345: [["bowe", 1.5, [27], Vector3.ZERO, Color(1, 1, 1)], ["flare01", 3.8, [27], Vector3.ZERO, Color(0.9, 0.9, 2.1)],
+		["shockwave", 0.85, [27], Vector3.ZERO, Color(0.3, 0.3, 0.7)], ["shiny02", 0.8, [28], Vector3.ZERO, Color(0.45, 0.35, 1.1)],
+		["flare01", 1.5, [28], Vector3.ZERO, Color(0.3, 0.3, 0.7)]],
+	# Kanturu
+	356: [["flare01", 3.0, [7], Vector3(19, -2, 0), Color(0.4, 0.6, 0.8)], ["flare01", 1.0, [7], Vector3(19, -2, 0), Color(0.27, 0.45, 0.72)]],
+	555: [["flare01", 3.0, [7], Vector3(19, -2, 0), Color(0.4, 0.6, 0.8)], ["flare01", 1.0, [7], Vector3(19, -2, 0), Color(0.27, 0.45, 0.72)]],
+	358: [["flare01", 2.0, [73], Vector3.ZERO, Color(0.43, 0.51, 0.85)]],
+	360: [["impack03", 0.5, [9, 10], Vector3.ZERO, Color(0.25, 0.7, 0.6)]],
+	# Pantano
+	441: [["flare01", 2.0, [15], Vector3.ZERO, Color(2, 1.2, 0.2)]], 557: [["flare01", 2.0, [15], Vector3.ZERO, Color(2, 1.2, 0.2)]],
+	442: [["flare01", 2.0, [15], Vector3.ZERO, Color(2, 0, 0)]], 443: [["flare01", 2.0, [15], Vector3.ZERO, Color(0.4, 1.4, 2)]],
+	447: [["flare01", 2.2, [7, 4, 5, 10, 22, 11, 23, 12, 24, 34, 39], Vector3.ZERO, Color(0.1, 0.2, 1)]],
+	449: [["flare01", 4.0, [10, 61, 72, 21], Vector3.ZERO, Color(1, 0.2, 0)], ["flare01", 1.0, [122, 116], Vector3.ZERO, Color(1, 0.2, 0)]],
+	558: [["flare01", 4.0, [10, 61, 72, 21], Vector3.ZERO, Color(1, 1, 1)], ["flare01", 1.0, [122, 116], Vector3.ZERO, Color(1, 1, 1)]],
+	# Vulcanus
+	480: [["lightmarks", 0.6, [9], Vector3.ZERO, Color(0.1, 0.4, 0.5)]], 481: [["lightmarks", 0.6, [9], Vector3.ZERO, Color(0.1, 0.4, 0.5)]],
+	482: [["lightmarks", 0.6, [9], Vector3.ZERO, Color(0.1, 0.4, 0.5)]], 483: [["lightmarks", 0.6, [9], Vector3.ZERO, Color(0.1, 0.4, 0.5)]],
+	489: [["lightmarks", 1.9, [3], Vector3.ZERO, Color(0.9, 0.4, 0.1)], ["lightmarks", 0.9, [37, 43], Vector3.ZERO, Color(0.9, 0.4, 0.1)]],
+	490: [["lightmarks", 1.9, [3], Vector3.ZERO, Color(0.5, 0.1, 0.9)], ["lightmarks", 0.9, [37, 43], Vector3.ZERO, Color(0.5, 0.1, 0.9)]],
+	491: [["lightmarks", 1.9, [3], Vector3.ZERO, Color(0.5, 0.1, 0.9)], ["lightmarks", 0.9, [37, 43], Vector3.ZERO, Color(0.5, 0.1, 0.9)]],
+	# Karutan
+	569: [["flare01", 1.5, [15], Vector3.ZERO, Color(0.55, 0.22, 0.11)]],
+	570: [["flare01", 2.0, [8], Vector3.ZERO, Color(0.55, 0.22, 0.11)]],
+	576: [["shiny05", 0.7, [9, 88, 89], Vector3.ZERO, Color(0.55, 0.22, 0.55)],
+		["shiny05", 1.0, [33, 34, 58, 59], Vector3.ZERO, Color(0.55, 0.22, 0.55)], ["flare02", 0.2, [9], Vector3.ZERO, Color(0.3, 0.02, 0.1)]],
 }
 # malha que o cliente desenha somada com luz 0 (some): a Hydra so acende a 5 no ataque
 const APAGADAS := {49: 5}
@@ -213,14 +382,35 @@ static func do_npc(numero: int) -> Boneco:
 	if b and TINTA.has(numero):
 		b.tingir(TINTA[numero])
 	if b and LUZ_CHAO.has(numero):
-		b.luz_chao(LUZ_CHAO[numero][0], LUZ_CHAO[numero][1])
+		var lc: Array = LUZ_CHAO[numero]
+		b.luz_chao(lc[0], lc[1], lc[2] if lc.size() > 2 else true)
 	if b and TRANSPARENTES.has(numero):
 		b.transparente(TRANSPARENTES[numero])
 	if b and PARTICULAS.has(numero):
 		for pt in PARTICULAS[numero]:
-			b.particulas(pt[0], pt[1], pt[2])
+			b.particulas(pt[0], pt[1], pt[2], pt[3] if pt.size() > 3 else null)
+	if b and SOMADAS.has(numero):
+		for e in SOMADAS[numero]:
+			b.somar_malha(e[0])
+			b._pulsam.append([b._superficie(e[0]), e[1], e[2], e[3], null])
+	if b and TINTA_MALHA.has(numero):
+		for k in TINTA_MALHA[numero]:
+			b.mudar_malha(k, func(m: BaseMaterial3D) -> void: m.albedo_color *= TINTA_MALHA[numero][k])
+	if b and ALFA_MALHA.has(numero):
+		for k in ALFA_MALHA[numero]:
+			b.mudar_malha(k, Boneco._com_alfa.bind(ALFA_MALHA[numero][k]))
+	if b and CORRE.has(numero):
+		for k in CORRE[numero]:
+			var mc := b.mudar_malha(k, func(_m: BaseMaterial3D) -> void: pass)
+			if mc:
+				b._correm.append([mc, CORRE[numero][k]])
+	if b and CAMADAS.has(numero):
+		for c in CAMADAS[numero]:
+			b.camada(c[0], c[1], c[2], c[3], c[4] if c.size() > 4 else [1, 0, 0], c[5] if c.size() > 5 else Vector2.ZERO)
+	if b and RAIOS.has(numero):
+		b.raios(RAIOS[numero][0], RAIOS[numero][1])
 	if b and OLHOS.has(numero):
-		for k in 2:
+		for k in (1 if OLHOS[numero][0] == OLHOS[numero][1] else 2):
 			var osso := b.esqueleto.find_bone("osso%d" % OLHOS[numero][k]) if b.esqueleto else -1
 			if osso >= 0:
 				var at := BoneAttachment3D.new()
@@ -339,7 +529,7 @@ func tingir(cor: Color) -> void:
 
 # AddTerrainLight em volta do monstro: um disco deitado no chao que soma (ou subtrai) a cor,
 # caindo em linha reta ate o raio, como a luz pintada nos vertices do terreno
-func luz_chao(cor: Color, raio: float) -> void:
+func luz_chao(cor: Color, raio: float, pisca := true) -> void:
 	var g := Gradient.new()
 	g.set_color(0, Color(1, 1, 1))
 	g.set_color(1, Color(0, 0, 0))
@@ -357,7 +547,7 @@ func luz_chao(cor: Color, raio: float) -> void:
 	mat.set_shader_parameter("modo", 1)
 	_cor_chao = Color(absf(cor.r), absf(cor.g), absf(cor.b))
 	mat.set_shader_parameter("cor", _cor_chao)
-	if not menos:
+	if not menos and pisca:
 		_chao = mat
 	var q := PlaneMesh.new()
 	q.size = Vector2.ONE * raio * 2.0
@@ -370,9 +560,17 @@ func luz_chao(cor: Color, raio: float) -> void:
 
 
 # fogo (BITMAP_FIRE) e fumaca (BITMAP_SMOKE) do Ambiente, soltos no mundo e seguindo o osso
-func particulas(tipo: String, onde, n: int) -> void:
-	var tex: Texture2D = load(Ambiente.PASTA + ("fogo.png" if tipo == "fogo" else "fumaca.png"))
-	var c := Ambiente.fogo(tex) if tipo == "fogo" else Ambiente.fumaca(tex)
+func particulas(tipo: String, onde, n: int, cor = null) -> void:
+	var c: CPUParticles3D
+	if tipo == "faisca" or tipo == "agua":
+		c = _particula_nova(tipo)
+	else:
+		var tex: Texture2D = load(Ambiente.PASTA + ("fogo.png" if tipo == "fogo" else "fumaca.png"))
+		c = Ambiente.fogo(tex) if tipo == "fogo" else Ambiente.fumaca(tex)
+	if cor is Color:
+		var g := c.color_ramp.duplicate() as Gradient
+		g.set_color(0, cor * (0.45 if tipo == "fumaca" else 1.0))
+		c.color_ramp = g
 	c.amount = n
 	c.local_coords = false
 	c.preprocess = 0.0
@@ -403,6 +601,164 @@ func particulas(tipo: String, onde, n: int) -> void:
 	_particulas.append([c, segue])
 
 
+# BITMAP_SPARK + 1 (faisca parada que pisca, 5 quadros) e BITMAP_WATERFALL_2 subtipo 1 (gota
+# que cai 3 a 5 por quadro, 30 quadros, escala 0,6 a 1,1, girando)
+func _particula_nova(tipo: String) -> CPUParticles3D:
+	var c := CPUParticles3D.new()
+	c.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	c.emission_box_extents = Vector3(0.1, 0.1, 0.1)
+	c.angle_min = 0.0
+	c.angle_max = 360.0
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1))
+	g.set_color(1, Color(0, 0, 0))
+	c.color_ramp = g
+	if tipo == "faisca":
+		c.lifetime = 0.4
+		c.initial_velocity_min = 0.0
+		c.initial_velocity_max = 0.3
+		c.spread = 180.0
+		c.gravity = Vector3(0, -0.3, 0)
+		c.scale_amount_min = 1.0
+		c.scale_amount_max = 1.4
+		c.mesh = Ambiente._quad_somado(EfeitoMU.textura("spark03"), 0.32)
+	else:
+		c.lifetime = 1.2
+		c.direction = Vector3.DOWN
+		c.initial_velocity_min = 0.75
+		c.initial_velocity_max = 1.25
+		c.gravity = Vector3.ZERO
+		c.scale_amount_min = 0.6
+		c.scale_amount_max = 1.1
+		g.set_color(0, Color(0.7, 0.7, 0.7))
+		c.mesh = Ambiente._quad_somado(EfeitoMU.textura("waterfall2"), 0.64)
+	return c
+
+
+# [MeshInstance3D, superficie] da malha n, na ordem do somar_malha
+func _superficie(n: int) -> Array:
+	var i := 0
+	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for s in mi.mesh.get_surface_count():
+			if i == n:
+				return [mi, s]
+			i += 1
+	return []
+
+
+# copia o material da malha n (o somado, se ja tiver), muda com f e poe de volta
+func mudar_malha(n: int, f: Callable) -> BaseMaterial3D:
+	var a := _superficie(n)
+	if a.is_empty():
+		return null
+	var mi: MeshInstance3D = a[0]
+	var orig := (mi.get_surface_override_material(a[1]) if mi.get_surface_override_material(a[1]) else mi.mesh.surface_get_material(a[1])) as BaseMaterial3D
+	if orig == null:
+		return null
+	var m := orig.duplicate() as BaseMaterial3D
+	f.call(m)
+	mi.set_surface_override_material(a[1], m)
+	return m
+
+
+static func _com_alfa(m: BaseMaterial3D, a: float) -> void:
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+	m.albedo_color.a = a
+
+
+const SHADER_CAMADA := preload("res://scripts/camada.gdshader")
+static var _esconde: ShaderMaterial
+
+
+# RenderMesh de novo por cima, somado (camada.gdshader): uma copia da MeshInstance no mesmo
+# esqueleto, so com as malhas pedidas aparecendo
+func camada(malhas, tex: String, jeito: String, cor: Color, pulso: Array, corre: Vector2) -> void:
+	if _esconde == null:
+		_esconde = ShaderMaterial.new()
+		_esconde.shader = SHADER_CAMADA
+		_esconde.set_shader_parameter("esconde", true)
+	var quais: Array = malhas if malhas is Array else [malhas]
+	var i := 0
+	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null or mi.has_meta("camada"):
+			continue
+		var copia: MeshInstance3D = null
+		for s in mi.mesh.get_surface_count():
+			if malhas is int and malhas == -1 or i in quais:
+				if copia == null:
+					copia = mi.duplicate() as MeshInstance3D
+					copia.set_meta("camada", true)
+					copia.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					for k in mi.mesh.get_surface_count():
+						copia.set_surface_override_material(k, _esconde)
+					mi.add_sibling(copia)
+				var orig := mi.mesh.surface_get_material(s) as BaseMaterial3D
+				var t: Texture2D = EfeitoMU.textura(tex) if tex != "" else (orig.albedo_texture if orig else null)
+				var m := ShaderMaterial.new()
+				m.shader = SHADER_CAMADA
+				m.set_shader_parameter("tex", t)
+				m.set_shader_parameter("cor", cor)
+				m.set_shader_parameter("modo", 1 if jeito == "chrome" else 2 if jeito == "chrome2" else 0)
+				m.set_shader_parameter("corre", corre)
+				m.set_shader_parameter("pulso", Vector3(pulso[0], pulso[1], pulso[2]))
+				copia.set_surface_override_material(s, m)
+			i += 1
+
+
+var _raios: Array = []           # [largura, pares de ossos]
+var _raio_mi: MeshInstance3D
+
+
+# BITMAP_JOINT_THUNDER subtipo 7 entre pares de ossos: fita somada azul, refeita todo quadro
+# com o meio tremendo
+func raios(largura: float, pares: Array) -> void:
+	_raios = [largura, pares]
+	_raio_mi = MeshInstance3D.new()
+	_raio_mi.top_level = true
+	_raio_mi.mesh = ImmediateMesh.new()
+	_raio_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_raio_mi.material_override = EfeitoMU._material("jointthunder01", Color(0.5, 0.5, 1.0), 1)
+	add_child(_raio_mi)
+
+
+func _desenhar_raios() -> void:
+	var im := _raio_mi.mesh as ImmediateMesh
+	im.clear_surfaces()
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or not visible:
+		return
+	var olho := cam.global_position
+	im.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	var meia: float = _raios[0] * 0.5
+	for par in _raios[1]:
+		var a := esqueleto.find_bone("osso%d" % par[0])
+		var b := esqueleto.find_bone("osso%d" % par[1])
+		if a < 0 or b < 0:
+			continue
+		var pa := esqueleto.to_global(esqueleto.get_bone_global_pose(a).origin)
+		var pb := esqueleto.to_global(esqueleto.get_bone_global_pose(b).origin)
+		var tam := pa.distance_to(pb)
+		var pts: Array[Vector3] = [pa]
+		for k in range(1, 4):
+			pts.append(pa.lerp(pb, k / 4.0) + Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * tam * 0.12)
+		pts.append(pb)
+		for k in pts.size() - 1:
+			var p0: Vector3 = pts[k]
+			var p1: Vector3 = pts[k + 1]
+			var lado := (p1 - p0).cross(olho - p0).normalized() * meia
+			var u0 := float(k) / (pts.size() - 1)
+			var u1 := float(k + 1) / (pts.size() - 1)
+			for v in [[p0 - lado, u0, 0.0], [p0 + lado, u0, 1.0], [p1 + lado, u1, 1.0],
+					[p0 - lado, u0, 0.0], [p1 + lado, u1, 1.0], [p1 - lado, u1, 0.0]]:
+				im.surface_set_uv(Vector2(v[1], v[2]))
+				im.surface_add_vertex(v[0])
+	im.surface_end()
+
+
+var _pulsam: Array = []   # [[mi, superficie], base, amp, w, cor original] das malhas somadas que pulsam
+var _correm: Array = []   # [material, UV por segundo]
 var _luzes: Array = []   # [material, cor] das luzes que pulsam
 var _t := 0.0
 
@@ -673,8 +1029,26 @@ func _process(d: float) -> void:
 	if _chao:
 		var k := randf_range(0.2, 0.9) / 0.55   # Luminosity sorteada a cada quadro (0,2..0,9)
 		_chao.set_shader_parameter("cor", Color(_cor_chao.r * k, _cor_chao.g * k, _cor_chao.b * k))
-	if not _luzes.is_empty():
+	if not _pulsam.is_empty() or not _correm.is_empty():
 		_t += d
+		for p in _pulsam:
+			if p[0].is_empty():
+				continue
+			var m := p[0][0].get_surface_override_material(p[0][1]) as BaseMaterial3D
+			if m == null:
+				continue
+			if p[4] == null:
+				p[4] = m.albedo_color
+			var k: float = maxf(p[1] + p[2] * sin(_t * p[3]), 0.0)
+			var c0: Color = p[4]
+			m.albedo_color = Color(c0.r * k, c0.g * k, c0.b * k, c0.a)
+		for c in _correm:
+			c[0].uv1_offset += Vector3(c[1].x, c[1].y, 0) * d
+	if not _raios.is_empty() and esqueleto:
+		_desenhar_raios()
+	if not _luzes.is_empty():
+		if _pulsam.is_empty() and _correm.is_empty():
+			_t += d
 		for l in _luzes:
 			var k: float = sin(_t * 2.0) * 0.3 + (0.8 if l[1] == "olho" else 0.7)
 			l[0].set_shader_parameter("cor", Color(k, k, k) if l[1] == "olho" else Color(k, k * 0.6, k * 0.4))

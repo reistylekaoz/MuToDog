@@ -16,7 +16,10 @@ extends Node3D
 # - Tarkan: lava e cristal somados que pulsam e pintam o chao de laranja, areia que corre,
 #   brilho (Impack03) nas pedras 63 e 64, fumaca dos buracos e o geiser (70, 76, 83).
 # - Noria: luz azul presa nos ossos das plantas e postes (CreateSprite BITMAP_LIGHT no osso);
-# - Icarus: sem chao, fundo azul escuro e as nuvens nos pontos do mapa;
+# - Icarus: sem chao, fundo azul escuro e as nuvens nos pontos do mapa; raios, clarao e as
+#   luzes que sobem do fundo (ceu_icarus.gd); os dragoes la embaixo estao no bichos.gd;
+# - neblina: Terra das Provas e Crywolf em volta do heroi (CreateMist), Aida e Crywolf presa nos
+#   objetos, e a fumaca rosada da Terra das Provas;
 # - bichos em volta do heroi (bichos.gd): passaro, morcego, borboleta, rato, peixe, besouro.
 # A agua do chao corre no proprio shader do terreno (terreno.gdshader).
 
@@ -134,6 +137,21 @@ const SEM_CHAO := [11]
 # Icarus: objeto 0 a 5 nao aparece; vira 20 nuvens (BITMAP_CLOUD, Effect/clouds.jpg) somadas
 # em volta dele, a +-250 unidades, 20 a 40 acima, do tamanho da textura x 1,8 a 2,0
 const NUVENS := {11: [0, 1, 2, 3, 4, 5]}
+# neblina em volta do heroi (CreateMist do GMHuntingGround e do GMCrywolf1st, chamado no
+# MoveLeaves): BITMAP_CLOUD subtipo 8 num anel em volta dele, ~50 por segundo, 12 s de vida.
+# [cor, raio de dentro e de fora em tiles, altura fixa (-1 = chao do heroi), area (vazia = mapa todo)]
+# Terra das Provas: so na parte de dentro (IsInHuntingGroundSection2); Crywolf: a 400 do MU
+# (o cliente so liga no tempo 2, sorteado a cada 70000 quadros; aqui fica sempre ligada)
+const NEVOA := {32: [Color(0.05, 0.05, 0.1), 4.0, 7.0, -1.0, Rect2(54.49, 67.84, 123.73, 156.35)],
+	35: [Color(0.07, 0.07, 0.07), 1.5, 5.0, 4.0, Rect2()]}
+# nuvem presa no objeto (RenderObjectVisual): tipo -> [subtipo do BITMAP_CLOUD, cor]
+# Aida 59, 62, 63: subtipo 1, 20 por quadro (o cliente esconde o objeto antes e ela nao sai;
+# aqui sai); Crywolf 77 e 78: subtipo 9, 1 a cada 6 quadros, sobe 6 s e desce apagando
+const NUVEM_OBJ := {34: {59: [1, Color(0.01, 0.03, 0.05)], 62: [1, Color(0.05, 0.05, 0.05)], 63: [1, Color(0.05, 0.02, 0.02)]},
+	35: {77: [9, Color(0.02, 0.03, 0.02)], 78: [9, Color(0.03, 0.06, 0.05)]}}
+# Terra das Provas 53: fumaca rosada subindo (BITMAP_SMOKE subtipo 22, 1 a cada 3 quadros)
+const FUMACA_ROSA := {32: [53]}
+const PERTO_NEBLINA := 28.0   # emissor preso em objeto so liga a ate 28 tiles do heroi
 
 var mundo: Node3D
 var _bica: Array[ShaderMaterial] = []
@@ -152,6 +170,10 @@ var _portas: Array = []        # [no, tipo, posicao original, giro original (gra
 var _portal: Node3D
 var _cai: CPUParticles3D       # neve (Devias) ou folhas (Noria) em volta do heroi
 var _cai2: CPUParticles3D
+var _nevoa: CPUParticles3D     # neblina em volta do heroi
+var _nevoa_cfg: Array = []
+var _emissores: Array = []     # [particulas, posicao em tiles]: so ligam perto do heroi
+var _t_emissores := 0.0
 var som_porta: AudioStreamPlayer
 var _t := 0.0
 var fogos := 0
@@ -213,6 +235,12 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 	_luzes_girando(m, objetos)
 	_bolhas_do_mapa(m, objetos)
 	_nuvens(m, objetos)
+	_neblina(m, objetos)
+	if m.numero == 11:
+		var ceu := CeuIcarus.new()
+		ceu.name = "CeuIcarus"
+		add_child(ceu)
+		ceu.montar(m, objetos)
 	if m.numero == 5:
 		# Lost Tower 24: chama no chao de vez em quando (CreateEffect BITMAP_FLAME, 1 em 64 quadros)
 		for o in objetos:
@@ -271,6 +299,188 @@ func _nuvens(m: Node3D, objetos: Array) -> void:
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
 	fogos += pontos.size()
+
+
+func _neblina(m: Node3D, objetos: Array) -> void:
+	var tex := EfeitoMU.textura("clouds")
+	if tex == null:
+		return
+	var cfg: Array = NEVOA.get(m.numero, [])
+	if not cfg.is_empty():
+		_nevoa_cfg = cfg
+		# o cliente tem centenas no ar; aqui 60 (600 quadros de 5 m somados um por cima do outro
+		# pesam demais), com 1,5 vez a luz: medido na foto contra o chao do mapa
+		_nevoa = _nuvem_sobe(tex, cfg[0] * 1.5, 60, 1.9)
+		_nevoa.name = "Nevoa"
+		_nevoa.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
+		_nevoa.emission_ring_axis = Vector3.UP
+		_nevoa.emission_ring_radius = cfg[2]
+		_nevoa.emission_ring_inner_radius = cfg[1]
+		_nevoa.emission_ring_height = 0.2
+		_nevoa.position = _centro_heroi()
+		add_child(_nevoa)
+	var objs: Dictionary = NUVEM_OBJ.get(m.numero, {})
+	var rosa: Array = FUMACA_ROSA.get(m.numero, [])
+	if objs.is_empty() and rosa.is_empty():
+		return
+	var tex_fumaca := EfeitoMU.textura("smoke01")
+	for o in objetos:
+		var t := int(o.t)
+		var p := Vector3(o.p[0], o.p[1], o.p[2])
+		var c: CPUParticles3D = null
+		if objs.has(t):
+			var d: Array = objs[t]
+			if d[0] == 9:
+				# nasce a +-250 do objeto, de 20 abaixo ate a altura dele
+				c = _nuvem_sobe(tex, d[1], 8, 1.9 * float(o.s))   # ~50 no ar no cliente
+				c.emission_box_extents = Vector3(2.5, 0.1, 2.5)
+				c.position = _no_mundo(p) + Vector3(0, -0.1, 0)
+			else:
+				c = _nuvem_parada(tex, d[1])
+				c.position = _no_mundo(p) + Vector3(0, 0.3, 0)
+		elif t in rosa and tex_fumaca:
+			c = _fumaca_rosa(tex_fumaca, float(o.s))
+			c.position = _no_mundo(p)
+		if c:
+			c.emitting = false
+			c.visible = false
+			add_child(c)
+			_emissores.append([c, Vector2(p.x, p.y) / 100.0])
+			fogos += 1
+
+
+static func _quad_somado(tex: Texture2D, tam: float, fade := 0.0) -> QuadMesh:
+	var q := QuadMesh.new()
+	q.size = Vector2.ONE * tam
+	var mat := _material_particula(tex, 1)
+	mat.billboard_keep_scale = true
+	if fade > 0.0:
+		# a nuvem some perto do chao em vez de cortar numa linha reta
+		mat.proximity_fade_enabled = true
+		mat.proximity_fade_distance = fade
+	q.material = mat
+	return q
+
+
+static func _rampa(pontos: Array) -> Gradient:
+	# [[posicao na vida, cor]]: na soma o brilho vai no RGB (alfa 1)
+	var g := Gradient.new()
+	var offs := PackedFloat32Array()
+	var cores := PackedColorArray()
+	for pt in pontos:
+		offs.append(pt[0])
+		var c: Color = pt[1]
+		cores.append(Color(c.r, c.g, c.b, 1.0))
+	g.offsets = offs
+	g.colors = cores
+	return g
+
+
+# BITMAP_CLOUD subtipo 8 e 9: 300 quadros de vida; o alfa vai de 0,1 a 1 em ~1 s subindo
+# 1 por quadro, na metade da vida apaga ate 0,1 e desce 0,5 por quadro; gira devagar
+# (WorldTime * 0,02 * TurningForce); luz = Light * alfa; 256 x 1,8..2,0 de largura
+func _nuvem_sobe(tex: Texture2D, cor: Color, n: int, esc: float) -> CPUParticles3D:
+	var c := CPUParticles3D.new()
+	c.amount = n
+	c.lifetime = 12.0
+	c.preprocess = 12.0
+	c.local_coords = false
+	c.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	c.direction = Vector3.UP
+	c.spread = 0.0
+	c.initial_velocity_min = 0.25
+	c.initial_velocity_max = 0.25
+	c.gravity = Vector3(0, -0.04, 0)
+	c.angle_min = 0.0
+	c.angle_max = 360.0
+	c.angular_velocity_min = -11.0
+	c.angular_velocity_max = 11.0
+	c.scale_amount_min = esc * 0.95
+	c.scale_amount_max = esc * 1.05
+	c.color_ramp = _rampa([[0.0, cor * 0.1], [0.075, cor], [0.5, cor], [0.62, cor * 0.1], [1.0, cor * 0.1]])
+	c.mesh = _quad_somado(tex, 2.56, 1.5)
+	return c
+
+
+# BITMAP_CLOUD subtipo 1 (o padrao): 30 quadros parada a +-250 do objeto, 20 a 40 acima.
+# O cliente solta 20 por quadro (centenas no ar); aqui 6 com a luz somada de varias
+const GANHO_NUVEM := 6.0
+func _nuvem_parada(tex: Texture2D, cor: Color) -> CPUParticles3D:
+	var c := CPUParticles3D.new()
+	c.amount = 6
+	c.lifetime = 3.0   # 1,2 no cliente; com poucas, 3 s nao pisca
+	c.preprocess = 3.0
+	c.local_coords = false
+	c.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	c.emission_box_extents = Vector3(2.5, 0.1, 2.5)
+	c.initial_velocity_min = 0.0
+	c.initial_velocity_max = 0.0
+	c.gravity = Vector3.ZERO
+	c.angle_min = 0.0
+	c.angle_max = 360.0
+	c.scale_amount_min = 1.8
+	c.scale_amount_max = 2.0
+	var k := cor * GANHO_NUVEM
+	c.color_ramp = _rampa([[0.0, Color.BLACK], [0.25, k], [0.75, k], [1.0, Color.BLACK]])
+	c.mesh = _quad_somado(tex, 2.56, 1.5)
+	return c
+
+
+# BITMAP_SMOKE subtipo 22: 60 quadros; sobe com Gravity 6..9,2 por quadro perdendo 0,1;
+# cresce 0,04 por quadro a partir de Scale * 0,32..0,635; luz = vida / 50 * (0,9 0,5 0,5)
+func _fumaca_rosa(tex: Texture2D, esc: float) -> CPUParticles3D:
+	var c := CPUParticles3D.new()
+	c.amount = 20
+	c.lifetime = 2.4
+	c.preprocess = 2.4
+	c.local_coords = false
+	c.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	c.emission_box_extents = Vector3(0.1, 0.05, 0.1)
+	c.direction = Vector3.UP
+	c.spread = 5.0
+	c.initial_velocity_min = 1.5
+	c.initial_velocity_max = 2.3
+	c.gravity = Vector3(0, -0.625, 0)
+	c.angle_min = 0.0
+	c.angle_max = 360.0
+	var ini := esc * 0.48
+	c.scale_amount_min = esc * 0.32
+	c.scale_amount_max = esc * 0.635
+	c.scale_amount_curve = _curva(1.0, (ini + 2.4) / ini)
+	c.color_ramp = _rampa([[0.0, Color(1.08, 0.6, 0.6)], [1.0, Color.BLACK]])
+	c.mesh = _quad_somado(tex, 0.64)
+	return c
+
+
+func _centro_heroi() -> Vector3:
+	if mundo.seguir and is_instance_valid(mundo.seguir):
+		return mundo.seguir.global_position
+	var a: Vector2 = mundo.alvo + Vector2(0.5, 0.5)
+	return Vector3(a.x, mundo.altura_em(a.x, a.y) / 100.0, -a.y)
+
+
+# neblina segue o heroi; emissores presos em objeto so ligam perto dele
+func _mexer_neblina(dt: float) -> void:
+	var h := _centro_heroi()
+	var xy := Vector2(h.x, -h.z)
+	if _nevoa:
+		var area: Rect2 = _nevoa_cfg[4]
+		_nevoa.emitting = area.has_area() == false or area.has_point(xy)
+		var alto: float = _nevoa_cfg[3]
+		_nevoa.global_position = Vector3(h.x, alto if alto >= 0.0 else h.y - 0.1, h.z)
+	_t_emissores -= dt
+	if _t_emissores > 0.0 or _emissores.is_empty():
+		return
+	_t_emissores = 0.5
+	for e in _emissores:
+		var perto: bool = (e[1] as Vector2).distance_to(xy) < PERTO_NEBLINA
+		var c: CPUParticles3D = e[0]
+		if perto != c.emitting:
+			c.emitting = perto
+			if perto:
+				c.visible = true
+		elif not perto and c.visible and (e[1] as Vector2).distance_to(xy) > PERTO_NEBLINA + 6.0:
+			c.visible = false
 
 
 # CreateSprite BITMAP_IMPACT em cima da pedra: escala e luz = sin(t * 2 + fase) * 0,3 + 0,7
@@ -938,6 +1148,8 @@ func _process(dt: float) -> void:
 		(g[0] as ShaderMaterial).set_shader_parameter("giro", deg_to_rad(fmod(_t * 100.0, 360.0)) * g[1])
 	if not _portas.is_empty():
 		_mexer_portas(dt)
+	if _nevoa or not _emissores.is_empty():
+		_mexer_neblina(dt)
 	if _portal:
 		for b: Node3D in _portal.get_children():
 			b.rotate_object_local(Vector3(0, 0, 1), deg_to_rad(float(b.get_meta("vel"))) * dt)

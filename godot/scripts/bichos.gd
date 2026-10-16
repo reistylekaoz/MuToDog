@@ -6,7 +6,7 @@ extends Node3D
 # de 15 tiles ou batem duas vezes no que nao podem pisar (agua, parede, zona segura).
 # Lorencia: passaros e peixes na agua; Dungeon: morcegos e ratos; Noria: borboletas;
 # Lost Tower: morcegos; Atlans: cardume e peixes no fundo (os de cima do mapa brilham);
-# Tarkan: besouros com rastro de luz.
+# Tarkan: besouros com rastro de luz; Icarus: dragoes voando la embaixo.
 
 # mundo -> [modelos, quantos, velocidade (Velocity do cliente), jeito de voar]
 const VOAM := {
@@ -15,6 +15,8 @@ const VOAM := {
 	4: [["bicho_borboleta"], 5, 0.3, "borboleta"],
 	5: [["bicho_morcego"], 5, 1.0, "morcego"],
 	8: [["bicho_peixe2", "bicho_peixe3"], 24, 0.3, "cardume"],
+	# Icarus (CreateDragon): 3 dragoes (Monster32, acao 7) voando reto 6 m abaixo do heroi
+	11: [["bicho_dragao"], 3, 0.0, "dragao"],
 }
 # mundo -> [modelos, quantos, velocidade x escala, escala minima, maxima, onde pode andar]
 const ANDAM := {
@@ -24,6 +26,7 @@ const ANDAM := {
 	9: [["bicho_besouro"], 10, 2.5, 0.8, 1.1, "fora"],
 }
 const LONGE := 15.0   # 1500 do cliente: some
+const LONGE_DRAGAO := 40.0
 const PERTO := 5.12   # nasce em ate 512 pra cada lado
 
 var mundo: Node3D
@@ -82,6 +85,10 @@ func _mexer_voam(c: Vector2, dt: float) -> void:
 		n = 0
 	while _voam.size() < n:
 		var nome: String = cfg[0][randi() % cfg[0].size()]
+		if jeito == "dragao":
+			if not _nasce_dragao(nome, c):
+				return
+			continue
 		var b := Boneco.novo(nome, 0.8)
 		if b == null:
 			return
@@ -96,9 +103,16 @@ func _mexer_voam(c: Vector2, dt: float) -> void:
 		var v: Dictionary = _voam[i]
 		var b: Boneco = v.b
 		var p := Vector2(b.global_position.x, -b.global_position.z)
-		if i >= n or p.distance_to(c) > LONGE:
+		if i >= n or p.distance_to(c) > (LONGE_DRAGAO if jeito == "dragao" else LONGE):
 			b.queue_free()
 			_voam.remove_at(i)
+			continue
+		if jeito == "dragao":
+			# MoveBoidGroup: anda Velocity * 25 por quadro pra frente, sem mudar de altura
+			var f := Vector2(cos(v.ang), sin(v.ang))
+			p += f * v.vel * 25.0 * 0.01 * dt * 25.0
+			b.global_position = Vector3(p.x, v.alto, -p.y)
+			b.rotation.y = atan2(-f.x, f.y)
 			continue
 		# rodeia o heroi: mira um ponto que gira em volta dele (MoveBoid puxa pro heroi)
 		var alvo: Vector2 = c + Vector2(cos(_t * 0.4 + i), sin(_t * 0.4 + i)) * absf(v.giro)
@@ -128,6 +142,22 @@ func _mexer_voam(c: Vector2, dt: float) -> void:
 		p += d * rapido * 0.01 * dt * 25.0
 		b.global_position = Vector3(p.x, _chao(p) + v.alto, -p.y)
 		b.rotation.y = atan2(-d.x, d.y)
+
+
+# CreateDragon: escala 0,3..0,4, Velocity 0,2..0,38, rumo ao acaso, nasce a ate 20 tiles do
+# heroi e 600 abaixo dele; bate as asas a 0,5 quadro por quadro
+func _nasce_dragao(nome: String, c: Vector2) -> bool:
+	var b := Boneco.novo(nome, randf_range(0.3, 0.4))
+	if b == null:
+		return false
+	b.ritmo = {"parado": 0.5}
+	b.tocar("parado")
+	add_child(b)
+	var xy := c + Vector2(randf_range(-20.0, 20.0), randf_range(-20.0, 20.0))
+	var h: float = mundo.seguir.global_position.y if mundo.seguir and is_instance_valid(mundo.seguir) else _chao(c)
+	b.global_position = Vector3(xy.x, h - 6.0, -xy.y)
+	_voam.append({"b": b, "ang": randf() * TAU, "vel": randf_range(0.2, 0.38), "timer": 0.0, "giro": 0.0, "alto": h - 6.0, "sobe": 0.0})
+	return true
 
 
 # ---------- os do chao ----------

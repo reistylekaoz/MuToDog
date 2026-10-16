@@ -3200,5 +3200,11 @@
    "parado2": 1,
    "anda": 2
   }
+ },
+ "bicho_dragao": {
+  "esqueleto": "Monster/Monster32.bmd",
+  "acoes": {
+   "parado": 7
+  }
  }
 }

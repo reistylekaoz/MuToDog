@@ -89,7 +89,10 @@ func _ready() -> void:
 
 func _param(nome: String) -> String:
 	if not OS.has_feature("web"):
-		return ""
+		# fora do navegador: -- --npc 69,70 (pra testar sem tela)
+		var a := OS.get_cmdline_user_args()
+		var i := a.find("--" + nome)
+		return a[i + 1] if i >= 0 and i + 1 < a.size() else ""
 	var m := str(JavaScriptBridge.eval("location.search")).split(nome + "=")
 	return m[1].split("&")[0] if m.size() > 1 else ""
 
