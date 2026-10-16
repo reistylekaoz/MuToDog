@@ -380,7 +380,9 @@ func _tratar(p: PackedByteArray) -> void:
 					"vida": p[34] | (p[35] << 8), "vida_max": p[36] | (p[37] << 8),
 					"mana": p[38] | (p[39] << 8), "mana_max": p[40] | (p[41] << 8),
 					"sd": p[42] | (p[43] << 8), "sd_max": p[44] | (p[45] << 8),
-					"ag": p[46] | (p[47] << 8), "ag_max": p[48] | (p[49] << 8)}
+					"ag": p[46] | (p[47] << 8), "ag_max": p[48] | (p[49] << 8),
+					"forca": p[26] | (p[27] << 8), "agilidade": p[28] | (p[29] << 8), "vitalidade": p[30] | (p[31] << 8),
+					"energia": p[32] | (p[33] << 8), "comando": p[62] | (p[63] << 8) if p.size() > 63 else 0}
 				_mudar("jogo")
 				entrou.emit(info)
 				return

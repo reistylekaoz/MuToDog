@@ -76,36 +76,6 @@ static func empilha(it: Dictionary) -> bool:
 	return it.grupo == 14 and int(info(it)[3]) <= 3 and consome(it)
 
 
-static func linhas(it: Dictionary) -> Array:
-	var l := []
-	var cor := Color(1, 1, 1)
-	if it.exc > 0:
-		cor = Color(0.4, 0.95, 0.5)
-	elif it.nivel >= 7 or it.sorte:
-		cor = Color(0.6, 0.85, 1.0)
-	l.append([("Excelente " if it.exc > 0 else "") + nome(it), cor])
-	var i := info(it)
-	if empilha(it) or it.grupo == 14:
-		if it.durabilidade > 1:
-			l.append(["Quantidade: %d" % it.durabilidade, Color(0.85, 0.85, 0.85)])
-	elif int(i[3]) > 0:
-		l.append(["Durabilidade: %d" % it.durabilidade, Color(0.85, 0.85, 0.85)])
-	if it.skill:
-		l.append(["Skill da arma", Color(0.6, 0.75, 1.0)])
-	if it.sorte:
-		l.append(["Sorte (+5% de sucesso na joia, +5% de critico)", Color(0.6, 0.75, 1.0)])
-	if it.get("opcao", 0) > 0:
-		l.append(["Opcao adicional +%d" % (it.opcao * 4), Color(0.6, 0.75, 1.0)])
-	if it.exc > 0:
-		l.append(["Opcoes excelentes: %d" % _bits(it.exc), Color(0.4, 0.95, 0.5)])
-	if consome(it) and chave(it) not in JOIAS_ALVO:
-		l.append(["Botao direito: usar", Color(0.95, 0.8, 0.45)])
-	elif not slots(it).is_empty():
-		l.append(["Botao direito: equipar ou tirar", Color(0.95, 0.8, 0.45)])
-	if chave(it) in JOIAS_ALVO:
-		l.append(["Arraste em cima do item pra usar", Color(0.95, 0.8, 0.45)])
-	return l
-
 
 # Preco de compra na loja: a mesma conta do servidor (OpenMU ItemPriceCalculator,
 # CalculateFinalBuyingPrice), que e a do cliente (ItemValue no ZzzInfomation.cpp).

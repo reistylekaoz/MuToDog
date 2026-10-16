@@ -173,22 +173,10 @@ func _draw() -> void:
 	draw_texture_rect_region(_tex.inv_sair, Rect2(13, 391, 36, 29), Rect2(0, 29 * linha, 36, 29))
 	_texto(f, Vector2(52, 410), "Fechar (Esc)", 120, 9, Color(0.75, 0.75, 0.8), HORIZONTAL_ALIGNMENT_LEFT)
 	if sob >= 0 and not na_mao:
-		_dica_guarda(f, itens[sob], _rect(sob))
+		DicaItem.mostrar(self, f, DicaItem.linhas(itens[sob]), _rect(sob))
+	else:
+		DicaItem.esconder(self)
 
-
-func _dica_guarda(f: Font, it: Dictionary, r: Rect2) -> void:
-	var l := ItensMU.linhas(it)
-	l.append(["Clique pra levar pra mochila", Color(1, 0.86, 0.45)])
-	var larg := 0.0
-	for x in l:
-		larg = maxf(larg, f.get_string_size(x[0], HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x)
-	var caixa := Rect2(r.position.x - larg - 14, r.position.y, larg + 10, l.size() * 11 + 6)
-	caixa.position.x = maxf(caixa.position.x, -position.x / _esc + 2)
-	caixa.position.y = clampf(caixa.position.y, 2, A - caixa.size.y - 2)
-	draw_rect(caixa, Color(0, 0, 0, 0.85))
-	draw_rect(caixa, Color(0.5, 0.45, 0.3, 0.9), false, 1.0)
-	for i in l.size():
-		draw_string(f, caixa.position + Vector2(5, 12 + i * 11), l[i][0], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, l[i][1])
 
 
 func _gui_input(ev: InputEvent) -> void:

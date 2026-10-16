@@ -566,6 +566,8 @@ func _entrou(info: Dictionary) -> void:
 	barra_mu.ag_max = maxi(info.ag_max, 1)
 	meus_pontos = info.pontos
 	exp_atual = info.exp
+	DicaItem.eu = {"nivel": meu_nivel, "classe": minha_classe, "forca": info.forca, "agilidade": info.agilidade,
+		"vitalidade": info.vitalidade, "energia": info.energia, "comando": info.comando}
 	exp_prox = info.exp_prox
 	meu_zen = info.zen
 	inv.zen = info.zen
@@ -1065,6 +1067,7 @@ func _experiencia(_morto: int, ganho: int) -> void:
 
 func _nivel(info: Dictionary) -> void:
 	meu_nivel = info.nivel
+	DicaItem.eu.nivel = meu_nivel
 	print("TESTE nivel %s" % info)
 	barra_mu.vida_max = maxi(info.vida_max, 1)
 	barra_mu.vida = info.vida_max

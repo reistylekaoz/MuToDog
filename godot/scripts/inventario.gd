@@ -264,10 +264,13 @@ func _draw() -> void:
 	if na_mao >= 0 and itens.has(na_mao):
 		var t := Vector2(ItensMU.tamanho(itens[na_mao])) * CASA
 		ItensMU.desenhar(self, itens[na_mao], Rect2(_mouse - t / 2.0, t))
+		DicaItem.esconder(self)
 	else:
 		var s := slot_sob_mouse()
 		if s >= 0:
-			_dica(f, itens[s], _rect_slot(s))
+			DicaItem.mostrar(self, f, DicaItem.linhas(itens[s]), _rect_slot(s))
+		else:
+			DicaItem.esconder(self)
 
 
 func _moldura(r: Rect2) -> void:
@@ -289,20 +292,6 @@ func _texto(f: Font, p: Vector2, t: String, largura: float, tam: int, cor: Color
 	draw_string_outline(f, p, t, al, largura, tam, 2, Color(0, 0, 0, 0.9))
 	draw_string(f, p, t, al, largura, tam, cor)
 
-
-# caixa de informacao do item (a esquerda da janela, como no cliente)
-func _dica(f: Font, it: Dictionary, r: Rect2) -> void:
-	var l := ItensMU.linhas(it)
-	var larg := 0.0
-	for x in l:
-		larg = maxf(larg, f.get_string_size(x[0], HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x)
-	var caixa := Rect2(r.position.x - larg - 14, r.position.y, larg + 10, l.size() * 11 + 6)
-	caixa.position.x = maxf(caixa.position.x, -position.x / _esc + 2)
-	caixa.position.y = clampf(caixa.position.y, 2, A - caixa.size.y - 2)
-	draw_rect(caixa, Color(0, 0, 0, 0.85))
-	draw_rect(caixa, Color(0.5, 0.45, 0.3, 0.9), false, 1.0)
-	for i in l.size():
-		draw_string(f, caixa.position + Vector2(5, 12 + i * 11), l[i][0], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, l[i][1])
 
 
 # --- mouse -----------------------------------------------------------------------
