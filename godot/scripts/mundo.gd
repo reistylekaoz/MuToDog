@@ -11,7 +11,7 @@ var altura: Image
 var camera: Camera3D
 # camera no jeito do MU: alvo em tiles, giro e inclinacao em graus, distancia em metros
 var alvo := Vector2(138, 124)
-var giro := -45.0
+var giro := 45.0  # o MU usa -45; o Murilo pediu o mapa 90 graus no sentido horario (16/10)
 var inclinacao := 48.0
 var distancia := 12.0
 # no jogo (jogo.gd): a camera segue o personagem e o mapa diz onde da pra andar
@@ -73,7 +73,7 @@ func _ready() -> void:
 	print("TESTE mundo %d · objetos %d · fogos %d · grama %d" % [numero, n, ambiente.fogos if ambiente else 0, ambiente.gramas if ambiente else 0])
 
 
-# ?mundo=1&x=138&y=124&giro=-45&inclinacao=48&dist=12 (navegador) ou -- --x 138 ... (headless)
+# ?mundo=1&x=138&y=124&giro=45&inclinacao=48&dist=12 (navegador) ou -- --x 138 ... (headless)
 func _ler_parametros() -> void:
 	var p := {}
 	if OS.has_feature("web"):
