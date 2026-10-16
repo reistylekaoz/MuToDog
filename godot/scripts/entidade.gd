@@ -170,9 +170,8 @@ func _process(dt: float) -> void:
 func _animar(a: String) -> void:
 	if boneco == null or morto or boneco.acao == a or boneco.acao.trim_suffix("_f") == a:
 		return
-	if boneco.montado() and boneco.pedida == a:
-		return
-	if boneco.nadar and boneco.acao == Boneco.NADO.get(a, ""):
+	# montado, voando, nadando ou com arma a acao tocada tem outro nome
+	if boneco.pedida == a and boneco.acao == boneco.resolver(a):
 		return
 	if a == "parado" and boneco.acao in Boneco.NAO_REPETE:
 		boneco._fila = "parado"
@@ -234,7 +233,7 @@ func tocar_skill(acao: String, ponto: Vector3) -> void:
 
 # numero do dano subindo e sumindo em cima da cabeca
 func mostrar_dano(dano: int) -> void:
-	if boneco and dano > 0 and not andando() and boneco.acao in ["parado", "parado_f", "parado2"]:
+	if boneco and dano > 0 and not andando() and (boneco.acao.begins_with("parado") or boneco.acao == "voa"):
 		boneco.tocar("golpe")
 	var l := Label3D.new()
 	l.text = str(dano) if dano > 0 else "errou"

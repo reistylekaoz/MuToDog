@@ -1,9 +1,10 @@
 class_name Capa
 extends MeshInstance3D
 # Capa de pano (CPhysicsCloth do cliente S6, PhysicsManager.cpp): uma grade de pontos presa
-# pela fileira de cima no osso 19 (costas), caindo com gravidade, com vento de leve, sem
-# esticar e sem atravessar as esferas do corpo (osso 17). A fileira de cima tem 60% da
-# largura (PCT_SHORT_SHOULDER) e a capa abre ate a barra; PCT_CURVED curva pra tras.
+# pela fileira de cima no osso 19 (costas). Cada ponto tem velocidade propria (gravidade,
+# vento e mola quando estica); depois as esferas do corpo (osso 17), as ligacoes frouxas e as
+# estritas corrigem so a posicao, sem virar velocidade (senao a capa sai voando). A fileira
+# de cima tem 60% da largura (PCT_SHORT_SHOULDER) e abre ate a barra; PCT_CURVED curva pra tras.
 # Cape of Lord (Dark Lord) e Cape of Fighter / Overrule (Rage Fighter).
 
 # item -> [textura, colunas, linhas, largura, altura, x, y, z (no osso 19), pesada]
@@ -22,13 +23,29 @@ var esqueleto: Skeleton3D
 var _cfg: Array
 var _nh := 10
 var _nv := 10
+# tudo em unidades do MU (metro / _unidade()), como no cliente
 var _p := PackedVector3Array()
-var _ant := PackedVector3Array()
+var _v := PackedVector3Array()
+var _f := PackedVector3Array()
+var _um := PackedVector3Array()   # "one time move": correcao so de posicao
+var _nm := PackedInt32Array()
+# ligacoes: a, b, menor, maior, tipo (1 mola, 2 frouxa, 4 estrita)
+var _lig: Array = []
 var _osso := -1
 var _osso_corpo := -1
 var _t := 0.0
+var _sobra := 0.0
+var _vento := 0.3
 var _mat: StandardMaterial3D
 var _pronta := false
+
+const MOLA := 1
+const FROUXA := 2
+const ESTRITA := 4
+const PASSO := 0.005        # Move2(0.005, 5) por quadro de 25 qps
+const REAL := 0.008         # cada passo de 0.005 vale 0.008 s de jogo
+const INV_MASSA := 400.0
+const GRAVIDADE := 9.8 * 0.0025
 
 
 static func nova(esq: Skeleton3D, item: String) -> Capa:
@@ -58,14 +75,14 @@ func _no_osso(osso: int, x: float, y: float, z: float) -> Vector3:
 	return esqueleto.to_global(esqueleto.get_bone_global_pose(osso) * Vector3(z, -y, x))
 
 
-# fileira de cima, presa nas costas
-func _presos() -> PackedVector3Array:
+# fileira de cima, presa nas costas (em unidades do MU)
+func _presos(u: float) -> PackedVector3Array:
 	var r := PackedVector3Array()
 	var larg: float = _cfg[3] * OMBRO
 	for i in _nh:
 		var x: float = larg * float(i) / (_nh - 1) - 0.5 * larg + _cfg[5]
 		var f := 2.0 * absf(float(i) / (_nh - 1) - 0.5)
-		r.append(_no_osso(_osso, x, _cfg[6] - 10.0 * f * f, _cfg[7]))
+		r.append(_no_osso(_osso, x, _cfg[6] - 10.0 * f * f, _cfg[7]) / u)
 	return r
 
 
@@ -73,20 +90,55 @@ func _unidade() -> float:
 	return esqueleto.global_transform.basis.get_scale().x
 
 
-func _montar() -> void:
-	var topo := _presos()
-	var u := _unidade()
-	var passo: float = _cfg[4] / (_nv - 1) * u
-	_p.resize(_nh * _nv)
+# pra tras do personagem, no chao
+func _tras() -> Vector3:
+	var z := esqueleto.global_transform.basis.z
+	z.y = 0.0
+	return z.normalized() if z.length() > 0.001 else Vector3.BACK
+
+
+# como o cliente monta: pendurada reta pra baixo atras do osso, abrindo ate a barra
+func _montar(u: float) -> void:
+	var n := _nh * _nv
+	_p.resize(n)
+	_v.resize(n)
+	_f.resize(n)
+	_um.resize(n)
+	_nm.resize(n)
+	var b := esqueleto.global_transform.basis
+	var lado := b.x.normalized()
+	var tras := _tras()
+	var raiz := esqueleto.to_global(esqueleto.get_bone_global_pose(_osso).origin) / u
+	var alto: float = _cfg[4] / (_nv - 1)
+	for j in _nv:
+		var larg: float = _cfg[3] * (OMBRO + (1.0 - OMBRO) * float(j) / (_nv - 1))
+		for i in _nh:
+			var f := 2.0 * absf(float(i) / (_nh - 1) - 0.5)
+			var x: float = larg * float(i) / (_nh - 1) - 0.5 * larg
+			_p[j * _nh + i] = raiz + lado * x + tras * (20.0 - 10.0 * f * f) + Vector3.DOWN * alto * j
+			_v[j * _nh + i] = Vector3.ZERO
+	var topo := _presos(u)
+	for i in _nh:
+		_p[i] = topo[i]
+	# comprimentos tirados da forma inicial, como o SetLink
+	_lig.clear()
 	for j in _nv:
 		for i in _nh:
 			var k := j * _nh + i
-			var t: Vector3 = topo[i]
-			var meio: Vector3 = topo[_nh / 2]
-			var abre := 1.0 + (1.0 / OMBRO - 1.0) * float(j) / (_nv - 1)
-			_p[k] = meio + (t - meio) * abre + Vector3.DOWN * passo * j
-	_ant = _p.duplicate()
+			if j < _nv - 1:
+				_ligar(k, k + _nh, MOLA | ESTRITA)
+			if i < _nh - 1:
+				_ligar(k, k + 1, MOLA | FROUXA)
+				if j < _nv - 1:
+					_ligar(k, k + 1 + _nh, FROUXA)
+				if j > 1:
+					_ligar(k, k + 1 - _nh, FROUXA)
 	_pronta = true
+
+
+func _ligar(a: int, b: int, tipo: int) -> void:
+	var d := maxf(0.01, _p[a].distance_to(_p[b]))
+	_lig.append([a, b, d * 0.8, d, tipo])
 
 
 func _process(dt: float) -> void:
@@ -94,71 +146,107 @@ func _process(dt: float) -> void:
 		visible = false
 		return
 	visible = true
-	if not _pronta:
-		_montar()
-	dt = minf(dt, 0.05)
-	_t += dt
 	var u := _unidade()
-	var grav: float = (18.0 if _cfg[8] else 10.0)
-	var vento := esqueleto.global_transform.basis.z.normalized() * (0.6 + 0.4 * sin(_t * 1.7)) \
-		+ esqueleto.global_transform.basis.x.normalized() * 0.3 * sin(_t * 0.9)
-	# verlet: anda com a velocidade que tinha, gravidade e vento, com atrito
-	for k in range(_nh, _p.size()):
-		var v := (_p[k] - _ant[k]) * 0.96
-		_ant[k] = _p[k]
-		var onda := 0.5 + 0.5 * sin(_t * 2.3 + float(k % _nh) * 0.6 + float(k / _nh) * 0.4)
-		_p[k] += v + (Vector3.DOWN * grav + vento * onda) * dt * dt
-	var topo := _presos()
+	if not _pronta:
+		_montar(u)
+	_t += dt
+	# vento do PhysicsManager: passeio ao acaso entre -0.2 e 1
+	_vento = clampf(_vento + randf_range(-0.1, 0.1) * minf(1.0, dt * 25.0), -0.2, 1.0)
+	_sobra += minf(dt, 0.1)
+	var n := 0
+	while _sobra >= REAL and n < 15:
+		_sobra -= REAL
+		n += 1
+		if not _passo(u):
+			_pronta = false
+			_montar(u)
+			break
+	_sobra = minf(_sobra, REAL)
+	_desenhar(u)
+
+
+# um Move do CPhysicsCloth: forca, mola, anda; depois corpo, frouxas e estritas
+func _passo(u: float) -> bool:
+	var semente := (int(_t * 1000.0 / 400.0) * 101) % (_nh * _nv)
+	var vento := _tras() * _vento
+	var g: float = GRAVIDADE * (180.0 if _cfg[8] else 100.0)
+	for k in _p.size():
+		var chave := absi(semente % _nh - k % _nh) + absi(semente / _nh - k / _nh)
+		var t := clampi(5 - chave, 0, 4)
+		var r := 0.0 if t == 0 else float(t + 2)
+		_f[k] = vento * r - _v[k] * 0.01 + Vector3.DOWN * g
+	for l in _lig:
+		if not (l[4] & MOLA):
+			continue
+		var a: int = l[0]
+		var b: int = l[1]
+		var dif := _p[a] - _p[b]
+		var d := maxf(0.001, dif.length())
+		if d > l[3] + 0.01:
+			var fz: Vector3 = dif * ((d - l[3]) / d)
+			_f[a] -= fz
+			_f[b] += fz
+	var topo := _presos(u)
 	for i in _nh:
 		_p[i] = topo[i]
-		_ant[i] = topo[i]
-	var alto: float = _cfg[4] / (_nv - 1) * u
-	for _it in 4:
-		for j in _nv:
-			var abre := OMBRO + (1.0 - OMBRO) * float(j) / (_nv - 1)
-			var largo: float = _cfg[3] * abre / (_nh - 1) * u
-			for i in _nh:
-				var k := j * _nh + i
-				if j > 0:
-					_liga(k - _nh, k, alto)
-				if i > 0:
-					_liga(k - 1, k, largo)
-		_corpo(u)
-	_desenhar()
-
-
-# segura o comprimento: o de cima puxa o de baixo (a fileira presa nao mexe)
-func _liga(a: int, b: int, d: float) -> void:
-	var dif := _p[b] - _p[a]
-	var l := dif.length()
-	if l < 0.0001 or (l <= d and l >= d * 0.8):
-		return
-	var alvo := clampf(l, d * 0.8, d)
-	var corr := dif * (1.0 - alvo / l)
-	if a < _nh:
-		_p[b] -= corr
-	else:
-		_p[a] += corr * 0.5
-		_p[b] -= corr * 0.5
-
-
-func _corpo(u: float) -> void:
-	if _osso_corpo < 0:
-		return
-	var chao := esqueleto.global_position.y + 0.03
-	for e in CORPO:
-		var c := _no_osso(_osso_corpo, e[0], e[1], e[2])
-		var r: float = e[3] * u
-		for k in range(_nh, _p.size()):
-			var d := _p[k] - c
-			if d.length() < r:
-				_p[k] = c + d.normalized() * r
+		_v[i] = Vector3.ZERO
+	for k in range(_nh, _p.size()):
+		_v[k] += _f[k] * INV_MASSA * PASSO
+		_p[k] += _v[k] * PASSO
+	# esferas do corpo e ligacoes frouxas: media das correcoes, so na posicao
+	for k in _p.size():
+		_um[k] = Vector3.ZERO
+		_nm[k] = 0
+	if _osso_corpo >= 0:
+		for e in CORPO:
+			var c := _no_osso(_osso_corpo, e[0], e[1], e[2]) / u
+			var raio: float = e[3]
+			for k in range(_nh, _p.size()):
+				var d := _p[k] - c
+				var l := d.length()
+				if l < 0.01:
+					l = 0.01
+					d = Vector3(l, 0, 0)
+				if l < raio:
+					_um[k] += d * ((raio - l) / l)
+					_nm[k] += 1
+	for l in _lig:
+		if not (l[4] & FROUXA):
+			continue
+		var a: int = l[0]
+		var b: int = l[1]
+		var dif := _p[a] - _p[b]
+		var d := maxf(0.001, dif.length())
+		var m: Vector3 = dif * ((d - l[3]) * 0.5 / d)
+		_um[a] -= m
+		_um[b] += m
+		_nm[a] += 1
+		_nm[b] += 1
+	for k in range(_nh, _p.size()):
+		if _nm[k] > 0:
+			_p[k] += _um[k] / float(_nm[k])
+	for l in _lig:
+		if not (l[4] & ESTRITA) or l[1] < _nh:
+			continue
+		var a: int = l[0]
+		var b: int = l[1]
+		var dif := _p[b] - _p[a]
+		var d := maxf(0.001, dif.length())
+		if d > l[3] * 20.0:
+			return false
+		if d > l[3]:
+			_p[b] -= dif * ((d - l[3]) / d)
+		elif d < l[2]:
+			_p[b] -= dif * ((d - l[2]) / d)
+	# chao
+	var chao := esqueleto.global_position.y / u + 3.0
 	for k in range(_nh, _p.size()):
 		if _p[k].y < chao:
 			_p[k].y = chao
+	return true
 
 
-func _desenhar() -> void:
+func _desenhar(u: float) -> void:
 	var im: ImmediateMesh = mesh
 	im.clear_surfaces()
 	im.surface_begin(Mesh.PRIMITIVE_TRIANGLES, _mat)
@@ -170,5 +258,5 @@ func _desenhar() -> void:
 			for k in q:
 				im.surface_set_normal(n)
 				im.surface_set_uv(Vector2(float(k % _nh) / (_nh - 1), float(k / _nh) / (_nv - 1)))
-				im.surface_add_vertex(_p[k])
+				im.surface_add_vertex(_p[k] * u)
 	im.surface_end()

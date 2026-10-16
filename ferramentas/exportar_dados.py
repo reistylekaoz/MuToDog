@@ -1,6 +1,7 @@
 """Tira do banco do OpenMU o que o cliente precisa saber de itens, skills e mapas.
 Grava godot/dados/itens_info.json ("grupo,numero" -> [largura, altura, slots, durabilidade, consome, skill,
-valor, nivel de drop], os dois ultimos pro preco da loja),
+valor, nivel de drop, duas maos], valor e nivel de drop pro preco da loja; duas maos vem do Item.bmd do cliente S6
+(TwoHand, o byte 30 de cada registro de 84 bytes, cifra BuxConvert): o cliente troca a pose de parado e de andar),
 godot/dados/skills.json (numero -> [nome, alcance, tipo, alvo, mana, ag, move_ate_alvo])
 e godot/dados/movimento.json: "lista" = a janela Move (M) [indice, nome, zen, nivel, mapa],
 "portais" = mapa -> [[numero, x1, y1, x2, y2, nivel, mapa de destino]] (EnterGate: pisou, entra),
@@ -23,7 +24,14 @@ for i in consulta('''select d."Group" g, d."Number" n, d."Width" w, d."Height" h
     from config."ItemDefinition" d left join config."ItemSlotType" t on t."Id" = d."ItemSlotId"
     left join config."Skill" s on s."Id" = d."SkillId"'''):
     slots = [int(x) for x in i["slots"].split(";") if x != ""]
-    itens[f'{i["g"]},{i["n"]}'] = [i["w"], i["h"], slots, i["dur"], i["consome"], i["skill"], i["valor"], i["drop"]]
+    itens[f'{i["g"]},{i["n"]}'] = [i["w"], i["h"], slots, i["dur"], i["consome"], i["skill"], i["valor"], i["drop"], False]
+
+ITEM_BMD = os.path.join(AQUI, "s6", "cliente", "MU Client 1.04d - Season 6E3", "Data", "Local", "Item.bmd")
+bmd = open(ITEM_BMD, "rb").read()
+for k, v in itens.items():
+    g, n = map(int, k.split(","))
+    p = (g * 512 + n) * 84 + 30
+    v[8] = bool(bmd[p] ^ (0xFC, 0xCF, 0xAB)[30 % 3])
 
 skills = {}
 for s in consulta('''select s."Number" n, split_part(s."Name", '||', 1) nome, s."Range" alcance, s."SkillType" tipo,

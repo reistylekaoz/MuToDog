@@ -17,7 +17,12 @@ const VELOCIDADE := {
 		"monta_parado": 0.28, "monta_parado_a": 0.28, "monta_corre": 0.34, "monta_corre_a": 0.34, "monta_ataque": 0.35,
 		"cavalo_parado": 0.3, "cavalo_corre": 0.33, "cavalo_ataque": 0.28,
 		"fenrir_parado": 0.28, "fenrir_parado_a": 0.28, "fenrir_anda": 0.3, "fenrir_anda_a": 0.3,
-		"fenrir_corre": 0.34, "fenrir_corre_a": 0.34, "fenrir_ataque": 0.3, "fenrir_ataque_a": 0.3},
+		"fenrir_corre": 0.34, "fenrir_corre_a": 0.34, "fenrir_ataque": 0.3, "fenrir_ataque_a": 0.3,
+		"parado_espada": 0.26, "parado_2maos": 0.24, "parado_2maos2": 0.24, "parado_lanca": 0.24, "parado_foice": 0.28,
+		"parado_arco": 0.22, "parado_besta": 0.22, "parado_varinha": 0.3, "voa_besta": 0.28, "anda_varinha": 0.44, "corre_varinha": 0.76,
+		"espada2": 0.35, "espada_e1": 0.35, "espada_e2": 0.35, "golpe_2maos1": 0.35, "golpe_2maos2": 0.35, "golpe_2maos3": 0.35,
+		"golpe_2maos2b": 0.35, "golpe_lanca": 0.35, "golpe_foice1": 0.35, "golpe_foice2": 0.35, "golpe_foice3": 0.35,
+		"besta": 0.3, "arco_voa": 0.3, "besta_voa": 0.3, "magia_arma2": 0.3},
 	"npc": {},
 }
 # acao pedida -> a que existe no modelo (o jogador nao tem "ataque", tem "soco")
@@ -26,7 +31,9 @@ const TROCA := {"ataque": ["ataque", "soco", "parado"], "ataque2": ["ataque2", "
 	"corre": ["corre", "anda"], "parado2": ["parado2", "parado"]}
 const NAO_REPETE := ["morre", "golpe", "ataque", "ataque2", "soco", "espada", "espada_s1", "espada_s2",
 	"espada_s3", "espada_s4", "espada_s5", "giro", "furia", "estocada", "arco", "magia", "magia2", "magia_arma",
-	"cura", "raio", "inferno", "fogo_inferno", "monta_ataque", "cavalo_ataque", "fenrir_ataque", "fenrir_ataque_a"]
+	"cura", "raio", "inferno", "fogo_inferno", "monta_ataque", "cavalo_ataque", "fenrir_ataque", "fenrir_ataque_a",
+	"espada2", "espada_e1", "espada_e2", "golpe_2maos1", "golpe_2maos2", "golpe_2maos3", "golpe_2maos2b", "golpe_lanca",
+	"golpe_foice1", "golpe_foice2", "golpe_foice3", "besta", "arco_voa", "besta_voa", "magia_arma2"]
 
 # numero do monstro/NPC no OpenMU -> [modelo, escala], tirado do CreateMonster
 # do cliente S6 (ZzzCharacter.cpp). Lorencia, Dungeon, Devias, Noria, Lost Tower e Atlans.
@@ -315,6 +322,7 @@ const CLASSES := ["classe_dw", "classe_dk", "classe_elf", "classe_mg", "classe_d
 static var _info := {}
 
 var anim: AnimationPlayer
+var nome_modelo := ""
 var familia := "npc"
 var acao := ""
 var feminino := false
@@ -433,6 +441,7 @@ static func novo(nome: String, escala := 1.0) -> Boneco:
 		return null
 	var b := Boneco.new()
 	b.name = nome
+	b.nome_modelo = nome
 	b.altura = 1.9 * escala
 	b.familia = "monstro" if nome.begins_with("monster") else ("jogador" if info().get(nome, {}).has("soco") else "npc")
 	var modelo: Node3D = cena.instantiate()
@@ -812,28 +821,15 @@ func tocar(a: String, depois := "parado") -> void:
 	if anim == null:
 		return
 	pedida = a
-	if montado():
-		var m: Dictionary = MONTADO[_jeito_montaria]
-		var chave := a if m.has(a) else ("ataque" if a in NAO_REPETE and a not in ["morre", "golpe"] else "")
-		if chave != "":
-			var ar: String = m[chave][0]
-			if (not _equip.get(0, "").is_empty() or not _equip.get(1, "").is_empty()) and tem(ar + "_a"):
-				ar += "_a"
-			montaria.tocar(m[chave][1])
-			a = ar
-	elif nadar and familia == "jogador" and NADO.has(a):
-		a = NADO[a]
-	if feminino and tem(a + "_f"):
-		a += "_f"
-	var real := a
-	if not tem(real):
-		real = ""
-		for t in TROCA.get(a, [a, "parado"]):
-			if tem(t):
-				real = t
-				break
+	var chave := _chave_montado(a)
+	if chave != "":
+		montaria.tocar(MONTADO[_jeito_montaria][chave][1])
+	var real := resolver(a)
 	if real == "":
 		return
+	if a in ["ataque", "arco"]:
+		_golpes += 1
+	_bater_asa(real.begins_with("voando"))
 	var vel: float = ritmo.get(real, VELOCIDADE[familia].get(real.trim_suffix("_f"), 0.25))
 	anim.play(real, 0.12, vel * 25.0)
 	acao = real
@@ -846,6 +842,143 @@ func tocar(a: String, depois := "parado") -> void:
 			var c := Color(1, 0.6, 0.2) if nv >= 7 else Color(0.2, 0.4, 1) if nv >= 5 else Color(1, 0.2, 0.2) if nv >= 3 else Color(0.8, 0.8, 0.8)
 			rastro(0.45, c)
 	_fila = depois if real in NAO_REPETE and real != "morre" else ""
+
+
+# a acao que tocar(a) toca agora (sem tocar): montado, voando, nadando, com a arma, feminina ou a parecida
+func resolver(a: String) -> String:
+	var chave := _chave_montado(a)
+	if chave != "":
+		a = MONTADO[_jeito_montaria][chave][0]
+		if (not _equip.get(0, "").is_empty() or not _equip.get(1, "").is_empty()) and tem(a + "_a"):
+			a += "_a"
+	elif not montado():
+		a = _postura(a)
+	if feminino and tem(a + "_f"):
+		a += "_f"
+	if tem(a):
+		return a
+	for t in TROCA.get(a, [a, "parado"]):
+		if tem(t):
+			return t
+	return ""
+
+
+func _chave_montado(a: String) -> String:
+	if not montado():
+		return ""
+	var m: Dictionary = MONTADO[_jeito_montaria]
+	return a if m.has(a) else ("ataque" if a in NAO_REPETE and a not in ["morre", "golpe"] else "")
+
+
+# laminas de duas maos com pose propria (Dark Reign Blade, Rune Blade, Explosion Blade, Sword Dancer)
+const LAMINAS_2 := ["0,21", "0,23", "0,25", "0,31"]
+var _golpes := 0   # SwordCount: alterna os golpes da arma
+
+
+# pose do jogador a pe (SetPlayerStop, SetPlayerWalk e SetPlayerAttack do cliente): fora da zona
+# segura, com asa ou capa, parado e andando viram voo; com arma na mao, a pose e o golpe da arma
+func _postura(a: String) -> String:
+	if familia != "jogador":
+		return a
+	var besta := _besta(_equip.get(0, ""))
+	var arco := _arco(_equip.get(1, ""))
+	var asa: bool = _equip.get(7, "") != ""
+	if asa and not _costas and a in ["parado", "anda", "corre"]:
+		return ("voa" if a == "parado" else "voando") + ("_besta" if besta else "")
+	if nadar and NADO.has(a):
+		return NADO[a]
+	var d: String = _equip.get(0, "")
+	var e: String = _equip.get(1, "")
+	var g := int(d.get_slice(",", 0)) if d != "" else -1
+	var ge := int(e.get_slice(",", 0)) if e != "" else -1
+	var duas := ItensMU.duas_maos(d)
+	if a in ["ataque", "arco"]:
+		if d == "" and e == "":
+			return "soco" if a == "ataque" else a
+		if arco or besta:
+			return ("arco" if arco else "besta") + ("_voa" if asa else "")
+		if a == "arco":
+			return a
+		if g >= 0 and g <= 2:
+			if d in LAMINAS_2:
+				return "golpe_2maos2b"
+			if duas:
+				return "golpe_2maos%d" % (_golpes % 3 + 1)
+			if ge >= 0 and ge <= 2:
+				return ["espada", "espada_e1", "espada2", "espada_e2"][_golpes % 4]
+			return ["espada", "espada2"][_golpes % 2]
+		if ge >= 0 and ge <= 2:
+			return ["espada_e1", "espada_e2"][randi() % 2]
+		if g == 5:
+			return ["magia_arma", "magia_arma2"][randi() % 2] if duas else ["espada", "espada2"][randi() % 2]
+		if d in ["3,1", "3,2"]:
+			return "golpe_lanca"
+		if g == 3:
+			return "golpe_foice%d" % (_golpes % 3 + 1)
+		return "soco"
+	if _costas or not a in ["parado", "anda", "corre"]:
+		return a
+	var k := ""
+	if g >= 0 and g <= 2:
+		if d in LAMINAS_2:
+			k = "2maos2"
+		elif duas:
+			k = "2maos"
+		elif a == "corre" and ge >= 0 and ge <= 2:
+			k = "" if nome_modelo == "classe_rf" else "2espadas"
+		else:
+			k = "espada"
+	elif g == 3:
+		if d in ["3,1", "3,2"]:
+			k = "foice" if a == "anda" and d == "3,2" else "lanca"   # o cliente compara a Dragon Lance errado no andar
+		elif a == "parado" and not duas:
+			k = "espada"
+		else:
+			k = "lanca" if a == "corre" else "foice"
+	elif d.begins_with("5,") and int(d.get_slice(",", 1)) in range(14, 21):
+		k = "varinha"
+	elif g == 5:
+		k = ("lanca" if a == "corre" else "foice") if duas else "espada"
+	elif arco:
+		k = "arco"
+	elif besta:
+		k = "besta"
+	return a + "_" + k if k != "" else a
+
+
+static func _arco(k: String) -> bool:
+	if not k.begins_with("4,"):
+		return false
+	var n := int(k.get_slice(",", 1))
+	return n <= 6 or n == 17 or (n >= 20 and n <= 24)
+
+
+static func _besta(k: String) -> bool:
+	if not k.begins_with("4,"):
+		return false
+	var n := int(k.get_slice(",", 1))
+	return (n >= 8 and n <= 14) or n == 16 or n == 18 or n == 19
+
+
+# flechas e virotes: sempre nas costas (o cliente nao desenha municao na mao)
+static func _municao(k: String) -> bool:
+	return k in ["4,7", "4,15"]
+
+
+# asa bate rapido voando (PlaySpeed 1,0) e devagar parada (0,25)
+func _bater_asa(rapido: bool) -> void:
+	if not _pecas.has(7) or Capa.TIPOS.has(_equip.get(7, "")) or not is_instance_valid(_pecas[7]):
+		return
+	var ap := (_pecas[7] as Node).find_children("*", "AnimationPlayer", true, false)
+	if not ap.is_empty():
+		ap[0].speed_scale = 4.0 if rapido else 1.0
+
+
+# a pose de parado/andando de novo (trocou arma, asa ou entrou/saiu da zona segura)
+func _repor() -> void:
+	var base := pedida if pedida != "" else "parado"
+	if base in ["parado", "anda", "corre"]:
+		tocar(base)
 
 
 func _acabou(_n: StringName) -> void:
@@ -874,6 +1007,7 @@ func vestir(equip: Dictionary) -> void:
 	if cor != _fenrir and _equip.get(8, "") == "13,37":
 		_equip.erase(8)   # troca de cor: monta de novo
 	_fenrir = cor
+	var antes := [_equip.get(0, ""), _equip.get(1, ""), _equip.get(7, "")]
 	for s in 9:
 		var k: String = equip.get(s, "")
 		var nv: int = niveis.get(s, 0)
@@ -888,6 +1022,8 @@ func vestir(equip: Dictionary) -> void:
 		_tirar(s)
 		if k != "":
 			_por(s, k)
+	if antes != [_equip.get(0, ""), _equip.get(1, ""), _equip.get(7, "")]:
+		_repor()
 
 
 func vestido() -> Dictionary:
@@ -938,14 +1074,16 @@ func _por(s: int, k: String) -> void:
 	elif OSSO_MAO.has(s):
 		var at := BoneAttachment3D.new()
 		esqueleto.add_child(at)
-		at.bone_name = "osso47" if _costas else OSSO_MAO[s]
+		var costas := _costas or _municao(k)
+		at.bone_name = "osso47" if costas else OSSO_MAO[s]
 		var enc := Node3D.new()
-		enc.transform = _encaixe(k, s == 1)
+		enc.transform = _encaixe(k, s == 1, nome_modelo == "classe_rf", costas)
 		at.add_child(enc)
 		enc.add_child(no)
 		_pecas[s] = at
 		BrilhoMU.aplicar(no, k, _niveis.get(s, 0))
-		_rastros[s] = RastroArma.na_arma(no)
+		if not _municao(k):
+			_rastros[s] = RastroArma.na_arma(no)
 	elif s == 7 and Capa.TIPOS.has(k):
 		# capa: so o pano preso nas costas (o cliente nao desenha o modelo do item)
 		no.free()
@@ -960,6 +1098,7 @@ func _por(s: int, k: String) -> void:
 		modelo.add_child(no)
 		_voar(no, 0.25)
 		_pecas[s] = no
+		_bater_asa(acao.begins_with("voando"))
 		_osso_asa = esqueleto.find_bone("osso47")
 		_seguir_asa()
 	elif s == 8 and MONTARIAS.has(k):
@@ -1001,19 +1140,43 @@ static func _voar(no: Node, ritmo_mu: float) -> void:
 	ap[0].play("voa", -1, ritmo_mu * 25.0)
 
 
-# onde o cliente poe a arma no osso (RenderLinkObject, caso padrao; igual ao conversor)
-static func _encaixe(k: String, esquerda: bool) -> Transform3D:
+# onde o cliente poe a arma no osso. Na mao (RenderLinkObject sem Link) e o osso da mao direto: o
+# modelo da arma ja vem feito pra mao. Nas costas (com Link) entra o giro e o deslocamento de cada
+# tipo (besta, os arcos e escudos com encaixe proprio) e a arma da esquerda gira mais.
+const ENCAIXE := {"4,20": [-60, 0, -80, -5, 20, 0], "4,23": [-60, 0, -80, -5, 20, -5], "4,24": [90, 0, -80, 10, 20, -5],
+	"5,9": [110, 180, 90, -10, 5, -10], "5,8": [70, 0, 90, -10, 5, 10], "6,16": [30, 0, 90, -20, 0, -20],
+	"6,14": [50, 0, 90, -28, 0, -25], "6,15": [50, 0, 90, -28, 0, -25], "6,6": [30, 0, 90, -15, 0, -25]}
+# armas comuns que o Rage Fighter segura mais pra frente e menor (IsRagefighterCommonWeapon)
+const ARMAS_RF := ["0,0", "0,1", "1,0", "1,1", "1,3", "2,0", "2,1", "2,2", "2,3", "2,4"]
+
+
+static func _encaixe(k: String, esquerda: bool, rf := false, costas := true) -> Transform3D:
+	rf = rf and k in ARMAS_RF
+	if not costas:
+		# o Rage Fighter desenha as armas comuns a 0,9 (_KnightScale)
+		return Transform3D().scaled_local(Vector3.ONE * 0.9) if rf else Transform3D()
 	var g := int(k.get_slice(",", 0))
-	var t: Transform3D
-	if g == 6:
-		t = ModelosMU.transf_mu(70, 0, 90, -10, 0, 0)
+	var e: Array
+	if _besta(k):
+		e = [0, 20, 180, -10, 8, 40]
+	elif ENCAIXE.has(k):
+		e = ENCAIXE[k]
+	elif g == 6:
+		e = [70, 0, 90, -10, 0, 0]
 	elif g == 4:
-		t = ModelosMU.transf_mu(70, 0, 90, -10, 5, 10)
+		e = [70, 0, 90, -10, 5, 10]
 	else:
-		t = ModelosMU.transf_mu(70, 0, 90, -20, 5, 40)
-	# segunda arma na mao esquerda: o cliente gira mais e desloca
-	if esquerda and g != 6:
-		t = t * ModelosMU.transf_mu(145, 0, 275, 0, 10, -30)
+		e = [70, 0, 90, -20, 5, 40]
+	var t := ModelosMU.transf_mu(e[0], e[1], e[2], e[3], e[4], e[5])
+	if rf:
+		t.origin += Vector3(0, 10, 25)
+	# arma na mao esquerda (menos escudo e o Arrow Viper Bow): o cliente gira mais e desloca
+	if esquerda and g != 6 and k != "4,20":
+		if rf:
+			t.origin.y += 7
+		t = t * ModelosMU.transf_mu(145, 0, 265 if rf else 275, 0, 10, -30)
+	if rf:
+		t = t.scaled_local(Vector3.ONE * 0.9)
 	return t
 
 
@@ -1063,7 +1226,9 @@ func _seguir_asa() -> void:
 	_pecas[7].position = modelo.to_local(esqueleto.to_global(p))
 
 
-const GOLPES := ["ataque", "soco", "espada", "espada_s1", "espada_s2", "espada_s3", "espada_s4", "espada_s5", "giro", "furia", "estocada"]
+const GOLPES := ["ataque", "soco", "espada", "espada_s1", "espada_s2", "espada_s3", "espada_s4", "espada_s5", "giro", "furia", "estocada",
+	"espada2", "espada_e1", "espada_e2", "golpe_2maos1", "golpe_2maos2", "golpe_2maos3", "golpe_2maos2b", "golpe_lanca",
+	"golpe_foice1", "golpe_foice2", "golpe_foice3"]
 
 
 # grupos das armas na mao (0 espada, 1 machado, 2 maca, 3 lanca, 4 arco, 5 cajado)
@@ -1119,11 +1284,7 @@ func nadando(sim: bool) -> void:
 		return
 	nadar = sim
 	print("TESTE nadando %s" % sim)
-	var base := acao.trim_suffix("_f")
-	for k in NADO:
-		if base == k or base == NADO[k]:
-			tocar(k)
-			return
+	_repor()
 
 
 # montado so fora da zona segura (o cliente esconde a montaria na cidade)
@@ -1147,6 +1308,11 @@ func arma_nas_costas(sim: bool) -> void:
 	_costas = sim
 	if montaria:
 		_montar()
+	else:
+		_repor()
 	for s in OSSO_MAO:
 		if _pecas.has(s):
-			_pecas[s].bone_name = "osso47" if sim else OSSO_MAO[s]
+			var k: String = _equip.get(s, "")
+			var costas := sim or _municao(k)
+			_pecas[s].bone_name = "osso47" if costas else OSSO_MAO[s]
+			_pecas[s].get_child(0).transform = _encaixe(k, s == 1, nome_modelo == "classe_rf", costas)

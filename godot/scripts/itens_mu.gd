@@ -33,10 +33,17 @@ static func chave(it: Dictionary) -> String:
 	return "%d,%d" % [it.grupo, it.numero]
 
 
-# [largura, altura, slots, durabilidade, consome, skill, valor, nivel de drop]
+# [largura, altura, slots, durabilidade, consome, skill, valor, nivel de drop, duas maos]
 static func info(it: Dictionary) -> Array:
 	_carregar()
 	return _info.get(chave(it), [1, 1, [], 0, false, -1, 0, 0])
+
+
+# arma de duas maos (TwoHand do Item.bmd do cliente): muda a pose de parado, andar e o golpe
+static func duas_maos(k: String) -> bool:
+	_carregar()
+	var i: Array = _info.get(k, [])
+	return i.size() > 8 and i[8]
 
 
 static func tamanho(it: Dictionary) -> Vector2i:

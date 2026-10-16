@@ -2,11 +2,13 @@ extends Node3D
 # Vitrine dos personagens convertidos (dados/personagens): todos em fila,
 # trocando de acao a cada 3 s. No navegador: ?vitrine=1 (ou ?vitrine=parado).
 # ?npc=34,35: os monstros pelo numero do OpenMU, montados como no jogo (Boneco.do_npc).
-# ?giro=90 vira todos de lado. ?pacote=34,35: baixa antes os pacotes desses mapas (monstros dos mapas novos). ?monta=13,2;13,3;13,4;13,37: um Dark Knight com espada montado em cada (13,37:blue = Fenrir azul).
+# ?giro=90 vira todos de lado. ?vestir=classe_dk:0=0,5;7=12,5|classe_elf:1=4,0;0=4,15 veste cada um
+# (slot=item); ?costas=1 = zona segura (arma nas costas, sem voo); ?passeio=1 anda em circulo (capa, voo). ?pacote=34,35: baixa antes os pacotes desses mapas (monstros dos mapas novos). ?monta=13,2;13,3;13,4;13,37: um Dark Knight com espada montado em cada (13,37:blue = Fenrir azul).
 
 var bonecos: Array[Boneco] = []
 var _t := 0.0
 var _i := 0
+var _ang := 0.0
 const CICLO := ["parado", "anda", "ataque", "golpe", "morre"]
 
 
@@ -50,6 +52,14 @@ func _ready() -> void:
 		for m in montas:
 			nomes.append("classe_dk")
 		so = monta
+	var vestes: Array = []
+	if _param("vestir") != "":
+		add_child(ModelosMU.new())
+		vestes = Array(_param("vestir").split("|"))
+		nomes = []
+		for v in vestes:
+			nomes.append(v.get_slice(":", 0))
+		so = _param("vestir")
 	var col := mini(8, nomes.size())
 	for i in nomes.size():
 		var b := Boneco.do_npc(int(nomes[i])) if npcs != "" else Boneco.novo(nomes[i])
@@ -69,8 +79,14 @@ func _ready() -> void:
 		b.rotation_degrees.y = 180 + float(_param("giro"))   # ?giro=90: de lado
 		b.position = Vector3((i % col - col / 2.0 + 0.5) * (3.2 if so == "" else 1.8), 0, -(i / col) * 4.0 + 4)
 		add_child(b)
+		if not vestes.is_empty():
+			var eq := {}
+			for par in vestes[i].get_slice(":", 1).split(";", false):
+				eq[int(par.get_slice("=", 0))] = par.get_slice("=", 1)
+			b.vestir(eq)
+			b.arma_nas_costas(_param("costas") == "1")
 		var l := Label3D.new()
-		l.text = montas[i] if not montas.is_empty() else nomes[i]
+		l.text = montas[i] if not montas.is_empty() else (vestes[i] if not vestes.is_empty() else nomes[i])
 		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		l.pixel_size = 0.01
 		l.font_size = 40
@@ -85,6 +101,11 @@ func _ready() -> void:
 	add_child(cam)
 	_tocar()
 	print("TESTE vitrine: %d bonecos" % bonecos.size())
+	for i in bonecos.size():
+		if not vestes.is_empty():
+			var b := bonecos[i]
+			print("TESTE pose %s: parado=%s anda=%s corre=%s ataque=%s/%s" % [vestes[i], b.resolver("parado"), b.resolver("anda"),
+				b.resolver("corre"), b.resolver("ataque"), b.resolver("arco")])
 
 
 func _param(nome: String) -> String:
@@ -107,6 +128,18 @@ func _tocar() -> void:
 
 
 func _process(dt: float) -> void:
+	if _param("passeio") == "1":
+		# cada um anda num circulo de 2 m em volta do proprio lugar, na velocidade de andar do MU
+		_ang += dt * 1.6
+		for i in bonecos.size():
+			var b := bonecos[i]
+			if not b.has_meta("centro"):
+				b.set_meta("centro", b.position)
+				b.tocar("anda")
+			var c: Vector3 = b.get_meta("centro")
+			b.position = c + Vector3(cos(_ang), 0, sin(_ang)) * 2.0
+			b.rotation.y = -_ang + PI
+		return
 	_t += dt
 	if _t > 3.0:
 		_t = 0.0

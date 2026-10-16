@@ -50,6 +50,9 @@ export_path=""
 open('export_presets.cfg', 'w').write(cfg)
 PY
 mkdir -p $D/mapas
+# os bonecos do conversor tem 1 quadro por segundo: importar a 1 qps guarda os mesmos quadros
+# (o padrao de 30 qps reamostra e deixa cada boneco de classe 4x maior; o index.pck passava de 80 MB)
+sed -i 's|^animation/fps=30$|animation/fps=1|' dados/personagens/*.glb.import
 $G --headless --import >/dev/null 2>&1 || true
 $G --headless --export-release "Web" $D/index.html 2>&1 | grep -i "error" || true
 for n in $FORA; do
