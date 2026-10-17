@@ -9,6 +9,7 @@ extends Node3D
 const PASTA := "res://dados/efeitos/"
 const SHADER := preload("res://scripts/efeito.gdshader")
 const SHADER_MENOS := preload("res://scripts/efeito_menos.gdshader")
+const SHADER_ALFA := preload("res://scripts/efeito_alfa.gdshader")
 static var _tex := {}
 static var _modelos := {}
 static var _quad: QuadMesh
@@ -34,9 +35,9 @@ static func textura(nome: String) -> Texture2D:
 	return _tex[nome]
 
 
-static func _material(tex: String, cor: Color, modo: int, menos := false) -> ShaderMaterial:
+static func _material(tex: String, cor: Color, modo: int, menos := false, alfa := false) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
-	m.shader = SHADER_MENOS if menos else SHADER
+	m.shader = SHADER_ALFA if alfa else SHADER_MENOS if menos else SHADER
 	m.set_shader_parameter("tex", textura(tex))
 	m.set_shader_parameter("cor", cor)
 	m.set_shader_parameter("modo", modo)
@@ -70,7 +71,7 @@ func sprite(tex: String, pos: Vector3, tam: float, cor: Color, vida: float, op :
 	var no := MeshInstance3D.new()
 	no.mesh = _quad
 	no.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	return _peca(no, _material(tex, cor, 0, op.get("menos", false)), pos, tam, cor, vida, op)
+	return _peca(no, _material(tex, cor, 0, op.get("menos", false), op.get("alfa", false)), pos, tam, cor, vida, op)
 
 
 # marca deitada no chao (Magic_Ground, anel de onda), girando em volta do eixo vertical

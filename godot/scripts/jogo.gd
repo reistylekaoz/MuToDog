@@ -634,6 +634,8 @@ func _entrou(info: Dictionary) -> void:
 		_chao_teste(info.x, info.y)
 	if _parametros().has("uma_skill"):
 		_teste_uma_skill(int(_parametros().uma_skill))
+	if _parametros().has("segurar"):
+		_teste_segurar(int(_parametros().segurar))
 	if _parametros().has("comando"):
 		_teste_comando(str(_parametros().comando).split(","))
 	if _parametros().has("ponto"):
@@ -670,6 +672,7 @@ func _limpar_mundo() -> void:
 func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	_limpar_mundo()
 	mapa_atual = mapa
+	EfeitoMontaria.mapa = mapa
 	# navegador: Lost Tower e Atlans vem num pacote a parte; a rede espera ele baixar
 	if PacoteMapa.precisa(mapa + 1):
 		_msg("Carregando %s..." % mapas.get(str(mapa), "o mapa"))
@@ -869,6 +872,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 		if comandos.selecionado >= 0:
 			_comando_no_mouse(ev.position)
 			return
+		_segura_direito = true
 		_skill_no_mouse(ev.position)
 		return
 	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_C:
@@ -1968,15 +1972,31 @@ func _acao_skill(n: int) -> String:
 	return "magia2" if n in [5, 9, 13, 38, 39] else "magia"
 
 
-# botao direito: solta a skill atual no monstro do mouse (ou no chao, se for de area)
-func _skill_no_mouse(tela: Vector2) -> void:
+# botao direito: solta a skill atual no monstro do mouse (ou no chao, se for de area).
+# de_novo: o botao segue apertado e a skill anterior ja saiu (_skills): solta outra vez onde o
+# mouse estiver, sem mensagem; sem monstro no mouse, segue no ultimo; teleporte e Nova nao repetem
+func _skill_no_mouse(tela: Vector2, de_novo := false) -> void:
 	var n: int = barra_mu.skill_atual
+	if de_novo and n in [6, 15, 40]:
+		_segura_direito = false
+		return
 	if n < 0:
+		if de_novo:
+			return
 		_msg("[color=#9a9ab0]Esse personagem nao tem skill. Clique no quadro verde da barra pra ver a lista.[/color]")
 		return
 	var info := _info_skill(n)
 	var tipo := int(info[2])
 	var e := _entidade_na_tela(tela)
+	if de_novo and (e == null or e.tipo != "monstro") and tipo in [0, 3, 5]:
+		var ant: Entidade = entidades.get(_skill_ultimo)
+		if ant and not ant.morto and ant.tipo == "monstro":
+			e = ant
+		elif tipo == 0:
+			return
+	if de_novo and tipo not in [0, 3, 4, 5, 10, 11, 30] and n != 63:
+		_segura_direito = false
+		return
 	skill_numero = n
 	skill_alvo = -1
 	skill_ponto = Vector2i(-1, -1)
@@ -2025,9 +2045,14 @@ func _skill_no_mouse(tela: Vector2) -> void:
 	_repensar = 0.0
 
 
-# segura o botao direito: repete a skill no mesmo alvo
+# leva a skill ate o alvo e solta; com o botao direito segurado (como no cliente) solta de novo
+# a cada RECARGA_SKILL onde o mouse estiver
 func _skills(dt: float) -> void:
 	_skill_recarga -= dt
+	if _segura_direito and not _direito_apertado():
+		_segura_direito = false
+	if skill_numero < 0 and _segura_direito and _skill_recarga <= 0.0 and not eu.morto and comandos.selecionado < 0:
+		_skill_no_mouse(_mouse_skill(), true)
 	if skill_numero < 0 or eu.morto:
 		return
 	var n := skill_numero
@@ -2051,16 +2076,22 @@ func _skills(dt: float) -> void:
 	if tipo not in [10, 11] and mundo.zona_segura(eu.tile.x, eu.tile.y):
 		_msg("[color=#e8b04a]Na zona segura nao da pra atacar.[/color]")
 		skill_numero = -1
+		_segura_direito = false
 		return
 	if barra_mu.mana < int(info[4]):
 		_msg("[color=#e8b04a]Falta mana pra %s.[/color]" % info[0])
 		skill_numero = -1
+		_segura_direito = false
 		return
 	if barra_mu.ag < int(info[5]):
 		_msg("[color=#e8b04a]Falta AG pra %s.[/color]" % info[0])
 		skill_numero = -1
+		_segura_direito = false
 		return
 	_skill_recarga = RECARGA_SKILL
+	_lancadas += 1
+	if alvo and alvo.tipo == "monstro":
+		_skill_ultimo = alvo.id
 	var p: Vector3 = alvo.position if alvo else mundo.no_tile(ponto.x, ponto.y)
 	eu.tocar_skill(_acao_skill(n), p)
 	if n == 6:
@@ -2092,10 +2123,9 @@ func _skills(dt: float) -> void:
 		cli.skill_area(n, meio.x, meio.y, giro, skill_alvo if (tipo == 5 or n == 76) and skill_alvo >= 0 else 0)
 		print("TESTE skill %d em area (%d, %d) giro %d" % [n, meio.x, meio.y, giro])
 	EfeitoSkill.criar(mundo, n, eu, alvo if alvo else p, tipo in [3, 4, 5])
-	# skill que nao e em monstro (buff, area no chao) solta uma vez; no monstro segue com o botao apertado
-	if not (skill_alvo >= 0 and tipo in [0, 3, 5] and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
-		if not _cacar_skill:
-			skill_numero = -1
+	# a proxima sai do _skill_no_mouse(de_novo), com o alvo que estiver no mouse
+	if not _cacar_skill:
+		skill_numero = -1
 
 
 # Nova: segurar manda a carga (58) em mim, o servidor sobe o estagio a cada 0,5 s; soltar manda o 40
@@ -2127,6 +2157,28 @@ func _livre_perto(t: Vector2i) -> Vector2i:
 
 
 var _cacar_skill := false   # testes: --skill N usa a skill N no lugar do golpe comum
+var _segura_direito := false   # o botao direito desceu no jogo (nao numa janela) e segue apertado
+var _skill_ultimo := -1        # o ultimo monstro que levou a skill (segurando, sem monstro no mouse, segue nele)
+var _lancadas := 0             # skills soltas (testes)
+var _segurar_teste := false    # testes: --segurar N faz de conta que o botao esta apertado no monstro mais perto
+
+
+func _direito_apertado() -> bool:
+	return _segurar_teste or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+
+
+func _mouse_skill() -> Vector2:
+	if not _segurar_teste:
+		return get_viewport().get_mouse_position()
+	# testes: o mouse em cima do monstro vivo mais perto (fora da zona segura)
+	var cam := get_viewport().get_camera_3d()
+	var perto: Entidade = null
+	for e: Entidade in entidades.values():
+		if e.tipo == "monstro" and not e.morto and (perto == null or _distancia(e.tile, eu.tile) < _distancia(perto.tile, eu.tile)):
+			perto = e
+	if perto == null or cam == null:
+		return Vector2(-100, -100)
+	return cam.unproject_position(perto.global_position + Vector3.UP * perto.altura() * 0.5)
 
 
 func _skill_de_outro(n: int, quem: int, alvo: int) -> void:
@@ -2202,6 +2254,26 @@ func _teste_uma_skill(n: int) -> void:
 		if id not in antes:
 			print("TESTE apareceu %s (%s) em %s" % [entidades[id].nome, entidades[id].tipo, entidades[id].tile])
 	print("TESTE depois eu em %s, visivel %s" % [eu.tile, eu.boneco.visible])
+
+
+# segurar=N: "aperta" o botao direito com a skill N no monstro mais perto, segura 8 s e solta;
+# conta quantas sairam (o cliente repete sozinho enquanto o botao esta apertado)
+func _teste_segurar(n: int) -> void:
+	await get_tree().create_timer(3.0).timeout
+	while eu.andando() or not _restante.is_empty():
+		await get_tree().create_timer(0.5).timeout
+	barra_mu.skill_atual = n
+	cli.golpe.connect(func(id, dano, _t, _e): print("TESTE dano %d em %d" % [dano, id]))
+	_segurar_teste = true
+	_segura_direito = true
+	_skill_no_mouse(_mouse_skill())
+	print("TESTE segurando skill %d alvo %d ponto %s" % [n, skill_alvo, skill_ponto])
+	var antes := _lancadas
+	await get_tree().create_timer(8.0).timeout
+	_segurar_teste = false
+	var segurando := _lancadas - antes
+	await get_tree().create_timer(3.0).timeout
+	print("TESTE segurar %d: %d soltas em 8 s, %d depois de soltar" % [n, segurando, _lancadas - antes - segurando])
 
 
 # comando=N,Nome: abre a janela D, aperta o botao N e usa no jogador Nome quando ele aparecer

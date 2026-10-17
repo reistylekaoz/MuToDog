@@ -1131,6 +1131,7 @@ func _por(s: int, k: String) -> void:
 			b.position.y = -0.3   # Dinorant: o cliente desce 30 (10 em Tarkan)
 		montaria = b
 		_jeito_montaria = cfg[2]
+		EfeitoMontaria.ligar(b, cfg[2], _fenrir)
 		_pecas[s] = b
 		_montar()
 	elif s == 8 and k in ["13,0", "13,1"]:
