@@ -107,7 +107,86 @@ const NPCS := {
 	570: ["monster211", 0.58], 571: ["monster212", 0.64], 572: ["monster213", 1.5], 573: ["monster214", 1.5],
 	574: ["monster215", 1.25, 3], 575: ["monster216", 1.45, 3], 576: ["monster217", 1.55, 0], 577: ["npc_unitedmarketplace_christine", 1.1],
 	578: ["npc_volvo", 0.9],
+	# Chaos Castle (pares: arqueira ou mago, sorteado como no cliente; SORTEIO), Illusion Temple
+	# (w_CursedTemple.cpp), Papai Noel pequeno (textura da cor em TEXTURA_NPC), boneco de neve, David
+	163: ["monster72_crossbow20", 0.9], 165: ["monster72_crossbow20", 0.9], 167: ["monster72_crossbow20", 0.9],
+	169: ["monster72_crossbow20", 0.9], 171: ["monster72_crossbow20", 0.9], 173: ["monster72_crossbow20", 0.9],
+	427: ["monster72_crossbow20", 0.9], 380: ["npc_songsom", 1, -3], 381: ["npc_allied", 1.2], 382: ["npc_illusion", 1.2],
+	383: ["npc_songko", 1.8, -3], 384: ["npc_songk2", 1.5, -3], 467: ["npc_snowman", 1, -3], 477: ["xmas_snowman", 1.3, -3],
+	468: ["npc_xmassanta", 0.43], 469: ["npc_xmassanta", 0.43], 470: ["npc_xmassanta", 0.43], 471: ["npc_xmassanta", 0.43],
+	472: ["npc_xmassanta", 0.43], 473: ["npc_xmassanta", 0.43], 474: ["npc_xmassanta", 0.43], 475: ["npc_xmassanta", 0.43],
+	579: ["npc_burial", 0.95],
+	# os que faltavam (Blood Castle, Devil Square, Chaos Castle, Kalima, Kanturu, Raklion, Imperial Fortress,
+	# Doppelganger, invasoes douradas): ferramentas/monstros_novos.py
+	19: ["monster13", 1.1], 43: ["monster03", 0.7], 44: ["monster32", 0.9], 50: ["monster39", 1.8],
+	53: ["monster40", 1.8, 2], 54: ["monster41_crossbow07", 1.1], 64: ["monster47_bow04", 1.2], 65: ["monster48", 1.3],
+	66: ["monster49", 1.7], 67: ["monster28", 1.6], 78: ["monster20", 0.8], 79: ["monster32", 0.9],
+	80: ["monster37_staff08", 1.4], 81: ["monster35", 1], 82: ["monster43", 1.8, 2],
+	83: ["monster42_crossbow07_crossbow17", 1.4], 84: ["monster48", 1.1], 85: ["monster47_bow04", 1.1],
+	86: ["monster60_axe09_axe09", 1], 87: ["monster59", 0.8], 88: ["monster58_mace07", 1.19],
+	89: ["monster63_staff01", 1.2], 90: ["monster48", 1.1], 91: ["monster47_bow04", 1.1],
+	92: ["monster60_axe09_axe09", 1], 93: ["monster59", 0.8], 94: ["monster58_mace07", 1.19],
+	95: ["monster63_staff01", 1.2], 96: ["monster48", 1.1], 97: ["monster47_bow04", 1.1],
+	98: ["monster60_axe09_axe09", 1], 99: ["monster59", 0.8], 111: ["monster58_mace07", 1.19],
+	112: ["monster63_staff01", 1.2], 113: ["monster48", 1.1], 114: ["monster47_bow04", 1.1],
+	115: ["monster60_axe09_axe09", 1], 116: ["monster59", 0.8], 117: ["monster58_mace07", 1.19],
+	118: ["monster63_staff01", 1.2], 119: ["monster48", 1.1], 120: ["monster47_bow04", 1.1],
+	121: ["monster60_axe09_axe09", 1], 122: ["monster59", 0.8], 123: ["monster58_mace07", 1.19],
+	124: ["monster63_staff01", 1.2], 125: ["monster48", 1.1], 126: ["monster47_bow04", 1.1],
+	127: ["monster60_axe09_axe09", 1], 128: ["monster59", 0.8], 129: ["monster58_mace07", 1.19],
+	130: ["monster63_staff01", 1.2], 131: ["monster62", 0.8], 132: ["monster61", 0.8], 133: ["monster61", 0.8],
+	134: ["monster61", 0.8], 135: ["monster49", 1.7], 136: ["monster48", 1.3], 137: ["monster47_bow04", 1.2],
+	138: ["monster48", 1.1], 139: ["monster47_bow04", 1.1], 140: ["monster60_axe09_axe09", 1], 141: ["monster59", 0.8],
+	142: ["monster58_mace07", 1.19], 143: ["monster63_staff01", 1.2], 144: ["monster64", 1.2, 1],
+	145: ["monster68_spear11", 1.5, 0], 146: ["monster66", 0.8], 147: ["monster67", 1.4, 1],
+	148: ["monster68_spear11", 1, 0], 149: ["monster69", 1.2, 3], 150: ["monster33", 0.12],
+	151: ["monster41_crossbow07", 1.1], 152: ["skill_hellgate", 1], 153: ["skill_hellgate", 1],
+	154: ["skill_hellgate", 1], 155: ["skill_hellgate", 1], 156: ["skill_hellgate", 1], 157: ["skill_hellgate", 1],
+	158: ["skill_hellgate", 1], 160: ["monster70_sword14_sword14", 1.2], 161: ["monster70_sword14_sword14", 1],
+	162: ["monster71_sword17_sword17", 0.9], 164: ["monster71_sword17_sword17", 0.9],
+	166: ["monster71_sword17_sword17", 0.9], 168: ["monster71_sword17_sword17", 0.9],
+	170: ["monster71_sword17_sword17", 0.9], 172: ["monster71_sword17_sword17", 0.9], 174: ["monster64", 1.2, 1],
+	175: ["monster68_spear11", 1.5, 0], 176: ["monster66", 0.8], 177: ["monster67", 1.4, 1],
+	178: ["monster68_spear11", 1, 0], 179: ["monster69", 1.2, 3], 180: ["monster70_sword14_sword14", 1.2],
+	181: ["monster70_sword14_sword14", 1], 182: ["monster64", 1.2, 1], 183: ["monster68_spear11", 1.5, 0],
+	184: ["monster66", 0.8], 185: ["monster67", 1.4, 1], 186: ["monster68_spear11", 1, 0], 187: ["monster69", 1.2, 3],
+	188: ["monster70_sword14_sword14", 1.2], 189: ["monster70_sword14_sword14", 1], 190: ["monster64", 1.2, 1],
+	191: ["monster68_spear11", 1.5, 0], 192: ["monster66", 0.8], 193: ["monster67", 1.4, 1],
+	194: ["monster68_spear11", 1, 0], 195: ["monster69", 1.2, 3], 196: ["monster70_sword14_sword14", 1.2],
+	197: ["monster70_sword14_sword14", 1], 215: ["npc_npcbarrier", 1.52], 219: ["npc_npcgateswitch", 1.1],
+	221: ["npc_model_npc_catapult_att", 0.8], 222: ["npc_model_npc_catapult_def", 0.8], 231: ["npc_deviastrader01", 1],
+	232: ["npc_bloodcastle01", 1], 259: ["npc_kalnpc", 1], 260: ["monster64", 1.2, 1], 261: ["monster68_spear11", 1.5, 0],
+	262: ["monster66", 0.8], 263: ["monster67", 1.4, 1], 264: ["monster68_spear11", 1, 0], 265: ["monster69", 1.2, 3],
+	266: ["monster70_sword14_sword14", 1.2], 267: ["monster70_sword14_sword14", 1], 268: ["monster64", 1.2, 1],
+	269: ["monster68_spear11", 1.5, 0], 270: ["monster66", 0.8], 271: ["monster67", 1.4, 1],
+	272: ["monster68_spear11", 1, 0], 273: ["monster69", 1.2, 3], 274: ["monster70_sword14_sword14", 1.2],
+	275: ["monster65_staff12", 2], 277: ["monster74", 1], 278: ["monster87", 1, 3], 283: ["monster75", 1],
+	285: ["monster75", 1], 286: ["monster77", 1], 287: ["monster78", 1], 288: ["monster80", 1],
+	331: ["monster67", 1.4, 1], 332: ["monster68_spear11", 1, 0], 333: ["monster66", 0.8], 334: ["monster64", 1.2, 1],
+	335: ["monster69", 1.2, 3], 336: ["monster68_spear11", 1.5, 0], 337: ["monster70_sword14_sword14", 1.2],
+	338: ["monster70_sword14_sword14", 1], 361: ["monster122", 1.6], 362: ["monster119", 2.28], 363: ["monster120", 2.28],
+	368: ["npc_elpis", 2.5], 408: ["npc_cry2doorhead", 1.2], 409: ["monster92", 1.25], 410: ["monster94", 1.25],
+	411: ["monster95", 1.3], 412: ["monster127", 1.5], 426: ["monster71_sword17_sword17", 0.9], 428: ["monster48", 1.1],
+	429: ["monster47_bow04", 1.1], 430: ["monster60_axe09_axe09", 1], 431: ["monster59", 0.8],
+	432: ["monster58_mace07", 1.19], 433: ["monster63_staff01", 1.2], 434: ["monster113", 1.2], 435: ["monster107", 0.95],
+	436: ["monster92", 1.25], 437: ["monster95", 1.3], 438: ["monster115", 1], 439: ["monster117", 1.3],
+	440: ["monster93", 1.5], 459: ["monster151", 2, -3], 460: ["monster152", 0.3], 461: ["monster153", 0.3],
+	462: ["monster154", 0.3], 476: ["monster156", 1.7], 504: ["monster165", 1.4], 505: ["jerinteu", 1.45],
+	506: ["monster167", 1.45], 507: ["monster168", 1.25], 508: ["monster169", 1.55], 509: ["monster170", 1.3],
+	510: ["monster171", 1.35], 511: ["monster172", 1.35], 512: ["monster173", 1.27], 513: ["monster174", 1.25],
+	514: ["monster175", 1.35], 515: ["monster176", 1], 516: ["monster177", 1.55], 517: ["monster178", 1.25],
+	518: ["monster179", 1.2], 519: ["monster180", 0.9], 520: ["monster181", 1.1], 521: ["monster182", 1.1],
+	524: ["monster184", 1.25], 525: ["monster185", 1.25], 526: ["monster186", 0.6], 527: ["monster187", 1.25],
+	528: ["monster188", 1.25], 529: ["monster191", 1], 530: ["monster190", 0.8], 531: ["monster146", 1.2],
+	532: ["monster07", 0.6], 533: ["monster192", 1.1], 541: ["npc_doppelgangerbox", 2.3],
+	542: ["npc_doppelgangerbox", 3.3],
 }
+# modelo sorteado a cada um que nasce (CreateMonster com rand): Chaos Castle pares
+const _CC_PAR := [["monster72_crossbow20", 0.9], ["monster73_staff06", 0.9]]
+const SORTEIO := {163: _CC_PAR, 165: _CC_PAR, 167: _CC_PAR, 169: _CC_PAR, 171: _CC_PAR, 173: _CC_PAR, 427: _CC_PAR}
+# textura trocada na malha 0 (o cliente poe o numero da cor no nome: xmassanta1 a 8)
+const TEXTURA_NPC := {468: "xmassanta1", 469: "xmassanta2", 470: "xmassanta3", 471: "xmassanta4",
+	472: "xmassanta5", 473: "xmassanta6", 474: "xmassanta7", 475: "xmassanta8"}
 # transparencia (AlphaTarget): o Ghost da Dungeon
 const TRANSPARENTES := {11: 0.4}
 # fogo e fumaca saindo do corpo (MoveCharacter do cliente): [tipo, osso ("corpo" = osso ao
@@ -189,9 +268,22 @@ const SOMADAS := {
 	480: [[0, 0.6, 0.4, 4.0]], 481: [[0, 0.6, 0.4, 4.0]], 482: [[0, 0.6, 0.4, 4.0]], 483: [[0, 0.6, 0.4, 4.0]],
 }
 # passada somada por cima da malha normal (scripts/camada.gdshader): [malhas (-1 = todas),
-# textura ("" = a da malha), jeito ("" = UV da malha, "chrome" e "chrome2" = presa na normal),
+# textura ("" = a da malha), jeito ("" = UV da malha, "chrome", "chrome2" e "metal" = presa na normal),
 # cor, pulso [base, amp, w] (opcional), UV correndo por segundo (opcional)]
 const CAMADAS := {
+	# douradas das invasoes (RenderCharacter: RENDER_METAL e RENDER_CHROME por cima, na cor dos
+	# monstros, OtherModelColors 1 0,5 0); Golden Titan e Golden Soldier so o metal com Shiny02;
+	# Balrog, Silver Valkyrie, Zaikan (brilho 0,5) e Metal Balrog (RENDER_EXTRA) so o cromo
+	43: [[-1, "shiny01", "metal", Color(1, 0.5, 0)], [-1, "chrome01", "chrome", Color(1, 0.5, 0)]],
+	78: [[-1, "shiny01", "metal", Color(1, 0.5, 0)], [-1, "chrome01", "chrome", Color(1, 0.5, 0)]],
+	79: [[-1, "shiny01", "metal", Color(1, 0.5, 0)], [-1, "chrome01", "chrome", Color(1, 0.5, 0)]],
+	80: [[-1, "shiny01", "metal", Color(1, 0.5, 0)], [-1, "chrome01", "chrome", Color(1, 0.5, 0)]],
+	81: [[-1, "shiny01", "metal", Color(1, 0.5, 0)], [-1, "chrome01", "chrome", Color(1, 0.5, 0)]],
+	82: [[-1, "shiny01", "metal", Color(1, 0.5, 0)], [-1, "chrome01", "chrome", Color(1, 0.5, 0)]],
+	83: [[-1, "shiny01", "metal", Color(1, 0.5, 0)], [-1, "chrome01", "chrome", Color(1, 0.5, 0)]],
+	53: [[-1, "shiny02", "metal", Color(1, 0.5, 0)]], 54: [[-1, "shiny02", "metal", Color(1, 0.5, 0)]],
+	38: [[-1, "chrome01", "chrome", Color(1, 0.2, 0)]], 52: [[-1, "chrome01", "chrome", Color(1, 1, 1)]],
+	59: [[-1, "chrome01", "chrome", Color(0.5, 0.25, 0)]], 67: [[-1, "chrome01", "chrome", Color(0.8, 0.8, 1)]],
 	72: [[-1, "bab2", "chrome", Color(0.9, 0.8, 1.0)]],
 	73: [[[1, 2], "", "chrome", Color(0.2, 0.2, 0.8)], [[1, 2], "", "chrome2", Color(1, 1, 1)]],
 	75: [[[1, 2], "", "chrome", Color(1.0, 0.1, 0.1)]],
@@ -249,6 +341,13 @@ const OLHOS := {57: [8, 9], 58: [24, 25], 59: [24, 25], 60: [11, 12], 61: [8, 9]
 	349: [9, 10], 351: [16, 17], 576: [9, 9]}
 # monstro que e um jogador vestido (Cursed Wizard: Legendary +9, cajado e escudo)
 const VESTIDOS := {
+	# Doppelganger (GMDoppelGanger1.cpp): a ilusao de cada classe com o conjunto e a arma
+	534: ["classe_elf", {0: "4,15", 1: "4,17", 2: "7,13", 3: "8,13", 4: "9,13", 5: "10,13", 6: "11,13"}],
+	535: ["classe_dk", {0: "0,13", 2: "7,1", 3: "8,1", 4: "9,1", 5: "10,1", 6: "11,1"}],
+	536: ["classe_dw", {0: "5,9", 1: "6,15", 2: "7,18", 3: "8,18", 4: "9,18", 5: "10,18", 6: "11,18"}],
+	537: ["classe_mg", {0: "0,31", 3: "8,15", 4: "9,15", 5: "10,15", 6: "11,15"}],
+	538: ["classe_dl", {0: "2,10", 1: "6,7", 2: "7,27", 3: "8,27", 4: "9,27", 5: "10,27", 6: "11,27"}],
+	539: ["classe_sum", {0: "5,18", 2: "7,40", 3: "8,40", 4: "9,40", 5: "10,40", 6: "11,40"}],
 	34: ["classe_dw", {0: "5,5", 1: "6,14", 2: "7,3", 3: "8,3", 4: "9,3", 5: "10,3", 6: "11,3",
 		"niveis": {0: 9, 1: 9, 2: 9, 3: 9, 4: 9, 5: 9, 6: 9}}],
 }
@@ -378,12 +477,15 @@ static func do_npc(numero: int) -> Boneco:
 		if j:
 			j.vestir(v[1])
 		return j
-	var m: Array = NPCS.get(numero, [])
+	var m: Array = SORTEIO[numero].pick_random() if SORTEIO.has(numero) else NPCS.get(numero, [])
 	if m.is_empty():
 		return null
 	var b := novo(m[0], m[1])
 	if b and m.size() > 2:
 		b.somar_malha(m[2])
+	if b and TEXTURA_NPC.has(numero):
+		var tx := EfeitoMU.textura(TEXTURA_NPC[numero])
+		b.mudar_malha(0, func(mt: BaseMaterial3D) -> void: mt.albedo_texture = tx)
 	if b and APAGADAS.has(numero):
 		b.apagar_malha(APAGADAS[numero])
 	if b and LUZES.has(numero):
@@ -473,7 +575,8 @@ static func novo(nome: String, escala := 1.0) -> Boneco:
 
 
 # BlendMesh do cliente: a malha n desenha somada (brilha), como gelo, asa de besouro e o caldeirao do Goblin;
-# n = -1: as da arma que o conversor marcou "soma:" (cajado do Lizard King, besta da Valkyrie); -2: todas
+# n = -1: as da arma que o conversor marcou "soma:" (cajado do Lizard King, besta da Valkyrie); -2: todas;
+# -3: as de textura *_R (a pele de luz: aneis da estatua e cestos do Illusion Temple, asa do boneco de neve)
 func somar_malha(n: int) -> void:
 	var i := 0
 	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
@@ -481,7 +584,8 @@ func somar_malha(n: int) -> void:
 			continue
 		for s in mi.mesh.get_surface_count():
 			var orig := mi.mesh.surface_get_material(s) as BaseMaterial3D
-			if (i == n or n == -2 or (n == -1 and orig and orig.resource_name.begins_with("soma:"))) and orig:
+			if (i == n or n == -2 or (n == -1 and orig and orig.resource_name.begins_with("soma:"))
+					or (n == -3 and orig and "_r." in orig.resource_name.to_lower())) and orig:
 				mi.set_surface_override_material(s, _somado(orig))
 			i += 1
 
@@ -683,42 +787,50 @@ static func _com_alfa(m: BaseMaterial3D, a: float) -> void:
 
 
 const SHADER_CAMADA := preload("res://scripts/camada.gdshader")
-static var _esconde: ShaderMaterial
 
 
-# RenderMesh de novo por cima, somado (camada.gdshader): uma copia da MeshInstance no mesmo
-# esqueleto, so com as malhas pedidas aparecendo
+# RenderMesh de novo por cima, somado (camada.gdshader): a passada vai no next_pass do material
+# de cada malha pedida (no navegador uma copia da MeshInstance com esqueleto nao desenha)
 func camada(malhas, tex: String, jeito: String, cor: Color, pulso: Array, corre: Vector2) -> void:
-	if _esconde == null:
-		_esconde = ShaderMaterial.new()
-		_esconde.shader = SHADER_CAMADA
-		_esconde.set_shader_parameter("esconde", true)
 	var quais: Array = malhas if malhas is Array else [malhas]
 	var i := 0
 	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
-		if mi.mesh == null or mi.has_meta("camada"):
+		if mi.mesh == null:
 			continue
-		var copia: MeshInstance3D = null
 		for s in mi.mesh.get_surface_count():
 			if malhas is int and malhas == -1 or i in quais:
-				if copia == null:
-					copia = mi.duplicate() as MeshInstance3D
-					copia.set_meta("camada", true)
-					copia.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-					for k in mi.mesh.get_surface_count():
-						copia.set_surface_override_material(k, _esconde)
-					mi.add_sibling(copia)
-				var orig := mi.mesh.surface_get_material(s) as BaseMaterial3D
-				var t: Texture2D = EfeitoMU.textura(tex) if tex != "" else (orig.albedo_texture if orig else null)
-				var m := ShaderMaterial.new()
-				m.shader = SHADER_CAMADA
-				m.set_shader_parameter("tex", t)
-				m.set_shader_parameter("cor", cor)
-				m.set_shader_parameter("modo", 1 if jeito == "chrome" else 2 if jeito == "chrome2" else 0)
-				m.set_shader_parameter("corre", corre)
-				m.set_shader_parameter("pulso", Vector3(pulso[0], pulso[1], pulso[2]))
-				copia.set_surface_override_material(s, m)
+				var orig := mi.mesh.surface_get_material(s)
+				# o material de troca (mudar_malha, somar_malha) ja e so desta malha; o do modelo e copiado
+				var base := mi.get_surface_override_material(s)
+				if base == null:
+					base = _copia_passadas(orig)
+				if base:
+					mi.set_surface_override_material(s, base)
+					var t: Texture2D = EfeitoMU.textura(tex) if tex != "" else (orig.albedo_texture if orig is BaseMaterial3D else null)
+					var m := ShaderMaterial.new()
+					m.shader = SHADER_CAMADA
+					m.set_shader_parameter("tex", t)
+					m.set_shader_parameter("cor", cor)
+					m.set_shader_parameter("modo", 1 if jeito == "chrome" else 2 if jeito == "chrome2" else 3 if jeito == "metal" else 0)
+					m.set_shader_parameter("corre", corre)
+					m.set_shader_parameter("pulso", Vector3(pulso[0], pulso[1], pulso[2]))
+					var fim: Material = base
+					while fim.next_pass:
+						fim = fim.next_pass
+					fim.next_pass = m
 			i += 1
+
+
+# copia do material com as passadas dele (o original e dividido com os outros do mesmo modelo)
+static func _copia_passadas(mat: Material) -> Material:
+	if mat == null:
+		return null
+	var c := mat.duplicate() as Material
+	var x := c
+	while x.next_pass:
+		x.next_pass = x.next_pass.duplicate()
+		x = x.next_pass
+	return c
 
 
 var _raios: Array = []           # [largura, pares de ossos]

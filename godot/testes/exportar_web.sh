@@ -8,6 +8,8 @@ cd "$(dirname "$0")/.."
 G=${GODOT:-$HOME/casa/trabalho/.ferramentas/godot/Godot_v4.7.2-stable_linux.x86_64}
 D=build/${1:-web_novo}
 FORA=$(grep -o 'const FORA := \[[0-9, ]*\]' scripts/pacote_mapa.gd | grep -o '[0-9]\+' | tr '\n' ' ')
+# 0 = PacoteMapa.MONSTROS: os monstros dos eventos (dados/monstros_mapa.json "0"), baixados quando um aparece
+FORA="$FORA 0"
 # presets Mapa<N>: so os arquivos de dados/mundo<N> (refeitos a cada export, os dados mudam)
 python3 - $FORA <<'PY'
 import os, re, sys

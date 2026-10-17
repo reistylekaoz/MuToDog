@@ -14,6 +14,7 @@ var meu_nome := ""
 var minha_classe := 0
 var _classe_de := {}
 var entidades := {}
+var _esperando_pacote := {}   # id -> objeto que espera o pacote dos monstros (PacoteMapa.MONSTROS)
 var monstros := {}
 var mapas := {}
 var classes := {}
@@ -728,6 +729,11 @@ func _objeto_entrou(o: Dictionary) -> void:
 		tipo = ["monstro", "npc", "guarda"][m[1]] if int(m[1]) < 3 else "outro"
 		if str(o.get("dono", "")) != "":
 			tipo = "invocado"   # bicho de alguem (elfa, Dark Lord): nao e alvo
+	# monstro de evento no navegador: entra de boneco provisorio e e refeito quando o pacote chega
+	if o.tipo == "npc" and PacoteMapa.falta_monstro(o.numero):
+		_esperando_pacote[o.id] = o
+		if _esperando_pacote.size() == 1:
+			_baixar_monstros()
 	var e := Entidade.new()
 	mundo.add_child(e)
 	e.montar(mundo, o.id, tipo, nome, o.x, o.y,
@@ -740,6 +746,22 @@ func _objeto_entrou(o: Dictionary) -> void:
 		e.boneco.vestir(o.equip)
 	if Vector2i(o.ax, o.ay) != Vector2i(o.x, o.y):
 		_objeto_andou(o.id, o.ax, o.ay, [])
+
+
+func _baixar_monstros() -> void:
+	await PacoteMapa.carregar(self, PacoteMapa.MONSTROS)
+	var lista := _esperando_pacote.values()
+	_esperando_pacote.clear()
+	for o: Dictionary in lista:
+		if entidades.has(o.id):
+			var t: Vector2i = entidades[o.id].tile
+			o.x = t.x
+			o.y = t.y
+			o.ax = t.x
+			o.ay = t.y
+			if entidades[o.id] == sobre:
+				sobre = null
+			_objeto_entrou(o)
 
 
 func _objeto_saiu(id: int) -> void:

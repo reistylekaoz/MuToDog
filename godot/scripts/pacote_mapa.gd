@@ -9,7 +9,11 @@ extends RefCounted
 # Uso: await PacoteMapa.carregar(no_qualquer, numero_do_mundo)
 
 const FORA := [2, 3, 4, 5, 7, 8, 9, 11, 31, 32, 34, 35, 38, 39, 52, 57, 58, 64, 75, 80, 81, 82]
+# pacote 0 (mapas/mundo0.pck): os monstros dos eventos (Blood Castle, Kalima, Chaos Castle,
+# Imperial Fortress, Doppelganger...), baixado na primeira vez que um deles aparece
+const MONSTROS := 0
 static var _prontos := {}
+static var _tentados := {}
 
 
 static func tem(numero: int) -> bool:
@@ -32,13 +36,21 @@ static func montar_pc() -> void:
 
 
 static func precisa(numero: int) -> bool:
-	return OS.has_feature("web") and numero in FORA and not _prontos.has(numero) \
+	return OS.has_feature("web") and (numero in FORA or numero == MONSTROS) and not _prontos.has(numero) \
 		and not ResourceLoader.exists("res://dados/mundo%d/altura.png" % numero)
+
+
+# o modelo desse monstro so vem no pacote dos monstros (e ele ainda nao foi tentado)
+static func falta_monstro(numero: int) -> bool:
+	var m: Array = Boneco.NPCS.get(numero, [])
+	return not m.is_empty() and precisa(MONSTROS) and not _tentados.has(MONSTROS) \
+		and not ResourceLoader.exists(Boneco.PASTA + m[0] + ".glb")
 
 
 static func carregar(pai: Node, numero: int) -> bool:
 	if not precisa(numero):
 		return true
+	_tentados[numero] = true
 	var http := HTTPRequest.new()
 	pai.add_child(http)
 	var base := str(JavaScriptBridge.eval("location.href")).get_slice("?", 0).get_base_dir()

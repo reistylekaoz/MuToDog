@@ -3661,5 +3661,1078 @@
    "parado": 0,
    "escolhido": 1
   }
+ },
+ "monster13": {
+  "esqueleto": "Monster/Monster13.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster32": {
+  "esqueleto": "Monster/Monster32.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster39": {
+  "esqueleto": "Monster/Monster39.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster40": {
+  "esqueleto": "Monster/Monster40.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster41_crossbow07": {
+  "esqueleto": "Monster/Monster41.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/crossbow07.bmd",
+    "osso": 33,
+    "esquerda": true
+   }
+  ]
+ },
+ "monster47_bow04": {
+  "esqueleto": "Monster/Monster47.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/bow04.bmd",
+    "osso": 39,
+    "esquerda": true
+   }
+  ]
+ },
+ "monster48": {
+  "esqueleto": "Monster/Monster48.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster49": {
+  "esqueleto": "Monster/Monster49.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster37_staff08": {
+  "esqueleto": "Monster/Monster37.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/staff08.bmd",
+    "osso": 52,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster42_crossbow07_crossbow17": {
+  "esqueleto": "Monster/Monster42.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/crossbow07.bmd",
+    "osso": 23,
+    "esquerda": false
+   },
+   {
+    "bmd": "Item/crossbow17.bmd",
+    "osso": 23,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster60_axe09_axe09": {
+  "esqueleto": "Monster/Monster60.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/axe09.bmd",
+    "osso": 33,
+    "esquerda": false
+   },
+   {
+    "bmd": "Item/axe09.bmd",
+    "osso": 20,
+    "esquerda": true
+   }
+  ]
+ },
+ "monster59": {
+  "esqueleto": "Monster/Monster59.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster58_mace07": {
+  "esqueleto": "Monster/Monster58.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/mace07.bmd",
+    "osso": 30,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster63_staff01": {
+  "esqueleto": "Monster/Monster63.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/staff01.bmd",
+    "osso": 33,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster62": {
+  "esqueleto": "Monster/Monster62.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster61": {
+  "esqueleto": "Monster/Monster61.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster64": {
+  "esqueleto": "Monster/Monster64.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster68_spear11": {
+  "esqueleto": "Monster/Monster68.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/spear11.bmd",
+    "osso": 33,
+    "esquerda": false
+   }
+  ]
+ },
+ "monster66": {
+  "esqueleto": "Monster/Monster66.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster67": {
+  "esqueleto": "Monster/Monster67.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster69": {
+  "esqueleto": "Monster/Monster69.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster33": {
+  "esqueleto": "Monster/Monster33.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "skill_hellgate": {
+  "esqueleto": "Skill/HellGate.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "monster70_sword14_sword14": {
+  "esqueleto": "Monster/Monster70.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/sword14.bmd",
+    "osso": 33,
+    "esquerda": false
+   },
+   {
+    "bmd": "Item/sword14.bmd",
+    "osso": 42,
+    "esquerda": true
+   }
+  ]
+ },
+ "monster71_sword17_sword17": {
+  "esqueleto": "Monster/Monster71.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/sword17.bmd",
+    "osso": 33,
+    "esquerda": false
+   },
+   {
+    "bmd": "Item/sword17.bmd",
+    "osso": 42,
+    "esquerda": true
+   }
+  ],
+  "texturas": "Npc"
+ },
+ "npc_npcbarrier": {
+  "esqueleto": "Npc/NpcBarrier.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "npc_npcgateswitch": {
+  "esqueleto": "Npc/NpcGateSwitch.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "npc_model_npc_catapult_att": {
+  "esqueleto": "Npc/Model_Npc_Catapult_Att.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "npc_model_npc_catapult_def": {
+  "esqueleto": "Npc/Model_Npc_Catapult_Def.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "npc_deviastrader01": {
+  "esqueleto": "Npc/DeviasTrader01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "npc_bloodcastle01": {
+  "esqueleto": "Npc/BloodCastle01.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "npc_kalnpc": {
+  "esqueleto": "Npc/kalnpc.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "monster65_staff12": {
+  "esqueleto": "Monster/Monster65.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/staff12.bmd",
+    "osso": 42,
+    "esquerda": true
+   }
+  ]
+ },
+ "monster74": {
+  "esqueleto": "Monster/Monster74.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster87": {
+  "esqueleto": "Monster/Monster87.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "texturas": "Skill"
+ },
+ "monster75": {
+  "esqueleto": "Monster/Monster75.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster77": {
+  "esqueleto": "Monster/Monster77.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster80": {
+  "esqueleto": "Monster/Monster80.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster122": {
+  "esqueleto": "Monster/Monster122.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster119": {
+  "esqueleto": "Monster/Monster119.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster120": {
+  "esqueleto": "Monster/Monster120.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster121": {
+  "esqueleto": "Monster/Monster121.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "npc_elpis": {
+  "esqueleto": "Npc/Elpis.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "npc_cry2doorhead": {
+  "esqueleto": "Npc/cry2doorhead.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "monster127": {
+  "esqueleto": "Monster/Monster127.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster151": {
+  "esqueleto": "Monster/Monster151.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "texturas": "Skill"
+ },
+ "monster152": {
+  "esqueleto": "Monster/Monster152.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster153": {
+  "esqueleto": "Monster/Monster153.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster154": {
+  "esqueleto": "Monster/Monster154.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster156": {
+  "esqueleto": "Monster/Monster156.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster165": {
+  "esqueleto": "Monster/Monster165.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster167": {
+  "esqueleto": "Monster/Monster167.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster168": {
+  "esqueleto": "Monster/Monster168.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster169": {
+  "esqueleto": "Monster/Monster169.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster170": {
+  "esqueleto": "Monster/Monster170.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster171": {
+  "esqueleto": "Monster/Monster171.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster172": {
+  "esqueleto": "Monster/Monster172.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster173": {
+  "esqueleto": "Monster/Monster173.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster174": {
+  "esqueleto": "Monster/Monster174.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster175": {
+  "esqueleto": "Monster/Monster175.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster176": {
+  "esqueleto": "Monster/Monster176.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster177": {
+  "esqueleto": "Monster/Monster177.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster178": {
+  "esqueleto": "Monster/Monster178.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster179": {
+  "esqueleto": "Monster/Monster179.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster180": {
+  "esqueleto": "Monster/Monster180.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster181": {
+  "esqueleto": "Monster/Monster181.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster182": {
+  "esqueleto": "Monster/Monster182.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster184": {
+  "esqueleto": "Monster/Monster184.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster185": {
+  "esqueleto": "Monster/Monster185.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster186": {
+  "esqueleto": "Monster/Monster186.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster187": {
+  "esqueleto": "Monster/Monster187.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster188": {
+  "esqueleto": "Monster/Monster188.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster191": {
+  "esqueleto": "Monster/Monster191.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster190": {
+  "esqueleto": "Monster/Monster190.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "monster192": {
+  "esqueleto": "Monster/Monster192.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "npc_doppelgangerbox": {
+  "esqueleto": "Npc/DoppelgangerBox.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "monster72_crossbow20": {
+  "esqueleto": "Monster/Monster72.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/crossbow20.bmd",
+    "osso": 33,
+    "esquerda": false
+   }
+  ],
+  "texturas": "NPC"
+ },
+ "monster73_staff06": {
+  "esqueleto": "Monster/Monster73.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  },
+  "armas": [
+   {
+    "bmd": "Item/staff06.bmd",
+    "osso": 33,
+    "esquerda": false
+   }
+  ],
+  "texturas": "NPC"
+ },
+ "npc_xmassanta": {
+  "esqueleto": "NPC/xmassanta.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "npc_snowman": {
+  "esqueleto": "NPC/snowman.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2
+  }
+ },
+ "xmas_snowman": {
+  "esqueleto": "Item/xmas/snowman.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1,
+   "anda": 2,
+   "ataque": 3,
+   "ataque2": 4,
+   "golpe": 5,
+   "morre": 6
+  }
+ },
+ "npc_burial": {
+  "esqueleto": "NPC/LuckyItem/npc_burial.bmd",
+  "acoes": {
+   "parado": 0,
+   "parado2": 1
+  }
+ },
+ "npc_songsom": {
+  "esqueleto": "NPC/songsom.bmd",
+  "acoes": {
+   "parado": 0
+  }
+ },
+ "npc_allied": {
+  "esqueleto": "NPC/allied.bmd",
+  "acoes": {
+   "parado": 0
+  }
+ },
+ "npc_illusion": {
+  "esqueleto": "NPC/illusion.bmd",
+  "acoes": {
+   "parado": 0
+  }
+ },
+ "npc_songko": {
+  "esqueleto": "NPC/songko.bmd",
+  "acoes": {
+   "parado": 0
+  }
+ },
+ "npc_songk2": {
+  "esqueleto": "NPC/songk2.bmd",
+  "acoes": {
+   "parado": 0
+  }
  }
 }
