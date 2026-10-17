@@ -32,8 +32,10 @@ var lista: VBoxContainer
 var hud: Control
 var hud_texto: Label
 var barra_mu: HudMu
-var janela_personagem: PanelContainer
-var texto_personagem: Label
+var janela_personagem: JanelaPersonagem
+var comandos: JanelaComandos
+var seguindo := -1          # comando Seguir da janela D: id do jogador que eu sigo
+var _seguir_t := 0.0
 var meus_pontos := 0
 var registro: RichTextLabel
 
@@ -78,7 +80,7 @@ var skill_alvo := -1        # monstro (ou ponto) que a skill atual vai pegar qua
 var skill_ponto := Vector2i(-1, -1)
 var skill_numero := -1
 const RECARGA_SKILL := 0.8
-const EM_VOLTA := [41, 42, 232, 9, 14]   # skills de area em volta de quem solta
+const EM_VOLTA := [41, 42, 9, 14, 235, 76, 236, 237, 62]   # skills de area em volta de quem solta
 # QWER: categorias de pocao do MU (vida, mana, SD, complexa); a maior primeiro
 const POCOES := [["14,3", "14,2", "14,1", "14,0"], ["14,6", "14,5", "14,4"], ["14,37", "14,36", "14,35"], ["14,40", "14,39", "14,38"]]
 var pocao_escolhida: Array = ["", "", "", ""]   # chave do item que a pessoa pos na tecla
@@ -126,6 +128,20 @@ func _ready() -> void:
 	cli.mana.connect(func(v): barra_mu.mana = v; _hud_nivel())
 	cli.experiencia.connect(_experiencia)
 	cli.nivel.connect(_nivel)
+	cli.ponto.connect(_ponto)
+	cli.pedido_grupo.connect(func(id):
+		var n: String = entidades[id].nome if entidades.has(id) else "Alguem"
+		print("TESTE pedido de grupo de %s" % n)
+		_perguntar("%s te chamou pro grupo." % n, func(ok): cli.responder_grupo(ok, id)))
+	cli.grupo.connect(func(l):
+		print("TESTE grupo %s" % [l])
+		_msg("[color=#9ad0ff]Grupo: %s[/color]" % ", ".join(l.map(func(m): return m.nome))))
+	cli.pedido_duelo.connect(func(id, n):
+		print("TESTE pedido de duelo de %s" % n)
+		_perguntar("%s te chamou pra um duelo." % n, func(ok): cli.responder_duelo(ok, id, n)))
+	cli.duelo.connect(func(r, _id, n):
+		print("TESTE duelo %d %s" % [r, n])
+		_msg("[color=#9ad0ff]%s[/color]" % ("Duelo com %s comecou." % n if r == 0 else "O duelo nao comecou (%d)." % r)))
 	cli.itens_cairam.connect(_itens_cairam)
 	cli.itens_sumiram.connect(_itens_sumiram)
 	cli.pegou.connect(_pegou)
@@ -175,6 +191,8 @@ func _ready() -> void:
 		_skill_teste = int(p.skill)
 	if p.has("inventario"):
 		cli.inventario.connect(_teste_inventario, CONNECT_ONE_SHOT)
+	if p.has("desmontar"):
+		cli.inventario.connect(func(_l): _teste_desmontar(), CONNECT_ONE_SHOT)
 	if p.has("loja"):
 		cli.entrou.connect(func(_i): _teste_loja(p.loja), CONNECT_ONE_SHOT)
 	if p.has("amigo"):
@@ -414,30 +432,30 @@ func _montar_ui() -> void:
 	mover_janela.ir.connect(_mover_para)
 	hud.add_child(mover_janela)
 	# janela do personagem (C)
-	janela_personagem = PanelContainer.new()
-	janela_personagem.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	janela_personagem.position = Vector2(-300, 60)
-	janela_personagem.custom_minimum_size = Vector2(280, 0)
-	janela_personagem.add_theme_stylebox_override("panel", _estilo(Color(0.05, 0.04, 0.03, 0.88)))
-	janela_personagem.visible = false
+	janela_personagem = JanelaPersonagem.new()
+	janela_personagem.inventario = inv
+	janela_personagem.adicionar.connect(func(a): cli.adicionar_ponto(a))
 	hud.add_child(janela_personagem)
-	texto_personagem = Label.new()
-	texto_personagem.add_theme_font_size_override("font_size", 15)
-	texto_personagem.add_theme_color_override("font_color", Color(0.95, 0.88, 0.7))
-	janela_personagem.add_child(texto_personagem)
+	inv.visibility_changed.connect(janela_personagem._ajustar)
+	comandos = JanelaComandos.new()
+	comandos.executar.connect(_comando)
+	hud.add_child(comandos)
 	var sair := Button.new()
 	sair.text = "Sair"
 	sair.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	sair.position = Vector2(-90, 12)
 	sair.pressed.connect(_sair)
 	hud.add_child(sair)
-	# o Sair sai da frente do X do inventario e da loja
+	# o Sair sai da frente das janelas coladas na direita (inventario, loja, bau, C e D)
+	var direita: Array[Control] = [inv, loja, guarda, janela_personagem, comandos]
 	var mover_sair := func():
-		var l := (inv.size.x * inv.scale.x if inv.visible else 0.0) + (loja.size.x * loja.scale.x if loja.visible or guarda.visible else 0.0)
-		sair.position.x = hud.size.x - 90 - l
-	inv.visibility_changed.connect(mover_sair)
-	loja.visibility_changed.connect(mover_sair)
-	guarda.visibility_changed.connect(mover_sair)
+		var x := hud.size.x
+		for j in direita:
+			if j.visible:
+				x = minf(x, j.position.x)
+		sair.position.x = x - 90
+	for j in direita:
+		j.visibility_changed.connect(mover_sair, CONNECT_DEFERRED)
 	registro = RichTextLabel.new()
 	registro.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	registro.position = Vector2(12, -250)
@@ -589,6 +607,12 @@ func _entrou(info: Dictionary) -> void:
 	print("TESTE entrou %s" % info)
 	if _parametros().has("chao_teste"):
 		_chao_teste(info.x, info.y)
+	if _parametros().has("uma_skill"):
+		_teste_uma_skill(int(_parametros().uma_skill))
+	if _parametros().has("comando"):
+		_teste_comando(str(_parametros().comando).split(","))
+	if _parametros().has("ponto"):
+		_teste_ponto(int(_parametros().ponto))
 	if _parametros().has("efeito_teste"):
 		_efeito_teste(str(_parametros().efeito_teste).split(",", false))
 	if _andar_depois.x >= 0:
@@ -674,6 +698,8 @@ func _objeto_entrou(o: Dictionary) -> void:
 		var m: Array = monstros.get(str(o.numero), ["#%d" % o.numero, 0])
 		nome = m[0]
 		tipo = ["monstro", "npc", "guarda"][m[1]] if int(m[1]) < 3 else "outro"
+		if str(o.get("dono", "")) != "":
+			tipo = "invocado"   # bicho de alguem (elfa, Dark Lord): nao e alvo
 	var e := Entidade.new()
 	mundo.add_child(e)
 	e.montar(mundo, o.id, tipo, nome, o.x, o.y,
@@ -737,8 +763,11 @@ func _mapa_mudou(mapa: int, x: int, y: int) -> void:
 				andar_ate(Vector2i(int(xy[0]), int(xy[1])))
 				print("TESTE andando de %s ate %s (%d passos)" % [eu.tile, p.andar, eu.fila.size()])
 	elif eu:
+		var longe := _distancia(eu.tile, Vector2i(x, y)) > 1
 		eu.teleportar(x, y)
 		_restante.clear()
+		if longe:
+			EfeitoSkill.teleporte(EfeitoMU.criar(mundo), eu, false)
 
 
 # --- mover de mapa ----------------------------------------------------------------
@@ -810,7 +839,11 @@ func _unhandled_input(ev: InputEvent) -> void:
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 		barra_mu.fechar_lista()
 		skill_numero = -1
+		seguindo = -1
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT:
+		if comandos.selecionado >= 0:
+			_comando_no_mouse(ev.position)
+			return
 		_skill_no_mouse(ev.position)
 		return
 	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_C:
@@ -930,6 +963,7 @@ func _process(dt: float) -> void:
 	if eu == null:
 		return
 	_combate(dt)
+	_seguir(dt)
 	_skills(dt)
 	_cursor_mu()
 	if not _restante.is_empty() and eu.tile == _fim_enviado:
@@ -1067,6 +1101,11 @@ func _cacador(dt: float) -> void:
 		if _cacar_skill:
 			skill_numero = _skill_teste
 			skill_alvo = melhor.id
+			if int(_info_skill(_skill_teste)[2]) == 30 or _skill_teste == 63:
+				skill_alvo = cli.meu_id
+			elif _skill_teste == 6:
+				skill_alvo = -1
+				skill_ponto = _livre_perto(melhor.tile)
 		else:
 			mirar(melhor.id)
 
@@ -1159,18 +1198,126 @@ func _hud_nivel() -> void:
 	barra_mu.exp_atual = exp_atual
 	barra_mu.exp_prox = exp_prox
 	barra_mu.atualizar()
-	var nomes_classe := ["Dark Wizard", "Dark Knight", "Fairy Elf", "Magic Gladiator", "Dark Lord", "Summoner", "Rage Fighter"]
-	texto_personagem.text = "%s\n%s\n\nNivel %d\nExp %s / %s\nPontos pra distribuir %d\nZen %s\n\nVida %d / %d\nMana %d / %d\nSD %d / %d\nAG %d / %d" % [
-		meu_nome, nomes_classe[clampi(minha_classe >> 2, 0, 6)], meu_nivel,
-		ItemChao._milhar(exp_atual), ItemChao._milhar(exp_prox), meus_pontos, ItemChao._milhar(meu_zen),
-		barra_mu.vida, barra_mu.vida_max, barra_mu.mana, barra_mu.mana_max,
-		barra_mu.sd, barra_mu.sd_max, barra_mu.ag, barra_mu.ag_max]
+	if janela_personagem == null:
+		return
+	var j := janela_personagem
+	j.eu.merge(DicaItem.eu, true)
+	j.eu.merge({"nome": meu_nome, "classe": minha_classe, "nivel": meu_nivel, "pontos": meus_pontos,
+		"exp": exp_atual, "exp_prox": exp_prox, "vida": barra_mu.vida, "vida_max": barra_mu.vida_max,
+		"mana": barra_mu.mana, "mana_max": barra_mu.mana_max}, true)
+	j.queue_redraw()
+
+
+# --- janela D (comandos) ---------------------------------------------------------
+
+func _comando_no_mouse(tela: Vector2) -> void:
+	var e := _entidade_na_tela(tela)
+	if e == null or e.tipo != "jogador":
+		_msg("[color=#9a9ab0]Clique com o botao direito num jogador pra usar \"%s\".[/color]" % comandos.nome(comandos.selecionado))
+		return
+	if _distancia(eu.tile, e.tile) > JanelaComandos.DISTANCIA:
+		_msg("[color=#e8b04a]%s esta longe. Chegue mais perto.[/color]" % e.nome)
+		return
+	comandos.usar_em(e.id)
+
+
+func _comando(c: int, alvo: int) -> void:
+	var n: String = entidades[alvo].nome if entidades.has(alvo) else ""
+	print("TESTE comando %d em %s" % [c, n])
+	match c:
+		JanelaComandos.GRUPO:
+			cli.chamar_grupo(alvo)
+			_msg("[color=#9ad0ff]Convite de grupo mandado pra %s.[/color]" % n)
+		JanelaComandos.AMIGO:
+			cli.adicionar_amigo(n)
+			_msg("[color=#9ad0ff]Pedido de amizade mandado pra %s.[/color]" % n)
+		JanelaComandos.SEGUIR:
+			seguindo = alvo
+			_msg("[color=#9ad0ff]Seguindo %s. Clique no chao pra parar.[/color]" % n)
+		JanelaComandos.DUELO:
+			if meu_nivel < 30:
+				_msg("[color=#e8b04a]Duelo so a partir do nivel 30.[/color]")
+			else:
+				cli.chamar_duelo(alvo, n)
+				_msg("[color=#9ad0ff]Desafio de duelo mandado pra %s.[/color]" % n)
+		_:
+			_msg("[color=#9a9ab0]%s ainda nao existe neste cliente.[/color]" % comandos.nome(c))
+
+
+func _seguir(dt: float) -> void:
+	if seguindo < 0 or eu == null:
+		return
+	if not entidades.has(seguindo) or entidades[seguindo].morto:
+		seguindo = -1
+		return
+	_seguir_t -= dt
+	var alvo: Entidade = entidades[seguindo]
+	if _seguir_t <= 0.0 and _distancia(eu.tile, alvo.tile) > 2:
+		_seguir_t = 0.5
+		andar_ate(alvo.tile)
+
+
+# caixa de sim ou nao no meio da tela (convite de grupo, duelo)
+func _perguntar(texto: String, resposta: Callable) -> void:
+	var caixa := PanelContainer.new()
+	caixa.add_theme_stylebox_override("panel", _estilo(Color(0.05, 0.04, 0.03, 0.92), Color(0.6, 0.5, 0.3)))
+	caixa.set_anchors_preset(Control.PRESET_CENTER)
+	var v := VBoxContainer.new()
+	caixa.add_child(v)
+	var l := Label.new()
+	l.text = texto
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(l)
+	var h := HBoxContainer.new()
+	h.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(h)
+	for ok in [true, false]:
+		var b := Button.new()
+		b.text = "Aceitar" if ok else "Recusar"
+		b.pressed.connect(func():
+			resposta.call(ok)
+			caixa.queue_free())
+		h.add_child(b)
+	hud.add_child(caixa)
+	caixa.position = (get_viewport().get_visible_rect().size - caixa.get_combined_minimum_size()) / 2.0
+	if _parametros().has("aceitar"):
+		resposta.call(true)
+		caixa.queue_free()
+
+
+# resposta do ponto distribuido (F3 06): o servidor manda o maximo novo que dependia dele
+func _ponto(ok: bool, atributo: int, maximo_dep: int, sd_max: int, ag_max: int) -> void:
+	print("TESTE ponto %s atributo %d maximo %d sd %d ag %d" % [ok, atributo, maximo_dep, sd_max, ag_max])
+	if not ok:
+		janela_personagem.resposta(false, atributo)
+		_msg("[color=#e8b04a]O servidor nao aceitou o ponto.[/color]")
+		return
+	var k: String = ["forca", "agilidade", "vitalidade", "energia", "comando"][clampi(atributo, 0, 4)]
+	DicaItem.eu[k] = int(DicaItem.eu.get(k, 0)) + 1
+	meus_pontos = maxi(meus_pontos - 1, 0)
+	if atributo == 2 and maximo_dep > 0:
+		barra_mu.vida_max = maximo_dep
+	elif atributo == 3 and maximo_dep > 0:
+		barra_mu.mana_max = maximo_dep
+	if sd_max > 0:
+		barra_mu.sd_max = sd_max
+	if ag_max > 0:
+		barra_mu.ag_max = ag_max
+	janela_personagem.esperando = false
+	_hud_nivel()
 
 
 func _botao_barra(qual: String) -> void:
 	if qual == "personagem":
-		janela_personagem.visible = not janela_personagem.visible
+		janela_personagem.alternar()
 		_hud_nivel()
+	elif qual == "comandos":
+		comandos.alternar()
+		if comandos.visible:
+			if inv.visible:
+				inv.alternar()
+			if janela_personagem.visible:
+				janela_personagem.alternar()
 	elif qual == "inventario":
 		inv.alternar()
 	elif qual == "amigos":
@@ -1518,6 +1665,7 @@ func _efeito_teste(lista: Array) -> void:
 		print("TESTE efeito %d" % n)
 		EfeitoSkill.criar(mundo, n, eu, alvo, n in EM_VOLTA or int(_info_skill(n)[2]) in [3, 4, 5])
 		await get_tree().create_timer(3.0).timeout
+		print("TESTE depois do efeito %d: heroi visivel %s" % [n, eu.boneco.visible])
 		alvo.queue_free()
 
 
@@ -1669,6 +1817,9 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k == KEY_M:
 		mover_janela.alternar(meu_nivel, meu_zen, minha_classe)
 		return true
+	if k == KEY_D:
+		_botao_barra("comandos")
+		return true
 	if k == KEY_ESCAPE:
 		if menu.visible:
 			menu.visible = false
@@ -1678,6 +1829,10 @@ func _teclas(ev: InputEventKey) -> bool:
 			_fechar_loja()
 		elif inv.visible:
 			inv.alternar()
+		elif comandos.visible:
+			comandos.alternar()
+		elif janela_personagem.visible:
+			janela_personagem.alternar()
 		elif amigos.visible:
 			amigos.visible = false
 		else:
@@ -1775,9 +1930,14 @@ func _escolher_skill(n: int) -> void:
 # acao do boneco pra cada skill (o cliente tem uma por skill; aqui as parecidas)
 func _acao_skill(n: int) -> String:
 	var a := {19: "espada_s1", 20: "espada_s2", 21: "espada_s3", 22: "espada_s4", 23: "espada_s5",
-		41: "giro", 42: "furia", 43: "estocada", 232: "furia", 44: "estocada", 47: "estocada",
+		41: "giro", 42: "furia", 43: "estocada", 232: "destruicao", 44: "lua", 47: "estocada",
 		14: "inferno", 10: "fogo_inferno", 12: "raio", 26: "cura", 27: "cura", 28: "cura", 48: "cura",
-		24: "arco", 52: "arco", 46: "arco", 51: "arco", 235: "arco"}
+		24: "arco", 52: "arco", 46: "arco", 51: "arco", 235: "arco",
+		6: "teleporte", 58: "nova_carga", 40: "nova", 233: "magia_cheia", 77: "flecha_infinita", 76: "fenrir_skill",
+		30: "cura", 31: "cura", 32: "cura", 33: "cura", 34: "cura", 35: "cura", 36: "cura",
+		57: "um_corte", 73: "canhao", 236: "golpe_chama", 237: "tempestade",
+		60: "golpe_dl", 61: "golpe_dl", 66: "golpe_dl", 74: "golpe_dl", 78: "golpe_dl", 238: "golpe_dl",
+		62: "terremoto_cavalo", 63: "teleporte_dl", 64: "magia", 65: "raio", 72: "vitalidade"}
 	if a.has(n):
 		return a[n]
 	return "magia2" if n in [5, 9, 13, 38, 39] else "magia"
@@ -1812,6 +1972,21 @@ func _skill_no_mouse(tela: Vector2) -> void:
 			if skill_ponto.x < 0:
 				skill_numero = -1
 				return
+	elif tipo == 30 or n == 63:
+		# invocacao (elfa) e Summon do Dark Lord: a skill vai em mim
+		skill_alvo = cli.meu_id
+	elif n == 6:
+		skill_ponto = mundo.tile_na_tela(tela)
+		if skill_ponto.x < 0 or not mundo.anda(skill_ponto.x, skill_ponto.y):
+			_msg("[color=#e8b04a]Nao da pra teleportar pra ai.[/color]")
+			skill_numero = -1
+			return
+	elif n == 15:
+		if e == null or e.tipo != "jogador":
+			_msg("[color=#9a9ab0]%s precisa de um jogador do seu grupo: aponte nele e clique com o botao direito.[/color]" % info[0])
+			skill_numero = -1
+			return
+		skill_alvo = e.id
 	elif tipo == 20:
 		_msg("%s e passiva: ja vale sozinha." % info[0])
 		skill_numero = -1
@@ -1863,7 +2038,23 @@ func _skills(dt: float) -> void:
 	_skill_recarga = RECARGA_SKILL
 	var p: Vector3 = alvo.position if alvo else mundo.no_tile(ponto.x, ponto.y)
 	eu.tocar_skill(_acao_skill(n), p)
-	if tipo in [0, 10, 11]:
+	if n == 6:
+		cli.teleporte(ponto.x, ponto.y)
+		print("TESTE teleporte pra %s" % ponto)
+		EfeitoSkill.criar(mundo, n, eu, eu)
+		skill_numero = -1
+		return
+	if n == 15:
+		var livre := _livre_perto(eu.tile)
+		cli.teleporte_aliado(skill_alvo, livre.x, livre.y)
+		print("TESTE teleporte do aliado %d pra %s" % [skill_alvo, livre])
+		skill_numero = -1
+		return
+	if n == 40:
+		_nova(skill_alvo)
+		skill_numero = -1
+		return
+	if tipo in [0, 10, 11, 30] or n == 63:
 		cli.skill_alvo(n, skill_alvo)
 		print("TESTE skill %d no alvo %d" % [n, skill_alvo])
 	else:
@@ -1873,13 +2064,41 @@ func _skills(dt: float) -> void:
 			var th := rad_to_deg(atan2(-d.x, d.y))
 			giro = int(round(fposmod(th - 180.0, 360.0) * 256.0 / 360.0)) & 0xFF
 		var meio := eu.tile if n in EM_VOLTA else ponto
-		cli.skill_area(n, meio.x, meio.y, giro, skill_alvo if tipo == 5 and skill_alvo >= 0 else 0)
+		cli.skill_area(n, meio.x, meio.y, giro, skill_alvo if (tipo == 5 or n == 76) and skill_alvo >= 0 else 0)
 		print("TESTE skill %d em area (%d, %d) giro %d" % [n, meio.x, meio.y, giro])
 	EfeitoSkill.criar(mundo, n, eu, alvo if alvo else p, tipo in [3, 4, 5])
 	# skill que nao e em monstro (buff, area no chao) solta uma vez; no monstro segue com o botao apertado
 	if not (skill_alvo >= 0 and tipo in [0, 3, 5] and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
 		if not _cacar_skill:
 			skill_numero = -1
+
+
+# Nova: segurar manda a carga (58) em mim, o servidor sobe o estagio a cada 0,5 s; soltar manda o 40
+func _nova(alvo: int) -> void:
+	cli.skill_alvo(58, cli.meu_id)
+	EfeitoSkill.criar(mundo, 58, eu, eu)
+	var t := 0.0
+	while t < 6.0 and (t < 0.6 or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or _cacar_skill and t < 2.0):
+		await get_tree().create_timer(0.1).timeout
+		t += 0.1
+	if eu == null or eu.morto:
+		return
+	var a: int = alvo if entidades.has(alvo) else cli.meu_id
+	cli.skill_alvo(40, a)
+	eu.tocar_skill(_acao_skill(40), entidades[a].position if entidades.has(a) else eu.position)
+	EfeitoSkill.criar(mundo, 40, eu, eu)
+	print("TESTE nova soltou em %d depois de %.1f s" % [a, t])
+
+
+# tile andavel mais perto de t, sem ser o proprio t (Teleport Ally)
+func _livre_perto(t: Vector2i) -> Vector2i:
+	for r in range(1, 4):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				var q := t + Vector2i(dx, dy)
+				if mundo.anda(q.x, q.y):
+					return q
+	return t
 
 
 var _cacar_skill := false   # testes: --skill N usa a skill N no lugar do golpe comum
@@ -1918,6 +2137,105 @@ func _vestir_eu() -> void:
 
 # testes: --inventario 1 move o primeiro item da mochila pra outra casa, usa a
 # pocao do Q e tira e poe de volta a arma da mao
+# testes: --desmontar 1 tira a montaria do slot 8 (botao direito) e poe de volta
+# uma_skill=N: usa a skill N uma vez (no monstro mais perto, ou em mim) e mostra quem esta perto depois
+func _teste_uma_skill(n: int) -> void:
+	await get_tree().create_timer(3.0).timeout
+	while eu.andando() or not _restante.is_empty():
+		await get_tree().create_timer(0.5).timeout
+	var antes := entidades.keys()
+	var perto: Entidade = null
+	for e: Entidade in entidades.values():
+		if e.tipo == "monstro" and not e.morto and (perto == null or _distancia(e.tile, eu.tile) < _distancia(perto.tile, eu.tile)):
+			perto = e
+	barra_mu.skill_atual = n
+	skill_numero = n
+	skill_alvo = perto.id if perto else cli.meu_id
+	skill_ponto = Vector2i(-1, -1)
+	if int(_info_skill(n)[2]) in [10, 11, 30] or n == 63:
+		skill_alvo = cli.meu_id
+	elif n == 6:
+		skill_alvo = -1
+		skill_ponto = _livre_perto(eu.tile + Vector2i(4, 0))
+	elif int(_info_skill(n)[2]) in [3, 4] and perto == null:
+		skill_alvo = -1
+		skill_ponto = eu.tile + Vector2i(2, 0)
+	print("TESTE uma_skill %d alvo %d ponto %s eu em %s" % [n, skill_alvo, skill_ponto, eu.tile])
+	cli.objeto_entrou.connect(func(o): print("TESTE entrou objeto %s" % o))
+	for e: Entidade in entidades.values():
+		if e.tipo == "invocado" or _distancia(e.tile, eu.tile) <= 2:
+			print("TESTE perto: %s %s (%d) em %s" % [e.tipo, e.nome, e.id, e.tile])
+	cli.skill_animacao.connect(func(sk, q, a): print("TESTE animacao skill %d de %d em %d" % [sk, q, a]))
+	cli.area_animacao.connect(func(sk, q, x, y, _g): print("TESTE animacao area %d de %d em (%d, %d)" % [sk, q, x, y]))
+	cli.golpe.connect(func(id, dano, _t, _e): print("TESTE dano %d em %d" % [dano, id]))
+	await get_tree().create_timer(5.0).timeout
+	if _parametros().has("de_novo"):
+		skill_numero = n
+		print("TESTE de novo")
+		await get_tree().create_timer(5.0).timeout
+	for id in entidades:
+		if id not in antes:
+			print("TESTE apareceu %s (%s) em %s" % [entidades[id].nome, entidades[id].tipo, entidades[id].tile])
+	print("TESTE depois eu em %s, visivel %s" % [eu.tile, eu.boneco.visible])
+
+
+# comando=N,Nome: abre a janela D, aperta o botao N e usa no jogador Nome quando ele aparecer
+func _teste_comando(a: PackedStringArray) -> void:
+	_botao_barra("comandos")
+	for i in 60:
+		await get_tree().create_timer(1.0).timeout
+		for e: Entidade in entidades.values():
+			if is_instance_valid(e) and e.nome == a[1]:
+				print("TESTE achei %s em %s, eu em %s" % [e.nome, e.tile, eu.tile])
+				if _distancia(eu.tile, e.tile) > JanelaComandos.DISTANCIA:
+					andar_ate(e.tile)
+					await get_tree().create_timer(4.0).timeout
+				comandos.clique(Vector2(95, 33 + int(a[0]) * 30 + 14))
+				print("TESTE botao %s apertado: %s" % [comandos.nome(int(a[0])), comandos.selecionado == int(a[0])])
+				_comando_no_mouse(get_viewport().get_camera_3d().unproject_position(e.global_position + Vector3.UP))
+				await get_tree().create_timer(5.0).timeout
+				print("TESTE seguindo %d eu em %s ele em %s" % [seguindo, eu.tile, e.tile if is_instance_valid(e) else "outro mapa"])
+				return
+	print("TESTE nao achei %s" % a[1])
+
+
+# ponto=N: abre a janela C e clica 3 vezes no + do atributo N, como a pessoa faria
+func _teste_ponto(a: int) -> void:
+	await get_tree().create_timer(2.0).timeout
+	_botao_barra("personagem")
+	var j := janela_personagem
+	print("TESTE janela antes: pontos %d %s vida_max %d mana_max %d" % [j.eu.pontos, [j.eu.forca, j.eu.agilidade, j.eu.vitalidade, j.eu.energia, j.eu.comando], barra_mu.vida_max, barra_mu.mana_max])
+	print("TESTE linhas %s" % [j._linhas(j.classe_base())])
+	for n in 3:
+		j._clique(Vector2(168, JanelaPersonagem.ALTURAS[a] + 9))
+		await get_tree().create_timer(1.0).timeout
+	print("TESTE janela depois: pontos %d %s vida_max %d mana_max %d" % [j.eu.pontos, [j.eu.forca, j.eu.agilidade, j.eu.vitalidade, j.eu.energia, j.eu.comando], barra_mu.vida_max, barra_mu.mana_max])
+
+
+func _teste_desmontar() -> void:
+	await get_tree().create_timer(3.0).timeout
+	print("TESTE antes: slot 8 %s, montaria %s, acao %s" % [ItensMU.nome(inv.itens[8]) if inv.itens.has(8) else "-",
+		eu.boneco.montaria != null, eu.boneco.acao])
+	if not inv.itens.has(8):
+		return
+	var livre := inv.lugar_livre(inv.itens[8])
+	var grade := ""
+	for y in 8:
+		for x in 8:
+			grade += "#" if inv.item_na_casa(Vector2i(x, y)) >= 0 else "."
+		grade += "/"
+	print("TESTE livre %d grade %s" % [livre, grade])
+	inv.usar_ou_equipar(8)
+	await get_tree().create_timer(2.0).timeout
+	print("TESTE tirou: slot 8 %s, montaria %s, acao %s" % [inv.itens.has(8), is_instance_valid(eu.boneco.montaria) and eu.boneco.montaria != null, eu.boneco.acao])
+	for k in inv.itens:
+		if k >= Inventario.MOCHILA and ItensMU.chave(inv.itens[k]) in Boneco.MONTARIAS:
+			inv.usar_ou_equipar(k)
+			break
+	await get_tree().create_timer(2.0).timeout
+	print("TESTE pos de volta: slot 8 %s, montaria %s, acao %s" % [inv.itens.has(8), eu.boneco.montaria != null, eu.boneco.acao])
+
+
 func _teste_inventario(_l: Dictionary) -> void:
 	await get_tree().create_timer(2.0).timeout
 	var s := -1

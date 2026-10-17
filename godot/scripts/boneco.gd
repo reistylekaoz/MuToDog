@@ -14,6 +14,9 @@ const VELOCIDADE := {
 		"espada_s1": 0.3, "espada_s2": 0.3, "espada_s3": 0.3, "espada_s4": 0.3, "espada_s5": 0.3,
 		"giro": 0.4, "furia": 0.3, "estocada": 0.3, "arco": 0.3, "magia": 0.3, "magia2": 0.3,
 		"magia_arma": 0.3, "cura": 0.25, "raio": 0.3, "inferno": 0.3, "fogo_inferno": 0.3,
+		"teleporte": 0.3, "nova_carga": 0.5, "nova": 0.3, "lua": 0.3, "destruicao": 0.3, "magia_cheia": 0.3,
+		"flecha_infinita": 0.33, "fenrir_skill": 0.37, "um_corte": 0.4, "canhao": 0.2, "tempestade": 0.55,
+		"golpe_chama": 0.69, "golpe_dl": 0.25, "teleporte_dl": 0.28, "terremoto_cavalo": 0.3, "vitalidade": 0.34,
 		"monta_parado": 0.28, "monta_parado_a": 0.28, "monta_corre": 0.34, "monta_corre_a": 0.34, "monta_ataque": 0.35,
 		"cavalo_parado": 0.3, "cavalo_corre": 0.33, "cavalo_ataque": 0.28,
 		"fenrir_parado": 0.28, "fenrir_parado_a": 0.28, "fenrir_anda": 0.3, "fenrir_anda_a": 0.3,
@@ -33,7 +36,9 @@ const NAO_REPETE := ["morre", "golpe", "ataque", "ataque2", "soco", "espada", "e
 	"espada_s3", "espada_s4", "espada_s5", "giro", "furia", "estocada", "arco", "magia", "magia2", "magia_arma",
 	"cura", "raio", "inferno", "fogo_inferno", "monta_ataque", "cavalo_ataque", "fenrir_ataque", "fenrir_ataque_a",
 	"espada2", "espada_e1", "espada_e2", "golpe_2maos1", "golpe_2maos2", "golpe_2maos3", "golpe_2maos2b", "golpe_lanca",
-	"golpe_foice1", "golpe_foice2", "golpe_foice3", "besta", "arco_voa", "besta_voa", "magia_arma2"]
+	"golpe_foice1", "golpe_foice2", "golpe_foice3", "besta", "arco_voa", "besta_voa", "magia_arma2",
+	"teleporte", "nova_carga", "nova", "lua", "destruicao", "magia_cheia", "flecha_infinita", "fenrir_skill", "um_corte",
+	"canhao", "tempestade", "golpe_chama", "golpe_dl", "teleporte_dl", "terremoto_cavalo", "vitalidade"]
 
 # numero do monstro/NPC no OpenMU -> [modelo, escala], tirado do CreateMonster
 # do cliente S6 (ZzzCharacter.cpp). Lorencia, Dungeon, Devias, Noria, Lost Tower e Atlans.
@@ -1004,8 +1009,8 @@ func vestir(equip: Dictionary) -> void:
 		return
 	var niveis: Dictionary = equip.get("niveis", {})
 	var cor: String = equip.get("fenrir", "red")
-	if cor != _fenrir and _equip.get(8, "") == "13,37":
-		_equip.erase(8)   # troca de cor: monta de novo
+	if cor != _fenrir and _equip.get(8, "") == "13,37" and equip.get(8, "") == "13,37":
+		_equip.erase(8)   # troca de cor: monta de novo (tirando o Fenrir, o laco abaixo desmonta)
 	_fenrir = cor
 	var antes := [_equip.get(0, ""), _equip.get(1, ""), _equip.get(7, "")]
 	for s in 9:
@@ -1241,7 +1246,7 @@ func _seguir_asa() -> void:
 
 const GOLPES := ["ataque", "soco", "espada", "espada_s1", "espada_s2", "espada_s3", "espada_s4", "espada_s5", "giro", "furia", "estocada",
 	"espada2", "espada_e1", "espada_e2", "golpe_2maos1", "golpe_2maos2", "golpe_2maos3", "golpe_2maos2b", "golpe_lanca",
-	"golpe_foice1", "golpe_foice2", "golpe_foice3"]
+	"golpe_foice1", "golpe_foice2", "golpe_foice3", "um_corte", "lua", "destruicao", "golpe_dl"]
 
 
 # grupos das armas na mao (0 espada, 1 machado, 2 maca, 3 lanca, 4 arco, 5 cajado)

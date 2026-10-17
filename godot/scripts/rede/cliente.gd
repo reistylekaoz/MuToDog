@@ -56,6 +56,11 @@ signal amigo_saiu(nome: String)
 signal amigo_estado(nome: String, servidor: int)
 signal pedido_amizade(nome: String)
 signal saiu(tipo: int)
+signal pedido_grupo(id: int)                       # C1 40: alguem chamou pro grupo
+signal grupo(lista: Array)                         # C1 42: quem esta no grupo
+signal pedido_duelo(id: int, nome: String)          # C1 AA 02: alguem chamou pro duelo
+signal duelo(resultado: int, id: int, nome: String) # C1 AA 01: 0 comecou, outro numero recusado
+signal ponto(ok: bool, atributo: int, maximo_dep: int, sd_max: int, ag_max: int)   # F3 06: ponto distribuido
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -178,6 +183,16 @@ func skill_acertos(skill: int, x: int, y: int, anim: int, alvos: Array) -> void:
 # --- mover de mapa --------------------------------------------------------------
 
 # pisou num portal (EnterGate do mapa): o servidor confere nivel e posicao e manda MapChanged
+# Teleport (skill 6): o mesmo pedido do portal, com portao 0 e o tile de destino
+func teleporte(x: int, y: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x1C, 0, 0, 0, x & 0xFF, y & 0xFF]))
+
+
+# Teleport Ally (skill 15): id do aliado em little endian e o tile perto de mim
+func teleporte_aliado(alvo: int, x: int, y: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0xB0, alvo & 0xFF, (alvo >> 8) & 0xFF, x & 0xFF, y & 0xFF]))
+
+
 func entrar_portal(numero: int) -> void:
 	con.enviar(PackedByteArray([0xC3, 0, 0x1C, 0, numero & 0xFF, (numero >> 8) & 0xFF, 0, 0]))
 
@@ -258,6 +273,33 @@ func sair_para(tipo: int) -> void:
 func pedir_personagens() -> void:
 	_mudar("logado")
 	_pedir_lista()
+
+
+# --- comandos (janela D) -----------------------------------------------------------
+
+func chamar_grupo(id: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x40, (id >> 8) & 0xFF, id & 0xFF]))
+
+
+func responder_grupo(aceito: bool, id: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x41, 1 if aceito else 0, (id >> 8) & 0xFF, id & 0xFF]))
+
+
+func chamar_duelo(id: int, nome: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xAA, 0x01, (id >> 8) & 0xFF, id & 0xFF])
+	p.append_array(_nome10(nome))
+	con.enviar(p)
+
+
+func responder_duelo(aceito: bool, id: int, nome: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xAA, 0x02, 1 if aceito else 0, id & 0xFF, (id >> 8) & 0xFF])
+	p.append_array(_nome10(nome))
+	con.enviar(p)
+
+
+# C1 F3 06: 1 ponto no atributo (0 forca, 1 agilidade, 2 vitalidade, 3 energia, 4 comando)
+func adicionar_ponto(atributo: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xF3, 0x06, atributo]))
 
 
 func pronto_no_mapa() -> void:
@@ -415,6 +457,11 @@ func _tratar(p: PackedByteArray) -> void:
 			if p.size() >= 8:
 				maximo.emit("ag", (p[6] << 8) | p[7])
 			return
+		[0xF3, 0x06]:
+			# CharacterStatIncreaseResponse: bit 4 deu certo, nibble de baixo o atributo; maximos em LE
+			ponto.emit((p[4] & 0x10) != 0, p[4] & 0x0F, p[6] | (p[7] << 8) if p.size() > 7 else 0,
+				p[8] | (p[9] << 8) if p.size() > 9 else 0, p[10] | (p[11] << 8) if p.size() > 11 else 0)
+			return
 		[0xF3, 0x05]:
 			nivel.emit({"nivel": p[4] | (p[5] << 8), "pontos": p[6] | (p[7] << 8),
 				"vida_max": p[8] | (p[9] << 8), "mana_max": p[10] | (p[11] << 8)})
@@ -471,6 +518,17 @@ func _tratar(p: PackedByteArray) -> void:
 			_ler_personagens(p)
 		0x13:
 			_ler_npcs(p)
+		0x1F:
+			# C2 1F: monstro invocado (elfa, Dark Lord): id, tipo, x, y, destino, giro, dono (10) e efeitos
+			if p[0] == 0xC2:
+				var o := 5
+				for i in p[4]:
+					if o + 20 > p.size():
+						break
+					objeto_entrou.emit({"id": ((p[o] << 8) | p[o + 1]) & 0x7FFF, "tipo": "npc",
+						"numero": ((p[o + 2] << 8) | p[o + 3]) & 0x0FFF, "x": p[o + 4], "y": p[o + 5],
+						"ax": p[o + 6], "ay": p[o + 7], "dono": _ler_texto(p, o + 9, 10)})
+					o += 20 + p[o + 19]
 		0x14:
 			for i in p[3]:
 				objeto_saiu.emit(((p[4 + i * 2] << 8) | p[5 + i * 2]) & 0x7FFF)
@@ -575,6 +633,24 @@ func _tratar(p: PackedByteArray) -> void:
 						break
 					l.append({"nome": _ler_texto(p, o, 10), "servidor": p[o + 10]})
 				amigos.emit(l, p[4])
+		0x40:
+			if p[0] == 0xC1 and p.size() >= 5:
+				pedido_grupo.emit((p[3] << 8) | p[4])
+		0x42:
+			# C1 42: resultado, quantidade e membros de 24 bytes (nome 10, indice, mapa, x, y...)
+			if p[0] == 0xC1 and p.size() >= 5:
+				var l := []
+				for i in p[4]:
+					var o := 5 + i * 24
+					if o + 14 > p.size():
+						break
+					l.append({"nome": _ler_texto(p, o, 10), "mapa": p[o + 11], "x": p[o + 12], "y": p[o + 13]})
+				grupo.emit(l)
+		0xAA:
+			if p[0] == 0xC1 and sub == 0x02 and p.size() >= 16:
+				pedido_duelo.emit(p[4] | (p[5] << 8), _ler_texto(p, 6, 10))
+			elif p[0] == 0xC1 and sub == 0x01 and p.size() >= 17:
+				duelo.emit(p[4], (p[5] << 8) | p[6], _ler_texto(p, 7, 10))
 		0xC2:
 			if p[0] == 0xC1 and p.size() >= 13:
 				pedido_amizade.emit(_ler_texto(p, 3, 10))

@@ -132,27 +132,12 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 
 	var nivel_drop: int = maxi(p.nivel, 1)
 	# dano
+	var num := numeros(it)
 	if p.dano_min > 0:
-		var soma: int = POR_NIVEL[lv]
-		if exc > 0:
-			soma += p.dano_min * 25 / nivel_drop + 5
-		if anc:
-			soma += 5 + (p.nivel + 30) / 40
-		var a: int = p.dano_min + soma
-		var b: int = p.dano_max + soma
-		l.append(_linha("%s: %d ~ %d" % [t(40 + p.duas_maos), mini(a, b), b], AZUL if exc > 0 else BRANCO))
+		l.append(_linha("%s: %d ~ %d" % [t(40 + p.duas_maos), num.dano_min, num.dano_max], AZUL if exc > 0 else BRANCO))
 	# defesa
 	if p.defesa > 0:
-		var d: int = p.defesa
-		if g == 6:
-			d += lv
-		else:
-			d += (POR_NIVEL_ASA3 if geracao == 3 else POR_NIVEL)[lv]
-		if exc > 0 and g >= 7 and g <= 11:
-			d += p.defesa * 12 / nivel_drop + nivel_drop / 5 + 4
-		if anc and g >= 7 and g <= 11:
-			d += 2 + d * 3 / (p.nivel + 30) + (p.nivel + 30) / 30
-		l.append(_linha(t(65, [d]), AZUL if exc > 0 and g >= 7 and g <= 11 else BRANCO))
+		l.append(_linha(t(65, [num.defesa]), AZUL if exc > 0 and g >= 7 and g <= 11 else BRANCO))
 	if p.defesa_magica > 0:
 		l.append(_linha(t(66, [p.defesa_magica])))
 	if p.bloqueio > 0:
@@ -264,6 +249,42 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 		l.append_array(op)
 	return _fim(l)
 
+
+
+# dano e defesa do item com o bonus do nivel, do excelente e do ancient (os mesmos numeros da caixa)
+static func numeros(it: Dictionary) -> Dictionary:
+	_carregar()
+	var k := ItensMU.chave(it)
+	var p: Dictionary = _bmd.get(k, {})
+	var r := {"dano_min": 0, "dano_max": 0, "defesa": 0}
+	if p.is_empty():
+		return r
+	var g: int = it.grupo
+	var lv: int = clampi(it.get("nivel", 0), 0, 15)
+	var geracao := asa(k)
+	var exc: int = it.get("exc", 0) if geracao == 0 else 0
+	var anc: bool = (it.get("anc", 0) & 3) > 0 and g < 12
+	var nivel_drop: int = maxi(p.nivel, 1)
+	if p.dano_min > 0:
+		var soma: int = POR_NIVEL[lv]
+		if exc > 0:
+			soma += p.dano_min * 25 / nivel_drop + 5
+		if anc:
+			soma += 5 + (p.nivel + 30) / 40
+		r.dano_max = p.dano_max + soma
+		r.dano_min = mini(p.dano_min + soma, r.dano_max)
+	if p.defesa > 0:
+		var d: int = p.defesa
+		if g == 6:
+			d += lv
+		else:
+			d += (POR_NIVEL_ASA3 if geracao == 3 else POR_NIVEL)[lv]
+		if exc > 0 and g >= 7 and g <= 11:
+			d += p.defesa * 12 / nivel_drop + nivel_drop / 5 + 4
+		if anc and g >= 7 and g <= 11:
+			d += 2 + d * 3 / (p.nivel + 30) + (p.nivel + 30) / 30
+		r.defesa = d
+	return r
 
 static func _fim(l: Array) -> Array:
 	while not l.is_empty() and l[-1].t == "":

@@ -192,7 +192,23 @@
    "golpe_foice2": 48,
    "golpe_foice3": 49,
    "golpe_2maos2b": 145,
-   "magia_arma2": 149
+   "magia_arma2": 149,
+   "teleporte": 151,
+   "nova_carga": 72,
+   "nova": 73,
+   "lua": 137,
+   "destruicao": 176,
+   "magia_cheia": 177,
+   "flecha_infinita": 234,
+   "fenrir_skill": 102,
+   "um_corte": 136,
+   "canhao": 138,
+   "tempestade": 183,
+   "golpe_chama": 184,
+   "golpe_dl": 80,
+   "teleporte_dl": 81,
+   "terremoto_cavalo": 87,
+   "vitalidade": 67
   }
  },
  "classe_dk": {
@@ -290,7 +306,23 @@
    "golpe_foice2": 48,
    "golpe_foice3": 49,
    "golpe_2maos2b": 145,
-   "magia_arma2": 149
+   "magia_arma2": 149,
+   "teleporte": 151,
+   "nova_carga": 72,
+   "nova": 73,
+   "lua": 137,
+   "destruicao": 176,
+   "magia_cheia": 177,
+   "flecha_infinita": 234,
+   "fenrir_skill": 102,
+   "um_corte": 136,
+   "canhao": 138,
+   "tempestade": 183,
+   "golpe_chama": 184,
+   "golpe_dl": 80,
+   "teleporte_dl": 81,
+   "terremoto_cavalo": 87,
+   "vitalidade": 67
   }
  },
  "classe_elf": {
@@ -388,7 +420,23 @@
    "golpe_foice2": 48,
    "golpe_foice3": 49,
    "golpe_2maos2b": 145,
-   "magia_arma2": 149
+   "magia_arma2": 149,
+   "teleporte": 151,
+   "nova_carga": 72,
+   "nova": 73,
+   "lua": 137,
+   "destruicao": 176,
+   "magia_cheia": 177,
+   "flecha_infinita": 234,
+   "fenrir_skill": 102,
+   "um_corte": 136,
+   "canhao": 138,
+   "tempestade": 183,
+   "golpe_chama": 184,
+   "golpe_dl": 80,
+   "teleporte_dl": 81,
+   "terremoto_cavalo": 87,
+   "vitalidade": 67
   }
  },
  "classe_mg": {
@@ -486,7 +534,23 @@
    "golpe_foice2": 48,
    "golpe_foice3": 49,
    "golpe_2maos2b": 145,
-   "magia_arma2": 149
+   "magia_arma2": 149,
+   "teleporte": 151,
+   "nova_carga": 72,
+   "nova": 73,
+   "lua": 137,
+   "destruicao": 176,
+   "magia_cheia": 177,
+   "flecha_infinita": 234,
+   "fenrir_skill": 102,
+   "um_corte": 136,
+   "canhao": 138,
+   "tempestade": 183,
+   "golpe_chama": 184,
+   "golpe_dl": 80,
+   "teleporte_dl": 81,
+   "terremoto_cavalo": 87,
+   "vitalidade": 67
   }
  },
  "classe_dl": {
@@ -584,7 +648,23 @@
    "golpe_foice2": 48,
    "golpe_foice3": 49,
    "golpe_2maos2b": 145,
-   "magia_arma2": 149
+   "magia_arma2": 149,
+   "teleporte": 151,
+   "nova_carga": 72,
+   "nova": 73,
+   "lua": 137,
+   "destruicao": 176,
+   "magia_cheia": 177,
+   "flecha_infinita": 234,
+   "fenrir_skill": 102,
+   "um_corte": 136,
+   "canhao": 138,
+   "tempestade": 183,
+   "golpe_chama": 184,
+   "golpe_dl": 80,
+   "teleporte_dl": 81,
+   "terremoto_cavalo": 87,
+   "vitalidade": 67
   }
  },
  "classe_sum": {
@@ -682,7 +762,23 @@
    "golpe_foice2": 48,
    "golpe_foice3": 49,
    "golpe_2maos2b": 145,
-   "magia_arma2": 149
+   "magia_arma2": 149,
+   "teleporte": 151,
+   "nova_carga": 72,
+   "nova": 73,
+   "lua": 137,
+   "destruicao": 176,
+   "magia_cheia": 177,
+   "flecha_infinita": 234,
+   "fenrir_skill": 102,
+   "um_corte": 136,
+   "canhao": 138,
+   "tempestade": 183,
+   "golpe_chama": 184,
+   "golpe_dl": 80,
+   "teleporte_dl": 81,
+   "terremoto_cavalo": 87,
+   "vitalidade": 67
   }
  },
  "classe_rf": {
@@ -780,7 +876,23 @@
    "golpe_foice2": 48,
    "golpe_foice3": 49,
    "golpe_2maos2b": 145,
-   "magia_arma2": 149
+   "magia_arma2": 149,
+   "teleporte": 151,
+   "nova_carga": 72,
+   "nova": 73,
+   "lua": 137,
+   "destruicao": 176,
+   "magia_cheia": 177,
+   "flecha_infinita": 234,
+   "fenrir_skill": 102,
+   "um_corte": 136,
+   "canhao": 138,
+   "tempestade": 183,
+   "golpe_chama": 184,
+   "golpe_dl": 80,
+   "teleporte_dl": 81,
+   "terremoto_cavalo": 87,
+   "vitalidade": 67
   }
  },
  "placa": {
