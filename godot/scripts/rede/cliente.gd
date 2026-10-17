@@ -63,6 +63,27 @@ signal grupo(lista: Array)                         # C1 42: quem esta no grupo
 signal pedido_duelo(id: int, nome: String)          # C1 AA 02: alguem chamou pro duelo
 signal duelo(resultado: int, id: int, nome: String) # C1 AA 01: 0 comecou, outro numero recusado
 signal ponto(ok: bool, atributo: int, maximo_dep: int, sd_max: int, ag_max: int)   # F3 06: ponto distribuido
+# troca (C1 36 a 3D)
+signal pedido_troca(nome: String)                   # C3 36: alguem quer trocar comigo
+signal troca_resposta(aceita: bool, nome: String, nivel: int, guilda: int)   # C1 37: abriu (ou recusou)
+signal troca_item_dele(slot: int, item: Dictionary)  # C1 39: o outro pos um item
+signal troca_item_dele_saiu(slot: int)               # C1 38: o outro tirou
+signal troca_zen_dele(valor: int)                    # C1 3B
+signal troca_zen_ok                                  # C1 3A 01: o servidor aceitou o meu zen
+signal troca_botao_dele(estado: int)                 # C1 3C: 0 solto, 1 apertado, 2 algo mudou (solta o meu)
+signal troca_fim(resultado: int)                     # C1 3D: 0 cancelou, 1 trocou, 2 mochila cheia, 3 tempo, 4 item que nao troca
+# loja pessoal (3F)
+signal lojas(lista: Array)                           # C2 3F 00: [{id, titulo}] de quem esta com loja aberta
+signal loja_fechou(id: int)                          # C1 3F 03
+signal loja_itens(id: int, nome: String, titulo: String, itens: Dictionary, atualizacao: bool)   # C2 3F 05 e 3F 13
+signal loja_preco(resultado: int, slot: int)         # C3 3F 01: 1 deu certo
+signal loja_aberta(ok: bool)                         # C1 3F 02
+signal loja_compra(resultado: int, vendedor: int, item: Dictionary, slot: int)   # C1 3F 06: 1 comprou
+signal loja_vendeu(slot: int, comprador: String)    # C1 3F 08: vendi um item da minha loja
+signal loja_dialogo_fechou(id: int)                  # C1 3F 12: a loja que eu olhava fechou
+# MU Helper
+signal helper_estado(pausado: bool, consumiu: bool, zen: int)   # C1 BF 51
+signal helper_dados(dados: PackedByteArray)          # C2 AE: as 257 bytes guardadas no servidor
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -319,6 +340,77 @@ func responder_duelo(aceito: bool, id: int, nome: String) -> void:
 # C1 F3 06: 1 ponto no atributo (0 forca, 1 agilidade, 2 vitalidade, 3 energia, 4 comando)
 func adicionar_ponto(atributo: int) -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0xF3, 0x06, atributo]))
+
+
+# --- troca --------------------------------------------------------------------------
+
+func pedir_troca(id: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x36, (id >> 8) & 0xFF, id & 0xFF]))
+
+
+func responder_troca(aceita: bool) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x37, 1 if aceita else 0]))
+
+
+func zen_troca(valor: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x3A, 0, valor & 0xFF, (valor >> 8) & 0xFF, (valor >> 16) & 0xFF, (valor >> 24) & 0xFF]))
+
+
+func botao_troca(apertado: bool) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x3C, 1 if apertado else 0]))
+
+
+func cancelar_troca() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x3D]))
+
+
+# --- loja pessoal (o item da loja mora na mochila, slots 204 a 235) ------------------
+
+func preco_loja(slot: int, preco: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x3F, 0x01, slot, preco & 0xFF, (preco >> 8) & 0xFF, (preco >> 16) & 0xFF, (preco >> 24) & 0xFF]))
+
+
+func abrir_loja(titulo: String) -> void:
+	var p := PackedByteArray([0xC3, 0, 0x3F, 0x02])
+	p.append_array(_texto(titulo, 26))
+	con.enviar(p)
+
+
+func fechar_loja() -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x3F, 0x03]))
+
+
+func ver_loja(id: int, nome: String) -> void:
+	var p := PackedByteArray([0xC3, 0, 0x3F, 0x05, (id >> 8) & 0xFF, id & 0xFF])
+	p.append_array(_nome10(nome))
+	con.enviar(p)
+
+
+func comprar_loja(id: int, nome: String, slot: int) -> void:
+	var p := PackedByteArray([0xC3, 0, 0x3F, 0x06, (id >> 8) & 0xFF, id & 0xFF])
+	p.append_array(_nome10(nome))
+	p.append(slot)
+	con.enviar(p)
+
+
+func sair_loja(id: int, nome: String) -> void:
+	var p := PackedByteArray([0xC3, 0, 0x3F, 0x07, (id >> 8) & 0xFF, id & 0xFF])
+	p.append_array(_nome10(nome))
+	con.enviar(p)
+
+
+# --- MU Helper: o servidor so liga, desliga e cobra o zen; quem caca e o cliente ----
+
+func helper(ligar: bool) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xBF, 0x51, 0 if ligar else 1]))
+
+
+func salvar_helper(dados: PackedByteArray) -> void:
+	var p := PackedByteArray([0xC2, 0, 0, 0xAE])
+	var d := dados.slice(0, 257)
+	d.resize(257)
+	p.append_array(d)
+	con.enviar(p)
 
 
 func pronto_no_mapa() -> void:
@@ -689,6 +781,83 @@ func _tratar(p: PackedByteArray) -> void:
 		0xC4:
 			if p[0] == 0xC1 and p.size() >= 14:
 				amigo_estado.emit(_ler_texto(p, 3, 10), p[13])
+		0x36:
+			if p[0] == 0xC3 and p.size() >= 13:
+				pedido_troca.emit(_ler_texto(p, 3, 10))
+		0x37:
+			if p[0] == 0xC1 and p.size() >= 20:
+				troca_resposta.emit(p[3] != 0, _ler_texto(p, 4, 10), (p[14] << 8) | p[15], _ler_le(p, 16))
+		0x38:
+			if p[0] == 0xC1 and p.size() >= 4:
+				troca_item_dele_saiu.emit(p[3])
+		0x39:
+			if p[0] == 0xC1 and p.size() >= 16:
+				troca_item_dele.emit(p[3], item_de(p, 4))
+		0x3A:
+			if p[0] == 0xC1:
+				troca_zen_ok.emit()
+		0x3B:
+			if p[0] == 0xC1 and p.size() >= 8:
+				troca_zen_dele.emit(_ler_le(p, 4))
+		0x3C:
+			if p[0] == 0xC1 and p.size() >= 4:
+				troca_botao_dele.emit(p[3])
+		0x3D:
+			if p[0] == 0xC1 and p.size() >= 4:
+				troca_fim.emit(p[3])
+		0x3F:
+			_ler_loja(p, sub)
+		0xBF:
+			if sub == 0x51 and p.size() >= 13:
+				helper_estado.emit(p[12] != 0, p[4] != 0, _ler_le(p, 8))
+		0xAE:
+			if p[0] == 0xC2 and p.size() >= 4:
+				helper_dados.emit(p.slice(4, 4 + 257))
+
+
+# 3F: loja pessoal (o S6 manda as listas em C2, as respostas em C1 e o preco em C3)
+func _ler_loja(p: PackedByteArray, sub: int) -> void:
+	match sub:
+		0x00:
+			if p[0] == 0xC2:
+				var l := []
+				for i in p[5]:
+					var o := 6 + i * 38
+					if o + 38 > p.size():
+						break
+					l.append({"id": ((p[o] << 8) | p[o + 1]) & 0x7FFF, "titulo": _ler_texto(p, o + 2, 36)})
+				lojas.emit(l)
+		0x01:
+			if p.size() >= 6:
+				loja_preco.emit(p[4], p[5])
+		0x02:
+			if p.size() >= 5:
+				loja_aberta.emit(p[4] != 0)
+		0x03:
+			if p.size() >= 7:
+				loja_fechou.emit(((p[5] << 8) | p[6]) & 0x7FFF)
+		0x05, 0x13:
+			if p[0] == 0xC2 and p.size() >= 55:
+				var l := {}
+				for i in p[54]:
+					var o := 55 + i * 20
+					if o + 20 > p.size():
+						break
+					var it := item_de(p, o + 1)
+					it.preco = _ler_le(p, o + 16)
+					l[p[o]] = it
+				loja_itens.emit(((p[6] << 8) | p[7]) & 0x7FFF, _ler_texto(p, 8, 10), _ler_texto(p, 18, 36), l, sub == 0x13)
+		0x06:
+			if p[0] == 0xC1 and p.size() >= 21:
+				loja_compra.emit(p[4], ((p[5] << 8) | p[6]) & 0x7FFF, item_de(p, 7) if p[4] == 1 else {}, p[20])
+			elif p[0] == 0xC1 and p.size() >= 5:
+				loja_compra.emit(p[4], -1, {}, -1)
+		0x08:
+			if p.size() >= 15:
+				loja_vendeu.emit(p[4], _ler_texto(p, 5, 10))
+		0x12:
+			if p.size() >= 6:
+				loja_dialogo_fechou.emit(((p[4] << 8) | p[5]) & 0x7FFF)
 
 
 # C2 12: personagens (Season 6: 36 bytes + 1 por efeito)

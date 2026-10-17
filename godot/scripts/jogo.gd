@@ -70,6 +70,14 @@ var loja: Loja
 var guarda: Guarda          # bau e maquina do caos
 var _janela_npc := 0        # tipo da janela que o servidor abriu (0 loja, 2 bau, 3 maquina do caos)
 var amigos: Amigos
+var troca: Troca            # troca com outro jogador (D > Troca)
+var loja_pessoal: LojaPessoal   # a minha loja (S) e a de quem vende (clique no titulo)
+var helper: MuHelper        # MU Helper (Z configura, Home liga)
+var janela_helper: JanelaHelper
+var botao_helper: TextureButton
+var titulos_lojas := {}     # id -> titulo da loja aberta (em cima do nome)
+var _preco_pendente := {}   # slot 204+ -> preco que mandei pro servidor
+var _comprando := -1        # casa da loja do outro que pedi pra comprar
 var menu: MenuSistema
 var mover_janela: Movimento   # janela Move (M)
 var _portal_pisado := -1      # portal em que ja pedi pra entrar (so pede de novo depois de sair dele)
@@ -162,11 +170,14 @@ func _ready() -> void:
 		if entidades.has(id):
 			entidades[id].mostrar_dano(dano, tipo, escudo))
 	cli.ataque.connect(func(id, alvo):
+		if alvo == cli.meu_id and helper:
+			helper.me_atacou(id)
 		if entidades.has(id) and entidades.has(alvo):
 			entidades[id].olhar_para(entidades[alvo])
 			EfeitoSkill.golpe_comum(mundo, entidades[id], entidades[alvo]))
 	_montar_ui()
 	_ligar_inventario_e_skills()
+	_ligar_troca_loja_helper()
 	_carregar_config()
 	# testes: -- --auto conta,senha,personagem --andar x,y --gravacao arquivo
 	# (no navegador: ?auto=...&andar=...&gravacao=1, toca dados/gravacao.txt)
@@ -227,6 +238,24 @@ func _ready() -> void:
 					print("TESTE andando de %s ate %s (%d passos)" % [eu.tile, depois, eu.fila.size()]), CONNECT_ONE_SHOT)
 	if p.has("trocar"):
 		cli.entrou.connect(func(_i): _teste_trocar(), CONNECT_ONE_SHOT)
+	if p.has("troca"):
+		cli.entrou.connect(func(_i): _teste_troca(p.troca), CONNECT_ONE_SHOT)
+	if p.has("aceitar"):
+		# o outro lado da troca: aceita quando o outro aceitar
+		cli.troca_botao_dele.connect(func(e):
+			if e == 1 and not troca.eu_aceitei:
+				await get_tree().create_timer(Troca.ESPERA + 0.5).timeout
+				print("TESTE troca: aceitando tambem")
+				troca.eu_aceitei = true
+				cli.botao_troca(true))
+	if p.has("minha_loja"):
+		cli.entrou.connect(func(_i): _teste_minha_loja(int(p.minha_loja)), CONNECT_ONE_SHOT)
+	if p.has("comprar_loja"):
+		cli.entrou.connect(func(_i): _teste_comprar_loja(p.comprar_loja), CONNECT_ONE_SHOT)
+	if p.has("helper"):
+		cli.entrou.connect(func(_i): _teste_helper(float(p.helper)), CONNECT_ONE_SHOT)
+	if p.has("fotos_janelas"):
+		cli.entrou.connect(func(_i): _teste_fotos_janelas(), CONNECT_ONE_SHOT)
 	if p.has("auto"):
 		var c: PackedStringArray = p.auto.split(",")
 		campo_conta.text = c[0]
@@ -359,9 +388,19 @@ func _montar_ui() -> void:
 	hud_texto.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45))
 	hud_texto.add_theme_constant_override("outline_size", 4)
 	hud_texto.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	hv.add_child(hud_texto)
+	var linha_topo := HBoxContainer.new()
+	linha_topo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hv.add_child(linha_topo)
+	linha_topo.add_child(hud_texto)
+	# MU Helper: configurar (Z) e ligar ou desligar (Home), como no quadro da posicao do MuMain
+	var bt_config := _botao_quadros("helper_config", "Configurar o MU Helper (Z)")
+	bt_config.pressed.connect(func(): _alternar_janela_helper())
+	linha_topo.add_child(bt_config)
+	botao_helper = _botao_quadros("helper_play", "Ligar o MU Helper (Home)")
+	botao_helper.pressed.connect(func(): helper.alternar())
+	linha_topo.add_child(botao_helper)
 	var ajuda := Label.new()
-	ajuda.text = "Clique: anda, ataca, pega, fala com NPC · botao direito: skill · 1 a 5 troca a skill · Q W E R pocoes · I inventario · C personagem · F amigos · U menu · setas giram · roda aproxima · M mover de mapa · - = brilho"
+	ajuda.text = "Clique: anda, ataca, pega, fala com NPC · botao direito: skill · 1 a 5 troca a skill · Q W E R pocoes · I inventario · C personagem · F amigos · U menu · setas giram · roda aproxima · M mover de mapa · S loja pessoal · Z MU Helper (Home liga) · - = brilho"
 	ajuda.add_theme_font_size_override("font_size", 12)
 	ajuda.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
 	ajuda.add_theme_constant_override("outline_size", 3)
@@ -413,6 +452,25 @@ func _montar_ui() -> void:
 	guarda.combinar.connect(func(): cli.misturar())
 	guarda.fechar.connect(_fechar_loja)
 	hud.add_child(guarda)
+	troca = Troca.new()
+	troca.inv = inv
+	hud.add_child(troca)
+	loja_pessoal = LojaPessoal.new()
+	loja_pessoal.inv = inv
+	hud.add_child(loja_pessoal)
+	helper = MuHelper.new()
+	helper.jogo = self
+	add_child(helper)
+	janela_helper = JanelaHelper.new()
+	janela_helper.helper = helper
+	janela_helper.skills_de = func(): return minhas_skills.values()
+	janela_helper.info_de = _info_skill
+	janela_helper.fechar.connect(func(): janela_helper.visible = false)
+	janela_helper.salvar.connect(func(d):
+		cli.salvar_helper(d)
+		print("TESTE helper salvo")
+		_msg("[color=#9fe0a0]Configuracao do MU Helper salva.[/color]"))
+	hud.add_child(janela_helper)
 	amigos = Amigos.new()
 	amigos.adicionar.connect(func(n): cli.adicionar_amigo(n))
 	amigos.apagar.connect(func(n): cli.apagar_amigo(n))
@@ -449,7 +507,7 @@ func _montar_ui() -> void:
 	sair.pressed.connect(_sair)
 	hud.add_child(sair)
 	# o Sair sai da frente das janelas coladas na direita (inventario, loja, bau, C e D)
-	var direita: Array[Control] = [inv, loja, guarda, janela_personagem, comandos]
+	var direita: Array[Control] = [inv, loja, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper]
 	var mover_sair := func():
 		var x := hud.size.x
 		for j in direita:
@@ -467,6 +525,41 @@ func _montar_ui() -> void:
 	registro.add_theme_stylebox_override("normal", _estilo(Color(0, 0, 0, 0.45)))
 	registro.add_theme_font_size_override("normal_font_size", 15)
 	hud.add_child(registro)
+
+
+# botao de 18 x 13 com 3 quadros empilhados (normal, mouse em cima, apagado)
+func _botao_quadros(nome: String, dica: String) -> TextureButton:
+	var b := TextureButton.new()
+	var tex: Texture2D = load("res://dados/hud/%s.png" % nome)
+	for i in 3:
+		var a := AtlasTexture.new()
+		a.atlas = tex
+		a.region = Rect2(0, 13 * i, 18, 13)
+		b.set(["texture_normal", "texture_hover", "texture_disabled"][i], a)
+	b.ignore_texture_size = true
+	b.stretch_mode = TextureButton.STRETCH_SCALE
+	b.custom_minimum_size = Vector2(27, 20)
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	b.tooltip_text = dica
+	return b
+
+
+func _trocar_icone_helper(ligado: bool) -> void:
+	var tex: Texture2D = load("res://dados/hud/%s.png" % ("helper_pause" if ligado else "helper_play"))
+	for k in ["texture_normal", "texture_hover", "texture_disabled"]:
+		var a: AtlasTexture = botao_helper.get(k)
+		a.atlas = tex
+	botao_helper.tooltip_text = "Desligar o MU Helper (Home)" if ligado else "Ligar o MU Helper (Home)"
+
+
+func _alternar_janela_helper() -> void:
+	if not janela_helper.visible:
+		inv.visible = false
+		janela_personagem.visible = false
+		comandos.visible = false
+		if janela_helper.helper.c.skills[0] == 0:
+			janela_helper._padrao_skills()
+	janela_helper.alternar()
 
 
 func _campo(pai: Control, rotulo: String, valor: String) -> LineEdit:
@@ -654,6 +747,11 @@ func _limpar_mundo() -> void:
 	if loja:
 		loja.visible = false
 		guarda.visible = false
+		troca.visible = false
+		loja_pessoal.visible = false
+		loja_pessoal.aberta = false
+		helper.parar("")
+	titulos_lojas.clear()
 	npc_falando = -1
 	npc_alvo = -1
 	entidades.clear()
@@ -791,6 +889,7 @@ func _objeto_morreu(id: int) -> void:
 		return
 	var e: Entidade = entidades[id]
 	e.morrer()
+	helper.morreu(id)
 	if id == alvo_id:
 		alvo_id = -1
 	if id == cli.meu_id:
@@ -907,7 +1006,13 @@ func _unhandled_input(ev: InputEvent) -> void:
 		if e and e.tipo == "npc":
 			falar_com(e.id)
 			return
+		if e and e.tipo == "jogador" and titulos_lojas.has(e.id):
+			cli.ver_loja(e.id, e.nome)
+			return
 		var t: Vector2i = mundo.tile_na_tela(ev.position)
+		if loja_pessoal.aberta:
+			_msg("[color=#e8b04a]Com a loja aberta nao da pra andar. Feche a loja (S) pra sair daqui.[/color]")
+			return
 		var it := _item_perto(t)
 		if it:
 			pegar_item(it.id)
@@ -971,6 +1076,8 @@ func _marcar_clique(t: Vector2i) -> void:
 
 
 func andar_ate(t: Vector2i) -> void:
+	if loja_pessoal.aberta:
+		return
 	var de: Vector2i = eu.fila[0] if eu.andando() else eu.tile
 	var c: Array[Vector2i] = mundo.caminho(de, t)
 	if c.is_empty():
@@ -1276,6 +1383,17 @@ func _comando(c: int, alvo: int) -> void:
 	var n: String = entidades[alvo].nome if entidades.has(alvo) else ""
 	print("TESTE comando %d em %s" % [c, n])
 	match c:
+		JanelaComandos.TROCA:
+			if troca.visible or loja_pessoal.aberta:
+				_msg("[color=#e8b04a]Feche a troca ou a loja antes.[/color]")
+			else:
+				cli.pedir_troca(alvo)
+				_msg("[color=#9ad0ff]Pedido de troca mandado pra %s.[/color]" % n)
+		JanelaComandos.COMPRAR:
+			if titulos_lojas.has(alvo):
+				cli.ver_loja(alvo, n)
+			else:
+				_msg("[color=#e8b04a]%s nao esta com a loja aberta.[/color]" % n)
 		JanelaComandos.GRUPO:
 			cli.chamar_grupo(alvo)
 			_msg("[color=#9ad0ff]Convite de grupo mandado pra %s.[/color]" % n)
@@ -1638,6 +1756,172 @@ func _teste_amigo(nome: String) -> void:
 	cli.adicionar_amigo(nome)
 
 
+func _esperar_jogador(nome: String) -> Entidade:
+	for i in 60:
+		for e: Entidade in entidades.values():
+			if is_instance_valid(e) and e.tipo == "jogador" and e.nome == nome:
+				return e
+		await get_tree().create_timer(0.5).timeout
+	print("TESTE nao achei %s por perto" % nome)
+	return null
+
+
+func _primeiro_da_mochila() -> int:
+	var k := inv.itens.keys()
+	k.sort()
+	for s in k:
+		if s >= Inventario.MOCHILA and s < Inventario.FIM:
+			return s
+	return -1
+
+
+# testes: --troca Nome pede troca, poe o primeiro item da mochila e 100 de zen e aceita
+# (o outro roda com --aceitar 1)
+func _teste_troca(nome: String) -> void:
+	await get_tree().create_timer(3.0).timeout
+	var e := await _esperar_jogador(nome)
+	if e == null:
+		return
+	print("TESTE pedindo troca a %s; zen %d, %d itens" % [nome, meu_zen, inv.itens.size()])
+	_comando(JanelaComandos.TROCA, e.id)
+	await cli.troca_resposta
+	await get_tree().create_timer(1.0).timeout
+	var s := _primeiro_da_mochila()
+	if s >= 0:
+		var it: Dictionary = inv.itens[s]
+		print("TESTE troca: pondo %s (slot %d)" % [ItensMU.nome(it), s])
+		inv.esperando = s
+		cli.mover_item(s, troca.lugar_livre(it), it.bytes, 0, 1)
+	await get_tree().create_timer(1.0).timeout
+	troca._campo.text = "100"
+	troca._mandar_zen()
+	await get_tree().create_timer(Troca.ESPERA + 1.0).timeout
+	print("TESTE troca: aceitando")
+	troca.eu_aceitei = true
+	cli.botao_troca(true)
+
+
+# testes: --minha_loja PRECO poe o primeiro item da mochila na loja com esse preco e abre
+func _teste_minha_loja(v: int) -> void:
+	await get_tree().create_timer(3.0).timeout
+	_alternar_minha_loja()
+	var s := _primeiro_da_mochila()
+	if s < 0:
+		print("TESTE mochila vazia")
+		return
+	print("TESTE loja: pondo %s (slot %d) por %d" % [ItensMU.nome(inv.itens[s]), s, v])
+	_preco_pendente[-1] = v
+	inv.esperando = s
+	cli.mover_item(s, LojaPessoal.PRIMEIRO, inv.itens[s].bytes, 0, 4)
+	await cli.loja_preco
+	await get_tree().create_timer(1.0).timeout
+	loja_pessoal._campo.text = "Loja de teste"
+	loja_pessoal.titulo = "Loja de teste"
+	loja_pessoal.abrir_minha.emit("Loja de teste")
+
+
+# testes: --comprar_loja Nome abre a loja de Nome e compra o primeiro item
+func _teste_comprar_loja(nome: String) -> void:
+	await get_tree().create_timer(3.0).timeout
+	var e := await _esperar_jogador(nome)
+	if e == null:
+		return
+	for i in 40:
+		if titulos_lojas.has(e.id):
+			break
+		await get_tree().create_timer(0.5).timeout
+	print("TESTE loja de %s: %s; meu zen %d" % [nome, titulos_lojas.get(e.id, "(fechada)"), meu_zen])
+	cli.ver_loja(e.id, e.nome)
+	await cli.loja_itens
+	await get_tree().create_timer(1.0).timeout
+	if loja_pessoal.itens.is_empty():
+		print("TESTE loja vazia")
+		return
+	var i: int = loja_pessoal.itens.keys()[0]
+	loja_pessoal.comprar_item.emit(i)
+
+
+# testes: --helper SEGUNDOS liga o MU Helper (golpe comum, pega zen e joias) e conta as mortes;
+# salva a configuracao com alcance 5 e "Jewel" nos extras (a proxima entrada mostra se voltou)
+func _teste_helper(seg: float) -> void:
+	await get_tree().create_timer(3.0).timeout
+	while eu.andando() or not _restante.is_empty():
+		await get_tree().create_timer(0.5).timeout
+	await get_tree().create_timer(1.0).timeout
+	print("TESTE helper: config do servidor caca=%d extras=%s skills=%s" % [helper.c.caca, helper.c.extras, helper.c.skills])
+	helper.c.caca = 5
+	helper.c.extras = ["Jewel"]
+	helper.c.extra = true
+	if _parametros().has("helper_skill"):
+		helper.c.skills[0] = int(_parametros().helper_skill)
+	cli.salvar_helper(helper.serializar())
+	helper.alternar()
+	await get_tree().create_timer(seg).timeout
+	print("TESTE helper: %d mortos, ligado=%s, zen gasto %d, eu em %s" % [helper.mortos, helper.ligado, helper.zen_gasto, eu.tile])
+	if helper.ligado:
+		helper.alternar()
+
+
+# fotos (testes/tela_trocas.mjs): abre a troca, a minha loja, a loja de outro e o MU Helper
+# com itens da propria mochila (so na tela, nada vai pro servidor); "TESTE foto X" marca a hora
+func _teste_fotos_janelas() -> void:
+	await get_tree().create_timer(4.0).timeout
+	var meus := []
+	var k := inv.itens.keys()
+	k.sort()
+	for s in k:
+		if s >= Inventario.MOCHILA and s < Inventario.FIM:
+			meus.append(inv.itens[s])
+	troca.abrir_troca("Visitante", 152)
+	for i in mini(meus.size(), 3):
+		troca.item_dele(troca.lugar_livre(meus[i]) if i == 0 else i * 2, meus[i])
+	troca.zen_dele = 250000
+	troca.dele_aceitou = true
+	if meus.size() > 3:
+		troca.entrou(0, meus[3])
+	troca.meu_zen = 1500
+	troca._campo.text = "1500"
+	inv.visible = true
+	await get_tree().create_timer(2.0).timeout
+	print("TESTE foto troca")
+	await get_tree().create_timer(2.0).timeout
+	troca.visible = false
+	for i in mini(meus.size(), 2):
+		inv.itens[LojaPessoal.PRIMEIRO + i * 2] = meus[i]
+		loja_pessoal.precos[LojaPessoal.PRIMEIRO + i * 2] = 120000 * (i + 1)
+	loja_pessoal.titulo = "Joias baratas"
+	loja_pessoal._campo.text = ""
+	meu_nivel = maxi(meu_nivel, 6)
+	loja_pessoal.abrir_minha_loja()
+	titulos_lojas[cli.meu_id] = "Joias baratas"
+	await get_tree().create_timer(2.0).timeout
+	print("TESTE foto minha_loja")
+	await get_tree().create_timer(2.0).timeout
+	var lista := {}
+	for i in mini(meus.size(), 3):
+		var it: Dictionary = meus[i].duplicate()
+		it.preco = 45000 * (i + 1)
+		lista[i * 2] = it
+	loja_pessoal.abrir_de_outro(-1, "Visitante", "Tudo pela metade", lista)
+	await get_tree().create_timer(2.0).timeout
+	print("TESTE foto loja_outro")
+	await get_tree().create_timer(2.0).timeout
+	loja_pessoal.visible = false
+	titulos_lojas.erase(cli.meu_id)
+	helper.c.skills = [41, 42, 0]
+	helper.c.por_condicao[1] = true
+	helper.c.buffs = [48, 0, 0]
+	_alternar_janela_helper()
+	await get_tree().create_timer(2.0).timeout
+	print("TESTE foto helper")
+	await get_tree().create_timer(2.0).timeout
+	janela_helper.aba = 1
+	helper.c.extras = ["Jewel of Bless", "Box of Luck"]
+	janela_helper.queue_redraw()
+	await get_tree().create_timer(2.0).timeout
+	print("TESTE foto helper_itens")
+
+
 # testes: --trocar 1 volta pra escolha de personagem e entra de novo
 func _teste_trocar() -> void:
 	await get_tree().create_timer(2.0).timeout
@@ -1745,7 +2029,33 @@ func _ligar_inventario_e_skills() -> void:
 		_contar_pocoes())
 	cli.item_movido.connect(func(slot, it, arm):
 		print("TESTE movido para %d (armazem %d)" % [slot, arm])
-		if arm in [2, 3]:
+		if arm == 1:
+			# da mochila pra minha grade da troca
+			if inv.esperando >= 0:
+				inv.removido(inv.esperando)
+				inv.nao_moveu()
+			troca.entrou(slot, it)
+		elif troca.esperando >= 0 and troca.visible:
+			# da troca de volta pra mochila
+			troca.saiu(troca.esperando)
+			inv.entrou(slot, it)
+		elif loja_pessoal.esperando >= 0:
+			# da loja de volta pra mochila
+			inv.removido(loja_pessoal.esperando)
+			loja_pessoal.precos.erase(loja_pessoal.esperando)
+			_salvar_precos()
+			loja_pessoal.esperando = -1
+			inv.entrou(slot, it)
+			loja_pessoal.queue_redraw()
+		elif slot >= LojaPessoal.PRIMEIRO and slot < LojaPessoal.PRIMEIRO + 32:
+			# da mochila pra loja (o servidor responde no inventario, slot 204+): agora o preco
+			inv.movido(slot, it)
+			if _preco_pendente.has(-1):
+				_preco_pendente[slot] = _preco_pendente[-1]
+				_preco_pendente.erase(-1)
+				cli.preco_loja(slot, _preco_pendente[slot])
+			loja_pessoal.queue_redraw()
+		elif arm in [2, 3]:
 			# da mochila (ou de outro lugar da grade) pro bau ou pra maquina
 			if inv.esperando >= 0:
 				inv.removido(inv.esperando)
@@ -1762,6 +2072,11 @@ func _ligar_inventario_e_skills() -> void:
 	cli.item_nao_moveu.connect(func():
 		print("TESTE nao moveu")
 		inv.nao_moveu()
+		_preco_pendente.erase(-1)
+		troca.esperando = -1
+		loja_pessoal.esperando = -1
+		loja_pessoal.queue_redraw()
+		troca.queue_redraw()
 		guarda.esperando = -1
 		guarda.queue_redraw()
 		_msg("[color=#e8b04a]O servidor nao deixou mover esse item.[/color]"))
@@ -1816,6 +2131,217 @@ func _ligar_inventario_e_skills() -> void:
 		EfeitoSkill.criar(mundo, n, e, p, true))
 
 
+# --- troca, loja pessoal e MU Helper ---------------------------------------------------
+
+func _ligar_troca_loja_helper() -> void:
+	# troca
+	cli.pedido_troca.connect(func(n):
+		print("TESTE pedido de troca de %s" % n)
+		if troca.visible or loja_pessoal.aberta:
+			cli.responder_troca(false)
+			return
+		_perguntar("%s quer trocar com voce." % n, func(ok): cli.responder_troca(ok)))
+	cli.troca_resposta.connect(func(ok, n, nivel, _g):
+		print("TESTE troca %s com %s (nivel %d)" % ["abriu" if ok else "recusada", n, nivel])
+		if not ok:
+			_msg("[color=#e8b04a]%s recusou a troca.[/color]" % n)
+			return
+		_fechar_loja()
+		loja_pessoal.visible = false
+		janela_helper.visible = false
+		troca.abrir_troca(n, nivel)
+		if not inv.visible:
+			inv.alternar())
+	cli.troca_item_dele.connect(func(sl, it):
+		print("TESTE troca: o outro pos %s no %d" % [ItensMU.nome(it), sl])
+		troca.item_dele(sl, it))
+	cli.troca_item_dele_saiu.connect(troca.item_dele_saiu)
+	cli.troca_zen_dele.connect(func(v):
+		print("TESTE troca: zen dele %d" % v)
+		troca.zen_dele = v
+		troca.queue_redraw())
+	cli.troca_zen_ok.connect(troca.zen_confirmado)
+	cli.troca_botao_dele.connect(func(e):
+		print("TESTE troca: botao dele %d" % e)
+		troca.botao_dele(e))
+	cli.troca_fim.connect(func(r):
+		print("TESTE troca terminou %d" % r)
+		troca.visible = false
+		inv.nao_moveu()
+		_msg("[color=%s]%s[/color]" % ["#9fe0a0" if r == 1 else "#e8b04a",
+			["A troca foi cancelada.", "Troca feita.", "A troca nao fechou: a mochila nao tem espaco.",
+			"A troca acabou o tempo.", "Esse item nao pode ser trocado."][clampi(r, 0, 4)]]))
+	troca.por.connect(func(de, para):
+		cli.mover_item(de, para, inv.itens[de].bytes, 0, 1))
+	troca.tirar.connect(func(sl):
+		var para := inv.lugar_livre(troca.itens[sl])
+		if para < 0:
+			troca.esperando = -1
+			_msg("[color=#e8b04a]Mochila cheia.[/color]")
+			return
+		cli.mover_item(sl, para, troca.itens[sl].bytes, 1, 0))
+	troca.zen.connect(func(v):
+		if v > meu_zen + troca.meu_zen:
+			_msg("[color=#e8b04a]Voce so tem %s zen.[/color]" % ItemChao._milhar(meu_zen + troca.meu_zen))
+		else:
+			cli.zen_troca(v))
+	troca.aceitar.connect(func(a):
+		print("TESTE troca: meu botao %s" % a)
+		cli.botao_troca(a))
+	troca.cancelar.connect(func(): cli.cancelar_troca())
+	troca.fechar.connect(func(): cli.cancelar_troca())
+	# loja pessoal
+	loja_pessoal.por.connect(func(de, para, v):
+		_preco_pendente[-1] = v
+		cli.mover_item(de, para, inv.itens[de].bytes, 0, 4))
+	loja_pessoal.tirar.connect(func(sl):
+		var para := inv.lugar_livre(inv.itens[sl])
+		if para < 0:
+			loja_pessoal.esperando = -1
+			_msg("[color=#e8b04a]Mochila cheia.[/color]")
+			return
+		cli.mover_item(sl, para, inv.itens[sl].bytes, 4, 0))
+	loja_pessoal.preco.connect(func(sl, v):
+		_preco_pendente[sl] = v
+		cli.preco_loja(sl, v))
+	loja_pessoal.abrir_minha.connect(func(t):
+		if loja_pessoal.grade().is_empty():
+			_msg("[color=#e8b04a]Ponha pelo menos um item na loja.[/color]")
+		elif loja_pessoal.falta_preco():
+			_msg("[color=#e8b04a]Todo item da loja precisa de preco (botao direito no item).[/color]")
+		elif t == "":
+			_msg("[color=#e8b04a]Escreva o nome da loja.[/color]")
+		else:
+			cli.abrir_loja(t))
+	loja_pessoal.fechar_minha.connect(func(): cli.fechar_loja())
+	loja_pessoal.comprar_item.connect(func(i):
+		_comprando = i
+		print("TESTE comprando da loja de %s a casa %d" % [loja_pessoal.dono, i])
+		cli.comprar_loja(loja_pessoal.dono_id, loja_pessoal.dono, LojaPessoal.PRIMEIRO + i))
+	loja_pessoal.fechar.connect(_fechar_loja_pessoal)
+	cli.loja_preco.connect(func(r, sl):
+		print("TESTE preco da loja %d no %d" % [r, sl])
+		if r == 1 and _preco_pendente.has(sl):
+			loja_pessoal.precos[sl] = _preco_pendente[sl]
+			_salvar_precos()
+		elif r != 1:
+			_msg("[color=#e8b04a]O servidor nao aceitou esse preco.[/color]")
+		_preco_pendente.erase(sl)
+		loja_pessoal.queue_redraw())
+	cli.loja_aberta.connect(func(ok):
+		print("TESTE minha loja abriu %s" % ok)
+		loja_pessoal.aberta = ok
+		if loja_pessoal.visible and loja_pessoal.modo == "minha":
+			loja_pessoal.abrir_minha_loja()
+		if ok:
+			titulos_lojas[cli.meu_id] = loja_pessoal.titulo
+			_salvar_precos()
+			_msg("[color=#9fe0a0]Loja aberta. Quem passar ve o titulo em cima do seu nome.[/color]")
+		else:
+			_msg("[color=#e8b04a]A loja nao abriu (precisa do nivel 6 e de preco em tudo).[/color]"))
+	cli.lojas.connect(func(l):
+		for k in l:
+			titulos_lojas[k.id] = k.titulo
+		print("TESTE lojas por perto %s" % [l]))
+	cli.loja_fechou.connect(func(id):
+		titulos_lojas.erase(id)
+		if id == cli.meu_id:
+			loja_pessoal.aberta = false
+			if loja_pessoal.visible:
+				loja_pessoal.abrir_minha_loja()
+			_msg("[color=#9ad0ff]Loja fechada.[/color]")
+		elif loja_pessoal.visible and loja_pessoal.modo == "outro" and loja_pessoal.dono_id == id:
+			loja_pessoal.visible = false)
+	cli.loja_itens.connect(func(id, n, t, l, atualizacao):
+		var lista := {}
+		for k in l:
+			lista[int(k) - LojaPessoal.PRIMEIRO] = l[k]
+		print("TESTE loja de %s: %s com %d itens" % [n, t, lista.size()])
+		titulos_lojas[id] = t
+		if atualizacao and not (loja_pessoal.visible and loja_pessoal.modo == "outro" and loja_pessoal.dono_id == id):
+			return
+		_fechar_loja()
+		troca.visible = false
+		janela_helper.visible = false
+		loja_pessoal.abrir_de_outro(id, n, t, lista)
+		if not inv.visible:
+			inv.alternar())
+	cli.loja_compra.connect(func(r, _v, it, sl):
+		print("TESTE compra da loja %d no %d" % [r, sl])
+		if r == 1:
+			inv.entrou(sl, it)
+			loja_pessoal.itens.erase(_comprando)
+			loja_pessoal.queue_redraw()
+			_msg("[color=#9fe0a0]Comprou %s.[/color]" % ItensMU.nome(it))
+		else:
+			_msg("[color=#e8b04a]A compra nao deu certo (%s).[/color]" % {2: "o item ja foi vendido", 3: "a loja fechou",
+				4: "outra compra em andamento", 5: "o item nao esta mais la", 6: "o item ficou sem preco",
+				7: "falta zen", 8: "a mochila esta cheia ou o zen passaria do limite", 9: "item bloqueado"}.get(r, "codigo %d" % r))
+		_comprando = -1)
+	cli.loja_vendeu.connect(func(sl, quem):
+		var nome: String = ItensMU.nome(inv.itens[sl]) if inv.itens.has(sl) else "um item"
+		print("TESTE vendi o %d pra %s" % [sl, quem])
+		loja_pessoal.precos.erase(sl)
+		_salvar_precos()
+		_msg("[color=#f0c860]%s comprou %s da sua loja.[/color]" % [quem, nome]))
+	cli.loja_dialogo_fechou.connect(func(id):
+		if loja_pessoal.modo == "outro" and loja_pessoal.dono_id == id:
+			loja_pessoal.visible = false)
+	# MU Helper
+	cli.helper_estado.connect(func(pausado, consumiu, z):
+		print("TESTE helper estado pausado=%s consumiu=%s zen=%d" % [pausado, consumiu, z])
+		helper.estado(pausado, consumiu, z))
+	cli.helper_dados.connect(func(d):
+		helper.desserializar(d)
+		print("TESTE helper dados %d bytes: caca=%d extras=%s" % [d.size(), helper.c.caca, helper.c.extras]))
+	cli.efeito.connect(func(a, quem, e): helper.efeito(a, quem, e))
+	helper.mudou.connect(_trocar_icone_helper)
+	cli.mensagem.connect(func(t):
+		if helper.pedindo and t.to_lower().contains("helper"):
+			helper.pedindo = false)
+
+
+func _alternar_minha_loja() -> void:
+	if loja_pessoal.visible and loja_pessoal.modo == "minha":
+		_fechar_loja_pessoal()
+		return
+	if troca.visible:
+		return
+	if meu_nivel < 6:
+		_msg("[color=#e8b04a]A loja pessoal abre a partir do nivel 6.[/color]")
+		return
+	_fechar_loja()
+	janela_helper.visible = false
+	_carregar_precos()
+	loja_pessoal.abrir_minha_loja()
+	if not inv.visible:
+		inv.alternar()
+
+
+func _fechar_loja_pessoal() -> void:
+	if loja_pessoal.modo == "outro" and loja_pessoal.dono_id >= 0:
+		cli.sair_loja(loja_pessoal.dono_id, loja_pessoal.dono)
+	loja_pessoal.visible = false
+	inv.soltar()
+
+
+func _carregar_precos() -> void:
+	var c := ConfigFile.new()
+	if c.load("user://loja_%s.cfg" % meu_nome.validate_filename()) == OK:
+		loja_pessoal.titulo = c.get_value("loja", "titulo", loja_pessoal.titulo)
+		var p: Dictionary = c.get_value("loja", "precos", {})
+		for k in p:
+			if not loja_pessoal.precos.has(int(k)):
+				loja_pessoal.precos[int(k)] = int(p[k])
+
+
+func _salvar_precos() -> void:
+	var c := ConfigFile.new()
+	c.set_value("loja", "titulo", loja_pessoal.titulo)
+	c.set_value("loja", "precos", loja_pessoal.precos)
+	c.save("user://loja_%s.cfg" % meu_nome.validate_filename())
+
+
 # QWER: a pocao escolhida pra tecla, ou a maior da categoria; conta quantas tem
 func _contar_pocoes() -> void:
 	for i in 4:
@@ -1827,7 +2353,7 @@ func _contar_pocoes() -> void:
 		for k in opcoes:
 			for s in inv.itens:
 				var it: Dictionary = inv.itens[s]
-				if s >= Inventario.MOCHILA and ItensMU.chave(it) == k:
+				if s >= Inventario.MOCHILA and s < Inventario.FIM and ItensMU.chave(it) == k:
 					if achou.is_empty():
 						achou = it
 					if ItensMU.chave(achou) == k:
@@ -1844,7 +2370,7 @@ func _usar_pocao(i: int) -> void:
 		_msg("[color=#9a9ab0]Sem pocao na tecla %s.[/color]" % "QWER"[i])
 		return
 	for s in inv.itens:
-		if s >= Inventario.MOCHILA and ItensMU.chave(inv.itens[s]) == ItensMU.chave(it):
+		if s >= Inventario.MOCHILA and s < Inventario.FIM and ItensMU.chave(inv.itens[s]) == ItensMU.chave(it):
 			print("TESTE usando %s do slot %d" % [ItensMU.nome(it), s])
 			cli.usar_item(s)
 			return
@@ -1871,11 +2397,26 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k == KEY_D:
 		_botao_barra("comandos")
 		return true
+	if k == KEY_S:
+		_alternar_minha_loja()
+		return true
+	if k == KEY_Z:
+		_alternar_janela_helper()
+		return true
+	if k == KEY_HOME:
+		helper.alternar()
+		return true
 	if k == KEY_ESCAPE:
 		if menu.visible:
 			menu.visible = false
 		elif mover_janela.visible:
 			mover_janela.visible = false
+		elif troca.visible:
+			cli.cancelar_troca()
+		elif janela_helper.visible:
+			janela_helper.visible = false
+		elif loja_pessoal.visible:
+			_fechar_loja_pessoal()
 		elif loja.visible or guarda.visible:
 			_fechar_loja()
 		elif inv.visible:

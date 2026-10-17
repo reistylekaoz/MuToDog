@@ -95,6 +95,12 @@ func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
 			cor = Color8(255, 230, 200)
 			fundo = Color8(100, 0, 0, 255)
 	_caixa(f, tam, e.nome, s, cor, fundo, false, false)
+	# loja pessoal aberta: o titulo em cima do nome (PersonalShopTitleImp), mais forte com o mouse
+	var titulo: String = jogo.titulos_lojas.get(e.id, "")
+	if titulo != "":
+		var em_cima: bool = e == jogo.sobre
+		_caixa(f, tam, titulo, s - Vector2(0, f.get_height(tam) + 2), Color8(250, 150, 0) if em_cima else Color8(230, 230, 0),
+			Color8(250, 150, 0, 128) if em_cima else Color8(108, 57, 41, 128), false, false)
 
 
 # caixa justa no texto (3 px a mais de largura no nome), centrada em x; base em s.y

@@ -17,6 +17,7 @@ const A := 429.0
 const GRADE := Vector2(15, 200)
 const CASA := 20.0
 const MOCHILA := 12
+const FIM := MOCHILA + 64   # 204 a 235 sao da loja pessoal (nao aparecem na mochila)
 # slot -> [x, y, largura, altura, fundo] (SetEquipmentSlotInfo)
 const EQUIP := {
 	8: [15, 44, 46, 46, "inv_pet"], 2: [75, 44, 46, 46, "inv_elmo"], 7: [120, 44, 61, 46, "inv_asa"],
@@ -123,7 +124,7 @@ func _ocupado(ignorar: int) -> Array:
 	o.resize(64)
 	o.fill(false)
 	for s in itens:
-		if s < MOCHILA or s == ignorar:
+		if s < MOCHILA or s >= FIM or s == ignorar:
 			continue
 		var c := casa(s)
 		var t := ItensMU.tamanho(itens[s])
@@ -157,7 +158,7 @@ func lugar_livre(it: Dictionary, ignorar := -1) -> int:
 # slot da mochila em que o item ocupa a casa c (ou -1)
 func item_na_casa(c: Vector2i) -> int:
 	for s in itens:
-		if s < MOCHILA:
+		if s < MOCHILA or s >= FIM:
 			continue
 		var p := casa(s)
 		var t := ItensMU.tamanho(itens[s])
@@ -228,7 +229,7 @@ func _draw() -> void:
 			draw_texture_rect(_tex.inv_casa, Rect2(GRADE + Vector2(x, y) * CASA, Vector2(21, 21)), false)
 	_moldura(Rect2(GRADE, Vector2(8, 8) * CASA))
 	for s in itens:
-		if s < MOCHILA or s == na_mao:
+		if s < MOCHILA or s >= FIM or s == na_mao:
 			continue
 		var r := _rect_slot(s)
 		draw_rect(r.grow(-1), Color(0.25, 0.2, 0.45, 0.35))
