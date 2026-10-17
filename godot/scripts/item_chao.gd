@@ -1,8 +1,8 @@
 class_name ItemChao
 extends Node3D
 # Item caido no chao: o modelo 3D do item deitado como no cliente (rotacao, altura e
-# escala do "ground" do MuMain, em ModelosMU) e o nome em cima (zen em dourado, joia em
-# azul, excelente em verde, o resto em branco). Sem modelo, fica uma marca que brilha.
+# escala do "ground" do MuMain, em ModelosMU); o nome e desenhado pelo TextosMU.
+# Sem modelo, fica uma marca que brilha.
 # Clique pra pegar.
 
 var id := 0
@@ -15,21 +15,20 @@ func montar(mundo: Node3D, d: Dictionary, nomes: Dictionary) -> void:
 	dados = d
 	id = d.id
 	tile = Vector2i(d.x, d.y)
-	var cor := Color(0.92, 0.92, 0.95)
 	if d.has("zen"):
-		nome = "%s Zen" % _milhar(d.zen)
-		cor = Color(1.0, 0.82, 0.3)
+		nome = "Zen %s" % _milhar(d.zen)
 	else:
+		# nome do chao no jeito do cliente: "Nome +N" com +Skill, +Option e +Luck colados (textos 176 a 178)
 		nome = nomes.get("%d,%d" % [d.grupo, d.numero], "Item %d/%d" % [d.grupo, d.numero])
 		if d.nivel > 0:
 			nome += " +%d" % d.nivel
-		if d.grupo == 14 and d.numero in [13, 14, 16, 22, 31, 41, 42, 43, 44] or d.grupo == 12 and d.numero == 15:
-			cor = Color(0.5, 0.75, 1.0)
-		elif d.exc > 0:
-			cor = Color(0.4, 0.95, 0.5)
-			nome = "Excelente " + nome
-		elif d.nivel >= 7 or d.sorte:
-			cor = Color(0.6, 0.85, 1.0)
+		if d.get("skill", false):
+			nome += DicaItem.t(176)
+		if int(d.get("opcao", 0)) > 0:
+			nome += DicaItem.t(177)
+		if d.get("sorte", false):
+			nome += DicaItem.t(178)
+	var cor := TextosMU._cor_item(d)
 	position = mundo.no_tile(tile.x, tile.y)
 	var marca := MeshInstance3D.new()
 	var m: PrimitiveMesh
@@ -54,17 +53,6 @@ func montar(mundo: Node3D, d: Dictionary, nomes: Dictionary) -> void:
 	var tw := create_tween().set_loops()
 	tw.tween_property(marca, "rotation:y", TAU, 2.5).from(0.0)
 	_por_modelo(d, marca, tw)
-	var l := Label3D.new()
-	l.text = nome
-	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	l.no_depth_test = true
-	l.fixed_size = true
-	l.pixel_size = 0.0011
-	l.font_size = 26
-	l.outline_size = 8
-	l.modulate = cor
-	l.position.y = 0.65
-	add_child(l)
 	# item novo cai de cima, como no cliente
 	if d.get("novo", false):
 		marca.position.y = 1.4

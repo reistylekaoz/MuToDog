@@ -26,7 +26,6 @@ var _t := 0.0
 var _corpo: MeshInstance3D
 var boneco: Boneco
 var morto := false
-var rotulo: Label3D
 var _destaque := false
 
 
@@ -73,19 +72,7 @@ func montar(m: Node3D, i: int, t: String, n: String, x: int, y: int, b: Boneco =
 		nariz.mesh = bx
 		nariz.position = Vector3(0, cap.height * 0.8, -0.32)
 		add_child(nariz)
-	rotulo = Label3D.new()
-	rotulo.text = nome
-	rotulo.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	rotulo.no_depth_test = true
-	rotulo.fixed_size = true
-	rotulo.pixel_size = 0.0012
-	rotulo.font_size = 28
-	rotulo.outline_size = 8
-	rotulo.modulate = cor.lightened(0.3)
-	rotulo.position.y = topo + 0.45
-	add_child(rotulo)
-	# monstro e NPC: nome so com o mouse em cima ou quando e o alvo (como no cliente)
-	rotulo.visible = not _nome_escondido()
+	# nome em cima da cabeca: desenhado pelo TextosMU (monstro e NPC so com o mouse em cima, como no cliente)
 	if tipo == "eu":
 		var anel := MeshInstance3D.new()
 		var tm := TorusMesh.new()
@@ -197,12 +184,14 @@ func altura() -> float:
 	return boneco.altura if boneco else 1.7
 
 
+func nome_visivel() -> bool:
+	return _destaque or not _nome_escondido()
+
+
 func destacar(sim: bool) -> void:
 	if sim == _destaque:
 		return
 	_destaque = sim
-	rotulo.visible = sim or not _nome_escondido()
-	rotulo.outline_modulate = Color(0.55, 0.1, 0.05) if sim and tipo == "monstro" else Color(0, 0, 0)
 
 
 func andando() -> bool:
@@ -231,24 +220,38 @@ func tocar_skill(acao: String, ponto: Vector3) -> void:
 		boneco.tocar(a, "anda" if andando() else "parado")
 
 
-# numero do dano subindo e sumindo em cima da cabeca
-func mostrar_dano(dano: int) -> void:
+# numero do dano (ReceiveAttackDamage do cliente): tipo = byte do pacote (0 normal, 1 perfeito,
+# 2 excelente, 3 critico, 4 reflexo, 5 veneno, 6 dano por tempo; bit 0x40 duplo, 0x80 combo);
+# escudo = dano no SD, em verde-amarelo 25 acima. Dano 0 e Miss.
+func mostrar_dano(dano: int, tipo_dano := 0, escudo := 0) -> void:
 	if boneco and dano > 0 and not andando() and (boneco.acao.begins_with("parado") or boneco.acao == "voa"):
 		boneco.tocar("golpe")
-	var l := Label3D.new()
-	l.text = str(dano) if dano > 0 else "errou"
-	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	l.no_depth_test = true
-	l.fixed_size = true
-	l.pixel_size = 0.0016
-	l.font_size = 30
-	l.outline_size = 8
-	l.modulate = Color(1.0, 0.35, 0.3) if tipo == "eu" else Color(1.0, 0.85, 0.3)
-	var topo := boneco.altura if boneco else 1.7
-	l.position = Vector3(randf_range(-0.4, 0.4), topo + 1.0, 0)
-	add_child(l)
-	var tw := create_tween()
-	tw.set_parallel()
-	tw.tween_property(l, "position:y", topo + 2.0, 0.9)
-	tw.tween_property(l, "modulate:a", 0.0, 0.9).set_delay(0.3)
-	tw.chain().tween_callback(l.queue_free)
+	var t := TextosMU.atual
+	if t == null:
+		return
+	var esc := 15.0
+	var cor := Color(1, 1, 1)
+	var dt := tipo_dano & 0x0F
+	if dano == 0:
+		cor = Color(1, 1, 1) if tipo == "eu" else Color(0.5, 0.5, 0.5)
+	else:
+		match dt:
+			0: cor = Color(1, 0, 0) if tipo == "eu" else Color(1, 0.6, 0)
+			1: cor = Color(0, 1, 1); esc = 50.0
+			2: cor = Color(0, 1, 0.6); esc = 50.0
+			3: cor = Color(0, 0.6, 1); esc = 50.0
+			4: cor = Color(1, 0, 1)
+			5: cor = Color(0, 1, 0)
+			6: cor = Color(0.7, 0.4, 1.0)
+	if dano > 0 and (tipo_dano & 0xC0):
+		if tipo_dano & 0x80:
+			esc = 50.0
+		var c1 := Color(cor.r - 0.4, cor.g - 0.4, cor.b - 0.4)
+		var c2 := Color(cor.r - 0.2, cor.g - 0.2, cor.b - 0.2)
+		t.ponto(self, dano, c1, esc)
+		t.ponto(self, dano, c2, esc + 5.0, 10.0)
+		if tipo_dano & 0x80:
+			t.ponto(self, dano, cor, esc + 10.0, 20.0)
+	t.ponto(self, dano, cor, esc)
+	if escudo > 0:
+		t.ponto(self, escudo, Color(0.8, 1, 0), 15.0, 25.0)

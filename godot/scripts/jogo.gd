@@ -44,6 +44,11 @@ var alvo_id := -1           # monstro que estou atacando
 var item_alvo := -1         # item do chao que vou pegar
 var itens := {}             # id -> ItemChao
 var sobre: Entidade         # debaixo do mouse
+var textos: TextosMU
+var item_sob: ItemChao      # item do chao debaixo do mouse (cursor de pegar)
+var _marca: EfeitoMU        # marca do ultimo clique no chao
+var _cursor_tipo := ""
+var _cursor_lado := 0
 var _recarga := 0.0
 var _repensar := 0.0
 var _aviso_seguro := false
@@ -135,9 +140,9 @@ func _ready() -> void:
 		meu_zen = v
 		_hud_nivel())
 	_ligar_loja_e_amigos()
-	cli.golpe.connect(func(id, dano):
+	cli.golpe.connect(func(id, dano, tipo, escudo):
 		if entidades.has(id):
-			entidades[id].mostrar_dano(dano))
+			entidades[id].mostrar_dano(dano, tipo, escudo))
 	cli.ataque.connect(func(id, alvo):
 		if entidades.has(id) and entidades.has(alvo):
 			entidades[id].olhar_para(entidades[alvo])
@@ -257,7 +262,14 @@ func _estilo(cor: Color, borda := Color(0, 0, 0, 0)) -> StyleBoxFlat:
 
 
 func _montar_ui() -> void:
+	# nomes, itens do chao e numeros do dano: por baixo das janelas
+	var camada := CanvasLayer.new()
+	add_child(camada)
+	textos = TextosMU.new()
+	textos.jogo = self
+	camada.add_child(textos)
 	ui = CanvasLayer.new()
+	ui.layer = 2
 	add_child(ui)
 	var tema := Theme.new()
 	tema.default_font_size = 17
@@ -782,6 +794,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 		return
 	if ev is InputEventMouseMotion:
 		_sobre(_entidade_na_tela(ev.position))
+		item_sob = _item_perto(mundo.tile_na_tela(ev.position))
 		if inv.visible and inv.na_mao >= 0:
 			inv.mouse_fora(ev.position)
 	if ev is InputEventKey and ev.pressed and not ev.echo and _teclas(ev):
@@ -821,6 +834,56 @@ func _unhandled_input(ev: InputEvent) -> void:
 		item_alvo = -1
 		npc_alvo = -1
 		andar_ate(t)
+		if eu.andando():
+			_marcar_clique(t)
+
+
+# cursor do cliente (RenderCursor do ZzzInterface): 24 de 640 de largura, ponta em (2, 2);
+# mao no item, balao no NPC, espada no monstro fora da cidade, empurrando com o botao apertado
+func _cursor_mu() -> void:
+	var tipo := "cursor"
+	if get_viewport().gui_get_hovered_control() == null:
+		if is_instance_valid(item_sob):
+			tipo = "cursor_pegar"
+		elif is_instance_valid(sobre) and sobre.tipo == "npc":
+			tipo = "cursor_falar"
+		elif is_instance_valid(sobre) and sobre.tipo == "monstro" and not mundo.zona_segura(eu.tile.x, eu.tile.y):
+			tipo = "cursor_ataque"
+		elif Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			tipo = "cursor_push"
+	var lado := mini(int(24.0 * DisplayServer.window_get_size().x / 640.0), 128)
+	if lado < 8 or tipo == _cursor_tipo and lado == _cursor_lado:
+		return
+	_cursor_tipo = tipo
+	_cursor_lado = lado
+	var img: Image = (load("res://dados/hud/%s.png" % tipo) as Texture2D).get_image()
+	if tipo == "cursor_falar":
+		img = img.get_region(Rect2i(0, 0, 32, 32))   # 4 quadros em 2 x 2: o primeiro
+	img.resize(lado, lado, Image.INTERPOLATE_BILINEAR)
+	Input.set_custom_mouse_cursor(img, Input.CURSOR_ARROW, Vector2.ONE * 2.0 * lado / 24.0)
+
+
+# marca do clique no chao (MODEL_MOVE_TARGETPOSITION_EFFECT): o pino girando em laranja por
+# 30 quadros, faiscas na ponta e um anel no chao a cada 15 quadros que encolhe de 0,9 a 0,2 tile
+func _marcar_clique(t: Vector2i) -> void:
+	if is_instance_valid(_marca):
+		_marca.queue_free()
+	var p: Vector3 = mundo.no_tile(t.x, t.y)
+	var cor := Color(1.0, 0.7, 0.3)
+	var q := 1.0 / 25.0   # o cliente anda a 25 quadros por segundo
+	var e := EfeitoMU.criar(mundo)
+	_marca = e
+	e.modelo("movetargetposeffect", p, 0.6, cor, 30 * q, {some = 10.0 / 30.0, ritmo = 0.3})
+	e.tarefa(15 * q, 16 * q, func(ef: EfeitoMU, _i: int):
+		ef.chao("cursorpin01", p + Vector3.UP * 0.02, 0.9, cor, 17.5 * q, {tam1 = 0.2, some = 0.3}))
+	e.tarefa(q, 30 * q, func(ef: EfeitoMU, _i: int):
+		var v := Vector3(randi_range(-1, 1), randi_range(-1, 1), randi_range(-1, 1)) * 2.0 * 25.0 / 100.0
+		ef.sprite("spark03", p + Vector3.UP * 1.1, randf_range(0.4, 0.8) * 0.5, cor, 16 * q,
+			{vel = v, tam1 = 0.1, some = 10.0 / 16.0,
+			anda = func(pc: Dictionary, k: float):
+				if k > 6.0 / 16.0 and not pc.has("volta"):
+					pc.volta = true
+					pc.vel = -pc.vel}))
 
 
 func andar_ate(t: Vector2i) -> void:
@@ -868,6 +931,7 @@ func _process(dt: float) -> void:
 		return
 	_combate(dt)
 	_skills(dt)
+	_cursor_mu()
 	if not _restante.is_empty() and eu.tile == _fim_enviado:
 		_mandar_trecho()
 	_costas_t -= dt
@@ -1405,10 +1469,36 @@ func _chao_teste(x: int, y: int) -> void:
 	var l := []
 	var chaves := ["0,1", "4,0", "6,2", "7,5", "8,5", "9,5", "10,5", "11,5", "14,13", "14,1", "12,36", "5,0"]
 	for k in chaves.size():
+		# niveis e opcoes variados, pra ver as cores do nome no chao
 		l.append({"id": 60000 + k, "x": x - 3 + k % 4 * 2, "y": y + 2 + k / 4 * 2, "grupo": int(chaves[k].get_slice(",", 0)),
-			"numero": int(chaves[k].get_slice(",", 1)), "nivel": 0, "exc": 0, "sorte": false})
+			"numero": int(chaves[k].get_slice(",", 1)), "nivel": [0, 1, 3, 5, 7, 9, 0, 0, 0, 0, 0, 2][k],
+			"exc": 0x21 if k == 7 else 0, "sorte": k == 6, "skill": k == 6, "opcao": 1 if k == 6 else 0})
 	l.append({"id": 60100, "x": x + 5, "y": y + 4, "zen": 5000})
 	_itens_cairam(l)
+	# onde ficam na tela o item excelente e o NPC mais perto (o roteiro de foto passa o mouse neles)
+	await get_tree().create_timer(1.0).timeout
+	var cam := get_viewport().get_camera_3d()
+	var pi: Vector2 = cam.unproject_position(itens[60007].global_position + Vector3.UP * 0.2)
+	print("TESTE tela item %d,%d" % [pi.x, pi.y])
+	for e: Entidade in entidades.values():
+		if e.tipo == "npc" and is_instance_valid(e) and not cam.is_position_behind(e.global_position):
+			var pn: Vector2 = cam.unproject_position(e.global_position + Vector3.UP * e.altura() * 0.6)
+			if Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size).has_point(pn):
+				print("TESTE tela npc %d,%d" % [pn.x, pn.y])
+				break
+	# numeros do dano de cada tipo, em mim e em quem estiver perto, um a cada 0,3 s
+	var tipos := [[1234, 0, 0], [0, 0, 0], [5678, 2, 0], [987, 3, 0], [432, 0, 120], [77, 0x40, 0]]
+	for i in 40:
+		await get_tree().create_timer(0.3).timeout
+		var t: Array = tipos[i % tipos.size()]
+		var quem: Entidade = eu
+		if i % 2 == 1:
+			for e: Entidade in entidades.values():
+				if e != eu and is_instance_valid(e) and _distancia(e.tile, eu.tile) < 8:
+					quem = e
+					break
+		if quem:
+			quem.mostrar_dano(t[0], t[1], t[2])
 
 
 # testes (?efeito_teste=4,3,41): solta o efeito de cada skill a 3 tiles na frente, uma a cada 3 s
@@ -1564,6 +1654,9 @@ func _usar_pocao(i: int) -> void:
 # teclas do jogo; devolve true se usou a tecla
 func _teclas(ev: InputEventKey) -> bool:
 	var k := ev.keycode
+	if k == KEY_ALT:
+		textos.nomes_itens = not textos.nomes_itens   # Alt: nome de todos os itens do chao (como no cliente)
+		return true
 	if k in [KEY_I, KEY_V]:
 		inv.alternar()
 		return true

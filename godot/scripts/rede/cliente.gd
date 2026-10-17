@@ -15,7 +15,7 @@ signal objeto_moveu(id: int, x: int, y: int)
 signal objeto_morreu(id: int)
 signal mapa_mudou(mapa: int, x: int, y: int)
 signal vida(atual: int)
-signal golpe(id: int, dano: int)
+signal golpe(id: int, dano: int, tipo: int, escudo: int)
 signal ataque(id: int, alvo: int)
 signal mensagem(texto: String)
 signal mana(atual: int)
@@ -479,7 +479,7 @@ func _tratar(p: PackedByteArray) -> void:
 			objeto_andou.emit(((p[3] << 8) | p[4]) & 0x7FFF, p[5], p[6], [])
 		0x11:
 			if p.size() >= 10:
-				golpe.emit(((p[3] << 8) | p[4]) & 0x7FFF, ((p[5] << 8) | p[6]) + ((p[8] << 8) | p[9]))
+				golpe.emit(((p[3] << 8) | p[4]) & 0x7FFF, (p[5] << 8) | p[6], p[7], (p[8] << 8) | p[9])
 		0x18:
 			if p.size() >= 9:
 				ataque.emit(((p[3] << 8) | p[4]) & 0x7FFF, ((p[7] << 8) | p[8]) & 0x7FFF)

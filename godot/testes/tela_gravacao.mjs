@@ -1,6 +1,7 @@
 // Fotos de uma sessao gravada (dados/gravacao_<nome>.txt, feita com MU_GRAVAR) tocada no navegador.
 // Uso: node testes/tela_gravacao.mjs <pasta> <nome> <seg>[,<seg>...]  (fotos <nome>-<seg>.png, contando de "entrou")
 // WEB=web_novo usa outro export. ANDAR=x,y anda como na gravacao. M=1 abre a janela Mover na primeira foto.
+// EXTRA="&cacar=4" junta parametros na URL (cacar repete a caca da gravacao).
 import { createRequire } from 'module';
 import fs from 'fs';
 import path from 'path';
@@ -21,7 +22,7 @@ await page.route('https://mu.local/**', async rota => {
   if (!fs.existsSync(arq)) return rota.fulfill({ status: 404, body: '' });
   await rota.fulfill({ status: 200, body: fs.readFileSync(arq), headers: { 'content-type': tipos[path.extname(arq)] || 'application/octet-stream' } });
 });
-await page.goto(`https://mu.local/index.html?auto=test300,x,test300Dk&gravacao=${nome}${process.env.ANDAR ? `&andar=${process.env.ANDAR}` : ""}`);
+await page.goto(`https://mu.local/index.html?auto=test300,x,test300Dk&gravacao=${nome}${process.env.ANDAR ? `&andar=${process.env.ANDAR}` : ""}${process.env.EXTRA || ""}`);
 for (let i = 0; i < 480 && !marcas.some(t => /TESTE entrou/.test(t)); i++) await page.waitForTimeout(500);
 const t0 = Date.now();
 for (const s of segs.split(',').map(Number)) {
