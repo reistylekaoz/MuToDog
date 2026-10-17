@@ -3612,5 +3612,54 @@
   "acoes": {
    "parado": 7
   }
+ },
+ "rosto1": {
+  "esqueleto": "Logo/NewFace01.bmd",
+  "acoes": {
+   "parado": 0,
+   "escolhido": 1
+  }
+ },
+ "rosto2": {
+  "esqueleto": "Logo/NewFace02.bmd",
+  "acoes": {
+   "parado": 0,
+   "escolhido": 1
+  }
+ },
+ "rosto3": {
+  "esqueleto": "Logo/NewFace03.bmd",
+  "acoes": {
+   "parado": 0,
+   "escolhido": 1
+  }
+ },
+ "rosto4": {
+  "esqueleto": "Logo/NewFace04.bmd",
+  "acoes": {
+   "parado": 0,
+   "escolhido": 1
+  }
+ },
+ "rosto5": {
+  "esqueleto": "Logo/NewFace05.bmd",
+  "acoes": {
+   "parado": 0,
+   "escolhido": 1
+  }
+ },
+ "rosto6": {
+  "esqueleto": "Logo/NewFace06.bmd",
+  "acoes": {
+   "parado": 0,
+   "escolhido": 1
+  }
+ },
+ "rosto7": {
+  "esqueleto": "Logo/NewFace07.bmd",
+  "acoes": {
+   "parado": 0,
+   "escolhido": 1
+  }
  }
 }

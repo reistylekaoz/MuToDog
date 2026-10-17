@@ -7,6 +7,8 @@ extends Node
 signal estado_mudou(estado: String, texto: String)
 signal servidores(lista: Array)
 signal personagens(lista: Array)
+signal criou(ok: bool, motivo: int, info: Dictionary)   # F3 01: motivo 0 nome recusado, 2 sem vaga
+signal apagou(resultado: int)   # F3 02: 0 nao apagou, 1 apagou, 2 senha errada
 signal entrou(info: Dictionary)
 signal objeto_entrou(o: Dictionary)
 signal objeto_saiu(id: int)
@@ -73,6 +75,7 @@ var estado := "parado"
 var usuario := ""
 var senha := ""
 var meu_id := -1
+var liberadas := 0   # F3 00: classes liberadas na conta (1 Summoner, 2 DL, 4 MG, 8 RF)
 var host := ""
 var _ping := 0.0
 var _depurar := OS.get_environment("MU_DEBUG") != ""
@@ -270,6 +273,22 @@ func sair_para(tipo: int) -> void:
 	con.enviar(PackedByteArray([0xC3, 0, 0xF1, 0x02, tipo]))
 
 
+# C1 F3 01: classe no numero do servidor (0 DW, 4 DK, 8 Elf, 12 MG, 16 DL, 20 Sum, 24 RF)
+func criar_personagem(nome: String, classe: int) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xF3, 0x01])
+	p.append_array(_texto(nome, 10))
+	p.append(classe << 2)
+	con.enviar(p)
+
+
+# C1 F3 02: nome e o codigo de seguranca (o OpenMU aceita a senha da conta)
+func apagar_personagem(nome: String, codigo: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xF3, 0x02])
+	p.append_array(_texto(nome, 10))
+	p.append_array(_texto(codigo, 10))
+	con.enviar(p)
+
+
 func pedir_personagens() -> void:
 	_mudar("logado")
 	_pedir_lista()
@@ -410,9 +429,22 @@ func _tratar(p: PackedByteArray) -> void:
 				var o := 8 + i * 34
 				if o + 34 > p.size():
 					break
-				lista.append({"slot": p[o], "nome": _ler_texto(p, o + 1, 10), "nivel": p[o + 12] | (p[o + 13] << 8), "classe": p[o + 15] >> 3})
+				lista.append({"slot": p[o], "nome": _ler_texto(p, o + 1, 10), "nivel": p[o + 12] | (p[o + 13] << 8),
+					"estado": p[o + 14], "classe": p[o + 15] >> 3, "equip": aparencia(p.slice(o + 15, o + 33)),
+					"guilda": p[o + 33] if o + 33 < p.size() else 255})
+			liberadas = p[4]
 			_mudar("personagens")
 			personagens.emit(lista)
+			return
+		[0xF3, 0x01]:
+			if p.size() >= 20 and p[4] == 1:
+				criou.emit(true, 1, {"nome": _ler_texto(p, 5, 10), "slot": p[15], "nivel": p[16] | (p[17] << 8), "classe": p[18] >> 3,
+					"estado": p[19], "guilda": 255, "equip": {}})   # personagem novo nasce sem item (o OpenMU manda a previa toda 0xFF)
+			else:
+				criou.emit(false, p[4] if p.size() > 4 else 0, {})
+			return
+		[0xF3, 0x02]:
+			apagou.emit(p[4] if p.size() > 4 else 0)
 			return
 		[0xF3, 0x03]:
 			if p[0] == 0xC3:

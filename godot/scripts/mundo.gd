@@ -16,6 +16,11 @@ var inclinacao := 48.0
 var distancia := 12.0
 # no jogo (jogo.gd): a camera segue o personagem e o mapa diz onde da pra andar
 var modo_jogo := false
+# camera parada (tela de escolha de personagem): o transform pronto, a abertura e o fundo
+var camera_fixa: Transform3D
+var fixa := false
+var fixa_fov := 35.0
+var fixa_longe := 500.0
 var seguir: Node3D
 var tem_dados := true
 var atributos := PackedByteArray()
@@ -358,6 +363,11 @@ func mundo_invisivel(m: String) -> bool:
 
 
 func _mirar() -> void:
+	if fixa:
+		camera.global_transform = camera_fixa
+		camera.fov = fixa_fov
+		camera.far = fixa_longe
+		return
 	var a := Vector3(alvo.x, altura_em(alvo.x, alvo.y) / 100.0, -alvo.y)
 	if seguir:
 		a = seguir.global_position + Vector3(0, 1.0, 0)
@@ -367,6 +377,8 @@ func _mirar() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
+	if fixa:
+		return
 	if ev is InputEventKey and ev.pressed and ev.keycode in [KEY_MINUS, KEY_EQUAL, KEY_KP_SUBTRACT, KEY_KP_ADD]:
 		definir_brilho(brilho + (0.1 if ev.keycode in [KEY_EQUAL, KEY_KP_ADD] else -0.1))
 		brilho_mudou.emit(brilho)
@@ -380,6 +392,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 
 func _process(dt: float) -> void:
+	if fixa:
+		return
 	if modo_jogo:
 		var g2 := 0.0
 		# no jogo Q W E R sao as pocoes (como no MU): a camera gira nas setas

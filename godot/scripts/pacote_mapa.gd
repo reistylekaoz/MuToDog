@@ -8,7 +8,7 @@ extends RefCounted
 # partida. Nos testes headless os dados estao no projeto e nada e carregado.
 # Uso: await PacoteMapa.carregar(no_qualquer, numero_do_mundo)
 
-const FORA := [2, 3, 4, 5, 7, 8, 9, 11, 31, 32, 34, 35, 38, 39, 52, 57, 58, 64, 80, 81, 82]
+const FORA := [2, 3, 4, 5, 7, 8, 9, 11, 31, 32, 34, 35, 38, 39, 52, 57, 58, 64, 75, 80, 81, 82]
 static var _prontos := {}
 
 

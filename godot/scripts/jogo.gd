@@ -7,6 +7,7 @@ const ROXO := Color(0.55, 0.45, 0.95)
 
 var cli: ClienteMU
 var mundo: Node3D
+var selecao: Selecao        # tela de escolha de personagem (mapa da cena, criar e apagar)
 var mapa_atual := -1
 var eu: Entidade
 var meu_nome := ""
@@ -532,6 +533,7 @@ func _estado(e: String, t: String) -> void:
 
 
 func _voltar(texto: String) -> void:
+	_fechar_selecao()
 	_limpar_mundo()
 	hud.visible = false
 	painel.visible = true
@@ -557,23 +559,46 @@ func _servidores(l: Array) -> void:
 
 func _personagens(l: Array) -> void:
 	_limpar_lista()
-	if l.is_empty():
-		aviso.text = "Essa conta nao tem personagem. Crie um no cliente original ou no painel do OpenMU."
-		return
 	for p in l:
 		_classe_de[p.nome] = [p.classe, p.nivel]
 	for p in l:
 		if meu_nome != "" and p.nome == meu_nome:
 			_escolher(p.nome)
 			return
-	for p in l:
-		var b := Button.new()
-		b.text = "%s  ·  %s  ·  nivel %d" % [p.nome, classes.get(str(p.classe), "?"), p.nivel]
-		b.pressed.connect(_escolher.bind(p.nome))
-		lista.add_child(b)
+	_abrir_selecao(l)
+
+
+func _abrir_selecao(l: Array) -> void:
+	painel.visible = false
+	hud.visible = false
+	if selecao == null:
+		selecao = Selecao.new()
+		selecao.cli = cli
+		selecao.palco = self
+		selecao.nomes_classe = classes
+		selecao.volume = menu.vol_musica
+		ui.add_child(selecao)
+		ui.move_child(selecao, 0)
+		selecao.entrar.connect(_escolher)
+		selecao.voltar.connect(func() -> void:
+			_fechar_selecao()
+			_sair())
+		selecao.grab_focus()
+		await selecao.mostrar(l)
+		if _parametros().has("selecao"):
+			selecao.teste(str(_parametros().selecao).split(",", false))
+		return
+	selecao.mostrar(l)
+
+
+func _fechar_selecao() -> void:
+	if selecao:
+		selecao.fechar()
+		selecao = null
 
 
 func _escolher(nome: String) -> void:
+	_fechar_selecao()
 	meu_nome = nome
 	minha_classe = _classe_de.get(nome, [0, 1])[0]
 	meu_nivel = _classe_de.get(nome, [0, 1])[1]
