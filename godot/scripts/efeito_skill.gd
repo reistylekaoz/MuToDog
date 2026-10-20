@@ -399,12 +399,16 @@ static func _tempestade_de_gelo(e: EfeitoMU, para: Vector3) -> void:
 			if randf() < 0.2:
 				e.modelo("ice02", q + Vector3.UP * 0.3, 0.8, BRANCO, 1.0, {vel = Vector3(_rnd(-1, 1), 3, _rnd(-1, 1)), acel = Vector3(0, -12, 0), vgiro = 8.0}))
 		e.modelo("blizzard", de, 0.5, BRANCO, tempo + 0.05, {segue = n, entra = 0.6, some = 0.0})
-		e.tarefa(T * 2, tempo, func(ef, _i):
+		# por tick: fumaca (BITMAP_SMOKE 0, 1,5), Shiny02 e a luz (BITMAP_LIGHT = flare01) que
+		# clareia 0,1 por tick ate ficar branca
+		e.tarefa(T, tempo, func(ef, i):
 			if not EfeitoMU.voando(n):
 				return
 			var q := n.global_position
-			ef.sprite("shiny02", q, 0.32 * _rnd(0.8, 1.4) * 2, Color(0.7, 0.8, 1), T * 3, {giro = _rnd(0, TAU)})
-			ef.sprite("flare01", q, 0.64, Color(0.4, 0.6, 1), T * 3))
+			var luz := minf(0.1 * (i + 1), 1.0)
+			fumaca(ef, q, Color(0.55, 0.6, 0.7), 0.64 * 1.5, 20 * T)
+			ef.sprite("shiny02", q, 0.64 * _rnd(0.8, 1.4), Color(luz, luz, luz), T * 2, {giro = _rnd(0, TAU)})
+			ef.sprite("flare01", q, 0.64, Color(luz, luz, luz), T * 2, {giro = _rnd(0, TAU)}))
 	luz_chao(e, para, Color(0.3, 0.5, 1), 3.0, 1.5)
 
 
@@ -481,24 +485,47 @@ static func _furia(e: EfeitoMU, de: Vector3, frente: Vector3) -> void:
 			e.modelo("earthquake0%d" % (7 + k % 2), q, 1.0, BRANCO, 1.4 - k * 0.1, {giro = a, some = 0.5, entra = 0.05})
 
 
-# Death Stab: fitas vermelhas que se juntam na ponta e o alvo tomando choque
+# Death Stab (AttackStage AT_SKILL_DEATHSTAB): nos ticks 2 a 8, 3 fitas vermelhas por tick
+# (MODEL_SPEARSKILL 2) que vem de 14 tiles atras e se juntam na frente; nos ticks 6 a 12, de 2
+# em 2, duas lancas de luz (MODEL_SPEAR 1, vivem 10 ticks) na ponta da arma, cada uma soltando
+# por tick uma espiral azul BITMAP_FLARE 12 (70 ticks, 50 caudas, raio 26, anda 4/tick pra
+# frente e desce 0,3/tick): juntas fazem a broca azul. O alvo toma o choque por 35 ticks.
 static func _estocada(e: EfeitoMU, quem, b: Boneco, frente: Vector3, alvo) -> void:
 	var ponta := func(): return b.ponta_arma() if b and is_instance_valid(b) else _pos(quem) + Vector3.UP * 1.2
+	var lado := frente.cross(Vector3.UP).normalized()
 	var foco: Vector3 = _pos(quem) + Vector3.UP * 1.2 + frente * 3.0
-	for i in 6:
-		var ini := _pos(quem) - frente * _rnd(6, 10) + frente.cross(Vector3.UP) * _rnd(-3, 3) + Vector3.UP * 1.2
-		var bambo := Vector3(_rnd(-1, 1), _rnd(-0.5, 0.5), _rnd(-1, 1))
-		cauda(e, "nskill", 0.6, Color(1, 0.3, 0.3), 10 * T + i * T, 5, func(t):
-			var k := clampf(t / (10 * T), 0, 1)
-			return ini.lerp(foco, k) + bambo * sin(k * PI))
+	for tick in range(2, 9):
+		for i in 3:
+			var ini := _pos(quem) - frente * _rnd(11, 17) + lado * _rnd(-3, 3) + Vector3.UP * _rnd(-1.8, 4.2)
+			var bambo := Vector3(_rnd(-1, 1), _rnd(-0.5, 0.5), _rnd(-1, 1))
+			var vida := (10 + i) * T
+			var atraso := (tick - 2) * T
+			cauda(e, "nskill", 0.6, Color(1, 0.3, 0.3), vida + atraso, 5, func(t):
+				var k := clampf((t - atraso) / vida, 0, 1)
+				return ini.lerp(foco, k) + bambo * sin(k * PI))
 	await e.get_tree().create_timer(6 * T).timeout
-	if not is_instance_valid(e):
-		return
-	for lado in [0.0, PI]:
-		var base: Vector3 = ponta.call()
-		cauda(e, "flare", 1.0, Color(0.1, 0.1, 1), 70 * T * 0.5, 25, func(t):
-			var a: float = lado + t * 12.0
-			return base + frente * v(4) * t * 2 + frente.cross(Vector3.UP) * cos(a) * 0.26 + Vector3.UP * (sin(a) * 0.26 - t * 0.3))
+	e.get_tree().create_timer(4 * T).timeout.connect(func():
+		if is_instance_valid(e):
+			_choque_estocada(e, alvo))
+	for tick in range(6, 13, 2):
+		if not is_instance_valid(e):
+			return
+		var base: Vector3 = ponta.call() + frente * (1.0 + (tick - 8) * 0.1)
+		for lanca in 2:
+			e.sprite("flare01", base, 0.8, Color(0.3, 0.3, 1), 10 * T)
+			for k in 10:
+				var atraso := k * T
+				var fase := _rnd(0, 360)
+				cauda(e, "flare", 1.0, Color(0.1, 0.1, 1), 70 * T + atraso, 25, func(t):
+					var tk := maxf(t - atraso, 0.0) / T
+					var a := (fase + 70.0 - tk) * 0.1
+					return base + frente * 0.04 * tk + lado * (-cos(a) * 0.26) + Vector3.UP * (sin(a) * 0.26 - (20.0 + tk) * 0.003),
+					{some = 0.3})
+		await e.get_tree().create_timer(2 * T).timeout
+
+
+# m_byHurtByDeathstab: o alvo do Death Stab com raios em volta por 35 ticks
+static func _choque_estocada(e: EfeitoMU, alvo) -> void:
 	if typeof(alvo) == TYPE_OBJECT and is_instance_valid(alvo) and alvo is Entidade:
 		e.tarefa(T * 2, 35 * T, func(ef, _i):
 			if not is_instance_valid(alvo):
@@ -686,7 +713,8 @@ static func teleporte(e: EfeitoMU, quem, sumir := true) -> void:
 static func _onda(e: EfeitoMU, de: Vector3, frente: Vector3) -> void:
 	var dura := 20 * T
 	var n := e.voar(de, de + frente * v(60) * dura, dura)
-	e.modelo("magic02", de, 1.0, BRANCO, dura, {segue = n, dir = frente, uv_vel = Vector2(0, 5), some = 0.5})
+	# BlendMeshLight = LifeTime * 0,1: nasce com brilho 2 e apaga ate 0 no fim
+	e.modelo("magic02", de, 1.0, Color(2, 2, 2), dura, {segue = n, dir = frente, uv_vel = Vector2(0, 5), some = 1.0})
 	e.tarefa(T, dura, func(ef, _i):
 		if not EfeitoMU.voando(n):
 			return

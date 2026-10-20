@@ -12,6 +12,8 @@ const AMARELO := Color8(255, 204, 26)
 const VERDE := Color8(26, 255, 128)
 const ROXO := Color8(255, 26, 255)
 const FUNDO_VERMELHO := Color8(160, 0, 0)   # TEXT_COLOR_DARKRED: texto branco em fundo vermelho
+const CINZA := Color8(150, 150, 150)
+const ROSA := Color8(255, 90, 200)          # TEXT_COLOR_REDPURPLE (opcao 380)
 
 # bonus por nivel do item (+0 a +15), cumulativo como no ItemConvert e no OpenMU
 const POR_NIVEL := [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 31, 36, 42, 49, 57, 66]
@@ -45,6 +47,9 @@ static var eu := {"nivel": 1, "forca": 0, "agilidade": 0, "vitalidade": 0, "ener
 static var _bmd := {}
 static var _txt := {}
 static var _skills := {}
+static var _extra := {}
+# os itens que o personagem esta vestindo (inventario.gd preenche): conta as pecas do set ancient
+static var equipados := []
 
 
 static func _carregar() -> void:
@@ -58,6 +63,8 @@ static func _carregar() -> void:
 			d[c] = d[c].map(func(v): return int(v)) if d[c] is Array else int(d[c])
 	_txt = ItensMU._json("res://dados/textos_eng.json")
 	_skills = ItensMU._json("res://dados/skills.json")
+	# set ancient, harmony, socket e opcao 380 (ferramentas/dados_dica.py)
+	_extra = ItensMU._json("res://dados/itens_extra.json")
 
 
 # texto do cliente, com os argumentos no jeito do printf ("%d", "%s", "%%")
@@ -82,6 +89,12 @@ static func _milhar(v: int) -> String:
 		r = "," + s.right(3) + r
 		s = s.left(s.length() - 3)
 	return s + r
+
+
+# a linha do Item.bmd do item (vazia se o cliente nao conhece)
+static func dados_bmd(it: Dictionary) -> Dictionary:
+	_carregar()
+	return _bmd.get(ItensMU.chave(it), {})
 
 
 static func asa(k: String) -> int:
@@ -120,7 +133,9 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 		cor = AMARELO
 	elif tem_opcao:
 		cor = AZUL
-	l.append(_linha((t(620) + " " if exc > 0 else "") + ItensMU.nome(it), cor, true))
+	var n_set := _set_do_item(it)
+	var prefixo: String = (_extra.sets[str(n_set)].nome + " ") if n_set > 0 else ""
+	l.append(_linha((t(620) + " " if exc > 0 else "") + prefixo + ItensMU.nome(it), cor, true))
 
 	# o que a joia faz
 	var desc := {"14,13": 572, "14,14": 573, "14,16": 621, "12,15": 574}
@@ -242,12 +257,170 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 		var qual := 1234 if cetro else (1691 if g == 5 and n >= 21 and n <= 29 else 79)
 		l.append_array([_vazia(), _linha(t(qual, [m]), AZUL, true)])
 
-	# opcoes em azul: skill, sorte, opcao adicional, excelentes
-	var op := _opcoes(it, k, p, geracao, exc, lv, opcao)
+	# opcao 380 e harmony vem antes das opcoes (ZzzInventory.cpp RenderItemInfo)
+	l.append_array(_opcao_380(it, k))
+	l.append_array(_harmonia(it, lv))
+
+	# opcoes em azul: bonus do ancient, skill, sorte, opcao adicional, excelentes
+	var op := _bonus_ancient(it, k, p)
+	op.append_array(_opcoes(it, k, p, geracao, exc, lv, opcao))
 	if not op.is_empty():
 		l.append(_vazia())
 		l.append_array(op)
+
+	# no fim: as opcoes do set ancient e os sockets
+	l.append_array(_opcoes_set(it, n_set))
+	l.append_array(_sockets(it))
 	return _fim(l)
+
+
+# os 12 bytes do item quando vieram do servidor (cliente.gd item_de); sem eles, o valor de "nada"
+static func _byte(it: Dictionary, i: int, nada: int) -> int:
+	var b = it.get("bytes", null)
+	return int(b[i]) if b != null and b.size() > i else nada
+
+
+# numero do set ancient do item (0 = nao e ancient), CSItemOption::GetSetItemName
+static func _set_do_item(it: Dictionary) -> int:
+	var d: int = it.get("anc", 0) & 3
+	if d == 0 or d == 3:
+		return 0
+	var sets: Array = _extra.set_do_item.get(ItensMU.chave(it), [])
+	if sets.is_empty():
+		return 0
+	var n := int(sets[d - 1])
+	return n if n != 0 and n != 255 and _extra.sets.has(str(n)) else 0
+
+
+# +5/+10 de forca, agilidade, energia ou vitalidade do ancient (CSItemOption::GetDefaultOptionText)
+static func _bonus_ancient(it: Dictionary, k: String, p: Dictionary) -> Array:
+	var bonus: int = (it.get("anc", 0) >> 2) & 3
+	var texto := {1: 985, 2: 986, 3: 988, 4: 987}
+	if bonus == 0 or _set_do_item(it) == 0 or not texto.has(p.tipo_ataque):
+		return []
+	var l := [_linha(t(texto[p.tipo_ataque], [bonus * 5]), AZUL)]
+	if k in ["13,8", "13,9", "13,12", "13,13"] or (it.grupo == 13 and it.numero >= 21 and it.numero <= 28):
+		l.append(_linha(t(1165), AZUL))
+	return l
+
+
+static func _opcao_380(it: Dictionary, k: String) -> Array:
+	if not (_byte(it, 5, 0) & 0x08) or not _extra.op380.has(k):
+		return []
+	var o: Array = _extra.op380[k]
+	var l := [_vazia()]
+	for i in 2:
+		var tipo := int(o[i * 2])
+		if tipo >= 1 and tipo <= 8:
+			var txt := 2183 + tipo
+			l.append(_linha(t(txt) if tipo == 7 else t(txt, [int(o[i * 2 + 1])]), ROSA, true))
+	l.append(_vazia())
+	return l
+
+
+# Jewel of Harmony: byte 6 = opcao << 4 | nivel (so em item sem socket)
+static func _harmonia(it: Dictionary, lv: int) -> Array:
+	var b := _byte(it, 6, 0)
+	var opcao := b >> 4
+	var nivel := b & 0x0F
+	var g: int = it.grupo
+	if opcao == 0 or _tem_socket(it) or g > 11 or nivel > 13:
+		return []
+	var tipo := 0 if g <= 4 else (1 if g == 5 else 2)
+	if opcao > (10 if tipo == 0 else 8):
+		return []
+	var h: Dictionary = _extra.harmonia[tipo][opcao - 1]
+	var v := int(h.nivel[nivel])
+	var txt := "%s +%d%s" % [h.nome, v, "%" if tipo == 2 and opcao == 7 else ""]
+	return [_vazia(), _linha(txt, AMARELO if lv >= nivel else CINZA, true), _vazia()]
+
+
+static func _tem_socket(it: Dictionary) -> bool:
+	return it.has("bytes") and _byte(it, 7, 0xFF) != 0xFF
+
+
+# texto de uma opcao do set (CSItemOption::getExplainText): o numero e a posicao em AT_SET_OPTION_*
+static func _texto_set(op: int, v: int) -> String:
+	if op <= 6:
+		return t(950 + op, [v])
+	if op == 7:
+		return t(632, [v])
+	if op <= 20:
+		return t(949 + op, [v])
+	if op <= 23:
+		return t([970, 984, 983][op - 21], [v])
+	if op <= 35:
+		return t(971 + op - 24).trim_prefix("%s ") % [v]
+	return ""
+
+
+# CSItemOption::RenderSetOptionListInItem: todas as opcoes do set; acesas (azul, verde ou amarelo) so com o item
+# vestido e pecas bastantes do mesmo set vestidas; o resto em cinza
+static func _opcoes_set(it: Dictionary, n_set: int) -> Array:
+	if n_set == 0:
+		return []
+	var s: Dictionary = _extra.sets[str(n_set)]
+	var vestido := false
+	var pecas := 0
+	for e in equipados:
+		if is_same(e, it):
+			vestido = true
+		if _set_do_item(e) == n_set:
+			pecas += 1
+	var completo: bool = pecas >= int(s.itens)
+	var l := [_vazia(), _linha(t(1089) + " " + t(159), AMARELO), _vazia()]
+	var lista := []   # [opcao, valor, acesa, cor]
+	for o in mini(int(s.itens) - 1, 6):
+		lista.append([s.padrao[o][0], s.padrao[o][1], completo or o < pecas - 1, AZUL])
+	for o in 2:
+		lista.append([s.ext[o][0], s.ext[o][1], completo or pecas >= 2, VERDE])
+	for o in 5:
+		lista.append([s.full[o][0], s.full[o][1], completo, AMARELO])
+	for x in lista:
+		var op := int(x[0])
+		var v := int(x[1])
+		if op == 255 or v == 0:
+			continue
+		var txt := _texto_set(op, v)
+		if txt != "":
+			l.append(_linha(txt, x[3] if vestido and x[2] else CINZA))
+	return l
+
+
+# CSocketItemMgr::AttachToolTipForSocketItem: bytes 7 a 11 (0xFF sem socket, 0xFE vazio,
+# senao semente = b % 50 e nivel da esfera = b / 50 + 1); byte 6 = bonus do conjunto
+static func _sockets(it: Dictionary) -> Array:
+	if not _tem_socket(it):
+		return []
+	var l := [_vazia(), _linha(t(2650) + " " + t(159), ROXO), _vazia()]
+	for i in 5:
+		var b := _byte(it, 7 + i, 0xFF)
+		if b == 0xFF:
+			break
+		if b == 0xFE:
+			l.append(_linha(t(2655, [i + 1, t(2652)]), CINZA))
+			continue
+		var o: Dictionary = _extra.socket[0][b % 50]
+		var txt := "%s(%s %s)" % [t(2640 + int(o.cat) - 1), o.nome, _valor_socket(int(o.tipo), int(o.valores[mini(b / 50, 4)]))]
+		l.append(_linha(t(2655, [i + 1, txt]), AZUL))
+	var bonus := _byte(it, 6, 0xFF)
+	if bonus < 50:
+		var o: Dictionary = _extra.socket[1][bonus]
+		if int(o.valores[0]) > 0:
+			l.append_array([_vazia(), _linha(t(2656), ROXO), _vazia(),
+				_linha("%s %s" % [o.nome, _valor_socket(int(o.tipo), int(o.valores[0]))], AZUL)])
+	return l
+
+
+# CSocketItemMgr::CalcSocketOptionValue: 1 e 2 = o valor (2 em %), 3 = nivel / valor, 4 e 5 = vida e mana maxima / valor
+static func _valor_socket(tipo: int, v: int) -> String:
+	var n := v
+	if v > 0:
+		match tipo:
+			3: n = int(eu.get("nivel", 1)) / v
+			4: n = int(eu.get("vida_max", 0)) / v
+			5: n = int(eu.get("mana_max", 0)) / v
+	return ("+%d%%" if tipo == 2 else "+%d") % n
 
 
 

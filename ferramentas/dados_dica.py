@@ -42,3 +42,54 @@ while p + 8 <= len(b):
     p += 8 + n
 json.dump(textos, open(os.path.join(SAIDA, "textos_eng.json"), "w"), ensure_ascii=False, separators=(",", ":"))
 print(f"{len(itens)} itens, {len(textos)} textos")
+
+# --- set ancient, harmony, socket e opcao 380 (CSItemOption.cpp, UIJewelHarmony.cpp, SocketSystem.cpp,
+# ItemAddOptioninfo.cpp do MuMain): grava godot/dados/itens_extra.json
+ENG = os.path.join(LOCAL, "Eng")
+
+
+def nome_c(b):
+    return b.split(b"\0")[0].decode("latin1")
+
+
+extra = {"set_do_item": {}, "sets": {}, "harmonia": [], "socket": [], "op380": {}}
+b = open(os.path.join(LOCAL, "itemsettype.bmd"), "rb").read()
+for i in range(8192):
+    o1, o2 = decifra(b[i * 4:i * 4 + 2])   # a cifra recomeca a cada item
+    if o1 not in (0, 255) or o2 not in (0, 255):
+        extra["set_do_item"][f"{i // 512},{i % 512}"] = [o1, o2]
+b = open(os.path.join(ENG, "itemsetoption_eng.bmd"), "rb").read()
+for n in range(64):
+    r = decifra(b[n * 110:(n + 1) * 110])
+    nome = nome_c(r[:64])
+    if not nome:
+        continue
+    padrao = [[r[64 + o * 2], r[76 + o * 2]] for o in range(6)]   # so a 1a das 2 colunas e usada
+    ext = [[r[88 + o], r[90 + o]] for o in range(2)]
+    full = [[r[93 + o], r[98 + o]] for o in range(5)]
+    itens = sum(1 for v in extra["set_do_item"].values() for x in v if x == n)
+    extra["sets"][str(n)] = {"nome": nome, "itens": itens, "contagem": r[92], "padrao": padrao, "ext": ext,
+                             "full": full, "classes": list(r[103:110])}
+b = decifra(open(os.path.join(ENG, "JewelOfHarmonyOption_eng.bmd"), "rb").read())
+for tp in range(3):
+    lista = []
+    for o in range(10):
+        p = (tp * 10 + o) * 180
+        lista.append({"nome": nome_c(b[p + 4:p + 64]), "min": struct.unpack_from("<i", b, p + 64)[0],
+                      "nivel": list(struct.unpack_from("<14i", b, p + 68))})
+    extra["harmonia"].append(lista)
+b = open(os.path.join(ENG, "socketitem_eng.bmd"), "rb").read()
+for tp in range(3):
+    lista = []
+    for i in range(50):
+        r = decifra(b[(tp * 50 + i) * 104:(tp * 50 + i + 1) * 104])
+        _id, cat = struct.unpack_from("<ii", r, 0)
+        lista.append({"cat": cat, "nome": nome_c(r[8:72]), "tipo": r[72], "valores": list(struct.unpack_from("<5i", r, 76))})
+    extra["socket"].append(lista)
+b = decifra(open(os.path.join(LOCAL, "ItemAddOption.bmd"), "rb").read())
+for i in range(8192):
+    o1, v1, o2, v2 = struct.unpack_from("<BxHBxH", b, i * 16)
+    if o1 or o2:
+        extra["op380"][f"{i // 512},{i % 512}"] = [o1, v1, o2, v2]
+json.dump(extra, open(os.path.join(SAIDA, "itens_extra.json"), "w"), ensure_ascii=False, separators=(",", ":"))
+print(f"{len(extra['sets'])} sets, {len(extra['set_do_item'])} itens de set, {len(extra['op380'])} itens 380")

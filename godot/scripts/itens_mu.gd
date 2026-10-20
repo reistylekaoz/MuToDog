@@ -90,6 +90,42 @@ const PORNIVEL_8 := [10000, 10000, 50000, 100000, 300000, 500000, 800000, 100000
 
 
 static func preco(it: Dictionary) -> int:
+	return _arredonda(_preco_bruto(it))
+
+
+# preco de venda pro NPC: um terco da compra, menos ate 60% pelo desgaste
+# (OpenMU ItemPriceCalculator.CalculateSellingPrice, o servidor e quem paga)
+static func preco_venda(it: Dictionary) -> int:
+	var v := _preco_bruto(it) / 3
+	if it.grupo == 14 and it.numero <= 8:
+		return v / 10 * 10
+	var maxima := _dur_maxima(it)
+	var dur: int = it.get("durabilidade", 0)
+	if maxima > 1 and maxima > dur:
+		v -= int(v * 0.6 * (1.0 - float(dur) / maxima))
+	return _arredonda(v)
+
+
+# OpenMU ItemExtensions.GetMaximumDurabilityOfOnePiece: item que nao se veste conta 1 (a durabilidade
+# dele e a quantidade); Dark Horse e corvo 255; o resto soma por nivel, +20 ancient, +15 excelente
+const DUR_POR_NIVEL := [0, 1, 2, 3, 4, 6, 8, 10, 12, 14, 17, 21, 26, 32, 39, 47]
+
+
+static func _dur_maxima(it: Dictionary) -> int:
+	var p: Dictionary = DicaItem.dados_bmd(it)
+	if p.is_empty() or int(p.slot) == 255:
+		return 1
+	if chave(it) in ["13,4", "13,5"]:
+		return 255
+	var m: int = int(p.durabilidade) + DUR_POR_NIVEL[clampi(it.get("nivel", 0), 0, 15)]
+	if it.get("anc", 0) & 3:
+		m += 20
+	elif it.get("exc", 0) > 0 and DicaItem.asa(chave(it)) == 0:
+		m += 15
+	return mini(m, 255)
+
+
+static func _preco_bruto(it: Dictionary) -> int:
 	var i := info(it)
 	var k := chave(it)
 	var g: int = it.grupo
@@ -99,7 +135,7 @@ static func preco(it: Dictionary) -> int:
 	var valor: int = i[6]
 	var p := 0
 	if valor > 0 and (g == 15 or g == 12):
-		return _arredonda(valor)
+		return valor
 	var drop: int = int(i[7]) + lv * 3
 	if it.exc > 0:
 		drop += 25
@@ -143,8 +179,7 @@ static func preco(it: Dictionary) -> int:
 	elif valor > 0:
 		p = valor * valor * 10 / 12
 		if g == 14 and n <= 8:   # pocoes e antidoto: dobra por nivel, vezes a quantidade
-			p = p * int(pow(2, lv)) / 10 * 10 * maxi(dur, 1)
-			return _arredonda(p)
+			return p * int(pow(2, lv)) / 10 * 10 * maxi(dur, 1)
 	elif (g == 12 and ((n > 6 and n < 36) or (n > 43 and n != 50))) or g == 13 or g == 15:
 		p = drop * drop * drop + 100
 	else:
@@ -167,7 +202,7 @@ static func preco(it: Dictionary) -> int:
 			p += int(p * 0.7 * pow(2, o - 1))
 		for x in _bits(it.exc):
 			p += p
-	return _arredonda(mini(p, 3000000000))
+	return mini(p, 3000000000)
 
 
 static func _arredonda(p: int) -> int:

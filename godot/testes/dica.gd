@@ -51,5 +51,38 @@ func _init() -> void:
 	confere("Jewel of Bless", item(14, 13, {"durabilidade": 1}), ["Jewel of Bless",
 		"It is used to increase your item level up to 6"])
 	confere("Large Healing Potion x3", item(14, 3, {"durabilidade": 3}), ["Number of items: 3"])
+
+	# set ancient: Dragon Helm do set 11 (discriminador 1) com bonus +5; vestido com mais uma peca do set
+	var elmo := item(7, 1, {"anc": 0x05, "durabilidade": 68})
+	var nome_set: String = DicaItem._extra.sets["11"].nome
+	DicaItem.equipados = [elmo, item(10, 1, {"anc": 0x01})]
+	confere("Ancient %s Dragon Helm" % nome_set, elmo, ["%s Dragon Helm" % nome_set, "Increase stamina +5",
+		"Set Item option info"])
+	var linhas := DicaItem.linhas(elmo)
+	var acesas := linhas.filter(func(x): return x.has("cor") and x.cor == DicaItem.AZUL and x.t.begins_with("Increase"))
+	if acesas.size() < 2:   # o bonus +5 e a 1a opcao do set (2 pecas)
+		falhas += 1
+		print("  FALHA: com 2 pecas vestidas a 1a opcao do set devia acender (%d azuis)" % acesas.size())
+	DicaItem.equipados = []
+	# harmony: opcao 2 (Max. attack increase) nivel 5 na espada +9; opcao 380; sockets
+	var b := PackedByteArray([0, 0, 0, 0, 0, 0, 0x25, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
+	confere("Harmony", item(0, 16, {"nivel": 9, "durabilidade": 120, "bytes": b}), ["Max. attack increase +8"])
+	b = PackedByteArray([0, 0, 0, 0, 0, 0x08, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
+	confere("Opcao 380", item(0, 22, {"durabilidade": 120, "bytes": b}), ["Additional Damage +200",
+		"Attack sucess rate increase +10"])
+	b = PackedByteArray([0, 0, 0, 0, 0, 0, 0xFF, 102, 0xFE, 1, 0xFF, 0xFF])
+	confere("Sockets", item(0, 26, {"durabilidade": 120, "bytes": b}), ["Socket Item option info",
+		"Socket 1: Fire(Maximum attack/Wizardry increase +35)", "Socket 2: No item application",
+		"Socket 3: Fire(Attack speed increase +7)"])
+	# preco de venda: um terco da compra; gasta, perde ate 60%
+	var kris := item(0, 0, {"durabilidade": 20})
+	var compra := ItensMU.preco(kris)
+	var cheia := ItensMU.preco_venda(kris)
+	kris.durabilidade = 10
+	var gasta := ItensMU.preco_venda(kris)
+	print("--- Kris: compra %d, venda %d, venda gasta pela metade %d" % [compra, cheia, gasta])
+	if absi(cheia - compra / 3) > compra / 100 + 10 or gasta >= cheia:
+		falhas += 1
+		print("  FALHA: preco de venda")
 	print("falhas: %d" % falhas)
 	quit(1 if falhas else 0)

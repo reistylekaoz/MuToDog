@@ -13,6 +13,8 @@ const pasta = process.argv[2] || '/tmp/mu-efeitos';
 const web = process.argv[3] || path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'build', 'web');
 const lista = (process.argv[4] || '4,3,17,1,2,5,7,8,9,10,12,13,14,38,39,19,41,42,43,47,55,56,24,51,52,26,27,28').split(',');
 const camera = process.argv[5] || '10,45,-45';
+const monta = process.env.MONTA ? `&monta=${process.env.MONTA}` : ''; // MONTA=red: no Fenrir
+const QUADROS = (process.env.QUADROS || '120,300,700,1300').split(',').map(Number); // ms de jogo de cada foto
 const LENTO = 4; // o jogo roda 4 vezes mais devagar (?lento=0.25)
 fs.mkdirSync(pasta, { recursive: true });
 const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.wasm': 'application/wasm', '.pck': 'application/octet-stream', '.png': 'image/png' };
@@ -27,7 +29,7 @@ await page.route('https://mu.local/**', async rota => {
   if (!fs.existsSync(arq)) return rota.fulfill({ status: 404, body: '' });
   await rota.fulfill({ status: 200, body: fs.readFileSync(arq), headers: { 'content-type': tipos[path.extname(arq)] || 'application/octet-stream' } });
 });
-await page.goto(`https://mu.local/index.html?auto=test1,x,test1Dk&gravacao=cidade&camera=${camera}&efeito_teste=${lista.join(',')}&lento=${1 / LENTO}`);
+await page.goto(`https://mu.local/index.html?auto=test1,x,test1Dk&gravacao=cidade&camera=${camera}&efeito_teste=${lista.join(',')}&lento=${1 / LENTO}${monta}`);
 for (let i = 0; i < 480 && !marcas.some(t => /TESTE entrou/.test(t)); i++) await page.waitForTimeout(500);
 console.log('entrou:', marcas.some(t => /TESTE entrou/.test(t)));
 for (const n of lista) {
@@ -36,7 +38,8 @@ for (const n of lista) {
   for (let i = 0; i < 1200 && !(achou = marcas.some(t => re.test(t))); i++) await page.waitForTimeout(50);
   if (!achou) { console.log('nao saiu o efeito', n); continue; }
   let antes = 0;
-  for (const [nome, ms] of [['0', 120], ['a', 300], ['b', 700], ['c', 1300]]) {
+  for (const [k, ms] of QUADROS.entries()) {
+    const nome = 'abcdefghij'[k];
     await page.waitForTimeout((ms - antes) * LENTO);
     antes = ms;
     await page.screenshot({ path: path.join(pasta, `${n}-${nome}.png`) });

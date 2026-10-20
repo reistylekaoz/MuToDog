@@ -29,6 +29,7 @@ var e: EfeitoMU
 var _acc := 0.0
 var _luzes: Array[MeshInstance3D] = []   # olhos (2) e boca (2) do Fenrir, refeitos todo quadro
 var _ossos := {}
+var _brilho: Array[ShaderMaterial] = []   # 2a passada cromada do Fenrir, acesa so no golpe dele
 
 
 # poe os efeitos na montaria recem-criada (Boneco._vestir, slot 8)
@@ -43,6 +44,8 @@ static func ligar(montaria: Boneco, jeito: String, cor_fenrir: String) -> Efeito
 		montaria.camada([12, 13, 14, 15], "chrome01", "chrome", Color(1, 0.8, 0.3), [1, 0, 0], Vector2.ZERO)
 	elif jeito == "fenrir":
 		montaria.camada(0 if f.cor == "gold" else 1, "chrome01", "chrome", BRANCO, [1, 0, 0], Vector2.ZERO)
+		if f.cor != "gold":
+			f._brilho = montaria.camada(1, "chrome01", "chrome", Color(0, 0, 0), [1, 0, 0], Vector2.ZERO)
 		for i in 4:
 			var q := MeshInstance3D.new()
 			q.mesh = QuadMesh.new()
@@ -74,6 +77,9 @@ func _process(d: float) -> void:
 		return
 	if tipo == "fenrir":
 		_olhos()
+		var golpe := _no_golpe()
+		for m in _brilho:
+			m.set_shader_parameter("cor", BRANCO if golpe else Color(0, 0, 0))
 	_acc = minf(_acc + d, T * 5)
 	while _acc >= T:
 		_acc -= T
@@ -123,6 +129,8 @@ func _tick() -> void:
 			_raio(c[0])
 			_raio(c[0])
 			_pegadas(c[1])
+			if _no_golpe():
+				_faisca()
 			if andando and randi() % 3 == 0 and mapa != ICARUS and mapa not in KALIMA:
 				_poeira()
 
@@ -208,3 +216,22 @@ static func _pegada(pc: Dictionary, k: float, sub: int) -> void:
 		3: c = Color(m, 1, m)
 		4: c = Color(1, 1, m)
 	pc.cor = c   # o EfeitoMU poe pc.cor no material logo depois
+
+
+# FENRIR_ATTACK_SKILL: o cavaleiro no golpe do Fenrir (Plasma Storm)
+func _no_golpe() -> bool:
+	var dono := b.get_parent() as Boneco
+	return dono != null and dono.pedida == "fenrir_skill" and dono.anim != null and dono.anim.is_playing()
+
+
+# BITMAP_SPARK + 1 subtipo 15 no queixo (osso 14, -5..0 0 -10..10), vermelha, 0.7 + lum * 0.05:
+# 1 em 3 vive 35 ticks caindo 2.5 a 4.5 por tick; as outras so 2 ticks. A luz cai 1/1.05 por tick.
+func _faisca() -> void:
+	var lum := sin(Time.get_ticks_msec() * 0.002) * 0.2
+	var p := _osso(14, Vector3(randf_range(-5, 0), 0, randf_range(-10, 10)))
+	var longa := randi() % 3 == 0
+	var vida := (35 if longa else 2) * T
+	var vel := Vector3(0, -randf_range(2.5, 4.5) / 100.0 / T, 0) if longa else Vector3.ZERO
+	e.sprite("spark03", p, 0.64 * (0.7 + lum * 0.05), Color(1, 0, 0), vida, {vel = vel, some = 0.0,
+		anda = func(pc: Dictionary, k: float) -> void:
+			pc.cor = Color(1, 0, 0) * pow(1.0 / 1.05, k * vida / T)})

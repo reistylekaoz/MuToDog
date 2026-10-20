@@ -791,8 +791,9 @@ const SHADER_CAMADA := preload("res://scripts/camada.gdshader")
 
 # RenderMesh de novo por cima, somado (camada.gdshader): a passada vai no next_pass do material
 # de cada malha pedida (no navegador uma copia da MeshInstance com esqueleto nao desenha)
-func camada(malhas, tex: String, jeito: String, cor: Color, pulso: Array, corre: Vector2) -> void:
+func camada(malhas, tex: String, jeito: String, cor: Color, pulso: Array, corre: Vector2) -> Array[ShaderMaterial]:
 	var quais: Array = malhas if malhas is Array else [malhas]
+	var feitas: Array[ShaderMaterial] = []
 	var i := 0
 	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
 		if mi.mesh == null:
@@ -818,7 +819,9 @@ func camada(malhas, tex: String, jeito: String, cor: Color, pulso: Array, corre:
 					while fim.next_pass:
 						fim = fim.next_pass
 					fim.next_pass = m
+					feitas.append(m)
 			i += 1
+	return feitas
 
 
 # copia do material com as passadas dele (o original e dividido com os outros do mesmo modelo)

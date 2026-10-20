@@ -427,6 +427,7 @@ func _montar_ui() -> void:
 		cli.vender(slot))
 	loja.fechar.connect(_fechar_loja)
 	hud.add_child(loja)
+	inv.loja_npc = loja
 	guarda = Guarda.new()
 	guarda.inv = inv
 	guarda.guardar.connect(func(de, para):
@@ -716,7 +717,8 @@ func _entrou(info: Dictionary) -> void:
 	meus_pontos = info.pontos
 	exp_atual = info.exp
 	DicaItem.eu = {"nivel": meu_nivel, "classe": minha_classe, "forca": info.forca, "agilidade": info.agilidade,
-		"vitalidade": info.vitalidade, "energia": info.energia, "comando": info.comando}
+		"vitalidade": info.vitalidade, "energia": info.energia, "comando": info.comando,
+		"vida_max": info.vida_max, "mana_max": info.mana_max}
 	exp_prox = info.exp_prox
 	meu_zen = info.zen
 	inv.zen = info.zen
@@ -1132,7 +1134,8 @@ func _process(dt: float) -> void:
 		_costas_t = 0.3
 		for e: Entidade in entidades.values():
 			if is_instance_valid(e) and e.boneco and e.tipo in ["eu", "jogador"]:
-				var segura: bool = mundo.zona_segura(e.tile.x, e.tile.y)
+				# teste com &monta: montaria a mostra mesmo na cidade
+				var segura: bool = mundo.zona_segura(e.tile.x, e.tile.y) and not _teste_monta
 				e.boneco.arma_nas_costas(segura)
 				e.boneco.nadando(mapa_atual == 7 and not segura)
 	var seg: bool = mundo.zona_segura(eu.tile.x, eu.tile.y)
@@ -1658,7 +1661,7 @@ func _teste_loja(quem: String) -> void:
 				break
 		if achou:
 			break
-	var l: Dictionary = (await cli.loja)
+	var l: Dictionary = (await cli.loja)[0]   # o sinal manda [itens, tipo]
 	await get_tree().create_timer(0.5).timeout
 	if _parametros().has("so_abrir"):
 		return
@@ -1667,7 +1670,7 @@ func _teste_loja(quem: String) -> void:
 	cli.comprar(s)
 	var r: Array = await cli.comprou
 	await get_tree().create_timer(0.5).timeout
-	print("TESTE vendendo slot %d (zen %d)" % [r[0], meu_zen])
+	print("TESTE vendendo slot %d (zen %d, a caixa diz %d)" % [r[0], meu_zen, ItensMU.preco_venda(inv.itens[r[0]]) if inv.itens.has(r[0]) else -1])
 	inv.esperando = r[0]
 	_zen_antes_venda = meu_zen
 	cli.vender(r[0])
@@ -1983,11 +1986,20 @@ func _chao_teste(x: int, y: int) -> void:
 			quem.mostrar_dano(t[0], t[1], t[2])
 
 
+var _teste_monta := false   # &monta: a montaria fica a mostra na zona segura
+
 # testes (?efeito_teste=4,3,41): solta o efeito de cada skill a 3 tiles na frente, uma a cada 3 s
 func _efeito_teste(lista: Array) -> void:
 	# ?lento=0.25: camera lenta, pra foto no navegador de teste (poucos quadros por segundo)
 	Engine.time_scale = float(_parametros().get("lento", "1"))
 	await get_tree().create_timer(4.0).timeout
+	# &monta=red (black, blue, gold): o heroi no Fenrir dessa cor, pro golpe do Fenrir (76)
+	if _parametros().has("monta") and eu != null:
+		_teste_monta = true
+		var d := eu.boneco.vestido()
+		d[8] = "13,37"
+		d["fenrir"] = str(_parametros().monta)
+		eu.boneco.vestir(d)
 	for x in lista:
 		if eu == null:
 			return

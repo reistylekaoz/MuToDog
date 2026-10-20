@@ -31,6 +31,7 @@ const NOMES_SLOT := {0: "mao direita", 1: "mao esquerda", 2: "elmo", 3: "armadur
 var itens := {}            # slot -> item (cliente.gd item_de)
 var zen := 0
 var na_mao := -1           # slot do item que esta no mouse
+var loja_npc: Control      # com a loja do NPC aberta, a caixa do item mostra o preco de venda
 var esperando := -1        # slot que mandei mover e o servidor ainda nao respondeu
 var _tex := {}
 var _esc := 1.0
@@ -269,9 +270,23 @@ func _draw() -> void:
 	else:
 		var s := slot_sob_mouse()
 		if s >= 0:
-			DicaItem.mostrar(self, f, DicaItem.linhas(itens[s]), _rect_slot(s))
+			var topo := []
+			if loja_npc and loja_npc.visible and s >= MOCHILA:
+				var v := DicaItem._milhar(ItensMU.preco_venda(itens[s]))
+				topo.append(DicaItem._linha(DicaItem.t(63, [v]), Color8(255, 204, 26)))
+			DicaItem.equipados = _equipados()
+			DicaItem.mostrar(self, f, DicaItem.linhas(itens[s], topo), _rect_slot(s))
 		else:
 			DicaItem.esconder(self)
+
+
+# os itens vestidos (slots 0 a 11), pra caixa contar as pecas do set ancient
+func _equipados() -> Array:
+	var l := []
+	for i in MOCHILA:
+		if itens.has(i):
+			l.append(itens[i])
+	return l
 
 
 func _moldura(r: Rect2) -> void:
