@@ -28,6 +28,22 @@ static func no_olho(alvo_no: Node3D, n: int) -> RastroOlho:
 	return r
 
 
+# luz que gira em volta da Elf Soldier (CreateJoint BITMAP_FLARE subtipo 42 no CreateMonster):
+# raio 50, 15 graus por quadro (uma volta em 0,96 s), 6 pontas, 15 de largura, branca
+static func em_volta(b: Node3D) -> RastroOlho:
+	var giro := Node3D.new()
+	b.add_child(giro)
+	var ponta := Node3D.new()
+	ponta.position = Vector3(0, 0.15, 0.5)
+	giro.add_child(ponta)
+	var t := giro.create_tween().set_loops()
+	t.tween_property(giro, "rotation:y", TAU, 0.96).from(0.0)
+	var r := no_olho(ponta, 6)
+	r.largura = 0.15
+	r._mat.set_shader_parameter("tex", EfeitoMU.textura("flare"))
+	return r
+
+
 func _process(d: float) -> void:
 	if not is_instance_valid(alvo) or not alvo.is_visible_in_tree():
 		_pontos.clear()

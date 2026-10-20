@@ -67,6 +67,8 @@ var brilho := 2.0
 var inv: Inventario
 # loja do NPC, amigos (F) e menu (U)
 var loja: Loja
+var minimapa: Minimapa     # Tab
+var dialogo: DialogoNPC     # conversa do NPC (Elf Soldier): C3 F9 01
 var guarda: Guarda          # bau e maquina do caos
 var _janela_npc := 0        # tipo da janela que o servidor abriu (0 loja, 2 bau, 3 maquina do caos)
 var amigos: Amigos
@@ -428,6 +430,20 @@ func _montar_ui() -> void:
 	loja.fechar.connect(_fechar_loja)
 	hud.add_child(loja)
 	inv.loja_npc = loja
+	dialogo = DialogoNPC.new()
+	dialogo.resposta.connect(func(r):
+		print("TESTE resposta %d no dialogo do npc %d" % [r, dialogo.npc])
+		if r == 902:
+			cli.buff_npc()
+			_fechar_loja()
+		else:
+			_msg("[color=#9a9ab0]As quests desse NPC ainda nao foram feitas neste cliente.[/color]"))
+	dialogo.fechar.connect(_fechar_loja)
+	hud.add_child(dialogo)
+	minimapa = Minimapa.new()
+	minimapa.jogo = self
+	minimapa.andar.connect(_andar_pelo_minimapa)
+	hud.add_child(minimapa)   # por cima do chat e do texto do topo (o hud ainda ganha filhos depois)
 	guarda = Guarda.new()
 	guarda.inv = inv
 	guarda.guardar.connect(func(de, para):
@@ -508,7 +524,7 @@ func _montar_ui() -> void:
 	sair.pressed.connect(_sair)
 	hud.add_child(sair)
 	# o Sair sai da frente das janelas coladas na direita (inventario, loja, bau, C e D)
-	var direita: Array[Control] = [inv, loja, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper]
+	var direita: Array[Control] = [inv, loja, dialogo, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper]
 	var mover_sair := func():
 		var x := hud.size.x
 		for j in direita:
@@ -749,6 +765,12 @@ func _entrou(info: Dictionary) -> void:
 		_teste_comando(str(_parametros().comando).split(","))
 	if _parametros().has("ponto"):
 		_teste_ponto(int(_parametros().ponto))
+	if _parametros().has("falar"):
+		_teste_falar(str(_parametros().falar))
+	if _parametros().has("minimapa"):
+		_teste_minimapa(str(_parametros().minimapa))
+	if _parametros().has("dialogo_teste"):
+		dialogo.abrir(int(_parametros().dialogo_teste), "Elf Soldier")
 	if _parametros().has("efeito_teste"):
 		_efeito_teste(str(_parametros().efeito_teste).split(",", false))
 	if _andar_depois.x >= 0:
@@ -1103,6 +1125,29 @@ func andar_ate(t: Vector2i) -> void:
 	_restante = c
 	_fim_enviado = Vector2i(-1, -1)
 	_mandar_trecho()
+
+
+# botao direito no minimapa: anda ate o tile (ou o livre mais perto dele)
+func _andar_pelo_minimapa(t: Vector2i) -> void:
+	var alvo := Vector2i(-1, -1)
+	for r in 16:
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				var p := t + Vector2i(dx, dy)
+				if alvo.x < 0 and maxi(absi(dx), absi(dy)) == r and mundo.anda(p.x, p.y):
+					alvo = p
+	var c: Array[Vector2i] = []
+	if alvo.x >= 0:
+		c = mundo.caminho(eu.tile, alvo)
+	print("TESTE minimapa: andar ate %s (livre %s, %d passos)" % [t, alvo, c.size()])
+	if c.is_empty():
+		_msg("[color=#e8b04a]Nao da pra chegar ate ai andando.[/color]")
+		return
+	alvo_id = -1
+	npc_alvo = -1
+	item_alvo = -1
+	minimapa._destino = alvo
+	andar_ate(alvo)
 
 
 # manda ate 7 passos por pacote; o resto vai quando chegar no fim do trecho.
@@ -1558,6 +1603,7 @@ func _fechar_loja() -> void:
 	_janela_npc = 0
 	loja.visible = false
 	guarda.visible = false
+	dialogo.visible = false
 	inv.soltar()
 
 
@@ -1567,6 +1613,16 @@ func _volumes() -> void:
 
 
 func _ligar_loja_e_amigos() -> void:
+	cli.dialogo_npc.connect(func(numero):
+		var n: Entidade = entidades.get(npc_falando)
+		print("TESTE dialogo do npc %d (%s)" % [numero, n.nome if n else "?"])
+		if dialogo.tem(numero):
+			dialogo.abrir(numero, n.nome if n else "")
+			if _parametros().has("resposta"):
+				dialogo.escolher(int(_parametros().resposta) - 1)
+		else:
+			_msg("[color=#9a9ab0]A conversa desse NPC ainda nao foi feita neste cliente.[/color]")
+			_fechar_loja())
 	cli.janela_npc.connect(func(tipo):
 		print("TESTE janela do npc %d" % tipo)
 		_janela_npc = tipo
@@ -2050,6 +2106,37 @@ func _pegou(slot: int, item: Dictionary) -> void:
 	print("TESTE pegou %s" % n)
 
 
+# testes: --falar <parte do nome> anda ate o NPC e fala com ele
+func _teste_falar(quem: String) -> void:
+	await get_tree().create_timer(2.0).timeout
+	for e: Entidade in entidades.values():
+		if e.tipo == "npc" and e.nome.containsn(quem):
+			print("TESTE indo falar com %s (%d) em %s" % [e.nome, e.id, e.tile])
+			falar_com(e.id)
+			return
+	print("TESTE nenhum npc com %s: %s" % [quem, entidades.values().filter(func(x): return x.tipo == "npc").map(func(x): return x.nome)])
+
+
+# --minimapa 1: abre o Tab; --minimapa x,y: abre e anda ate o tile (botao direito)
+func _teste_minimapa(q: String) -> void:
+	await get_tree().create_timer(2.0).timeout
+	hud.move_child(minimapa, -1)
+	minimapa.alternar(mapa_atual)
+	print("TESTE minimapa aberto %s no mapa %d" % [minimapa.visible, mapa_atual])
+	var xy := q.split(",")
+	if xy.size() == 2:
+		var t := Vector2i(int(xy[0]), int(xy[1]))
+		# o mesmo caminho do clique: tela -> tile pela conta do minimapa
+		var tela: Vector2 = minimapa._base() * (Vector2(t) + Vector2(0.5, 0.5))
+		print("TESTE minimapa: %s fica em %s na tela, volta %s" % [t, tela, minimapa.tile_em(tela)])
+		minimapa.ir_para(minimapa.tile_em(tela))
+		for i in 120:
+			await get_tree().create_timer(1.0).timeout
+			if not eu.andando() and _restante.is_empty():
+				break
+		print("TESTE minimapa: parei em %s" % eu.tile)
+
+
 # --- inventario --------------------------------------------------------------------
 
 func _ligar_inventario_e_skills() -> void:
@@ -2326,6 +2413,11 @@ func _ligar_troca_loja_helper() -> void:
 		helper.desserializar(d)
 		print("TESTE helper dados %d bytes: caca=%d extras=%s" % [d.size(), helper.c.caca, helper.c.extras]))
 	cli.efeito.connect(func(a, quem, e): helper.efeito(a, quem, e))
+	cli.efeito.connect(func(a, quem, e):
+		if quem == cli.meu_id and e == 3:
+			# buff da Elf Soldier (ate o nivel 180): mais dano e defesa
+			print("TESTE buff da elf soldier %s" % a)
+			_msg("[color=#7fe0ff]%s[/color]" % ("Buff da Elf Soldier: dano e defesa maiores." if a else "O buff da Elf Soldier acabou.")))
 	helper.mudou.connect(_trocar_icone_helper)
 	cli.mensagem.connect(func(t):
 		if helper.pedindo and t.to_lower().contains("helper"):
@@ -2422,6 +2514,11 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k == KEY_U:
 		menu.alternar(brilho)
 		return true
+	if k == KEY_TAB:
+		hud.move_child(minimapa, -1)
+		if not minimapa.alternar(mapa_atual):
+			_msg("[color=#9a9ab0]Este mapa nao tem minimapa no cliente S6.[/color]")
+		return true
 	if k == KEY_M:
 		mover_janela.alternar(meu_nivel, meu_zen, minha_classe)
 		return true
@@ -2438,7 +2535,9 @@ func _teclas(ev: InputEventKey) -> bool:
 		helper.alternar()
 		return true
 	if k == KEY_ESCAPE:
-		if menu.visible:
+		if minimapa.visible:
+			minimapa.visible = false
+		elif menu.visible:
 			menu.visible = false
 		elif mover_janela.visible:
 			mover_janela.visible = false
@@ -2448,7 +2547,7 @@ func _teclas(ev: InputEventKey) -> bool:
 			janela_helper.visible = false
 		elif loja_pessoal.visible:
 			_fechar_loja_pessoal()
-		elif loja.visible or guarda.visible:
+		elif loja.visible or guarda.visible or dialogo.visible:
 			_fechar_loja()
 		elif inv.visible:
 			inv.alternar()

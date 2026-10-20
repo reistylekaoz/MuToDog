@@ -47,7 +47,7 @@ const NPCS := {
 	4: ["monster01", 1.15], 6: ["monster05", 0.85], 7: ["monster06", 1.6], 14: ["esqueleto1", 0.95],
 	226: ["treinador", 1.0], 229: ["marlon", 1.0], 230: ["alex", 1.0], 236: ["esqueleto2", 1.0],
 	240: ["baz", 1.0], 247: ["guarda_besta", 1.0], 248: ["martin", 1.0], 249: ["placa", 1.0], 250: ["harold", 1.0],
-	251: ["hanzo", 0.95], 253: ["amy", 1.0], 254: ["pasi", 1.0], 255: ["lumen", 1.0], 257: ["espirito", 1.0],
+	251: ["hanzo", 0.95], 253: ["amy", 1.0], 254: ["pasi", 1.0], 255: ["lumen", 1.0],
 	371: ["leo", 1.0], 375: ["leo", 1.0], 543: ["duprian", 1.0], 547: ["julia", 1.0], 568: ["zyro", 0.8],
 	# Devias e Noria (CreateMonster do cliente S6: modelo, escala e, em 3o, a malha que brilha somada)
 	20: ["monster14", 1.4], 21: ["monster15", 0.95], 22: ["monster16", 1.0, 0], 23: ["monster17", 1.15],
@@ -350,6 +350,9 @@ const VESTIDOS := {
 	539: ["classe_sum", {0: "5,18", 2: "7,40", 3: "8,40", 4: "9,40", 5: "10,40", 6: "11,40"}],
 	34: ["classe_dw", {0: "5,5", 1: "6,14", 2: "7,3", 3: "8,3", 4: "9,3", 5: "10,3", 6: "11,3",
 		"niveis": {0: 9, 1: 9, 2: 9, 3: 9, 4: 9, 5: 9, 6: 9}}],
+	# Elf Soldier (MakeElfHelper): Red Spirit +13 e Wings of Spirits, parada voando
+	257: ["classe_elf", {2: "7,24", 3: "8,24", 4: "9,24", 5: "10,24", 6: "11,24", 7: "12,3",
+		"niveis": {2: 13, 3: 13, 4: 13, 5: 13, 6: 13}}],
 }
 # sprites presos nos ossos (RenderLight, RenderEye e o corpo de luz do Shadow no
 # RenderCharacter do cliente): [textura, escala, ossos ("todos" = menos 15-20 e 27-32),
@@ -476,6 +479,9 @@ static func do_npc(numero: int) -> Boneco:
 		var j := novo(v[0])
 		if j:
 			j.vestir(v[1])
+			if numero == 257:
+				RastroOlho.em_volta(j)
+				j.altura += 0.7   # BoundingBoxMax[2] += 70: voando, o clique pega mais alto
 		return j
 	var m: Array = SORTEIO[numero].pick_random() if SORTEIO.has(numero) else NPCS.get(numero, [])
 	if m.is_empty():

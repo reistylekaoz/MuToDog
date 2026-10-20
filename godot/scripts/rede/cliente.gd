@@ -46,6 +46,7 @@ signal area_animacao(skill: int, quem: int, x: int, y: int, giro: int)
 signal efeito(ativo: bool, quem: int, efeito: int)
 signal aparencia_mudou(quem: int, slot: int, chave: String, nivel: int)
 signal janela_npc(tipo: int)
+signal dialogo_npc(npc: int)   # C3 F9 01: NPC de conversa (Elf Soldier e cia), numero do monstro
 signal loja(itens: Dictionary, tipo: int)   # tipo 0 normal (loja ou bau), 3 maquina do caos
 signal bau_zen(no_bau: int, na_mochila: int)
 signal mistura(resultado: int, item: Dictionary)   # 0 falhou, 1 deu certo, 2 falta zen, 3 itens demais...
@@ -230,6 +231,11 @@ func mover_para(indice: int) -> void:
 
 func falar_npc(id: int) -> void:
 	con.enviar(PackedByteArray([0xC3, 0, 0x30, (id >> 8) & 0xFF, id & 0xFF]))
+
+
+func buff_npc() -> void:
+	# F6 31 (NpcBuffRequest): a resposta 902 da conversa da Elf Soldier
+	con.enviar(PackedByteArray([0xC1, 0, 0xF6, 0x31]))
 
 
 func fechar_npc() -> void:
@@ -628,6 +634,10 @@ func _tratar(p: PackedByteArray) -> void:
 		[0x32, 0xFF]:
 			if p.size() == 4:
 				compra_falhou.emit()
+				return
+		[0xF9, 0x01]:
+			if p.size() >= c + 4:
+				dialogo_npc.emit(p[c + 2] | (p[c + 3] << 8))
 				return
 		[0xC1, 0x01]:
 			if p.size() >= 15:
