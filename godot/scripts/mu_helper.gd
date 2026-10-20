@@ -100,9 +100,9 @@ func desserializar(d: PackedByteArray) -> void:
 	for b in d.slice(0, 65):
 		if b != 0:
 			vazio = false
+	c = padrao()
 	if vazio:
 		return   # nunca salvou: fica o padrao
-	c = padrao()
 	c.joia = d[1] & 8 != 0
 	c.set = d[1] & 16 != 0
 	c.exc = d[1] & 32 != 0

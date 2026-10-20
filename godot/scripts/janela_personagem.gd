@@ -52,6 +52,7 @@ func _ajustar() -> void:
 func alternar() -> void:
 	visible = not visible
 	_ajustar()
+	print("TESTE janela C aberta %s em %s escala %s pontos %s" % [visible, global_position, _esc, eu.get("pontos")])
 
 
 func classe_base() -> int:
@@ -273,7 +274,17 @@ func _clique(p: Vector2) -> void:
 			_apertado = i
 			esperando = true
 			adicionar.emit(i)
+			_desistir()
 			return
+
+
+# o OpenMU so responde F3 06 quando aceita; quando recusa (sem pontos, atributo que a classe
+# nao tem) manda so a mensagem azul. Sem resposta em 2 s, o + volta a funcionar.
+func _desistir() -> void:
+	await get_tree().create_timer(2.0).timeout
+	if esperando:
+		esperando = false
+		queue_redraw()
 
 
 # resposta do servidor (F3 06): soma 1 no atributo e tira 1 dos pontos

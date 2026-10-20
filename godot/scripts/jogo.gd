@@ -660,6 +660,13 @@ func _personagens(l: Array) -> void:
 		if meu_nome != "" and p.nome == meu_nome:
 			_escolher(p.nome)
 			return
+	# testes: --auto conta,senha,Novo --criar 0 (0 DW, 4 DK, 8 Elf, 12 MG, 16 DL, 20 Sum, 24 RF) cria e entra
+	if _auto and _parametros().has("criar") and meu_nome != "":
+		cli.criar_personagem(meu_nome, int(_parametros().criar))
+		var r: Array = await cli.criou
+		print("TESTE criou %s %s" % [meu_nome, r])
+		cli.pedir_personagens()
+		return
 	_abrir_selecao(l)
 
 
@@ -695,6 +702,12 @@ func _fechar_selecao() -> void:
 func _escolher(nome: String) -> void:
 	_fechar_selecao()
 	meu_nome = nome
+	# o helper e a janela C sao de cada personagem: o servidor so manda a config (C2 AE) de quem ja salvou
+	if helper:
+		helper.parar("")
+		helper.c = MuHelper.padrao()
+		janela_helper.visible = false
+		janela_personagem.esperando = false
 	minha_classe = _classe_de.get(nome, [0, 1])[0]
 	meu_nivel = _classe_de.get(nome, [0, 1])[1]
 	_limpar_lista()
@@ -1341,6 +1354,8 @@ func _nivel(info: Dictionary) -> void:
 	exp_prox = exp_do_nivel(meu_nivel)
 	_msg("[color=#ffd84a]Subiu pro nivel %d! (%d pontos pra distribuir)[/color]" % [meu_nivel, info.pontos])
 	_hud_nivel()
+	if _parametros().has("ponto_subir"):
+		_teste_ponto(int(_parametros().ponto_subir))
 
 
 # experiencia total pra passar do nivel n pro n+1 (formula do OpenMU, ate o 255)
@@ -1925,15 +1940,19 @@ func _teste_fotos_janelas() -> void:
 	print("TESTE foto helper_itens")
 
 
-# testes: --trocar 1 volta pra escolha de personagem e entra de novo
+# testes: --trocar 1 volta pra escolha de personagem e entra de novo (--trocar Nome: entra com outro)
 func _teste_trocar() -> void:
 	await get_tree().create_timer(2.0).timeout
-	var quem := meu_nome
+	print("TESTE helper antes de trocar: %s caca=%d skills=%s" % [meu_nome, helper.c.caca, helper.c.skills])
+	var quem := meu_nome if str(_parametros().trocar) == "1" else str(_parametros().trocar)
 	cli.sair_para(1)
 	var l: Array = await cli.personagens
 	print("TESTE de volta na escolha: %s" % [l.map(func(x): return x.nome)])
 	await get_tree().create_timer(0.5).timeout
 	_escolher(quem)
+	await cli.entrou
+	await get_tree().create_timer(2.0).timeout
+	print("TESTE helper depois de trocar: %s caca=%d skills=%s" % [meu_nome, helper.c.caca, helper.c.skills])
 
 
 func _itens_cairam(lista_itens: Array) -> void:
@@ -2486,6 +2505,7 @@ func _atualizar_skills() -> void:
 		if int(_info_skill(n)[2]) != 20 and n not in l:   # passiva nao vai na barra
 			l.append(n)
 	barra_mu.skills = l
+	print("TESTE barra skills %s" % [l])
 	_carregar_atalhos()
 	if barra_mu.skill_atual not in l:
 		barra_mu.skill_atual = l[0] if not l.is_empty() else -1
