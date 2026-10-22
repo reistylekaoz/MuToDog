@@ -1,7 +1,7 @@
 #!/bin/bash
 # Exporta o launcher pro Windows (build/MUEstudo.exe, pck embutido com a chave) e monta o zip
-# da entrega (build/MUEstudo-launcher.zip). So precisa refazer quando launcher.gd mudar
-# (suba VERSAO_LAUNCHER e o "launcher" do versao.json em godot/testes/publicar_pc.sh).
+# da entrega (build/MUEstudo-launcher.zip). So precisa refazer quando boot.gd mudar: o launcher.gd
+# vai no launcher.pck que o godot/testes/publicar_pc.sh poe no ar e o boot baixa sozinho.
 set -e
 cd "$(dirname "$0")"
 G=${GODOT:-$HOME/casa/trabalho/.ferramentas/godot/Godot_v4.7.2-stable_linux.x86_64}

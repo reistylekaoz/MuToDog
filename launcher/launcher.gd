@@ -2,14 +2,19 @@ extends Control
 # Launcher do MU estudo no PC. A cada abertura:
 # 1. le https://<SITE>/jogo/pc/versao.json (o que esta no ar: arquivo, tamanho, sha256);
 # 2. baixa pra pasta jogo/ (do lado do exe) so o que falta ou mudou, e apaga pacote velho;
-# 3. abre o mesmo exe com --main-pack jogo/jogo.pck, com MU_SITE e MU_CHAVE no ambiente
-#    (o jogo conecta no OpenMU do site pelo WebSocket, igual ao navegador).
-# Sem internet e com uma versao baixada, abre a que tem.
+# 3. abre jogo/openmu.exe (o template do Godot, que monta o openmu.pck do lado dele e os pacotes
+#    de jogo/mapas), com MU_SITE e MU_CHAVE no ambiente (o jogo conecta no OpenMU do site pelo
+#    WebSocket, igual ao navegador). O exe oficial nao aceita --main-pack: por isso o exe a parte.
+# Sem internet e com uma versao baixada, abre a que tem. Se o jogo fecha nos primeiros segundos,
+# mostra o fim do log dele (%APPDATA%/Godot/app_userdata/openmu/logs/godot.log).
+# Esta cena vem do launcher.pck baixado (boot.gd), entao muda sem trocar o exe.
 # A chave (chave.txt, fora do git) entra no export; o site confere pelo sha256 (mu-estudo/web/auth.php).
-# Teste no Linux: MU_LAUNCHER_PASTA=<pasta> godot --path launcher (MU_LAUNCHER_NAO_ABRIR=1 so baixa).
+# Teste no Linux: MU_LAUNCHER_PASTA=<pasta> godot --path launcher (MU_LAUNCHER_NAO_ABRIR=1 so baixa;
+# MU_LAUNCHER_JOGO=<programa> abre esse no lugar do openmu.exe).
 
 const SITE := "mu-estudo.integraction.com.br"
-const VERSAO_LAUNCHER := 1
+const VERSAO_LAUNCHER := 2
+const EXE := "openmu.exe"
 
 var chave := ""
 var pasta := ""
@@ -102,7 +107,7 @@ func _atualizar() -> void:
 		no_ar = JSON.parse_string(r[3].get_string_from_utf8())
 	if not no_ar is Dictionary:
 		var motivo := "sem internet" if r[0] != HTTPRequest.RESULT_SUCCESS else "o site respondeu %d" % r[1]
-		if FileAccess.file_exists(pasta.path_join("jogo.pck")):
+		if FileAccess.file_exists(pasta.path_join(EXE)) and FileAccess.file_exists(pasta.path_join("openmu.pck")):
 			estado.text = "Não deu pra procurar atualização (%s). Abrindo a versão que já está aqui." % motivo
 			await get_tree().create_timer(2.5).timeout
 			_abrir()
@@ -122,7 +127,8 @@ func _atualizar() -> void:
 				or FileAccess.get_size(arq) != int(a.tam):
 			baixar.append(a)
 			_total += int(a.tam)
-	# pacote que saiu do ar (mapa juntado, modelo trocado) sai daqui tambem
+	# pacote que saiu do ar (mapa juntado, modelo trocado) sai daqui tambem; jogo.pck era o da versao 1
+	DirAccess.remove_absolute(pasta.path_join("jogo.pck"))
 	for a in DirAccess.get_files_at(pasta.path_join("mapas")):
 		if not nomes.has("mapas/" + a):
 			DirAccess.remove_absolute(pasta.path_join("mapas").path_join(a))
@@ -177,6 +183,7 @@ func _ler_json(arq: String) -> Dictionary:
 
 func _falhou(texto: String) -> void:
 	estado.text = texto
+	print("TESTE launcher falhou: " + texto)
 	detalhe.text = "Confira a internet e clique em Tentar de novo."
 	botao.visible = true
 
@@ -189,8 +196,29 @@ func _abrir() -> void:
 	OS.set_environment("MU_SITE", SITE)
 	OS.set_environment("MU_CHAVE", chave)
 	OS.set_environment("MU_PACOTES", pasta.path_join("mapas"))
-	var pid := OS.create_process(OS.get_executable_path(), ["--main-pack", pasta.path_join("jogo.pck")])
+	var prog := OS.get_environment("MU_LAUNCHER_JOGO")
+	if prog == "":
+		prog = pasta.path_join(EXE)
+	estado.text = "Abrindo o jogo..."
+	var pid := OS.create_process(prog, [])
 	if pid <= 0:
-		_falhou("Não consegui abrir o jogo.")
+		_falhou("Não consegui abrir o jogo (%s)." % prog)
 		return
+	# o jogo segue sozinho depois que o launcher fecha; se ele cair logo de cara, mostra o porque
+	for i in 8:
+		await get_tree().create_timer(1.0).timeout
+		if not OS.is_process_running(pid):
+			_falhou("O jogo fechou logo depois de abrir. Tire uma foto desta tela e mande no console.")
+			detalhe.text = _fim_do_log()
+			botao.text = "Abrir de novo"
+			return
+	print("TESTE launcher abriu o jogo")
 	get_tree().quit()
+
+
+func _fim_do_log() -> String:
+	var arq := OS.get_data_dir().path_join("Godot/app_userdata/openmu/logs/godot.log")
+	if not FileAccess.file_exists(arq):
+		return "Sem log do jogo em %s." % arq
+	var linhas := FileAccess.get_file_as_string(arq).strip_edges().split("\n")
+	return "\n".join(linhas.slice(max(0, linhas.size() - 8)))
