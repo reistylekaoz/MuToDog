@@ -69,6 +69,8 @@ var inv: Inventario
 var loja: Loja
 var minimapa: Minimapa     # Tab
 var dialogo: DialogoNPC     # conversa do NPC (Elf Soldier): C3 F9 01
+var janela_quest: JanelaQuest   # quests de troca de classe (Sebina, Marlon, Devin): C1 A0 a A4
+var quest_legado := QuestLegado.new()   # o estado delas (a lista chega antes do HUD)
 var guarda: Guarda          # bau e maquina do caos
 var _janela_npc := 0        # tipo da janela que o servidor abriu (0 loja, 2 bau, 3 maquina do caos)
 var amigos: Amigos
@@ -440,6 +442,14 @@ func _montar_ui() -> void:
 			_msg("[color=#9a9ab0]As quests desse NPC ainda nao foram feitas neste cliente.[/color]"))
 	dialogo.fechar.connect(_fechar_loja)
 	hud.add_child(dialogo)
+	janela_quest = JanelaQuest.new()
+	janela_quest.q = quest_legado
+	janela_quest.monstros = monstros
+	janela_quest.pedir.connect(func(qq, e):
+		print("TESTE quest pedido %d estado %d" % [qq, e])
+		cli.quest_estado(qq, e))
+	janela_quest.fechar.connect(_fechar_loja)
+	hud.add_child(janela_quest)
 	minimapa = Minimapa.new()
 	minimapa.jogo = self
 	minimapa.andar.connect(_andar_pelo_minimapa)
@@ -524,7 +534,7 @@ func _montar_ui() -> void:
 	sair.pressed.connect(_sair)
 	hud.add_child(sair)
 	# o Sair sai da frente das janelas coladas na direita (inventario, loja, bau, C e D)
-	var direita: Array[Control] = [inv, loja, dialogo, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper]
+	var direita: Array[Control] = [inv, loja, dialogo, janela_quest, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper]
 	var mover_sair := func():
 		var x := hud.size.x
 		for j in direita:
@@ -757,6 +767,7 @@ func _entrou(info: Dictionary) -> void:
 	meu_zen = info.zen
 	inv.zen = info.zen
 	_hud_nivel()
+	cli.pedir_quests()
 	await _abrir_mapa(info.mapa, info.x, info.y)
 	_msg("Entrou em %s (%d, %d)." % [mapas.get(str(info.mapa), "mapa %d" % info.mapa), info.x, info.y])
 	print("TESTE entrou %s" % info)
@@ -1622,6 +1633,7 @@ func _fechar_loja() -> void:
 	loja.visible = false
 	guarda.visible = false
 	dialogo.visible = false
+	janela_quest.visible = false
 	inv.soltar()
 
 
@@ -1631,6 +1643,7 @@ func _volumes() -> void:
 
 
 func _ligar_loja_e_amigos() -> void:
+	_ligar_quests()
 	cli.dialogo_npc.connect(func(numero):
 		var n: Entidade = entidades.get(npc_falando)
 		print("TESTE dialogo do npc %d (%s)" % [numero, n.nome if n else "?"])
@@ -2124,6 +2137,94 @@ func _pegou(slot: int, item: Dictionary) -> void:
 	print("TESTE pegou %s" % n)
 
 
+# --- quests de troca de classe (sistema antigo do S6) -------------------------------
+
+func _ligar_quests() -> void:
+	var q := quest_legado
+	cli.quest_lista.connect(func(n, b):
+		q.definir_lista(n, b, minha_classe)
+		print("TESTE quests %d estados %s atual %d" % [n, b.slice(0, 2).hex_encode(), q.atual]))
+	cli.quest_npc.connect(func(i, b):
+		_contexto_quest()
+		q.definir(i, b)
+		var n: Entidade = entidades.get(npc_falando)
+		# sem o NPC aberto (a fita dos testes chega antes do clique), o nome vem do numero na quest
+		janela_quest.abrir(n.nome if n and n.nome != "" else str(monstros.get(str(int(q.quest().get("npc", 0))), [""])[0]))
+		print("TESTE quest npc %d (%s) estado %d fala %d: %s" % [i, janela_quest.nome, q.estado(i), janela_quest._fala, q.fala(janela_quest._fala).texto.left(60)])
+		if _parametros().has("quest_respostas"):
+			_teste_quest(str(_parametros().quest_respostas).split(",", false)))
+	cli.quest_mudou.connect(func(i, r, b):
+		print("TESTE quest mudou %d resultado %d byte %d" % [i, r, b])
+		if r != 0:
+			_msg("[color=#e8b04a]O NPC nao aceitou (codigo %d).[/color]" % r)
+			return
+		q.definir(i, b)
+		_contexto_quest()
+		janela_quest.atualizar()
+		print("TESTE quest %d agora estado %d fala %d" % [i, q.estado(i), janela_quest._fala])
+		if q.estado(i) == QuestLegado.ATIVA:
+			_msg("[color=#9fe0a0]Quest aceita: %s.[/color]" % q.titulo())
+		elif q.estado(i) == QuestLegado.FEITA:
+			_msg("[color=#f0c860]Quest concluida: %s.[/color]" % q.titulo()))
+	cli.quest_premio.connect(_premio_quest)
+	cli.quest_mortes.connect(func(i, m):
+		q.mortes = m
+		janela_quest.queue_redraw()
+		print("TESTE quest mortes %d %s" % [i, m]))
+	cli.fala_objeto.connect(func(id, t):
+		var n: Entidade = entidades.get(id)
+		print("TESTE fala de %s: %s" % [n.nome if n else str(id), t])
+		_msg("[color=#9ff0e0]%s:[/color] %s" % [n.nome if n else "NPC", t]))
+
+
+# o que a quest confere: nivel, zen e os itens da mochila (fora o equipado)
+func _contexto_quest() -> void:
+	var q := quest_legado
+	q.nivel = meu_nivel
+	q.zen = meu_zen
+	q.itens = []
+	for s in inv.itens:
+		if s >= 12:
+			q.itens.append(inv.itens[s])
+
+
+# C1 A3: o premio vem pra quem esta perto tambem; so o meu muda o personagem
+func _premio_quest(id: int, tipo: int, valor: int) -> void:
+	print("TESTE quest premio id %d tipo %d valor %d" % [id, tipo, valor])
+	if id != cli.meu_id:
+		return
+	match tipo:
+		200, 202:
+			meus_pontos += valor
+			_msg("[color=#f0c860]+%d pontos de atributo pela quest.[/color]" % valor)
+		201, 204:
+			minha_classe = valor >> 3
+			if _classe_de.has(meu_nome):
+				_classe_de[meu_nome][0] = minha_classe
+			DicaItem.eu["classe"] = minha_classe
+			quest_legado.classe = minha_classe >> 2
+			_msg("[color=#f0c860]Agora voce e %s![/color]" % classes.get(str(minha_classe), "outra classe"))
+			print("TESTE classe nova %d %s" % [minha_classe, classes.get(str(minha_classe), "?")])
+		203:
+			_msg("[color=#f0c860]Voce aprendeu o combo de skills.[/color]")
+	_hud_nivel()
+
+
+# --quest_respostas 1,1,...: escolhe essas respostas na janela da quest, uma por vez
+# ("c" aperta o botao de concluir)
+func _teste_quest(lista: Array) -> void:
+	for r in lista:
+		await get_tree().create_timer(1.0).timeout
+		if not janela_quest.visible:
+			return
+		print("TESTE quest escolhendo %s na fala %d" % [r, janela_quest._fala])
+		if r == "c":
+			janela_quest.concluir()
+		else:
+			janela_quest.escolher(int(r) - 1)
+		print("TESTE quest agora fala %d: %s" % [janela_quest._fala, janela_quest.q.fala(janela_quest._fala).texto.left(60)])
+
+
 # testes: --falar <parte do nome> anda ate o NPC e fala com ele
 func _teste_falar(quem: String) -> void:
 	await get_tree().create_timer(2.0).timeout
@@ -2586,7 +2687,7 @@ func _teclas(ev: InputEventKey) -> bool:
 			janela_helper.visible = false
 		elif loja_pessoal.visible:
 			_fechar_loja_pessoal()
-		elif loja.visible or guarda.visible or dialogo.visible:
+		elif loja.visible or guarda.visible or dialogo.visible or janela_quest.visible:
 			_fechar_loja()
 		elif inv.visible:
 			inv.alternar()

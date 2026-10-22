@@ -85,6 +85,13 @@ signal loja_dialogo_fechou(id: int)                  # C1 3F 12: a loja que eu o
 # MU Helper
 signal helper_estado(pausado: bool, consumiu: bool, zen: int)   # C1 BF 51
 signal helper_dados(dados: PackedByteArray)          # C2 AE: as 257 bytes guardadas no servidor
+# quests antigas (troca de classe): o estado de cada quest vem em 2 bits, 4 por byte
+signal quest_lista(quantas: int, estados: PackedByteArray)   # C1 A0
+signal quest_npc(quest: int, estados: int)           # C1 A1: abriu o NPC da quest
+signal quest_mudou(quest: int, resultado: int, estados: int)   # C1 A2: 0 deu certo
+signal quest_premio(id: int, tipo: int, valor: int)  # C1 A3: 200 pontos, 201 2a classe, 202, 203 combo, 204 3a classe
+signal quest_mortes(quest: int, mortes: Array)       # C1 A4 00: [[monstro, mortes] x5]
+signal fala_objeto(id: int, texto: String)           # C1 01: fala em cima de um objeto (NPC sem quest)
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -236,6 +243,16 @@ func falar_npc(id: int) -> void:
 func buff_npc() -> void:
 	# F6 31 (NpcBuffRequest): a resposta 902 da conversa da Elf Soldier
 	con.enviar(PackedByteArray([0xC1, 0, 0xF6, 0x31]))
+
+
+# C1 A0: pede o estado das quests antigas (o S6 pede ao entrar no mundo)
+func pedir_quests() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xA0]))
+
+
+# C1 A2: estado novo da quest (1 ativa: aceitar ou entregar, 2 concluida, 3 desistir)
+func quest_estado(quest: int, estado: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xA2, quest & 0xFF, estado & 0xFF]))
 
 
 func fechar_npc() -> void:
@@ -650,6 +667,26 @@ func _tratar(p: PackedByteArray) -> void:
 	match cod:
 		0x12:
 			_ler_personagens(p)
+		0xA0:
+			quest_lista.emit(p[3], p.slice(4))
+		0xA1:
+			if p.size() >= 5:
+				quest_npc.emit(p[3], p[4])
+		0xA2:
+			if p.size() >= 6:
+				quest_mudou.emit(p[3], p[4], p[5])
+		0xA3:
+			if p.size() >= 7:
+				quest_premio.emit(((p[3] << 8) | p[4]) & 0x7FFF, p[5], p[6])
+		0xA4:
+			if sub == 0x00 and p.size() >= 48:
+				var m := []
+				for i in 5:
+					m.append([_ler_le(p, 8 + i * 8), _ler_le(p, 12 + i * 8)])
+				quest_mortes.emit(p[5], m)
+		0x01:
+			if p[0] == 0xC1 and p.size() > 5:
+				fala_objeto.emit(((p[3] << 8) | p[4]) & 0x7FFF, _ler_texto(p, 5, p.size() - 5))
 		0x13:
 			_ler_npcs(p)
 		0x1F:
