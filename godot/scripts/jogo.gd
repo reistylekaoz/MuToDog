@@ -597,6 +597,11 @@ func _carregar_config() -> void:
 		campo_host.text = c.get_value("conexao", "host", campo_host.text)
 		campo_porta.text = str(c.get_value("conexao", "porta", campo_porta.text))
 		campo_conta.text = c.get_value("conexao", "conta", campo_conta.text)
+	# aberto pelo launcher: o servidor e o do site (Conexao usa MU_SITE)
+	if OS.get_environment("MU_SITE") != "":
+		campo_host.text = OS.get_environment("MU_SITE")
+		campo_host.editable = false
+		campo_porta.text = "44405"
 
 
 func _salvar_config() -> void:

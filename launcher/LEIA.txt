@@ -1,0 +1,19 @@
+MU Estudo no PC (launcher)
+==========================
+
+1. Descompacte este zip numa pasta sua (ex.: Documentos\MUEstudo).
+   Nao use Arquivos de Programas: o launcher grava os pacotes do lado dele.
+2. Abra MUEstudo.exe.
+   Na primeira vez ele baixa o jogo (uns 440 MB) pra pasta "jogo" do lado do exe.
+   Depois disso, a cada abertura ele baixa so o que mudou e abre o jogo sozinho.
+3. Na tela do jogo, entre com a sua conta (as mesmas do navegador).
+   O servidor ja vem preenchido: e o mesmo do https://mu-estudo.integraction.com.br/jogo/
+   (mesmos personagens). Nao precisa mais do Docker.
+
+Se o Windows avisar "O Windows protegeu o computador": clique em "Mais informacoes"
+e depois em "Executar assim mesmo" (o exe nao tem assinatura digital).
+
+Sem internet ele abre a ultima versao baixada (mas o jogo precisa do servidor pra entrar).
+Pra comecar do zero: apague a pasta "jogo" e abra o launcher de novo.
+
+Este pacote e so pra voce: ele leva a chave de acesso ao site do estudo.

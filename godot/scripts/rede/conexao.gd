@@ -6,6 +6,8 @@ extends RefCounted
 # que fala com o OpenMU por socket Unix: MU_PONTE=<programa> MU_SOCKETS=<pasta>.
 # No navegador (export web) o transporte e WebSocket: wss://<o site>/ws/<porta>,
 # a ponte do servidor (mu-estudo-ponte) liga isso no OpenMU. O host e ignorado.
+# No PC aberto pelo launcher (MU_SITE e MU_CHAVE no ambiente) e o mesmo WebSocket,
+# com a chave do launcher no cabecalho X-Mu-Chave (web/auth.php do mu-estudo).
 
 var tcp: StreamPeerTCP
 var wsp: WebSocketPeer
@@ -48,10 +50,17 @@ func abrir(host: String, porta: int) -> void:
 		aberta = true
 		return
 	_desde = Time.get_ticks_msec()
-	if OS.has_feature("web"):
+	var site := OS.get_environment("MU_SITE")
+	if OS.has_feature("web") or site != "":
 		wsp = WebSocketPeer.new()
 		wsp.inbound_buffer_size = 1 << 20
-		var url := "wss://%s/ws/%d" % [str(JavaScriptBridge.eval("location.host")), porta]
+		if site == "":
+			site = str(JavaScriptBridge.eval("location.host"))
+		else:
+			# a ponte so aceita o Origin do proprio site (sem ele responde 403)
+			wsp.handshake_headers = PackedStringArray(["X-Mu-Chave: " + OS.get_environment("MU_CHAVE"),
+				"Origin: https://" + site])
+		var url := "wss://%s/ws/%d" % [site, porta]
 		var ew := wsp.connect_to_url(url)
 		if ew != OK:
 			erro = "nao conectou em %s (erro %d)" % [url, ew]

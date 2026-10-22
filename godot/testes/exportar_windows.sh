@@ -3,11 +3,11 @@
 # a parte: build/windows/openmu.exe + openmu.pck + mapas/mundo<N>.pck + mapas/modelos<K>.pck
 # (PacoteMapa.montar_pc monta todos na partida).
 # Assim cada zip de entrega fica abaixo dos 50 MB do app arquivos.
-# Uso: bash testes/exportar_windows.sh
+# Uso: bash testes/exportar_windows.sh [pasta, padrao build/windows]
 set -e
 cd "$(dirname "$0")/.."
 G=${GODOT:-$HOME/casa/trabalho/.ferramentas/godot/Godot_v4.7.2-stable_linux.x86_64}
-D=build/windows
+D=${1:-build/windows}
 FORA=$(grep -o 'const FORA := \[[0-9, ]*\]' scripts/pacote_mapa.gd | grep -o '[0-9]\+' | tr '\n' ' ')
 cp export_presets.cfg /tmp/export_presets.$$.cfg
 trap 'cp /tmp/export_presets.$$.cfg export_presets.cfg; rm -f /tmp/export_presets.$$.cfg' EXIT

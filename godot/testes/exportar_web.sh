@@ -3,6 +3,7 @@
 # Uso: bash testes/exportar_web.sh [pasta em build/, padrao web_novo]
 # Grava build/<pasta>/index.* e build/<pasta>/mapas/mundo<N>.pck; modelos/ aponta pro de build/web.
 # O site le build/web direto: exporte em web_novo, teste, e so depois copie pra web.
+# Depois de copiar pra web, rode testes/publicar_pc.sh: o launcher do PC pega a mesma versao.
 set -e
 cd "$(dirname "$0")/.."
 G=${GODOT:-$HOME/casa/trabalho/.ferramentas/godot/Godot_v4.7.2-stable_linux.x86_64}
@@ -62,3 +63,4 @@ for n in $FORA; do
 done
 [ "$D" != build/web ] && [ ! -e $D/modelos ] && ln -s ../web/modelos $D/modelos
 ls -la $D/index.pck $D/mapas/
+[ "$D" = build/web ] && bash testes/publicar_pc.sh
