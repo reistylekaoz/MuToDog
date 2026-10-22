@@ -6,7 +6,7 @@ contra o OpenMU daqui. Marque `[x]` com a data e o commit ao fechar.
 
 ## Evolução do personagem
 1. [x] 22/10/2026 · 64dd67e · Quests de troca de classe (sistema antigo, A0 a A4): Sevina, Marlon e Apóstolo Devin; janela da quest no NPC, aceitar, entregar, recompensa, contagem de monstros e troca de classe. Testado no OpenMU daqui: quest1Dk vira Blade Knight, quest1Elf vira Muse Elf (+10 pontos em cada quest). Sem teste: Marlon (fica fora de Devias) e a contagem de monstros (A4, quest 5 em Balgass, pede 400 e as quests 2 a 4 feitas).
-2. [ ] Quests novas do S6 (F6): quests disponíveis no NPC, passos, progresso, concluir e cancelar, lista no personagem (a janela T do S6 mostra as antigas e as novas juntas: entra aqui).
+2. [x] 22/10/2026 · e98b27f · Quests novas do S6 (F6): lista de quests na Elf Soldier, janela do passo (falas, respostas, pedidos e prêmios, OK), janela T (tecla T ou botão de quest da janela C) com as abas Quest, Change Class e Castle/Temple, desistir com confirmação. Testado no OpenMU daqui com test1Dk: Spider Hunt aceita, desistida, aceita de novo, 2 aranhas contadas pelo MU Helper e concluída (+2000 de exp; as 8 que faltavam entraram pelo banco local, o helper demorava). Sem teste: quest que não vem de NPC (botão abrir da janela T; o OpenMU não manda nenhuma) e a contagem do Blood Castle e do Illusion Temple (o OpenMU não responde o C1 9F: a aba diz que o servidor não informa).
 3. [ ] Master level 1: nível master, pontos, barra de exp master, subida de nível master.
 4. [ ] Master level 2: árvore de skills master (janela A), aprender e subir skill.
 
