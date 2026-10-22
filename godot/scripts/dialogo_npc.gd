@@ -7,6 +7,7 @@ extends Control
 # embaixo da linha. Resposta ate 900 troca o estado da conversa; 902 pede o buff.
 
 signal resposta(resultado: int)
+signal quest_escolhida(numero: int, grupo: int, linha: int)
 signal fechar
 
 const L := 190.0
@@ -20,7 +21,9 @@ var npc := 0
 var nome := ""
 var _dados := {}
 var _fala: Array[String] = []
-var _respostas := []           # [[linhas, resultado]]
+var _respostas := []           # [[linhas, resultado]]; quest da lista: resultado -1 - posicao
+var _quests := []              # [[numero, grupo]] do F6 0A
+var quest_nova: QuestNova      # o jogo passa: assuntos e as palavras 1007, 1501, 1502
 var _pagina := 0
 var _sob := -1
 var _tex := {}
@@ -72,6 +75,25 @@ func estado(e: int) -> void:
 		_respostas.append([_quebrar(f, "%d. %s" % [i, r[0]]), int(r[1])])
 		i += 1
 	_pagina = 0
+	queue_redraw()
+
+
+# F6 0A: a lista das quests que o NPC tem (modo lista do CNewUINPCDialogue)
+func lista_quests(lista: Array) -> void:
+	var f := get_theme_default_font()
+	_quests = lista
+	_fala.clear()
+	_fala.append_array(_quebrar(f, quest_nova.palavra(1501 if not lista.is_empty() else 1502)))
+	_respostas.clear()
+	var i := 1
+	for q in lista:
+		var assunto := quest_nova.assunto(QuestNova.indice(int(q[0]), int(q[1])))
+		_respostas.append([_quebrar(f, "%d. [Q]%s" % [i, assunto]), -i])
+		i += 1
+	_respostas.append([_quebrar(f, "%d. %s" % [i, quest_nova.palavra(1007)]), 0])
+	_pagina = 0
+	_sob = -1
+	visible = true
 	queue_redraw()
 
 
@@ -139,7 +161,10 @@ func escolher(i: int) -> void:
 	if i < 0 or i >= _respostas.size():
 		return
 	var r: int = _respostas[i][1]
-	if r <= 900:
+	if r < 0:
+		var q: Array = _quests[-r - 1]
+		quest_escolhida.emit(int(q[0]), int(q[1]), -r)
+	elif r <= 900:
 		estado(r)
 	else:
 		resposta.emit(r)

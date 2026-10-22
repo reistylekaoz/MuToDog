@@ -71,6 +71,9 @@ var minimapa: Minimapa     # Tab
 var dialogo: DialogoNPC     # conversa do NPC (Elf Soldier): C3 F9 01
 var janela_quest: JanelaQuest   # quests de troca de classe (Sebina, Marlon, Devin): C1 A0 a A4
 var quest_legado := QuestLegado.new()   # o estado delas (a lista chega antes do HUD)
+var quest_nova := QuestNova.new()       # quests novas do S6 (F6): Elf Soldier
+var janela_quest_nova: JanelaQuestNova  # o passo da quest no NPC: F6 0B e 0C
+var janela_minhas_quests: JanelaMinhasQuests   # janela T
 var guarda: Guarda          # bau e maquina do caos
 var _janela_npc := 0        # tipo da janela que o servidor abriu (0 loja, 2 bau, 3 maquina do caos)
 var amigos: Amigos
@@ -438,6 +441,8 @@ func _montar_ui() -> void:
 		if r == 902:
 			cli.buff_npc()
 			_fechar_loja()
+		elif r == 901:
+			cli.quests_disponiveis()
 		else:
 			_msg("[color=#9a9ab0]As quests desse NPC ainda nao foram feitas neste cliente.[/color]"))
 	dialogo.fechar.connect(_fechar_loja)
@@ -450,6 +455,31 @@ func _montar_ui() -> void:
 		cli.quest_estado(qq, e))
 	janela_quest.fechar.connect(_fechar_loja)
 	hud.add_child(janela_quest)
+	quest_nova.monstros = monstros
+	dialogo.quest_nova = quest_nova
+	dialogo.quest_escolhida.connect(func(n, g, l): cli.quest_escolher(n, g, l))
+	janela_quest_nova = JanelaQuestNova.new()
+	janela_quest_nova.q = quest_nova
+	janela_quest_nova.responder.connect(func(i, r):
+		print("TESTE quest nova %x resposta %d" % [i, r])
+		cli.quest_seguir(i & 0xFFFF, i >> 16, r))
+	janela_quest_nova.concluir.connect(func(i):
+		print("TESTE quest nova %x concluir" % i)
+		cli.quest_concluir(i & 0xFFFF, i >> 16))
+	janela_quest_nova.fechar.connect(_fechar_loja)
+	hud.add_child(janela_quest_nova)
+	janela_minhas_quests = JanelaMinhasQuests.new()
+	janela_minhas_quests.q = quest_nova
+	janela_minhas_quests.legado = quest_legado
+	janela_minhas_quests.pedir_estado.connect(func(i): cli.quest_pedir_estado(i & 0xFFFF, i >> 16))
+	janela_minhas_quests.abrir_quest.connect(func(i):
+		janela_quest_nova.npc = ""
+		janela_quest_nova.jogador = meu_nome
+		janela_quest_nova.abrir(i))
+	janela_minhas_quests.desistir.connect(func(i):
+		print("TESTE quest nova %x desistir" % i)
+		cli.quest_desistir(i & 0xFFFF, i >> 16))
+	hud.add_child(janela_minhas_quests)
 	minimapa = Minimapa.new()
 	minimapa.jogo = self
 	minimapa.andar.connect(_andar_pelo_minimapa)
@@ -522,6 +552,7 @@ func _montar_ui() -> void:
 	janela_personagem = JanelaPersonagem.new()
 	janela_personagem.inventario = inv
 	janela_personagem.adicionar.connect(func(a): cli.adicionar_ponto(a))
+	janela_personagem.abrir_quests.connect(func(): if not janela_minhas_quests.visible: janela_minhas_quests.alternar())
 	hud.add_child(janela_personagem)
 	inv.visibility_changed.connect(janela_personagem._ajustar)
 	comandos = JanelaComandos.new()
@@ -534,7 +565,7 @@ func _montar_ui() -> void:
 	sair.pressed.connect(_sair)
 	hud.add_child(sair)
 	# o Sair sai da frente das janelas coladas na direita (inventario, loja, bau, C e D)
-	var direita: Array[Control] = [inv, loja, dialogo, janela_quest, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper]
+	var direita: Array[Control] = [inv, loja, dialogo, janela_quest, janela_quest_nova, janela_minhas_quests, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper]
 	var mover_sair := func():
 		var x := hud.size.x
 		for j in direita:
@@ -1634,6 +1665,7 @@ func _fechar_loja() -> void:
 	guarda.visible = false
 	dialogo.visible = false
 	janela_quest.visible = false
+	janela_quest_nova.visible = false
 	inv.soltar()
 
 
@@ -1954,6 +1986,7 @@ func _teste_helper(seg: float) -> void:
 		await get_tree().create_timer(0.5).timeout
 	await get_tree().create_timer(1.0).timeout
 	print("TESTE helper: config do servidor caca=%d extras=%s skills=%s" % [helper.c.caca, helper.c.extras, helper.c.skills])
+	print("TESTE helper: monstros perto %s" % [entidades.values().filter(func(x): return is_instance_valid(x) and x.tipo == "monstro").map(func(x): return "%s%s" % [x.nome, x.tile])])
 	helper.c.caca = 5
 	helper.c.extras = ["Jewel"]
 	helper.c.extra = true
@@ -2140,6 +2173,7 @@ func _pegou(slot: int, item: Dictionary) -> void:
 # --- quests de troca de classe (sistema antigo do S6) -------------------------------
 
 func _ligar_quests() -> void:
+	_ligar_quests_novas()
 	var q := quest_legado
 	cli.quest_lista.connect(func(n, b):
 		q.definir_lista(n, b, minha_classe)
@@ -2175,6 +2209,152 @@ func _ligar_quests() -> void:
 		var n: Entidade = entidades.get(id)
 		print("TESTE fala de %s: %s" % [n.nome if n else str(id), t])
 		_msg("[color=#9ff0e0]%s:[/color] %s" % [n.nome if n else "NPC", t]))
+
+
+# --- quests novas do S6 (F6, CQuestMng) ---------------------------------------------
+
+func _ligar_quests_novas() -> void:
+	var qn := quest_nova
+	cli.quests_do_npc.connect(func(npc, l):
+		print("TESTE F6 0A npc %d %s" % [npc, l])
+		if dialogo.visible:
+			dialogo.lista_quests(l)
+			if _parametros().has("quest_nova"):
+				if not _teste_qn_comecou:
+					_teste_qn_comecou = true
+					_teste_quest_nova(str(_parametros().quest_nova).split(",", false))
+				else:
+					_teste_quest_nova_janela())
+	cli.quest_passo.connect(func(i):
+		print("TESTE F6 0B %x: %s" % [i, qn.fala_npc(i).left(60)])
+		_passo_quest(i))
+	cli.quest_progresso.connect(func(i, info, do_npc):
+		print("TESTE F6 %s %x %s" % ["0C" if do_npc else "1B", i, info])
+		qn.info[i] = info
+		if do_npc:
+			_passo_quest(i)
+		else:
+			janela_minhas_quests.atualizar())
+	cli.quest_concluiu.connect(_quest_concluiu)
+	cli.quest_desistiu.connect(func(g):
+		print("TESTE F6 0F grupo %d" % g)
+		qn.tirar_grupo(g)
+		janela_minhas_quests.atualizar()
+		_msg("[color=#e8b04a]%s[/color]" % qn.texto(2818)))
+	cli.quests_ativas.connect(func(l):
+		print("TESTE F6 1A %s" % [l.map(func(x): return "%x" % x)])
+		qn.ativas = l.filter(func(x): return qn.tem(x))
+		qn.ativas.sort()
+		janela_minhas_quests.atualizar())
+
+
+# F6 0D: 1 concluiu (fecha e tira da lista), 2 limite de zen, 3 mochila cheia
+func _quest_concluiu(i: int, r: int) -> void:
+	print("TESTE F6 0D %x resultado %d" % [i, r])
+	match r:
+		1:
+			janela_quest_nova.visible = false
+			quest_nova.tirar_grupo(i >> 16)
+			quest_nova.info.erase(i)
+			janela_minhas_quests.atualizar()
+			_msg("[color=#f0c860]%s[/color]" % quest_nova.texto(2814))
+		2:
+			_msg("[color=#e8b04a]%s[/color]" % quest_nova.texto(2816))
+		3:
+			_msg("[color=#e8b04a]A mochila esta cheia: abra espaco pra receber o premio.[/color]")
+
+
+# SetCurQuestProgress: o passo novo entra na lista da janela T; 0xFF e a quest concluida
+func _passo_quest(i: int) -> void:
+	quest_nova.atualizar_ativa(i)
+	janela_minhas_quests.atualizar()
+	if i & 0xFFFF == 0xFF:
+		janela_quest_nova.visible = false
+		_msg("[color=#f0c860]%s[/color]" % quest_nova.texto(2814))
+		return
+	if not quest_nova.tem(i):
+		return
+	var n: Entidade = entidades.get(npc_falando)
+	janela_quest_nova.npc = n.nome if n else ""
+	janela_quest_nova.jogador = meu_nome
+	dialogo.visible = false
+	if janela_quest_nova.visible and janela_quest_nova.indice == i and quest_nova.respostas(i).is_empty():
+		janela_quest_nova.atualizar_pedidos()
+	else:
+		janela_quest_nova.abrir(i)
+	if _parametros().has("quest_nova"):
+		_teste_quest_nova_janela()
+
+
+# --quest_nova 1,a,d,1,a: 1 escolhe a 1a quest da lista do NPC; na janela da quest "a" aceita,
+# "r" recusa, "c" conclui, "d" desiste pela janela T, "t" abre a janela T, "e" escolhe a 1a quest
+# dela, "p" espera 3 s, "f" fecha o NPC, "n" fala com a Elf Soldier de novo. Um passo por segundo.
+var _fila_quest_nova := []
+var _teste_qn_comecou := false
+var _teste_qn_esperando := false
+
+func _teste_quest_nova(lista: Array) -> void:
+	_fila_quest_nova = lista
+	await get_tree().create_timer(1.0).timeout
+	_seguir_teste_quest_nova()
+
+
+func _teste_quest_nova_janela() -> void:
+	# o 0B e o 0C chegam juntos: so um passo do teste por vez
+	if _teste_qn_esperando:
+		return
+	_teste_qn_esperando = true
+	await get_tree().create_timer(1.0).timeout
+	_teste_qn_esperando = false
+	_seguir_teste_quest_nova()
+
+
+func _seguir_teste_quest_nova() -> void:
+	while not _fila_quest_nova.is_empty():
+		var p: String = _fila_quest_nova.pop_front()
+		print("TESTE quest nova passo do teste: %s" % p)
+		match p:
+			"a", "r":
+				janela_quest_nova.seta_direita()
+				while janela_quest_nova.modo != JanelaQuestNova.JOGADOR:
+					janela_quest_nova.seta_direita()
+				janela_quest_nova.escolher(0 if p == "a" else 1)
+				return
+			"c":
+				janela_quest_nova.ok()
+				return
+			"t":
+				if not janela_minhas_quests.visible:
+					janela_minhas_quests.alternar()
+				print("TESTE janela T: %s" % [quest_nova.ativas.map(func(x): return quest_nova.assunto(x))])
+			"e":
+				# escolhe a 1a quest da janela T (pede o estado, F6 1B)
+				if not janela_minhas_quests.visible:
+					janela_minhas_quests.alternar()
+				janela_minhas_quests.escolher(0)
+				await get_tree().create_timer(1.5).timeout
+			"d":
+				if not janela_minhas_quests.visible:
+					janela_minhas_quests.alternar()
+				janela_minhas_quests.escolher(0)
+				await get_tree().create_timer(1.0).timeout
+				janela_minhas_quests.pedir_desistir()
+				janela_minhas_quests.confirmar(true)
+				await get_tree().create_timer(1.5).timeout
+			"p":
+				await get_tree().create_timer(3.0).timeout
+			"f":
+				_fechar_loja()
+			"n":
+				# fala com a Elf Soldier de novo e pede as quests
+				_fechar_loja()
+				await get_tree().create_timer(0.5).timeout
+				_teste_falar("Elf")
+				return
+			_:
+				if dialogo.visible:
+					dialogo.escolher(int(p) - 1)
+				return
 
 
 # o que a quest confere: nivel, zen e os itens da mochila (fora o equipado)
@@ -2648,6 +2828,9 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k in [KEY_I, KEY_V]:
 		inv.alternar()
 		return true
+	if k == KEY_T:
+		janela_minhas_quests.alternar()
+		return true
 	if k == KEY_F:
 		amigos.alternar()
 		return true
@@ -2687,8 +2870,10 @@ func _teclas(ev: InputEventKey) -> bool:
 			janela_helper.visible = false
 		elif loja_pessoal.visible:
 			_fechar_loja_pessoal()
-		elif loja.visible or guarda.visible or dialogo.visible or janela_quest.visible:
+		elif loja.visible or guarda.visible or dialogo.visible or janela_quest.visible or janela_quest_nova.visible:
 			_fechar_loja()
+		elif janela_minhas_quests.visible:
+			janela_minhas_quests.alternar()
 		elif inv.visible:
 			inv.alternar()
 		elif comandos.visible:

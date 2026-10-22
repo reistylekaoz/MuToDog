@@ -92,6 +92,13 @@ signal quest_mudou(quest: int, resultado: int, estados: int)   # C1 A2: 0 deu ce
 signal quest_premio(id: int, tipo: int, valor: int)  # C1 A3: 200 pontos, 201 2a classe, 202, 203 combo, 204 3a classe
 signal quest_mortes(quest: int, mortes: Array)       # C1 A4 00: [[monstro, mortes] x5]
 signal fala_objeto(id: int, texto: String)           # C1 01: fala em cima de um objeto (NPC sem quest)
+# quests novas do S6 (F6): cada quest e (grupo << 16) | passo; o passo diz a fala (QuestProgress.bmd)
+signal quests_do_npc(npc: int, lista: Array)         # F6 0A: [[numero, grupo]] que o NPC oferece
+signal quest_passo(indice: int)                      # F6 0B: mostra a fala desse passo
+signal quest_progresso(indice: int, info: Dictionary, do_npc: bool)   # F6 0C (do NPC) e F6 1B (janela T)
+signal quest_concluiu(indice: int, resultado: int)   # F6 0D: 1 concluiu, 2 limite de zen, 3 mochila cheia
+signal quest_desistiu(grupo: int)                    # F6 0F
+signal quests_ativas(lista: Array)                   # F6 1A: [indice] em andamento
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -243,6 +250,103 @@ func falar_npc(id: int) -> void:
 func buff_npc() -> void:
 	# F6 31 (NpcBuffRequest): a resposta 902 da conversa da Elf Soldier
 	con.enviar(PackedByteArray([0xC1, 0, 0xF6, 0x31]))
+
+
+# --- quests novas do S6 (F6; numero e grupo em LE) ---------------------------------
+
+func _f6(sub: int, numero := -1, grupo := 0, extra := []) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xF6, sub])
+	if numero >= 0:
+		p.append_array(PackedByteArray([numero & 0xFF, numero >> 8, grupo & 0xFF, grupo >> 8]))
+	p.append_array(PackedByteArray(extra))
+	con.enviar(p)
+
+
+func quests_disponiveis() -> void:          # resposta 901 da conversa
+	_f6(0x30)
+
+
+func quest_escolher(numero: int, grupo: int, linha: int) -> void:
+	_f6(0x0A, numero, grupo, [linha])
+
+
+func quest_seguir(numero: int, grupo: int, acao: int) -> void:   # 1 aceita, 2 recusa
+	_f6(0x0B, numero, grupo, [acao])
+
+
+func quest_concluir(numero: int, grupo: int) -> void:
+	_f6(0x0D, numero, grupo)
+
+
+func quest_desistir(numero: int, grupo: int) -> void:
+	_f6(0x0F, numero, grupo)
+
+
+func quest_pedir_estado(numero: int, grupo: int) -> void:
+	_f6(0x1B, numero, grupo)
+
+
+func pedir_quests_ativas() -> void:
+	_f6(0x1A)
+
+
+# F6 0C / 1B: pedidos (tipo, id, quantos, feitos, item) e premios (tipo, id, quanto, item).
+# C1 (o S6): pedidos de 26 bytes a partir do 11, premios de 22 a partir do 141;
+# C2 (cliente novo, "Extended"): contagens antes do numero, pedidos de 28 a partir do 12, premios de 24 a partir do 152.
+static func _quest_info(p: PackedByteArray, c: int) -> Dictionary:
+	var ext := p[0] == 0xC2
+	var num: int
+	var grupo: int
+	var nc: int
+	var nr: int
+	var oc: int
+	var orw: int
+	if ext:
+		nc = p[c + 2]
+		nr = p[c + 3]
+		num = p[c + 5] | (p[c + 6] << 8)
+		grupo = p[c + 7] | (p[c + 8] << 8)
+		oc = 12
+		orw = 152
+	else:
+		num = p[c + 2] | (p[c + 3] << 8)
+		grupo = p[c + 4] | (p[c + 5] << 8)
+		nc = p[c + 6]
+		nr = p[c + 7]
+		oc = 11
+		orw = 141
+	var tc := 28 if ext else 26
+	var tr := 24 if ext else 22
+	var di := 2 if ext else 4   # onde comeca o id dentro de cada um
+	var pedidos := []
+	for i in mini(nc, 5):
+		var o := oc + i * tc
+		if o + tc > p.size():
+			break
+		var d := {"tipo": p[o], "id": p[o + di] | (p[o + di + 1] << 8), "quantos": _ler_le(p, o + di + 2),
+			"feitos": _ler_le(p, o + di + 6)}
+		if d.tipo == 4:
+			d.item = item_de(p, o + di + 10)
+		pedidos.append(d)
+	var premios := []
+	for i in mini(nr, 5):
+		var o := orw + i * tr
+		if o + tr > p.size():
+			break
+		var d := {"tipo": p[o], "id": p[o + di] | (p[o + di + 1] << 8), "quanto": _ler_le(p, o + di + 2)}
+		if d.tipo & 0x1F == 4:
+			d.item = item_de(p, o + di + 6)
+		premios.append(d)
+	return {"numero": num, "grupo": grupo, "pedidos": pedidos, "premios": premios}
+
+
+static func _lista_quests(p: PackedByteArray, o: int, n: int) -> Array:
+	var l := []
+	for i in n:
+		if o + i * 4 + 4 > p.size():
+			break
+		l.append([p[o + i * 4] | (p[o + i * 4 + 1] << 8), p[o + i * 4 + 2] | (p[o + i * 4 + 3] << 8)])
+	return l
 
 
 # C1 A0: pede o estado das quests antigas (o S6 pede ao entrar no mundo)
@@ -651,6 +755,31 @@ func _tratar(p: PackedByteArray) -> void:
 		[0x32, 0xFF]:
 			if p.size() == 4:
 				compra_falhou.emit()
+				return
+		[0xF6, 0x0A]:
+			if p.size() >= c + 6:
+				quests_do_npc.emit(p[c + 2] | (p[c + 3] << 8), _lista_quests(p, c + 6, p[c + 4] | (p[c + 5] << 8)))
+				return
+		[0xF6, 0x0B]:
+			if p.size() >= c + 6:
+				quest_passo.emit(((p[c + 4] | (p[c + 5] << 8)) << 16) | p[c + 2] | (p[c + 3] << 8))
+				return
+		[0xF6, 0x0C], [0xF6, 0x1B]:
+			if p.size() >= c + 10:
+				var q := _quest_info(p, c)
+				quest_progresso.emit((q.grupo << 16) | q.numero, q, sub == 0x0C)
+				return
+		[0xF6, 0x0D]:
+			if p.size() >= c + 7:
+				quest_concluiu.emit(((p[c + 4] | (p[c + 5] << 8)) << 16) | p[c + 2] | (p[c + 3] << 8), p[c + 6])
+				return
+		[0xF6, 0x0F]:
+			if p.size() >= c + 6:
+				quest_desistiu.emit(p[c + 4] | (p[c + 5] << 8))
+				return
+		[0xF6, 0x1A]:
+			if p.size() >= c + 3:
+				quests_ativas.emit(_lista_quests(p, c + 3, p[c + 2]).map(func(q): return (q[1] << 16) | q[0]))
 				return
 		[0xF9, 0x01]:
 			if p.size() >= c + 4:

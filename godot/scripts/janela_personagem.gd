@@ -6,6 +6,7 @@ extends Control
 # Dark Lord, Command) com os numeros que o cliente calcula embaixo. Com ponto sobrando, cada
 # caixa ganha o botao + que pede ao servidor 1 ponto naquele atributo (C1 F3 06).
 
+signal abrir_quests                # o botao de quest abre a janela T
 signal adicionar(atributo: int)   # 0 forca, 1 agilidade, 2 vitalidade, 3 energia, 4 comando
 
 const PASTA := "res://dados/hud/"
@@ -266,6 +267,10 @@ func _notification(what: int) -> void:
 func _clique(p: Vector2) -> void:
 	if Rect2(13, 392, 36, 29).has_point(p) or Rect2(160, 2, 26, 22).has_point(p):
 		alternar()
+		return
+	if Rect2(50, 392, 36, 29).has_point(p):
+		alternar()
+		abrir_quests.emit()
 		return
 	if int(eu.get("pontos", 0)) <= 0 or esperando:
 		return
