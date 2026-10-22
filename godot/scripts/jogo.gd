@@ -774,6 +774,8 @@ func _entrou(info: Dictionary) -> void:
 		_teste_falar(str(_parametros().falar))
 	if _parametros().has("minimapa"):
 		_teste_minimapa(str(_parametros().minimapa))
+	if _parametros().has("foco_tab"):
+		_teste_foco_tab()
 	if _parametros().has("dialogo_teste"):
 		dialogo.abrir(int(_parametros().dialogo_teste), "Elf Soldier")
 	if _parametros().has("efeito_teste"):
@@ -1007,6 +1009,17 @@ func _sair() -> void:
 	cli._fechar()
 	meu_nome = ""
 	_voltar("Saiu. Entre de novo quando quiser.")
+
+
+# no jogo, tecla nao navega entre botoes: um botao com foco (o ultimo clicado, ex. Sair)
+# comia o Tab (ui_focus_next) e o Espaco/Enter. Solta o foco e a tecla segue pro jogo;
+# campo de texto (chat, quantidade) fica com ela.
+func _input(ev: InputEvent) -> void:
+	if eu == null or not ev is InputEventKey or not ev.pressed:
+		return
+	var f := get_viewport().gui_get_focus_owner()
+	if f and not (f is LineEdit or f is TextEdit or f is SpinBox):
+		f.release_focus()
 
 
 func _unhandled_input(ev: InputEvent) -> void:
@@ -2123,6 +2136,27 @@ func _teste_falar(quem: String) -> void:
 
 
 # --minimapa 1: abre o Tab; --minimapa x,y: abre e anda ate o tile (botao direito)
+# --foco_tab 1: um botao do menu com foco e o Tab apertado 2 vezes tem que abrir e fechar o minimapa
+func _teste_foco_tab() -> void:
+	await get_tree().create_timer(2.0).timeout
+	menu.alternar(brilho)
+	var b: Button = menu.find_children("*", "Button", true, false)[0]
+	b.grab_focus()
+	print("TESTE foco_tab: foco em '%s'" % b.text)
+	for i in 2:
+		var t := InputEventKey.new()
+		t.keycode = KEY_TAB
+		t.pressed = true
+		Input.parse_input_event(t)
+		await get_tree().process_frame
+		var solta := t.duplicate()
+		solta.pressed = false
+		Input.parse_input_event(solta)
+		await get_tree().process_frame
+		var f := get_viewport().gui_get_focus_owner()
+		print("TESTE foco_tab: Tab %d, minimapa %s, foco %s" % [i + 1, minimapa.visible, f.name if f else "nenhum"])
+
+
 func _teste_minimapa(q: String) -> void:
 	await get_tree().create_timer(2.0).timeout
 	hud.move_child(minimapa, -1)
