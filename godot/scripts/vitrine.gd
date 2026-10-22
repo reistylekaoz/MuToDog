@@ -127,7 +127,16 @@ func _tocar() -> void:
 		b.tocar(acao)
 
 
+var _t_nivel := 0.0
+
 func _process(dt: float) -> void:
+	# ?nivel=master (ou normal): o brilho da subida de nivel no primeiro boneco a cada 2,5 s
+	if _param("nivel") != "" and not bonecos.is_empty():
+		_t_nivel -= dt
+		if _t_nivel <= 0.0:
+			_t_nivel = 2.5
+			EfeitoMU.subiu_nivel(self, bonecos[0], _param("nivel") == "master")
+			print("TESTE subiu nivel na vitrine")
 	if _param("passeio") == "1":
 		# cada um anda num circulo de 2 m em volta do proprio lugar, na velocidade de andar do MU
 		_ang += dt * 1.6

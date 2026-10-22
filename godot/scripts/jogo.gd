@@ -59,6 +59,7 @@ var _aviso_seguro := false
 var meu_nivel := 1
 var exp_atual := 0
 var exp_prox := 0
+var master := {}       # F3 50 / 51: nivel, exp, exp_prox, pontos (vazio = nao e classe master)
 var meu_zen := 0
 var som: Som
 var brilho := 2.0
@@ -145,6 +146,8 @@ func _ready() -> void:
 	cli.mana.connect(func(v): barra_mu.mana = v; _hud_nivel())
 	cli.experiencia.connect(_experiencia)
 	cli.nivel.connect(_nivel)
+	cli.master.connect(_master)
+	cli.master_subiu.connect(_master_subiu)
 	cli.ponto.connect(_ponto)
 	cli.pedido_grupo.connect(func(id):
 		var n: String = entidades[id].nome if entidades.has(id) else "Alguem"
@@ -1440,11 +1443,65 @@ func _combate(dt: float) -> void:
 
 
 func _experiencia(_morto: int, ganho: int) -> void:
-	exp_atual += ganho
 	_mortos += 1
-	print("TESTE experiencia +%d (total %d de %d)" % [ganho, exp_atual, exp_prox])
-	_msg("[color=#f0d070]+%d de experiencia[/color]" % ganho)
+	# classe master no 400: a experiencia vai pra exp master (ReceiveDieExp)
+	if _master_ativo():
+		master.exp = clampi(master.exp + ganho, exp_do_master(master.nivel), maxi(master.exp_prox, exp_do_master(master.nivel)))
+		print("TESTE experiencia master +%d (total %d de %d)" % [ganho, master.exp, master.exp_prox])
+		_msg("[color=#f0d070]+%d de experiencia master[/color]" % ganho)
+	else:
+		exp_atual += ganho
+		print("TESTE experiencia +%d (total %d de %d)" % [ganho, exp_atual, exp_prox])
+		_msg("[color=#f0d070]+%d de experiencia[/color]" % ganho)
 	_hud_nivel()
+
+
+# IsMasterExperienceActive: classe master (o servidor so manda o F3 50 pra ela) e nivel 400
+func _master_ativo() -> bool:
+	return not master.is_empty() and meu_nivel >= 400
+
+
+# F3 50: ao entrar; os maximos da classe master valem pros orbes
+func _master(info: Dictionary) -> void:
+	master = info
+	print("TESTE master %s" % info)
+	_maximos_master(info)
+	_hud_nivel()
+
+
+func _maximos_master(info: Dictionary) -> void:
+	barra_mu.vida_max = maxi(info.vida_max, 1)
+	barra_mu.mana_max = maxi(info.mana_max, 1)
+	barra_mu.sd_max = maxi(info.sd_max, 1)
+	barra_mu.ag_max = maxi(info.ag_max, 1)
+	DicaItem.eu.vida_max = info.vida_max
+	DicaItem.eu.mana_max = info.mana_max
+
+
+# F3 51 (Receive_Master_LevelUp): nivel e pontos novos; a exp vai pro inicio do nivel e o
+# proximo sai da formula (CalulateMasterLevelNextExperience); brilho em volta do personagem
+func _master_subiu(info: Dictionary) -> void:
+	print("TESTE master subiu %s" % info)
+	if master.is_empty():
+		master = {"nivel": 0, "exp": 0, "exp_prox": 0, "pontos": 0}
+	master.nivel = info.nivel
+	master.pontos = info.pontos
+	master.exp = maxi(master.exp_prox, exp_do_master(info.nivel))
+	master.exp_prox = exp_do_master(info.nivel + 1)
+	_maximos_master(info)
+	barra_mu.vida = barra_mu.vida_max
+	barra_mu.mana = barra_mu.mana_max
+	_msg("[color=#ffd84a]Subiu pro nivel master %d! (+%d, %d pontos master)[/color]" % [info.nivel, info.ganhou, info.pontos])
+	if eu:
+		EfeitoMU.subiu_nivel(mundo, eu, true)
+	_hud_nivel()
+
+
+# experiencia master em que o nivel master n comeca (formula do cliente: total = 400 + n)
+static func exp_do_master(n: int) -> int:
+	var t := 400 + n
+	var o := t - 255
+	return ((9 + t) * t * t * 10 + (9 + o) * o * o * 1000 - 3892250000) / 2
 
 
 func _nivel(info: Dictionary) -> void:
@@ -1457,6 +1514,8 @@ func _nivel(info: Dictionary) -> void:
 	barra_mu.mana = info.mana_max
 	meus_pontos = info.pontos
 	exp_prox = exp_do_nivel(meu_nivel)
+	if eu:
+		EfeitoMU.subiu_nivel(mundo, eu, not master.is_empty())
 	_msg("[color=#ffd84a]Subiu pro nivel %d! (%d pontos pra distribuir)[/color]" % [meu_nivel, info.pontos])
 	_hud_nivel()
 	if _parametros().has("ponto_subir"):
@@ -1475,9 +1534,15 @@ static func exp_do_nivel(n: int) -> int:
 func _hud_nivel() -> void:
 	if barra_mu == null:
 		return
-	barra_mu.exp_antes = exp_do_nivel(meu_nivel - 1) if meu_nivel > 1 else 0
-	barra_mu.exp_atual = exp_atual
-	barra_mu.exp_prox = exp_prox
+	barra_mu.master = _master_ativo()
+	if barra_mu.master:
+		barra_mu.exp_antes = exp_do_master(master.nivel)
+		barra_mu.exp_atual = master.exp
+		barra_mu.exp_prox = master.exp_prox
+	else:
+		barra_mu.exp_antes = exp_do_nivel(meu_nivel - 1) if meu_nivel > 1 else 0
+		barra_mu.exp_atual = exp_atual
+		barra_mu.exp_prox = exp_prox
 	barra_mu.atualizar()
 	if janela_personagem == null:
 		return

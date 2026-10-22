@@ -28,6 +28,7 @@ var ag_max := 1
 var exp_atual := 0
 var exp_antes := 0      # experiencia em que o nivel atual comecou
 var exp_prox := 1
+var master := false   # classe master no 400: a barra mostra a exp master (Exbar_Master)
 
 # skills (CNewUISkillList): atalhos 1..5 na barra, a atual no quadro verde,
 # clique nele abre a lista de todas em cima da barra
@@ -47,7 +48,7 @@ var _esc := 1.0
 
 
 func _ready() -> void:
-	for n in ["menu1", "menu2", "menu3", "orbe_red", "orbe_blue", "orbe_sd", "orbe_ag", "exbar", "numeros",
+	for n in ["menu1", "menu2", "menu3", "orbe_red", "orbe_blue", "orbe_sd", "orbe_ag", "exbar", "exbar_master", "numeros",
 			"bt1", "bt2", "bt3", "bt4", "bt5", "skill1", "skill2", "skill3", "skillbox2", "skillbox_uso"]:
 		_tex[n] = load(PASTA + n + ".png")
 	if FileAccess.file_exists("res://dados/skills.json"):
@@ -91,7 +92,7 @@ func _draw() -> void:
 	var parte := mini(int(r * 10.0), 9)
 	var resto := 1.0 if r >= 1.0 else r * 10.0 - parte
 	if resto > 0.0:
-		draw_texture_rect(_tex.exbar, _r(2, 473, resto * 629.0, 4), false)
+		draw_texture_rect(_tex.exbar_master if master else _tex.exbar, _r(2, 473, resto * 629.0, 4), false)
 	_numero(635, 469, parte)
 	for i in BOTOES.size():
 		var q: Rect2 = _r(489 + 30 * i, TOPO, 30, 41)
@@ -235,7 +236,7 @@ func dica() -> String:
 	if _r(420, 431, 16, 39).has_point(p):
 		return "AG %d / %d" % [ag, ag_max]
 	if _r(2, 470, 629, 10).has_point(p):
-		return "Exp %s / %s" % [ItemChao._milhar(exp_atual), ItemChao._milhar(exp_prox)]
+		return "%s %s / %s" % ["Master Exp" if master else "Exp", ItemChao._milhar(exp_atual), ItemChao._milhar(exp_prox)]
 	var b := _botao_em(p)
 	return DICAS.get(b, "")
 

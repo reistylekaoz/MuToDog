@@ -26,6 +26,8 @@ signal ag(atual: int)
 signal maximo(qual: String, v: int)
 signal experiencia(morto: int, ganho: int)
 signal nivel(info: Dictionary)
+signal master(info: Dictionary)          # F3 50: ao entrar com classe master (nivel, exp, pontos, maximos)
+signal master_subiu(info: Dictionary)    # F3 51: subiu nivel master
 signal itens_cairam(lista: Array)
 signal itens_sumiram(ids: Array)
 signal pegou(slot: int, item: Dictionary)
@@ -713,6 +715,16 @@ func _tratar(p: PackedByteArray) -> void:
 			ponto.emit((p[4] & 0x10) != 0, p[4] & 0x0F, p[6] | (p[7] << 8) if p.size() > 7 else 0,
 				p[8] | (p[9] << 8) if p.size() > 9 else 0, p[10] | (p[11] << 8) if p.size() > 11 else 0)
 			return
+		[0xF3, 0x50]:
+			if p.size() >= 32:
+				master.emit({"nivel": _le(p, 4), "exp": _ler_be(p, 6, 8), "exp_prox": _ler_be(p, 14, 8), "pontos": _le(p, 22),
+					"vida_max": _le(p, 24), "mana_max": _le(p, 26), "sd_max": _le(p, 28), "ag_max": _le(p, 30)})
+				return
+		[0xF3, 0x51]:
+			if p.size() >= 20:
+				master_subiu.emit({"nivel": _le(p, 4), "ganhou": _le(p, 6), "pontos": _le(p, 8), "pontos_max": _le(p, 10),
+					"vida_max": _le(p, 12), "mana_max": _le(p, 14), "sd_max": _le(p, 16), "ag_max": _le(p, 18)})
+				return
 		[0xF3, 0x05]:
 			nivel.emit({"nivel": p[4] | (p[5] << 8), "pontos": p[6] | (p[7] << 8),
 				"vida_max": p[8] | (p[9] << 8), "mana_max": p[10] | (p[11] << 8)})
@@ -1132,6 +1144,10 @@ static func item_de(p: PackedByteArray, o: int) -> Dictionary:
 		"sorte": (p[o + 1] & 0x04) != 0, "skill": (p[o + 1] & 0x80) != 0, "exc": p[o + 3] & 0x3F,
 		"durabilidade": p[o + 2], "opcao": (p[o + 1] & 0x03) | ((p[o + 3] & 0x40) >> 4), "anc": p[o + 4],
 		"bytes": p.slice(o, o + 12)}
+
+
+static func _le(p: PackedByteArray, o: int) -> int:
+	return p[o] | (p[o + 1] << 8)
 
 
 static func _ler_be(p: PackedByteArray, o: int, n: int) -> int:

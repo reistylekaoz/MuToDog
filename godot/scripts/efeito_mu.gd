@@ -307,3 +307,38 @@ func _desenhar_fita(p: Dictionary) -> void:
 		im.surface_set_uv(Vector2(u, 1))
 		im.surface_add_vertex(pts[i] - lado)
 	im.surface_end()
+
+
+# subida de nivel (ReceiveLevelUp e Receive_Master_LevelUp): faiscas BITMAP_FLARE que sobem do
+# personagem. Normal: 15 da 0 (sobem girando devagar) e o anel no chao (BITMAP_MAGIC+1).
+# Master: 1 da 45 (sobe reto girando) e 19 da 46 (sobem abrindo pros lados, verdes).
+# Nos primeiros 20 quadros sobem (6 a 8 do MU por quadro); depois voltam pra cabeca e somem.
+static func subiu_nivel(pai: Node, alvo: Node3D, master: bool) -> void:
+	var e := criar(pai)
+	var n := 20 if master else 15
+	for i in n:
+		var tipo := (45 if i == 0 else 46) if master else 0
+		var lado := Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized() * (1.0 if tipo == 46 else 0.15)
+		var cor := Color(0.45, 1.0, 0.55) if tipo == 46 else (Color(0.6, 0.6, 1.3) if tipo == 45 else Color(1, 0.9, 0.7))
+		var fase := randf() * TAU
+		var dados := {"lado": lado, "fase": fase, "tipo": tipo}
+		var anda := func(p: Dictionary, k: float) -> void:
+			var t: float = p.t
+			var sobe := 2.0 if tipo == 46 else 1.5            # tiles por segundo (8 e 6 do MU a 25 qps)
+			var giro: float = dados.fase + t * (8.0 if tipo == 46 else 4.0)
+			var r := minf(t, 0.8) * (1.2 if tipo == 46 else 0.4)
+			var d := Vector3(cos(giro) * r + dados.lado.x * minf(t, 0.8), minf(t, 0.8) * sobe, sin(giro) * r + dados.lado.y * minf(t, 0.8))
+			if t > 0.8:
+				# MoveHumming: volta pra cabeca (1,2 acima dos pes)
+				var volta := clampf((t - 0.8) / 1.0, 0.0, 1.0)
+				d = d.lerp(Vector3(0, 1.2, 0), volta * volta)
+			p.desl = d
+		var ponta := e.sprite("flare01", alvo.global_position, 1.3 if tipo != 0 else 1.0, cor, 1.9,
+			{"segue": alvo, "anda": anda, "some": 0.35})
+		ponta.desl = Vector3.ZERO
+		# a cauda: copias menores que ficam pra tras (MaxTails)
+		e.tarefa(0.05, 1.7, func(ef: EfeitoMU, _j: int) -> void:
+			if is_instance_valid(ponta.no):
+				ef.sprite("flare01", ponta.no.global_position, 0.8, cor * 0.7, 0.35, {"tam1": 0.2}))
+	if not master:
+		e.chao("magic_ground2", alvo.global_position, 1.6, Color(1, 0.9, 0.6), 1.2, {"tam1": 2.4, "vgiro": 1.5})
