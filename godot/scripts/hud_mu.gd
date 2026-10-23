@@ -45,11 +45,12 @@ var _tex := {}
 var _mouse := Vector2(-1, -1)
 var _apertado := ""
 var _esc := 1.0
+var _icones_master := {}   # skill master -> Magic_Icon (dados/master.json)
 
 
 func _ready() -> void:
 	for n in ["menu1", "menu2", "menu3", "orbe_red", "orbe_blue", "orbe_sd", "orbe_ag", "exbar", "exbar_master", "numeros",
-			"bt1", "bt2", "bt3", "bt4", "bt5", "skill1", "skill2", "skill3", "skillbox2", "skillbox_uso"]:
+			"bt1", "bt2", "bt3", "bt4", "bt5", "skill1", "skill2", "skill3", "skillbox2", "skillbox_uso", "master_icones"]:
 		_tex[n] = load(PASTA + n + ".png")
 	if FileAccess.file_exists("res://dados/skills.json"):
 		info_skills = JSON.parse_string(FileAccess.get_file_as_string("res://dados/skills.json"))
@@ -178,6 +179,15 @@ const ICONE_ESPECIAL := {232: [2, 7, 2], 238: [2, 3, 8], 234: [2, 9, 2], 235: [2
 
 
 func _icone_skill(n: int, r: Rect2) -> void:
+	# skill master (300+): folha da arvore (new_Master_Icon) pelo Magic_Icon do skill_eng
+	if n >= JanelaMaster.SKILL_MASTER:
+		if _icones_master.is_empty():
+			var d := ItensMU._json("res://dados/master.json")
+			for k in d.get("skills", {}):
+				_icones_master[int(k)] = int(d.skills[k][2])
+		var ic: int = _icones_master.get(n, 0)
+		draw_texture_rect_region(_tex.master_icones, r, Rect2((ic % 25) * 20, (ic / 25) * 28, 20, 28))
+		return
 	var c: Array
 	if ICONE_ESPECIAL.has(n):
 		c = ICONE_ESPECIAL[n]

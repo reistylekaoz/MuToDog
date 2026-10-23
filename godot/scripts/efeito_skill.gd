@@ -41,6 +41,7 @@ static func _rnd(a: float, b: float) -> float:
 static func criar(pai: Node3D, n: int, quem, alvo, area := false) -> void:
 	if pai == null or quem == null or alvo == null:
 		return
+	n = JanelaMaster.base(n)
 	var e := EfeitoMU.criar(pai)
 	var de := _pos(quem)
 	var para := _pos(alvo)

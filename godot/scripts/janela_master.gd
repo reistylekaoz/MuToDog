@@ -65,6 +65,26 @@ func _carregar() -> void:
 	_arvore_toda = d.get("arvore", [])
 
 
+static var _marcas := {}   # skill master ativa (uso 4) -> skill que ela fortalece
+
+
+# a skill base de uma master ativa (326 Cyclone Strengthener -> 22 Cyclone; 332 -> 330 -> 41):
+# animacao e efeito sao os da base, como o SKILL_REPLACEMENTS do original
+static func base(n: int) -> int:
+	if n < SKILL_MASTER:
+		return n
+	if _marcas.is_empty():
+		var d := ItensMU._json("res://dados/master.json")
+		for k in d.get("skills", {}):
+			var i: Array = d.skills[k]
+			if int(i[4]) == 4 and int(i[3]) > 0:
+				_marcas[int(k)] = int(i[3])
+		_marcas[-1] = -1   # carregado
+	while _marcas.has(n):
+		n = _marcas[n]
+	return n
+
+
 func _ajustar() -> void:
 	var v := get_viewport_rect().size
 	var barra := 51.0 * v.x / 640.0

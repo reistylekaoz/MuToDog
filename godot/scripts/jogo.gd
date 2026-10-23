@@ -3090,6 +3090,7 @@ func _escolher_skill(n: int) -> void:
 
 # acao do boneco pra cada skill (o cliente tem uma por skill; aqui as parecidas)
 func _acao_skill(n: int) -> String:
+	n = JanelaMaster.base(n)
 	var a := {19: "espada_s1", 20: "espada_s2", 21: "espada_s3", 22: "espada_s4", 23: "espada_s5",
 		41: "giro", 42: "furia", 43: "estocada", 232: "destruicao", 44: "lua", 47: "estocada",
 		14: "inferno", 10: "fogo_inferno", 12: "raio", 26: "cura", 27: "cura", 28: "cura", 48: "cura",

@@ -68,5 +68,6 @@ func _initialize() -> void:
 	confere("pontos por grupo", j.pontos_do_grupo(0) == 3 and j.pontos_do_grupo(1) == 10)
 	j.subiu(1, 4, 1.0, 2.0)
 	confere("F3 52 sobe a 300", j.nivel(300) == 4)
+	confere("base: 326 -> 22, 332 -> 41, 300 fica", JanelaMaster.base(326) == 22 and JanelaMaster.base(332) == 41 and JanelaMaster.base(300) == 300 and JanelaMaster.base(41) == 41)
 	print("falhas: %d" % falhas)
 	quit(1 if falhas else 0)
