@@ -1,5 +1,5 @@
 """Spots de monstro no OpenMU daqui: troca as areas gigantes (um tipo espalhado pelo mapa todo) por spots como no MU,
-quadrados de 5x5 com 2 (low), 4 (medium), 5 (big) ou 6 (hot) monstros, renascendo a cada 6 s.
+quadrados de 5x5 com 3 (low), 4 (medium), 5 (big) ou 6 (hot) monstros, renascendo a cada 6 s.
 O OpenMU sorteia o ponto de cada renascimento dentro da area (NonPlayerCharacter.GetNewSpawnPoint), entao area pequena = spot.
 Mantem o total de cada tipo; o centro do spot e o tile mais longe dos spots ja postos, com os 25 tiles andaveis e fora da zona
 segura (TerrainData: 3 bytes de cabecalho e 256x256, andavel = atributo sem bits alem do 1, zona segura = bit 1).
@@ -10,7 +10,7 @@ import json, os, random, subprocess, sys, time
 
 AQUI = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAPAS = [0, 2, 3, 51]          # Lorencia, Devias, Noria, Elvenland
-TAMANHOS = [(2, 3), (4, 4), (5, 2), (6, 1)]   # (monstros, peso)
+TAMANHOS = [(3, 3), (4, 4), (5, 2), (6, 1)]   # (monstros, peso); low = 3 como no guidemuonline.com
 RAIO = 2                       # 5x5
 RENASCER = "6 seconds"
 os.environ["PGPASSWORD"] = "local"
@@ -25,11 +25,11 @@ def sql(q, ler=True):
 
 
 def divide(total, rnd):
-    """Quebra o total em spots de 2/4/5/6."""
+    """Quebra o total em spots de 3/4/5/6."""
     spots = []
     while total:
-        # sobrar 1 ou 3 nao fecha com 2/4/5/6
-        ok = [(t, p) for t, p in TAMANHOS if t <= total and total - t not in (1, 3)]
+        # sobrar 1 ou 2 nao fecha com 3/4/5/6
+        ok = [(t, p) for t, p in TAMANHOS if t <= total and total - t not in (1, 2)]
         n = rnd.choices([t for t, _ in ok], [p for _, p in ok])[0]
         spots.append(n)
         total -= n
@@ -96,7 +96,7 @@ for mapa in MAPAS:
     q.append("delete from config.\"MonsterSpawnArea\" where \"Id\" in (%s);" % ",".join("'%s'" % dict(zip(colunas, a))["Id"]
                                                                                  for a in areas))
     print("%-10s %d areas -> %d spots (low %d, medium %d, big %d, hot %d), %d monstros nao couberam" %
-          (nome, len(areas), len(postos), cont.get(2, 0), cont.get(4, 0), cont.get(5, 0), cont.get(6, 0),
+          (nome, len(areas), len(postos), cont.get(3, 0), cont.get(4, 0), cont.get(5, 0), cont.get(6, 0),
            sobrou))
 
 ids = ",".join("'%s'" % i for i in antes["renascer"])
