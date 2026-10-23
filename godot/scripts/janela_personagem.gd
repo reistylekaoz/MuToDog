@@ -7,6 +7,7 @@ extends Control
 # caixa ganha o botao + que pede ao servidor 1 ponto naquele atributo (C1 F3 06).
 
 signal abrir_quests                # o botao de quest abre a janela T
+signal abrir_master                # o botao master abre a janela A
 signal adicionar(atributo: int)   # 0 forca, 1 agilidade, 2 vitalidade, 3 energia, 4 comando
 
 const PASTA := "res://dados/hud/"
@@ -271,6 +272,9 @@ func _clique(p: Vector2) -> void:
 	if Rect2(50, 392, 36, 29).has_point(p):
 		alternar()
 		abrir_quests.emit()
+		return
+	if Rect2(124, 392, 36, 29).has_point(p):
+		abrir_master.emit()
 		return
 	if int(eu.get("pontos", 0)) <= 0 or esperando:
 		return

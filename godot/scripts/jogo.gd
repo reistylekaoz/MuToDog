@@ -75,6 +75,7 @@ var quest_legado := QuestLegado.new()   # o estado delas (a lista chega antes do
 var quest_nova := QuestNova.new()       # quests novas do S6 (F6): Elf Soldier
 var janela_quest_nova: JanelaQuestNova  # o passo da quest no NPC: F6 0B e 0C
 var janela_minhas_quests: JanelaMinhasQuests   # janela T
+var janela_master: JanelaMaster                # janela A: arvore de skills master
 var guarda: Guarda          # bau e maquina do caos
 var _janela_npc := 0        # tipo da janela que o servidor abriu (0 loja, 2 bau, 3 maquina do caos)
 var amigos: Amigos
@@ -148,6 +149,14 @@ func _ready() -> void:
 	cli.nivel.connect(_nivel)
 	cli.master.connect(_master)
 	cli.master_subiu.connect(_master_subiu)
+	cli.master_skills.connect(func(l):
+		print("TESTE master skills %s" % [l])
+		janela_master.definir_classe(minha_classe)
+		janela_master.lista(l)
+		if _parametros().has("master_skills") and not _teste_master_comecou:
+			_teste_master_comecou = true
+			_teste_master(str(_parametros().master_skills).split(",", false)))
+	cli.master_skill.connect(_master_skill)
 	cli.ponto.connect(_ponto)
 	cli.pedido_grupo.connect(func(id):
 		var n: String = entidades[id].nome if entidades.has(id) else "Alguem"
@@ -483,6 +492,13 @@ func _montar_ui() -> void:
 		print("TESTE quest nova %x desistir" % i)
 		cli.quest_desistir(i & 0xFFFF, i >> 16))
 	hud.add_child(janela_minhas_quests)
+	janela_master = JanelaMaster.new()
+	janela_master.minhas_skills = minhas_skills
+	janela_master.exp_do_master = exp_do_master
+	janela_master.aprender.connect(func(s):
+		print("TESTE master aprender %d" % s)
+		cli.subir_master(s))
+	hud.add_child(janela_master)
 	minimapa = Minimapa.new()
 	minimapa.jogo = self
 	minimapa.andar.connect(_andar_pelo_minimapa)
@@ -556,6 +572,7 @@ func _montar_ui() -> void:
 	janela_personagem.inventario = inv
 	janela_personagem.adicionar.connect(func(a): cli.adicionar_ponto(a))
 	janela_personagem.abrir_quests.connect(func(): if not janela_minhas_quests.visible: janela_minhas_quests.alternar())
+	janela_personagem.abrir_master.connect(_alternar_master)
 	hud.add_child(janela_personagem)
 	inv.visibility_changed.connect(janela_personagem._ajustar)
 	comandos = JanelaComandos.new()
@@ -1464,6 +1481,7 @@ func _master_ativo() -> bool:
 # F3 50: ao entrar; os maximos da classe master valem pros orbes
 func _master(info: Dictionary) -> void:
 	master = info
+	janela_master.master = master
 	print("TESTE master %s" % info)
 	_maximos_master(info)
 	_hud_nivel()
@@ -1488,6 +1506,8 @@ func _master_subiu(info: Dictionary) -> void:
 	master.pontos = info.pontos
 	master.exp = maxi(master.exp_prox, exp_do_master(info.nivel))
 	master.exp_prox = exp_do_master(info.nivel + 1)
+	janela_master.master = master
+	janela_master.queue_redraw()
 	_maximos_master(info)
 	barra_mu.vida = barra_mu.vida_max
 	barra_mu.mana = barra_mu.mana_max
@@ -1495,6 +1515,27 @@ func _master_subiu(info: Dictionary) -> void:
 	if eu:
 		EfeitoMU.subiu_nivel(mundo, eu, true)
 	_hud_nivel()
+
+
+# F3 52 (Receive_Master_LevelGetSkill): a skill subiu; a troca da skill base pela fortalecida na
+# barra vem do proprio servidor (F3 11 tira e poe)
+func _master_skill(info: Dictionary) -> void:
+	print("TESTE master skill %s" % info)
+	master.pontos = info.pontos
+	janela_master.subiu(info.indice, info.nivel, info.valor, info.prox)
+	_msg("[color=#9fe0a0]%s no nivel %d (%d pontos master).[/color]" % [_info_skill(info.skill)[0], info.nivel, info.pontos])
+
+
+func _alternar_master() -> void:
+	if not janela_master.e_master(minha_classe) or master.is_empty():
+		_msg("[color=#9a9ab0]A arvore de skills master (A) e da classe master (3a classe) no nivel 400.[/color]")
+		return
+	janela_master.definir_classe(minha_classe)
+	if not janela_master.visible:
+		for j in [inv, janela_personagem, comandos, janela_minhas_quests, janela_helper]:
+			j.visible = false
+		hud.move_child(janela_master, -1)   # por cima do registro do chat, como no original
+	janela_master.alternar()
 
 
 # experiencia master em que o nivel master n comeca (formula do cliente: total = 400 + n)
@@ -2355,6 +2396,7 @@ func _passo_quest(i: int) -> void:
 # "r" recusa, "c" conclui, "d" desiste pela janela T, "t" abre a janela T, "e" escolhe a 1a quest
 # dela, "p" espera 3 s, "f" fecha o NPC, "n" fala com a Elf Soldier de novo. Um passo por segundo.
 var _fila_quest_nova := []
+var _teste_master_comecou := false
 var _teste_qn_comecou := false
 var _teste_qn_esperando := false
 
@@ -2896,6 +2938,9 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k == KEY_T:
 		janela_minhas_quests.alternar()
 		return true
+	if k == KEY_A:
+		_alternar_master()
+		return true
 	if k == KEY_F:
 		amigos.alternar()
 		return true
@@ -2923,7 +2968,10 @@ func _teclas(ev: InputEventKey) -> bool:
 		helper.alternar()
 		return true
 	if k == KEY_ESCAPE:
-		if minimapa.visible:
+		if janela_master.visible:
+			if not janela_master.tecla_enter_esc(false):
+				janela_master.alternar()
+		elif minimapa.visible:
 			minimapa.visible = false
 		elif menu.visible:
 			menu.visible = false
@@ -3381,6 +3429,36 @@ func _teste_comando(a: PackedStringArray) -> void:
 
 
 # ponto=N: abre a janela C e clica 3 vezes no + do atributo N, como a pessoa faria
+# --master_skills 300,300,326: abre a janela A e clica em cada skill (pelo numero) como o mouse faz;
+# confirma quando a janela deixa e mostra a resposta do servidor
+func _teste_master(lista: Array) -> void:
+	await get_tree().create_timer(2.0).timeout
+	_alternar_master()
+	var j := janela_master
+	print("TESTE master janela %s classe %d, %d skills na arvore, pontos %d" % [j.visible, minha_classe, j.entradas.size(), master.pontos])
+	for t in lista:
+		var e: Array = []
+		for x in j.entradas:
+			if x[7] == int(t):
+				e = x
+		if e.is_empty():
+			print("TESTE master %s nao esta na arvore" % t)
+			continue
+		var antes := j.nivel(e[7])
+		j.clique(j._rect_icone(e).get_center())
+		print("TESTE master clicou %s: %s" % [t, j._caixa.get("linhas", [])])
+		print("TESTE master dica %s" % [j.linhas_dica(e).map(func(x): return x.t)])
+		if j._caixa.get("skill", -1) >= 0:
+			j.clique(j._rect_botao(0).get_center())
+			for i in 30:
+				await get_tree().create_timer(0.1).timeout
+				if j.nivel(e[7]) != antes:
+					break
+		else:
+			j.confirmar(false)
+		print("TESTE master %s nivel %d -> %d, pontos %d, grupo %d" % [t, antes, j.nivel(e[7]), master.pontos, j.pontos_do_grupo(e[2])])
+
+
 func _teste_ponto(a: int) -> void:
 	await get_tree().create_timer(2.0).timeout
 	_botao_barra("personagem")

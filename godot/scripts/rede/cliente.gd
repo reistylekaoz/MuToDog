@@ -28,6 +28,8 @@ signal experiencia(morto: int, ganho: int)
 signal nivel(info: Dictionary)
 signal master(info: Dictionary)          # F3 50: ao entrar com classe master (nivel, exp, pontos, maximos)
 signal master_subiu(info: Dictionary)    # F3 51: subiu nivel master
+signal master_skills(lista: Array)       # F3 53: skills master aprendidas (indice na arvore, nivel, valor, proximo)
+signal master_skill(info: Dictionary)    # F3 52: a skill master subiu (pontos que sobraram, indice, skill, nivel, valores)
 signal itens_cairam(lista: Array)
 signal itens_sumiram(ids: Array)
 signal pegou(slot: int, item: Dictionary)
@@ -471,6 +473,11 @@ func adicionar_ponto(atributo: int) -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0xF3, 0x06, atributo]))
 
 
+# C1 F3 52: 1 ponto master na skill (aprende no primeiro); o servidor responde F3 52 ou nada
+func subir_master(skill: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xF3, 0x52, skill & 0xFF, skill >> 8]))
+
+
 # --- troca --------------------------------------------------------------------------
 
 func pedir_troca(id: int) -> void:
@@ -725,6 +732,20 @@ func _tratar(p: PackedByteArray) -> void:
 				master_subiu.emit({"nivel": _le(p, 4), "ganhou": _le(p, 6), "pontos": _le(p, 8), "pontos_max": _le(p, 10),
 					"vida_max": _le(p, 12), "mana_max": _le(p, 14), "sd_max": _le(p, 16), "ag_max": _le(p, 18)})
 				return
+		[0xF3, 0x52]:
+			if p.size() >= 28 and p[4] != 0:
+				master_skill.emit({"pontos": _le(p, 6), "indice": p[8], "skill": _le(p, 12), "nivel": p[16],
+					"valor": p.decode_float(20), "prox": p.decode_float(24)})
+				return
+		[0xF3, 0x53]:
+			var lista := []
+			for i in p.decode_u32(8):
+				var o := 12 + i * 12
+				if o + 12 > p.size():
+					break
+				lista.append({"indice": p[o], "nivel": p[o + 1], "valor": p.decode_float(o + 4), "prox": p.decode_float(o + 8)})
+			master_skills.emit(lista)
+			return
 		[0xF3, 0x05]:
 			nivel.emit({"nivel": p[4] | (p[5] << 8), "pontos": p[6] | (p[7] << 8),
 				"vida_max": p[8] | (p[9] << 8), "mana_max": p[10] | (p[11] << 8)})
