@@ -651,6 +651,32 @@ func tingir(cor: Color) -> void:
 				mi.set_surface_override_material(s, m)
 
 
+# cor do corpo pelos debuffs (RenderPartObjectEffect: BodyLight do veneno, gelo, atordoado) e a meia
+# transparencia da invisibilidade; branco e 1 voltam o material de antes
+func tinta_buff(cor: Color, alfa := 1.0) -> void:
+	for mi: MeshInstance3D in modelo.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for s in mi.mesh.get_surface_count():
+			var k := "sem_buff_%d" % s
+			if not mi.has_meta(k):
+				mi.set_meta(k, mi.get_surface_override_material(s))
+			var orig = mi.get_meta(k)
+			if cor == Color(1, 1, 1) and alfa >= 1.0:
+				mi.set_surface_override_material(s, orig)
+				mi.remove_meta(k)
+				continue
+			var base := (orig if orig else mi.mesh.surface_get_material(s)) as BaseMaterial3D
+			if base == null:
+				continue
+			var m := base.duplicate() as BaseMaterial3D
+			m.albedo_color = Color(base.albedo_color.r * cor.r, base.albedo_color.g * cor.g, base.albedo_color.b * cor.b,
+				base.albedo_color.a * alfa)
+			if alfa < 1.0:
+				m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+			mi.set_surface_override_material(s, m)
+
+
 # AddTerrainLight em volta do monstro: um disco deitado no chao que soma (ou subtrai) a cor,
 # caindo em linha reta ate o raio, como a luz pintada nos vertices do terreno
 func luz_chao(cor: Color, raio: float, pisca := true) -> void:

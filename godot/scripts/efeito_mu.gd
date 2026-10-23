@@ -342,3 +342,62 @@ static func subiu_nivel(pai: Node, alvo: Node3D, master: bool) -> void:
 				ef.sprite("flare01", ponta.no.global_position, 0.8, cor * 0.7, 0.35, {"tam1": 0.2}))
 	if not master:
 		e.chao("magic_ground2", alvo.global_position, 1.6, Color(1, 0.9, 0.6), 1.2, {"tam1": 2.4, "vgiro": 1.5})
+
+
+# fogos (CreateEffect BITMAP_FIREWORK do F3 40 tipo 0 e 59): 5 foguetes (JointSpirit rosa) sobem e estouram em
+# faiscas e brilhos que caem; os de natal soltam tambem doces e caixinhas
+static func fogos(pai: Node, pos: Vector3, natal: bool) -> void:
+	var e := criar(pai)
+	# um foguete a cada 0,25 s
+	e.tarefa(0.25, 1.0, func(ef: EfeitoMU, _j: int) -> void:
+		var de := pos + Vector3(randf_range(-1.5, 1.5), 0.3, randf_range(-1.5, 1.5))
+		var para := de + Vector3(randf_range(-1, 1), randf_range(2.5, 4.0), randf_range(-1, 1))
+		var n := ef.voar(de, para, 0.8, func(fim: Vector3) -> void: _estouro(ef, fim, natal))
+		ef.tarefa(0.03, 0.8, func(f2: EfeitoMU, _k: int) -> void:
+			if voando(n):
+				f2.sprite("flare01", n.global_position, 0.6, Color(0.9, 0.4, 0.6), 0.4, {"tam1": 0.1})))
+
+
+static func _estouro(e: EfeitoMU, pos: Vector3, natal: bool) -> void:
+	var cor := Color.from_hsv(randf(), 0.6, 1.0)
+	e.sprite("flare01", pos, 3.0, cor, 0.5, {"tam1": 0.5, "some": 0.6})
+	for i in 36:
+		var d := Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)).normalized() * randf_range(2.0, 3.5)
+		var p := e.sprite("flare01" if i % 2 else "shiny02", pos, 0.45, cor if i % 3 else Color(1, 1, 1), randf_range(1.0, 1.6),
+			{"some": 0.5, "tam1": 0.15})
+		p.vel = d
+		p.acel = Vector3(0, -3.0, 0)
+	if natal:
+		for i in 4:
+			var p := e.modelo("xmasecandy" if i % 2 else "xmasebox", pos, 0.8, Color(1, 1, 1), 1.6,
+				{"some": 0.3, "vgiro": 4.0})
+			p.vel = Vector3(randf_range(-2, 2), randf_range(0, 2), randf_range(-2, 2))
+			p.acel = Vector3(0, -4.0, 0)
+
+
+# redemoinho da caixa que caiu (F3 40 tipo 58): brilhos rosa subindo em espiral em volta de quem abriu
+static func redemoinho(pai: Node, alvo: Node3D) -> void:
+	var e := criar(pai)
+	e.tarefa(0.05, 1.5, func(ef: EfeitoMU, j: int) -> void:
+		var fase := j * 0.7
+		ef.sprite("shiny02", alvo.global_position, 0.5, Color(1, 0.55, 0.8), 1.0, {"segue": alvo, "some": 0.4,
+			"anda": func(p: Dictionary, _k: float) -> void:
+				var g: float = fase + p.t * 6.0
+				var r: float = 0.9 - p.t * 0.5
+				p.desl = Vector3(cos(g) * r, p.t * 2.2, sin(g) * r)}))
+
+
+# escudo (C1 48): 3 pocao de SD (circulo no chao e luzes subindo), 17 o SD acabou (atshild azul que some)
+static func escudo(pai: Node, alvo: Node3D, quebrou: bool) -> void:
+	var e := criar(pai)
+	if quebrou:
+		e.modelo("atshild", alvo.global_position + Vector3.UP * 0.9, 1.0, Color(0.5, 0.5, 1), 1.0,
+			{"segue": alvo, "some": 0.6, "tam1": 1.3})
+		return
+	e.chao("magic_ground2", alvo.global_position, 1.4, Color(0.8, 0.8, 0.3), 1.0, {"segue": alvo, "vgiro": 2.0, "some": 0.5})
+	for i in 3:
+		var fase := TAU * i / 3.0
+		e.sprite("flare01", alvo.global_position, 0.7, Color(1, 0.9, 0.4), 1.0, {"segue": alvo, "some": 0.4,
+			"anda": func(p: Dictionary, _k: float) -> void:
+				var g: float = fase + p.t * 5.0
+				p.desl = Vector3(cos(g) * 0.6, 0.2 + p.t * 1.8, sin(g) * 0.6)})

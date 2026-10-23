@@ -18,6 +18,8 @@ var vento := AudioStreamPlayer.new()
 var floresta := AudioStreamPlayer.new()
 var fundo := AudioStreamPlayer.new()
 var mudo := false
+var _efeitos: Array[AudioStreamPlayer] = []   # sons soltos (dados/sons: subir de nivel, fogos, medalha...)
+var _db_efeitos := -6.0
 var _faixa := ""
 var _mapa := -1
 
@@ -97,6 +99,27 @@ func volumes(v_musica: float, v_efeitos: float) -> void:
 	vento.volume_db = -14.0 + linear_to_db(maxf(v_efeitos, 0.001) / 0.8)
 	floresta.volume_db = -12.0 + linear_to_db(maxf(v_efeitos, 0.001) / 0.8)
 	fundo.volume_db = floresta.volume_db
+	_db_efeitos = -6.0 + linear_to_db(maxf(v_efeitos, 0.001) / 0.8)
+
+
+# som de uma vez (PlayBuffer do cliente); ate 6 ao mesmo tempo
+func tocar(nome: String) -> void:
+	var c := "res://dados/sons/%s.wav" % nome
+	if mudo or not ResourceLoader.exists(c):
+		return
+	var p: AudioStreamPlayer = null
+	for x in _efeitos:
+		if not x.playing:
+			p = x
+	if p == null:
+		if _efeitos.size() >= 6:
+			return
+		p = AudioStreamPlayer.new()
+		add_child(p)
+		_efeitos.append(p)
+	p.stream = load(c)
+	p.volume_db = _db_efeitos
+	p.play()
 
 
 func alternar() -> bool:

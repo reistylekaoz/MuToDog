@@ -76,6 +76,8 @@ var quest_nova := QuestNova.new()       # quests novas do S6 (F6): Elf Soldier
 var janela_quest_nova: JanelaQuestNova  # o passo da quest no NPC: F6 0B e 0C
 var janela_minhas_quests: JanelaMinhasQuests   # janela T
 var janela_master: JanelaMaster                # janela A: arvore de skills master
+var janela_buffs: JanelaBuffs                  # icones dos buffs em mim, no topo
+var caixa_fruta: CaixaFruta                    # fruta: soma ou tira pontos
 var guarda: Guarda          # bau e maquina do caos
 var _janela_npc := 0        # tipo da janela que o servidor abriu (0 loja, 2 bau, 3 maquina do caos)
 var amigos: Amigos
@@ -314,6 +316,76 @@ func _json(c: String) -> Dictionary:
 	return d if d is Dictionary else {}
 
 
+# --roteiro "d:/item 14 9;p;u:14,9;e:5": passos com 2 s entre eles. d: diz no chat (comando de GM tambem),
+# p: pega o item do chao mais perto, u:grupo,numero[,nivel]: usa o item da mochila, e:N: espera N s,
+# f:1 ou f:2: Create ou Decrease na caixa da fruta, b: mostra os buffs (janela e boneco),
+# x:12-50: larga no chao o que esta nesses slots, t: tira o que esta vestido, v: veste de volta
+var _teste_tirados := []
+
+
+func _teste_roteiro(passos: Array) -> void:
+	for passo: String in passos:
+		await get_tree().create_timer(2.0).timeout
+		var a := passo.substr(2)
+		match passo.substr(0, 1):
+			"d":
+				print("TESTE roteiro diz %s" % a)
+				cli.dizer(meu_nome, a)
+			"p":
+				var perto: ItemChao = null
+				for it: ItemChao in itens.values():
+					if perto == null or _distancia(eu.tile, it.tile) < _distancia(eu.tile, perto.tile):
+						perto = it
+				print("TESTE roteiro pega %s" % (perto.nome if perto else "nada"))
+				if perto:
+					item_alvo = perto.id
+			"u":
+				var v := a.split(",")
+				var s := -1
+				for k in inv.itens:
+					var it: Dictionary = inv.itens[k]
+					if k >= Inventario.MOCHILA and it.grupo == int(v[0]) and it.numero == int(v[1]) and (v.size() < 3 or it.nivel == int(v[2])):
+						s = k
+						break
+				print("TESTE roteiro usa %s no slot %d" % [ItensMU.nome(inv.itens[s]) if s >= 0 else a, s])
+				if s >= 0:
+					inv.usar_ou_equipar(s)
+			"e":
+				await get_tree().create_timer(float(a)).timeout
+			"x":
+				# x:12-50: larga no chao o que estiver nesses slots da mochila (lixo de teste do GM)
+				var f := a.split("-")
+				for k in range(int(f[0]), int(f[1]) + 1):
+					if inv.itens.has(k):
+						cli.largar_item(eu.tile.x, eu.tile.y, k)
+						await get_tree().create_timer(0.3).timeout
+				print("TESTE roteiro largou %s" % a)
+			"t", "v":
+				# t: tira tudo que esta vestido pra mochila; v: veste de volta
+				if passo == "t":
+					_teste_tirados.clear()
+					for k in inv.itens.keys():
+						if k < Inventario.MOCHILA:
+							var para := inv.lugar_livre(inv.itens[k])
+							print("TESTE roteiro tira %s do %d pro %d" % [ItensMU.nome(inv.itens[k]), k, para])
+							if para >= 0:
+								_teste_tirados.append([k, para])
+								inv._mandar(k, para)
+								await get_tree().create_timer(0.5).timeout
+				else:
+					for x in _teste_tirados:
+						if inv.itens.has(x[1]):
+							inv._mandar(x[1], x[0])
+							await get_tree().create_timer(0.5).timeout
+				print("TESTE roteiro %s: vestidos agora %s" % [passo, inv.itens.keys().filter(func(k): return k < Inventario.MOCHILA)])
+			"f":
+				print("TESTE roteiro fruta: %s (%s)" % [DicaItem.t(CaixaFruta.BOTOES[int(a) - 1]), caixa_fruta.titulo()])
+				caixa_fruta.escolher(int(a) - 1)
+			"b":
+				print("TESTE roteiro buffs na janela: %s" % [janela_buffs.lista().map(func(x): return "%d %s" % [x, JanelaBuffs.nome(x)])])
+				print("TESTE roteiro buffs no meu boneco: %s" % [eu.buffs.keys()])
+
+
 # --ver_monstros 3,15: lista os monstros vistos (id e tile) nesses segundos depois de entrar (spots do servidor)
 func _teste_ver_monstros(segundos: Array) -> void:
 	var antes := 0.0
@@ -445,6 +517,8 @@ func _montar_ui() -> void:
 	barra_mu.escolheu_skill.connect(_escolher_skill)
 	barra_mu.usar_atalho.connect(_usar_pocao)
 	hud.add_child(barra_mu)
+	janela_buffs = JanelaBuffs.new()
+	hud.add_child(janela_buffs)
 	inv = Inventario.new()
 	inv.aviso.connect(func(t): _msg("[color=#e8b04a]%s[/color]" % t))
 	inv.mover.connect(func(de, para):
@@ -452,6 +526,19 @@ func _montar_ui() -> void:
 			cli.mover_item(de, para, inv.itens[de].bytes))
 	inv.usar.connect(func(slot, alvo): cli.usar_item(slot, alvo))
 	hud.add_child(inv)
+	caixa_fruta = CaixaFruta.new()
+	caixa_fruta.escolheu.connect(func(slot, uso):
+		print("TESTE fruta slot %d uso %d" % [slot, uso])
+		# o OpenMU recusa com qualquer item vestido e nao responde (PreventedByEquippedItems sem pacote): avisa aqui
+		if inv.itens.keys().any(func(k): return k < Inventario.MOCHILA):
+			print("TESTE fruta recusada: item vestido")
+			_msg("[color=#e8b04a]%s[/color]" % DicaItem.t(1909 if uso == 1 else 1908))
+			return
+		cli.usar_item(slot, 0, uso))
+	inv.fruta.connect(func(slot):
+		print("TESTE caixa da fruta %s" % ItensMU.nome(inv.itens[slot]))
+		caixa_fruta.abrir(slot, int(inv.itens[slot].get("nivel", 0))))
+	hud.add_child(caixa_fruta)
 	loja = Loja.new()
 	loja.inv = inv
 	loja.comprar.connect(func(slot): cli.comprar(slot))
@@ -840,6 +927,8 @@ func _entrou(info: Dictionary) -> void:
 		_chao_teste(info.x, info.y)
 	if _parametros().has("uma_skill"):
 		_teste_uma_skill(int(_parametros().uma_skill))
+	if _parametros().has("roteiro"):
+		_teste_roteiro(str(_parametros().roteiro).split(";"))
 	if _parametros().has("ver_monstros"):
 		_teste_ver_monstros(str(_parametros().ver_monstros).split(","))
 	if _parametros().has("segurar"):
@@ -858,6 +947,8 @@ func _entrou(info: Dictionary) -> void:
 		dialogo.abrir(int(_parametros().dialogo_teste), "Elf Soldier")
 	if _parametros().has("efeito_teste"):
 		_efeito_teste(str(_parametros().efeito_teste).split(",", false))
+	if _parametros().has("buff_teste"):
+		_buff_teste(str(_parametros().buff_teste).split(",", false))
 	if _andar_depois.x >= 0:
 		await get_tree().create_timer(2.0).timeout
 		if eu:
@@ -929,6 +1020,9 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	entidades[cli.meu_id] = eu
 	mundo.seguir = eu
 	_vestir_eu()
+	if janela_buffs:
+		for b: int in janela_buffs.buffs:
+			eu.buff(b, true)
 	# chegou em cima de um portal (saida de outro): so conta depois de sair dele
 	var g := mover_janela.portal_em(mapa, x, y)
 	_portal_pisado = int(g[0]) if not g.is_empty() else -1
@@ -938,6 +1032,8 @@ func _objeto_entrou(o: Dictionary) -> void:
 	if mundo == null:
 		return
 	if o.id == cli.meu_id:
+		for x in o.get("efeitos", []):
+			_efeito(true, o.id, x)
 		return
 	if entidades.has(o.id):
 		entidades[o.id].queue_free()
@@ -964,6 +1060,8 @@ func _objeto_entrou(o: Dictionary) -> void:
 		e.visible = false
 	if e.boneco and o.has("equip"):
 		e.boneco.vestir(o.equip)
+	for x in o.get("efeitos", []):
+		e.buff(x, true)
 	if Vector2i(o.ax, o.ay) != Vector2i(o.x, o.y):
 		_objeto_andou(o.id, o.ax, o.ay, [])
 
@@ -1292,6 +1390,7 @@ func _process(dt: float) -> void:
 				var segura: bool = mundo.zona_segura(e.tile.x, e.tile.y) and not _teste_monta
 				e.boneco.arma_nas_costas(segura)
 				e.boneco.nadando(mapa_atual == 7 and not segura)
+		_livre_buffs()
 	var seg: bool = mundo.zona_segura(eu.tile.x, eu.tile.y)
 	if som == null:
 		som = Som.new()
@@ -2277,6 +2376,43 @@ func _efeito_teste(lista: Array) -> void:
 		alvo.queue_free()
 
 
+# testes (?buff_teste=a4,a55,fogos,fruta): icones na janela de buffs e um passo a cada 3 s. aN: so o buff N no
+# meu boneco; fogos, natal, redemoinho, escudo, quebrou, subiu: o efeito em mim; fruta: abre a caixa da fruta
+func _buff_teste(lista: Array) -> void:
+	Engine.time_scale = float(_parametros().get("lento", "1"))
+	await get_tree().create_timer(4.0).timeout
+	for b in [28, 4, 1, 55]:
+		janela_buffs.por(b)
+	janela_buffs.por(35, 1920)
+	janela_buffs.por(78, 1800)
+	print("TESTE buff_teste janela %s" % [janela_buffs.lista()])
+	for x: String in lista:
+		if eu == null:
+			return
+		for b in eu.buffs.keys():
+			eu.buff(b, false)
+		barra_mu.veneno = false
+		print("TESTE buff_teste %s" % x)
+		match x:
+			"fogos", "natal":
+				EfeitoMU.fogos(mundo, mundo.no_tile(eu.tile.x + 2, eu.tile.y - 2), x == "natal")
+			"redemoinho":
+				EfeitoMU.redemoinho(mundo, eu)
+			"escudo", "quebrou":
+				EfeitoMU.escudo(mundo, eu, x == "quebrou")
+			"subiu":
+				EfeitoMU.subiu_nivel(mundo, eu, false)
+			"fruta":
+				caixa_fruta.abrir(12, 3)
+			_:
+				var n := int(x.substr(1))
+				eu.buff(n, true)
+				barra_mu.veneno = n == 55
+		barra_mu.queue_redraw()
+		await get_tree().create_timer(3.0).timeout
+	caixa_fruta.visible = false
+
+
 func _itens_sumiram(ids: Array) -> void:
 	for id in ids:
 		if itens.has(id):
@@ -2856,6 +2992,33 @@ func _ligar_troca_loja_helper() -> void:
 		helper.desserializar(d)
 		print("TESTE helper dados %d bytes: caca=%d extras=%s" % [d.size(), helper.c.caca, helper.c.extras]))
 	cli.efeito.connect(func(a, quem, e): helper.efeito(a, quem, e))
+	cli.efeito.connect(_efeito)
+	cli.magia_acabou.connect(func(skill, quem):
+		if BUFF_DA_SKILL.has(skill):
+			_efeito(false, quem, BUFF_DA_SKILL[skill]))
+	cli.efeito_item.connect(_efeito_item)
+	cli.item_efeito.connect(_bebida)
+	cli.fruta.connect(_fruta)
+	cli.mostrar_efeito.connect(_mostrar_efeito)
+	cli.veneno.connect(func(dano, sd):
+		print("TESTE veneno %d sd %d" % [dano, sd])
+		barra_mu.vida = maxi(barra_mu.vida - dano, 0)
+		barra_mu.sd = sd
+		if eu:
+			eu.mostrar_dano(dano, 5)
+		_hud_nivel())
+	cli.fogos.connect(func(t, x, y):
+		print("TESTE fogos tipo %d em (%d, %d)" % [t, x, y])
+		if t == 2:
+			_som("medalha")
+		elif mundo:
+			EfeitoMU.fogos(mundo, mundo.no_tile(x, y), t == 59)
+			_som("fogos"))
+	cli.redemoinho.connect(func(quem):
+		print("TESTE redemoinho em %d" % quem)
+		if entidades.has(quem):
+			EfeitoMU.redemoinho(mundo, entidades[quem])
+			_som("cerejeira"))
 	cli.efeito.connect(func(a, quem, e):
 		if quem == cli.meu_id and e == 3:
 			# buff da Elf Soldier (ate o nivel 180): mais dano e defesa
@@ -3539,3 +3702,132 @@ func _teste_inventario(_l: Dictionary) -> void:
 			inv.usar_ou_equipar(livre)
 			await get_tree().create_timer(1.5).timeout
 	print("TESTE equipado %s" % [inv.itens.keys().filter(func(k): return k < Inventario.MOCHILA)])
+
+
+
+# --- efeitos e consumo (rodada 5) ------------------------------------------------------
+
+# C1 1B: a skill que acabou -> o buff que sai (ReceiveMagicFinish do cliente)
+const BUFF_DA_SKILL := {1: 55, 384: 55, 38: 55, 387: 55, 7: 56, 389: 56, 489: 56, 39: 56, 232: 86, 337: 86,
+	28: 1, 420: 1, 422: 1, 27: 2, 417: 2, 423: 2, 67: 61, 70: 18, 69: 9, 75: 19, 53: 7, 64: 5, 511: 5, 515: 5,
+	517: 5, 48: 8, 356: 8, 360: 8, 51: 57, 424: 57, 55: 58, 490: 58, 16: 4, 403: 4, 404: 4, 266: 129, 267: 130,
+	573: 130, 268: 131, 569: 131, 572: 131, 217: 71, 233: 82, 380: 82, 383: 82, 218: 81, 469: 81}
+
+
+# C1 07 (e o fim pelo 1B): liga ou desliga o efeito em quem; os meus vao pra janela de buffs
+func _efeito(ativo: bool, quem: int, e: int) -> void:
+	var ent: Entidade = entidades.get(quem)
+	if ent:
+		ent.buff(e, ativo)
+	if quem != cli.meu_id or janela_buffs == null:
+		if ent:
+			print("TESTE efeito %d %s em %s (%d): %s" % [e, "liga" if ativo else "desliga", ent.nome, quem, ent.buffs.keys()])
+		return
+	print("TESTE meu buff %d %s (%s)" % [e, "liga" if ativo else "desliga", JanelaBuffs.nome(e)])
+	if ativo and not janela_buffs.buffs.has(e):
+		janela_buffs.por(e)
+		if e == 4:
+			_som("soul_barrier")
+	elif not ativo:
+		janela_buffs.tirar(e)
+	barra_mu.veneno = janela_buffs.buffs.has(55)
+	barra_mu.queue_redraw()
+
+
+# C1 2D: buff de item em mim com o tempo (Jack O'Lantern, Cherry Blossom, pocoes de buff)
+func _efeito_item(i: Dictionary) -> void:
+	print("TESTE buff de item %s" % [i])
+	var e: int = i.efeito
+	if i.acao == 0:
+		_efeito(true, cli.meu_id, e)
+		janela_buffs.por(e, i.segundos)
+		_msg("[color=#9ad0ff]%s: %s.[/color]" % [JanelaBuffs.nome(e), JanelaBuffs.tempo(i.segundos)])
+		if e == 3:
+			_msg("[color=#7fe0ff]%s[/color]" % DicaItem.t(1828))
+	else:
+		_efeito(false, cli.meu_id, e)
+
+
+# C3 29: Ale (0, mais velocidade de ataque) e Remedy of Love (1, mais dano): o corpo muda de cor pelo tempo
+func _bebida(tipo: int, segundos: int) -> void:
+	print("TESTE bebida tipo %d por %d s" % [tipo, segundos])
+	if tipo > 1 or eu == null:
+		return   # o 77 (Potion of Soul) o cliente tambem ignora aqui
+	_som("beber")
+	var b := -1 - tipo
+	eu.buff(b, true)
+	_msg("[color=#9ad0ff]%s por %d segundos.[/color]" % ["Ale: ataque mais rapido" if tipo == 0 else "Remedy of Love: mais dano", segundos])
+	await get_tree().create_timer(maxf(segundos, 1)).timeout
+	if is_instance_valid(eu):
+		eu.buff(b, false)
+
+
+# C1 2C: resposta da fruta (ReceiveUseStateItem): 0 somou, 3 e 6 tiraram, o resto e motivo de nao ter dado
+func _fruta(r: int, pontos: int, atributo: int) -> void:
+	print("TESTE fruta resultado %d pontos %d atributo %d" % [r, pontos, atributo])
+	var nome := DicaItem.t(CaixaFruta.NOMES[clampi(atributo, 0, 4)])
+	var k: String = ["energia", "vitalidade", "agilidade", "forca", "comando"][clampi(atributo, 0, 4)]
+	var t := ""
+	match r:
+		0:
+			DicaItem.eu[k] = int(DicaItem.eu.get(k, 0)) + pontos
+			t = DicaItem.t(379) % [nome, pontos, DicaItem.t(1412)]
+			_som("comer")
+		3, 6:
+			DicaItem.eu[k] = maxi(int(DicaItem.eu.get(k, 0)) - pontos, 0)
+			meus_pontos += pontos
+			t = DicaItem.t(379) % [nome, pontos, DicaItem.t(1903)]
+			_som("comer")
+		1:
+			t = DicaItem.t(378)
+		2, 5, 8:
+			t = DicaItem.t(1904) % DicaItem.t(1412 if r == 2 else 1903)
+		4, 7:
+			t = DicaItem.t(1906)
+		0x10:
+			t = DicaItem.t(1909)
+		0x21, 0x25:
+			t = DicaItem.t(1911)
+		0x26:
+			t = DicaItem.t(1912)
+		_:
+			t = "A fruta nao foi usada (codigo %d)." % r
+	_msg("[color=%s]%s[/color]" % ["#9fe0a0" if r in [0, 3, 6] else "#e8b04a", t])
+	_hud_nivel()
+
+
+# C1 48: efeito numa pessoa (3 pocao de SD, 16 subiu de nivel, 17 o SD acabou)
+func _mostrar_efeito(quem: int, e: int) -> void:
+	print("TESTE efeito %d em %d" % [e, quem])
+	var ent: Entidade = entidades.get(quem)
+	if ent == null or mundo == null:
+		return
+	match e:
+		3:
+			EfeitoMU.escudo(mundo, ent, false)
+		16:
+			if quem != cli.meu_id:   # o meu ja sai no C3 05 (subiu de nivel)
+				EfeitoMU.subiu_nivel(mundo, ent, false)
+				_som("subiu_nivel")
+		17:
+			EfeitoMU.escudo(mundo, ent, true)
+			_som("escudo_quebrou")
+
+
+func _som(nome: String) -> void:
+	if som:
+		som.tocar(nome)
+
+
+# a fila de buffs anda pra esquerda quando abre janela na direita (inventario, personagem, loja...)
+func _livre_buffs() -> void:
+	if janela_buffs == null:
+		return
+	var v := get_viewport().get_visible_rect().size
+	var x := v.x
+	for c in hud.get_children():
+		if c is Control and c.visible and c not in [barra_mu, janela_buffs, minimapa, caixa_fruta] \
+				and c.global_position.x >= v.x * 0.3 and c.size.y * c.scale.y >= v.y * 0.5:
+			x = minf(x, c.global_position.x)
+	janela_buffs.livre = x * 640.0 / v.x
+	janela_buffs.queue_redraw()

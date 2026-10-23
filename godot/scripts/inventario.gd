@@ -8,6 +8,7 @@ extends Control
 
 signal mover(de: int, para: int)
 signal usar(slot: int, alvo: int)
+signal fruta(slot: int)   # fruta (13,15): o jogo pergunta se soma ou tira antes de usar
 signal largar_no_chao(slot: int)
 signal aviso(texto: String)
 
@@ -402,6 +403,9 @@ func usar_ou_equipar(s: int) -> void:
 	var it: Dictionary = itens[s]
 	if ItensMU.chave(it) in ItensMU.JOIAS_ALVO:
 		aviso.emit("Pegue a joia e solte em cima do item.")
+		return
+	if ItensMU.chave(it) == "13,15" and s >= MOCHILA:
+		fruta.emit(s)
 		return
 	if ItensMU.consome(it):
 		usar.emit(s, 0)

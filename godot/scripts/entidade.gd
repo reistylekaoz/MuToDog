@@ -27,6 +27,9 @@ var _corpo: MeshInstance3D
 var boneco: Boneco
 var morto := false
 var _destaque := false
+var buffs := {}        # efeitos ligados (C1 07, C1 1B, C1 2D e a lista do C2 12): numero -> true
+var lento := 1.0       # gelo anda e mexe na metade (Cold: um terco)
+var _auras := {}       # efeito -> EfeitoMU que fica enquanto o buff durar
 
 
 func montar(m: Node3D, i: int, t: String, n: String, x: int, y: int, b: Boneco = null) -> void:
@@ -128,7 +131,7 @@ func _proximo() -> void:
 		return
 	_animar("anda")
 	_de = position
-	_t = PASSO * (1.41 if (fila[0] - tile).abs() == Vector2i.ONE else 1.0)
+	_t = PASSO / lento * (1.41 if (fila[0] - tile).abs() == Vector2i.ONE else 1.0)
 	var d: Vector3 = mundo.no_tile(fila[0].x, fila[0].y) - position
 	if Vector2(d.x, d.z).length() > 0.01:
 		rotation.y = atan2(-d.x, -d.z)
@@ -137,7 +140,7 @@ func _proximo() -> void:
 func _process(dt: float) -> void:
 	if _t <= 0.0 or fila.is_empty():
 		return
-	var total := PASSO * (1.41 if (fila[0] - tile).abs() == Vector2i.ONE else 1.0)
+	var total := PASSO / lento * (1.41 if (fila[0] - tile).abs() == Vector2i.ONE else 1.0)
 	_t -= dt
 	# quadro lento: o tempo que sobrou do passo vai pro proximo
 	while _t <= 0.0 and not fila.is_empty():
@@ -148,7 +151,7 @@ func _process(dt: float) -> void:
 		if fila.is_empty():
 			return
 		_t -= sobra
-		total = PASSO * (1.41 if (fila[0] - tile).abs() == Vector2i.ONE else 1.0)
+		total = PASSO / lento * (1.41 if (fila[0] - tile).abs() == Vector2i.ONE else 1.0)
 	var alvo: Vector3 = mundo.no_tile(fila[0].x, fila[0].y)
 	position = _de.lerp(alvo, clampf(1.0 - _t / total, 0.0, 1.0))
 
@@ -255,3 +258,82 @@ func mostrar_dano(dano: int, tipo_dano := 0, escudo := 0) -> void:
 	t.ponto(self, dano, cor, esc)
 	if escudo > 0:
 		t.ponto(self, escudo, Color(0.8, 1, 0), 15.0, 25.0)
+
+
+# liga ou desliga um efeito (g_CharacterRegisterBuff / UnRegisterBuff do cliente) e refaz o visual
+func buff(e: int, sim: bool) -> void:
+	if sim == buffs.has(e):
+		return
+	if sim:
+		buffs[e] = true
+	else:
+		buffs.erase(e)
+	_cor_buffs()
+	if _auras.has(e):
+		if is_instance_valid(_auras[e]):
+			_auras[e].queue_free()
+		_auras.erase(e)
+	if sim and boneco:
+		var a := aura(self, e)
+		if a:
+			_auras[e] = a
+
+
+func _cor_buffs() -> void:
+	var veneno := buffs.has(55)
+	var gelo := buffs.has(56) or buffs.has(86)
+	var cor := Color(1, 1, 1)
+	if veneno and gelo:
+		cor = Color(0.3, 1, 1)
+	elif veneno:
+		cor = Color(0.3, 1, 0.5)
+	elif buffs.has(61):
+		cor = Color(0.25, 0.25, 1)   # o cliente usa (0, 0, 1); com a luz do Godot o preto puro some
+	elif gelo or buffs.has(57):
+		cor = Color(0.3, 0.5, 1)
+	elif buffs.has(-1):
+		cor = Color(0.9, 0.5, 0.5)   # bebeu Ale (C3 29 tipo 0)
+	elif buffs.has(-2):
+		cor = Color(0.5, 0.9, 0.5)   # Remedy of Love (tipo 1)
+	lento = 0.5 if buffs.has(56) else (0.33 if buffs.has(86) else 1.0)
+	if boneco:
+		boneco.tinta_buff(cor, 0.5 if buffs.has(18) else 1.0)
+		if boneco.anim:
+			boneco.anim.speed_scale = lento
+
+
+# o que fica em volta do corpo enquanto o buff dura (RegisterBuff do cliente); null = so a cor
+static func aura(alvo: Node3D, e: int) -> EfeitoMU:
+	var ef := EfeitoMU.criar(alvo)
+	var sempre := 1e9
+	match e:
+		1, 2, 3, 4:
+			# 5 rastros girando em volta (flareBlue): brancos na Soul Barrier, verdes no ataque e defesa
+			var cor := Color(1, 1, 1) if e == 4 else Color(0.4, 0.8, 0.2)
+			for i in 5:
+				var fase := TAU * i / 5.0
+				var alt := 0.5 + 0.3 * i
+				var ponta := ef.sprite("flareblue", alvo.global_position, 0.35, cor, sempre, {"segue": alvo,
+					"anda": func(p: Dictionary, _k: float) -> void:
+						var g: float = fase + p.t * 3.0
+						p.desl = Vector3(cos(g) * 0.7, alt + sin(p.t * 2.0 + fase) * 0.25, sin(g) * 0.7)})
+				ef.tarefa(0.04, sempre, func(f: EfeitoMU, _j: int) -> void:
+					if is_instance_valid(ponta.no):
+						f.sprite("flareblue", ponta.no.global_position, 0.3, cor * 0.6, 0.3, {"tam1": 0.05}))
+		8:
+			# Swell Life: luzes laranja subindo do peito (BITMAP_LIGHT)
+			ef.tarefa(0.12, sempre, func(f: EfeitoMU, _j: int) -> void:
+				var d := Vector3(randf_range(-0.35, 0.35), randf_range(0.8, 1.5), randf_range(-0.35, 0.35))
+				var p := f.sprite("flare01", alvo.global_position + d, 0.5, Color(1, 0.5, 0.1), 0.8, {"some": 0.5, "tam1": 0.2})
+				p.vel = Vector3(0, 0.6, 0))
+		61:
+			# Stun: a caveira em cima da cabeca
+			ef.modelo("skull", alvo.global_position, 0.6, Color(0.8, 0.8, 0.8), sempre, {"segue": alvo, "vgiro": 2.0,
+				"anda": func(p: Dictionary, _k: float) -> void: p.desl = Vector3(0, 2.1 + sin(p.t * 4.0) * 0.05, 0)})
+		57:
+			# Ice Arrow (Harden): o bloco de gelo em volta
+			ef.modelo("ice01", alvo.global_position, 0.6, Color(0.5, 0.7, 1.0), sempre, {"segue": alvo})
+		_:
+			ef.queue_free()
+			return null
+	return ef

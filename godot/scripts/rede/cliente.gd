@@ -30,6 +30,14 @@ signal master(info: Dictionary)          # F3 50: ao entrar com classe master (n
 signal master_subiu(info: Dictionary)    # F3 51: subiu nivel master
 signal master_skills(lista: Array)       # F3 53: skills master aprendidas (indice na arvore, nivel, valor, proximo)
 signal master_skill(info: Dictionary)    # F3 52: a skill master subiu (pontos que sobraram, indice, skill, nivel, valores)
+signal magia_acabou(skill: int, alvo: int)          # C1 1B: o efeito dessa skill acabou no alvo
+signal item_efeito(tipo: int, segundos: int)        # C3 29: bebeu Ale (0), Remedy of Love (1) ou Potion of Soul (77)
+signal fruta(resultado: int, pontos: int, atributo: int)   # C1 2C: 0 somou, 1 falhou, 3 tirou...; atributo 0 ene 1 vit 2 agi 3 for 4 com
+signal efeito_item(info: Dictionary)                # C1 2D: buff de item com tempo (origem, tipo, acao 0 poe 1 tira 2 troca, segundos, efeito)
+signal mostrar_efeito(quem: int, efeito: int)       # C1 48: 3 pocao de SD, 16 subiu de nivel, 17 perdeu o SD
+signal veneno(dano: int, sd: int)                   # F3 07: dano do veneno em mim e o SD que ficou
+signal fogos(tipo: int, x: int, y: int)             # F3 40: 0 fogos, 59 fogos de natal, 2 fanfarra
+signal redemoinho(alvo: int)                        # F3 40 com tipo 58: o redemoinho da caixa que caiu
 signal itens_cairam(lista: Array)
 signal itens_sumiram(ids: Array)
 signal pegou(slot: int, item: Dictionary)
@@ -188,8 +196,9 @@ func mover_item(de: int, para: int, dados: PackedByteArray, de_arm := 0, para_ar
 	con.enviar(p)
 
 
-func usar_item(slot: int, alvo := 0) -> void:
-	con.enviar(PackedByteArray([0xC3, 0, 0x26, slot, alvo, 0]))
+# uso: so a fruta (0 soma pontos, 1 tira)
+func usar_item(slot: int, alvo := 0, uso := 0) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x26, slot, alvo, uso]))
 
 
 func largar_item(x: int, y: int, slot: int) -> void:
@@ -399,6 +408,16 @@ func _nome10(nome: String) -> PackedByteArray:
 	var b := nome.to_utf8_buffer().slice(0, 10)
 	b.resize(10)
 	return b
+
+
+# chat publico (C1 00: meu nome em 10 bytes e o texto com o zero do fim); "/comando" vira comando no OpenMU
+func dizer(meu_nome: String, texto: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0x00])
+	p.append_array(_nome10(meu_nome))
+	var t := texto.to_utf8_buffer().slice(0, 89)
+	t.append(0)
+	p.append_array(t)
+	con.enviar(p)
 
 
 func adicionar_amigo(nome: String) -> void:
@@ -746,6 +765,17 @@ func _tratar(p: PackedByteArray) -> void:
 				lista.append({"indice": p[o], "nivel": p[o + 1], "valor": p.decode_float(o + 4), "prox": p.decode_float(o + 8)})
 			master_skills.emit(lista)
 			return
+		[0xF3, 0x07]:
+			if p.size() >= 8:
+				veneno.emit((p[4] << 8) | p[5], (p[6] << 8) | p[7])
+				return
+		[0xF3, 0x40]:
+			if p.size() >= 7:
+				if p[4] == 58:
+					redemoinho.emit(((p[5] << 8) | p[6]) & 0x7FFF)
+				else:
+					fogos.emit(p[4], p[5], p[6])
+				return
 		[0xF3, 0x05]:
 			nivel.emit({"nivel": p[4] | (p[5] << 8), "pontos": p[6] | (p[7] << 8),
 				"vida_max": p[8] | (p[9] << 8), "mana_max": p[10] | (p[11] << 8)})
@@ -917,6 +947,21 @@ func _tratar(p: PackedByteArray) -> void:
 		0x07:
 			if p.size() >= 7:
 				efeito.emit(p[3] != 0, ((p[4] << 8) | p[5]) & 0x7FFF, p[6])
+		0x1B:
+			if p.size() >= 7:
+				magia_acabou.emit((p[3] << 8) | p[4], ((p[5] << 8) | p[6]) & 0x7FFF)
+		0x29:
+			if p.size() >= 6:
+				item_efeito.emit(p[3], p[4] | (p[5] << 8))
+		0x2C:
+			if p.size() >= 7:
+				fruta.emit(p[3], p[4] | (p[5] << 8), p[6])
+		0x2D:
+			if p.size() >= 17:
+				efeito_item.emit({"origem": p[4], "tipo": p[6], "acao": p[8], "segundos": p.decode_u32(12), "efeito": p[16]})
+		0x48:
+			if p.size() >= 6:
+				mostrar_efeito.emit(((p[3] << 8) | p[4]) & 0x7FFF, p[5])
 		0x22:
 			if p.size() == 4:
 				nao_pegou.emit(p[3])
@@ -1079,7 +1124,7 @@ func _ler_personagens(p: PackedByteArray) -> void:
 		objeto_entrou.emit({"id": id, "tipo": "eu" if id == meu_id else "jogador",
 			"nome": _ler_texto(p, o + 22, 10), "classe": p[o + 4] >> 3,
 			"x": p[o + 2], "y": p[o + 3], "ax": p[o + 32], "ay": p[o + 33],
-			"equip": aparencia(p.slice(o + 4, o + 22))})
+			"equip": aparencia(p.slice(o + 4, o + 22)), "efeitos": Array(p.slice(o + 36, o + 36 + p[o + 35]))})
 		o += 36 + p[o + 35]
 
 

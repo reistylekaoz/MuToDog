@@ -28,6 +28,7 @@ var ag_max := 1
 var exp_atual := 0
 var exp_antes := 0      # experiencia em que o nivel atual comecou
 var exp_prox := 1
+var veneno := false   # envenenado: o orbe de vida fica verde (IMAGE_GAUGE_GREEN)
 var master := false   # classe master no 400: a barra mostra a exp master (Exbar_Master)
 
 # skills (CNewUISkillList): atalhos 1..5 na barra, a atual no quadro verde,
@@ -49,7 +50,7 @@ var _icones_master := {}   # skill master -> Magic_Icon (dados/master.json)
 
 
 func _ready() -> void:
-	for n in ["menu1", "menu2", "menu3", "orbe_red", "orbe_blue", "orbe_sd", "orbe_ag", "exbar", "exbar_master", "numeros",
+	for n in ["menu1", "menu2", "menu3", "orbe_red", "orbe_green", "orbe_blue", "orbe_sd", "orbe_ag", "exbar", "exbar_master", "numeros",
 			"bt1", "bt2", "bt3", "bt4", "bt5", "skill1", "skill2", "skill3", "skillbox2", "skillbox_uso", "master_icones"]:
 		_tex[n] = load(PASTA + n + ".png")
 	if FileAccess.file_exists("res://dados/skills.json"):
@@ -80,7 +81,7 @@ func _draw() -> void:
 	draw_texture(_tex.menu1, Vector2(0, 0))
 	draw_texture(_tex.menu2, Vector2(256, 0))
 	draw_texture(_tex.menu3, Vector2(384, 0))
-	_orbe(_tex.orbe_red, 158, 432, 45, 39, vida, vida_max)
+	_orbe(_tex.orbe_green if veneno else _tex.orbe_red, 158, 432, 45, 39, vida, vida_max)
 	_numero(158 + 25, 462, vida)
 	_orbe(_tex.orbe_blue, 437, 432, 45, 39, mana, mana_max)
 	_numero(437 + 30, 462, mana)
