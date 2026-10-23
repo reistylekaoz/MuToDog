@@ -77,6 +77,11 @@ var janela_quest_nova: JanelaQuestNova  # o passo da quest no NPC: F6 0B e 0C
 var janela_minhas_quests: JanelaMinhasQuests   # janela T
 var janela_master: JanelaMaster                # janela A: arvore de skills master
 var janela_buffs: JanelaBuffs                  # icones dos buffs em mim, no topo
+var meu_heroi := 3
+var monstros_vida := {}                        # numero -> [nivel, vida maxima] (ferramentas/monstros_vida.py)
+var eu_skin := 0                               # monstro do anel de transformacao em mim (0 = eu mesmo)
+var janela_grupo: JanelaGrupo                  # lista do grupo no canto da direita
+var caixa_senha: CaixaSenha                     # teclado da senha do bau
 var caixa_fruta: CaixaFruta                    # fruta: soma ou tira pontos
 var guarda: Guarda          # bau e maquina do caos
 var _janela_npc := 0        # tipo da janela que o servidor abriu (0 loja, 2 bau, 3 maquina do caos)
@@ -101,7 +106,8 @@ var skill_alvo := -1        # monstro (ou ponto) que a skill atual vai pegar qua
 var skill_ponto := Vector2i(-1, -1)
 var skill_numero := -1
 const RECARGA_SKILL := 0.8
-const EM_VOLTA := [41, 42, 9, 14, 235, 76, 236, 237, 62]   # skills de area em volta de quem solta
+const RAGE := [260, 261, 262, 265, 269]   # golpes do Rage Fighter: C3 4A (animacao pros outros) antes do C3 19
+const EM_VOLTA := [264, 270, 41, 42, 9, 14, 235, 76, 236, 237, 62]   # skills de area em volta de quem solta
 # QWER: categorias de pocao do MU (vida, mana, SD, complexa); a maior primeiro
 const POCOES := [["14,3", "14,2", "14,1", "14,0"], ["14,6", "14,5", "14,4"], ["14,37", "14,36", "14,35"], ["14,40", "14,39", "14,38"]]
 var pocao_escolhida: Array = ["", "", "", ""]   # chave do item que a pessoa pos na tecla
@@ -124,6 +130,7 @@ func _ready() -> void:
 		add_child(n)
 		return
 	monstros = _json("res://dados/monstros.json")
+	monstros_vida = _json("res://dados/monstros_vida.json") if FileAccess.file_exists("res://dados/monstros_vida.json") else {}
 	mapas = _json("res://dados/mapas.json")
 	classes = _json("res://dados/classes.json")
 	itens_nomes = _json("res://dados/itens.json")
@@ -165,8 +172,38 @@ func _ready() -> void:
 		print("TESTE pedido de grupo de %s" % n)
 		_perguntar("%s te chamou pro grupo." % n, func(ok): cli.responder_grupo(ok, id)))
 	cli.grupo.connect(func(l):
-		print("TESTE grupo %s" % [l])
-		_msg("[color=#9ad0ff]Grupo: %s[/color]" % ", ".join(l.map(func(m): return m.nome))))
+		print("TESTE grupo %s" % [l.map(func(m): return "%s i%d %d/%d" % [m.nome, m.indice, m.vida, m.vida_max])])
+		var antes: int = janela_grupo.membros.size()
+		janela_grupo.meu_nome = meu_nome
+		janela_grupo.definir(l)
+		if antes == 0 and l.size() > 0:
+			_msg("[color=#9ad0ff]Grupo: %s[/color]" % ", ".join(l.map(func(m): return m.nome))))
+	cli.heroi.connect(func(id, estado):
+		print("TESTE heroi %d = %d" % [id, estado])
+		if id == cli.meu_id:
+			if estado != meu_heroi:
+				_msg("[color=#ff9a4a]%s[/color]" % DicaItem.t([487, 487, 487, 488, 489, 490, 491][clampi(estado, 0, 6)]))
+			meu_heroi = estado
+			if eu:
+				eu.por_heroi(estado)
+		elif entidades.has(id):
+			entidades[id].por_heroi(estado))
+	cli.bau_trava.connect(_bau_trava)
+	# a janela da vida da invocacao (newui_Pet_Back, texto 356) fica pra quando um servidor mandar o F3 20
+	cli.vida_invocacao.connect(func(v): print("TESTE vida da invocacao %d%%" % v))
+	cli.rage_alvos.connect(func(sk, l):
+		print("TESTE rage %d alvos %s" % [sk, l])
+		for a in l:
+			if entidades.has(a) and eu:
+				EfeitoSkill.criar(mundo, sk, eu, entidades[a]))
+	cli.grupo_saiu.connect(func():
+		print("TESTE grupo: sai")
+		if not janela_grupo.membros.is_empty():
+			_msg("[color=#9ad0ff]%s[/color]" % DicaItem.t(502))
+		janela_grupo.limpar())
+	cli.grupo_vida.connect(func(l):
+		print("TESTE grupo vida %s" % [l])
+		janela_grupo.vidas(l))
 	cli.pedido_duelo.connect(func(id, n):
 		print("TESTE pedido de duelo de %s" % n)
 		_perguntar("%s te chamou pra um duelo." % n, func(ok): cli.responder_duelo(ok, id, n)))
@@ -381,9 +418,122 @@ func _teste_roteiro(passos: Array) -> void:
 			"f":
 				print("TESTE roteiro fruta: %s (%s)" % [DicaItem.t(CaixaFruta.BOTOES[int(a) - 1]), caixa_fruta.titulo()])
 				caixa_fruta.escolher(int(a) - 1)
+			"j":
+				# j:g,n:slot_alvo (ou j:g,n:g2,n2) usa a joia (grupo,numero) da mochila no item desse slot
+				var v := a.split(":")
+				var g := v[0].split(",")
+				var s := -1
+				for k in inv.itens:
+					if k >= Inventario.MOCHILA and inv.itens[k].grupo == int(g[0]) and inv.itens[k].numero == int(g[1]):
+						s = k
+						break
+				var alvo := int(v[1])
+				if "," in v[1]:   # j:14,13:0,0 = no primeiro item 0,0 da mochila
+					var h := v[1].split(",")
+					for k in inv.itens:
+						if k >= Inventario.MOCHILA and inv.itens[k].grupo == int(h[0]) and inv.itens[k].numero == int(h[1]):
+							alvo = k
+							break
+				print("TESTE roteiro joia slot %d em %s (slot %d)" % [s, ItensMU.nome(inv.itens[alvo]) if inv.itens.has(alvo) else "nada", alvo])
+				if s >= 0:
+					inv._usar_em(s, alvo)
+			"g":
+				# g:Nome chama pro grupo; g:-Nome tira do grupo (o lider tira os outros, cada um tira a si mesmo)
+				var tira := a.begins_with("-")
+				var n := a.trim_prefix("-")
+				if tira:
+					for m: Dictionary in janela_grupo.membros:
+						if m.nome == n:
+							print("TESTE roteiro tira %s (indice %d) do grupo" % [n, m.indice])
+							janela_grupo.tirar.emit(m.indice)
+				else:
+					for e: Entidade in entidades.values():
+						if e.nome == n:
+							print("TESTE roteiro chama %s pro grupo" % n)
+							cli.chamar_grupo(e.id)
+			"m":
+				# m:de-para move um item (slots do inventario)
+				var f := a.split("-")
+				print("TESTE roteiro move %s" % a)
+				inv._mandar(int(f[0]), int(f[1]))
+			"k":
+				# k:pedido,senha[,senha da conta] digita no teclado do bau como quem clica
+				var v := a.split(",")
+				caixa_senha.abrir(int(v[0]))
+				print("TESTE roteiro teclado: %s" % caixa_senha.titulo())
+				for vez in (2 if v[0] == "1" else (1 if v[0] == "0" else 0)):
+					for c in v[1]:
+						caixa_senha.digito(int(c))
+					caixa_senha._ok()
+				if v.size() > 2:
+					print("TESTE roteiro teclado: %s" % caixa_senha.titulo())
+					caixa_senha._conta.text = v[2]
+					caixa_senha._ok()
+			"n":
+				for e: Entidade in entidades.values():
+					if e.tipo == "npc" and e.nome.containsn(a):
+						print("TESTE roteiro fala com %s" % e.nome)
+						falar_com(e.id)
+						break
+			"w":
+				var v := a.split(",")
+				print("TESTE roteiro anda ate %s" % a)
+				andar_ate(Vector2i(int(v[0]), int(v[1])))
+			"c":
+				print("TESTE roteiro fecha a janela do npc")
+				_fechar_loja()
+			"r":
+				# r: pede o primeiro item do bau mesmo trancado (o servidor tem que recusar)
+				if not guarda.itens.is_empty():
+					var k: int = guarda.itens.keys()[0]
+					print("TESTE roteiro tira do bau o slot %d (%s)" % [k, ItensMU.nome(guarda.itens[k])])
+					guarda.esperando = k
+					guarda.retirar.emit(k)
+			"i":
+				print("TESTE roteiro mochila: %s" % [inv.itens.keys().map(func(k): return "%d %s +%d" % [k, ItensMU.nome(inv.itens[k]), inv.itens[k].nivel])])
 			"b":
 				print("TESTE roteiro buffs na janela: %s" % [janela_buffs.lista().map(func(x): return "%d %s" % [x, JanelaBuffs.nome(x)])])
 				print("TESTE roteiro buffs no meu boneco: %s" % [eu.buffs.keys()])
+
+
+# C1 83: estado da senha do bau (vem ao abrir e como resposta de cada pedido)
+func _bau_trava(estado: int) -> void:
+	print("TESTE bau trava %d" % estado)
+	match estado:
+		0:
+			guarda.trancado = false
+			guarda.tem_senha = false
+		1:
+			guarda.trancado = true
+			guarda.tem_senha = true
+		12:
+			guarda.trancado = false
+			guarda.tem_senha = true
+	var t: Dictionary = {10: 440, 11: 441, 13: 401}
+	if t.has(estado):
+		_msg("[color=#e8b04a]%s[/color]" % DicaItem.t(t[estado]))
+	elif estado == 12:
+		_msg("[color=#9ad0ff]Bau destrancado.[/color]")
+	guarda.queue_redraw()
+
+
+# F3 14: a joia mexeu no item; o servidor nao diz se deu certo, entao compara com o que era
+func _item_melhorado(slot: int, it: Dictionary) -> void:
+	var antes: Dictionary = inv.itens.get(slot, {})
+	inv.entrou(slot, it)
+	_som("joia")
+	var nome := ItensMU.nome(it)
+	var t := ""
+	if antes.is_empty():
+		t = nome
+	elif it.nivel > antes.nivel or it.opcao > antes.opcao:
+		t = "[color=#7fd0ff]%s: deu certo, agora +%d%s.[/color]" % [nome, it.nivel, " com opcao +%d" % (it.opcao * 4) if it.opcao > antes.opcao else ""]
+	elif it.nivel < antes.nivel or it.opcao < antes.opcao:
+		t = "[color=#ff7050]%s: a joia falhou, ficou +%d.[/color]" % [nome, it.nivel]
+	else:
+		t = "%s: nada mudou." % nome
+	print("TESTE item melhorado slot %d: +%d opt %d -> +%d opt %d" % [slot, antes.get("nivel", -1), antes.get("opcao", -1), it.nivel, it.opcao])
+	_msg(t)
 
 
 # --ver_monstros 3,15: lista os monstros vistos (id e tile) nesses segundos depois de entrar (spots do servidor)
@@ -519,6 +669,12 @@ func _montar_ui() -> void:
 	hud.add_child(barra_mu)
 	janela_buffs = JanelaBuffs.new()
 	hud.add_child(janela_buffs)
+	janela_grupo = JanelaGrupo.new()
+	janela_grupo.mapas = mapas
+	janela_grupo.tirar.connect(func(i):
+		print("TESTE grupo tirar indice %d" % i)
+		cli.tirar_do_grupo(i))
+	hud.add_child(janela_grupo)
 	inv = Inventario.new()
 	inv.aviso.connect(func(t): _msg("[color=#e8b04a]%s[/color]" % t))
 	inv.mover.connect(func(de, para):
@@ -526,6 +682,11 @@ func _montar_ui() -> void:
 			cli.mover_item(de, para, inv.itens[de].bytes))
 	inv.usar.connect(func(slot, alvo): cli.usar_item(slot, alvo))
 	hud.add_child(inv)
+	caixa_senha = CaixaSenha.new()
+	caixa_senha.pronto.connect(func(sub, pin, senha):
+		print("TESTE senha do bau: pedido %d" % sub)
+		cli.senha_bau(sub, pin, senha))
+	hud.add_child(caixa_senha)
 	caixa_fruta = CaixaFruta.new()
 	caixa_fruta.escolheu.connect(func(slot, uso):
 		print("TESTE fruta slot %d uso %d" % [slot, uso])
@@ -628,6 +789,9 @@ func _montar_ui() -> void:
 			cli.zen_bau(1, v))
 	guarda.combinar.connect(func(): cli.misturar())
 	guarda.fechar.connect(_fechar_loja)
+	guarda.cadeado.connect(func():
+		# trancado: destranca; sem senha: cria; destrancado com senha: tira a senha (pede a da conta)
+		caixa_senha.abrir(0 if guarda.trancado else (2 if guarda.tem_senha else 1)))
 	hud.add_child(guarda)
 	troca = Troca.new()
 	troca.inv = inv
@@ -892,6 +1056,7 @@ func _escolher(nome: String) -> void:
 		janela_helper.visible = false
 		janela_personagem.esperando = false
 	minha_classe = _classe_de.get(nome, [0, 1])[0]
+	eu_skin = 0
 	meu_nivel = _classe_de.get(nome, [0, 1])[1]
 	_limpar_lista()
 	cli.escolher(nome)
@@ -900,6 +1065,7 @@ func _escolher(nome: String) -> void:
 # --- mundo -------------------------------------------------------------------
 
 func _entrou(info: Dictionary) -> void:
+	meu_heroi = info.get("heroi", 3)
 	painel.visible = false
 	hud.visible = true
 	barra_mu.vida = info.vida
@@ -1020,6 +1186,9 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	entidades[cli.meu_id] = eu
 	mundo.seguir = eu
 	_vestir_eu()
+	eu.por_heroi(meu_heroi)
+	if eu_skin:
+		eu.trocar_boneco(Boneco.do_npc(eu_skin))
 	if janela_buffs:
 		for b: int in janela_buffs.buffs:
 			eu.buff(b, true)
@@ -1034,6 +1203,17 @@ func _objeto_entrou(o: Dictionary) -> void:
 	if o.id == cli.meu_id:
 		for x in o.get("efeitos", []):
 			_efeito(true, o.id, x)
+		meu_heroi = o.get("heroi", meu_heroi)
+		if eu:
+			eu.por_heroi(meu_heroi)
+			# C2 45 pra mim: virei monstro (anel); C2 12 pra mim depois disso: voltei
+			var skin: int = o.get("skin", 0)
+			if skin != eu_skin:
+				print("TESTE eu transformado em %d" % skin)
+				eu_skin = skin
+				eu.trocar_boneco(Boneco.do_npc(skin) if skin else Boneco.da_classe(minha_classe))
+				if not skin:
+					_vestir_eu()
 		return
 	if entidades.has(o.id):
 		entidades[o.id].queue_free()
@@ -1052,13 +1232,19 @@ func _objeto_entrou(o: Dictionary) -> void:
 			_baixar_monstros()
 	var e := Entidade.new()
 	mundo.add_child(e)
+	var skin: int = o.get("skin", 0)
+	if skin:
+		print("TESTE %s transformado em %d" % [nome, skin])
 	e.montar(mundo, o.id, tipo, nome, o.x, o.y,
-		Boneco.do_npc(o.numero) if o.tipo == "npc" else Boneco.da_classe(o.get("classe", 0)))
+		Boneco.do_npc(o.numero) if o.tipo == "npc" else (Boneco.do_npc(skin) if skin else Boneco.da_classe(o.get("classe", 0))))
+	e.por_heroi(o.get("heroi", 3))
+	if o.tipo == "npc":
+		e.numero = o.numero
 	entidades[o.id] = e
 	# armadilha (Meteorite Trap da Lost Tower, as da Dungeon): o cliente nao desenha
 	if tipo == "outro":
 		e.visible = false
-	if e.boneco and o.has("equip"):
+	if e.boneco and o.has("equip") and not skin:
 		e.boneco.vestir(o.equip)
 	for x in o.get("efeitos", []):
 		e.buff(x, true)
@@ -2404,6 +2590,36 @@ func _buff_teste(lista: Array) -> void:
 				EfeitoMU.subiu_nivel(mundo, eu, false)
 			"fruta":
 				caixa_fruta.abrir(12, 3)
+			"grupo":
+				# rodada 6: a lista do grupo (eu lider) e a barra de vida em cima de quem estiver perto
+				var outros := entidades.values().filter(func(e): return e.tipo == "jogador")
+				var l := [{"nome": meu_nome, "indice": 0, "mapa": mapa_atual, "x": eu.tile.x, "y": eu.tile.y, "vida": 90, "vida_max": 100}]
+				for e: Entidade in outros.slice(0, 2):
+					l.append({"nome": e.nome, "indice": l.size(), "mapa": mapa_atual, "x": e.tile.x, "y": e.tile.y, "vida": 30, "vida_max": 100})
+				if l.size() == 1:
+					l.append({"nome": "Amigo", "indice": 1, "mapa": mapa_atual, "x": eu.tile.x, "y": eu.tile.y, "vida": 30, "vida_max": 100})
+				janela_grupo.meu_nome = meu_nome
+				janela_grupo.definir(l)
+			"heroi":
+				for e: Entidade in entidades.values():
+					if e.tipo == "jogador":
+						e.por_heroi(6)
+						break
+				eu.por_heroi(4)
+			"anel":
+				eu.trocar_boneco(Boneco.do_npc(7))
+			"senha":
+				eu.trocar_boneco(Boneco.da_classe(minha_classe))
+				_vestir_eu()
+				caixa_senha.abrir(1)
+				caixa_senha.digito(1)
+				caixa_senha.digito(3)
+			"bau":
+				caixa_senha.fechar()
+				guarda.abrir_guarda("bau", "Baz The Vault Keeper", {})
+				guarda.trancado = true
+				guarda.tem_senha = true
+				guarda.visible = true
 			_:
 				var n := int(x.substr(1))
 				eu.buff(n, true)
@@ -2792,6 +3008,7 @@ func _ligar_inventario_e_skills() -> void:
 			inv.removido(slot)
 		inv.nao_moveu()
 		_contar_pocoes())
+	cli.item_melhorado.connect(_item_melhorado)
 	cli.nao_consumiu.connect(func(): _msg("[color=#e8b04a]Nao deu pra usar esse item agora.[/color]"))
 	cli.skills.connect(func(l):
 		minhas_skills.clear()
@@ -3422,7 +3639,12 @@ func _skills(dt: float) -> void:
 		_nova(skill_alvo)
 		skill_numero = -1
 		return
-	if tipo in [0, 10, 11, 30] or n == 63:
+	if n == 263:
+		cli.skill_rage_area(n, skill_alvo)
+		print("TESTE skill %d (Dark Side) no alvo %d" % [n, skill_alvo])
+	elif tipo in [0, 10, 11, 30] or n == 63:
+		if n in RAGE:
+			cli.skill_rage(n, skill_alvo)
 		cli.skill_alvo(n, skill_alvo)
 		print("TESTE skill %d no alvo %d" % [n, skill_alvo])
 	else:
@@ -3826,8 +4048,11 @@ func _livre_buffs() -> void:
 	var v := get_viewport().get_visible_rect().size
 	var x := v.x
 	for c in hud.get_children():
-		if c is Control and c.visible and c not in [barra_mu, janela_buffs, minimapa, caixa_fruta] \
+		if c is Control and c.visible and c not in [barra_mu, janela_buffs, janela_grupo, minimapa, caixa_fruta] \
 				and c.global_position.x >= v.x * 0.3 and c.size.y * c.scale.y >= v.y * 0.5:
 			x = minf(x, c.global_position.x)
 	janela_buffs.livre = x * 640.0 / v.x
 	janela_buffs.queue_redraw()
+	if janela_grupo.livre != janela_buffs.livre:
+		janela_grupo.livre = janela_buffs.livre
+		janela_grupo.queue_redraw()

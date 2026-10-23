@@ -18,6 +18,9 @@ const PASSO := 0.28
 var id := 0
 var tipo := "outro"
 var nome := ""
+var numero := -1        # monstro ou NPC: o numero dele (Monster.txt)
+var dano_visto := 0     # dano que vi esse monstro levar (pra estimar a barra de vida do foco)
+var heroi := 3          # estado de heroi (0 novo .. 6 PK de segundo nivel); muda a cor do nome
 var tile := Vector2i.ZERO
 var fila: Array[Vector2i] = []
 var mundo: Node3D
@@ -227,6 +230,7 @@ func tocar_skill(acao: String, ponto: Vector3) -> void:
 # 2 excelente, 3 critico, 4 reflexo, 5 veneno, 6 dano por tempo; bit 0x40 duplo, 0x80 combo);
 # escudo = dano no SD, em verde-amarelo 25 acima. Dano 0 e Miss.
 func mostrar_dano(dano: int, tipo_dano := 0, escudo := 0) -> void:
+	dano_visto += dano
 	if boneco and dano > 0 and not andando() and (boneco.acao.begins_with("parado") or boneco.acao == "voa"):
 		boneco.tocar("golpe")
 	var t := TextosMU.atual
@@ -261,6 +265,25 @@ func mostrar_dano(dano: int, tipo_dano := 0, escudo := 0) -> void:
 
 
 # liga ou desliga um efeito (g_CharacterRegisterBuff / UnRegisterBuff do cliente) e refaz o visual
+func por_heroi(estado: int) -> void:
+	if estado != heroi:
+		heroi = estado
+		_cor_buffs()
+
+
+# anel de transformacao: troca o boneco (o de monstro entra, o da classe volta)
+func trocar_boneco(b: Boneco) -> void:
+	if b == null:
+		return
+	if boneco:
+		boneco.queue_free()
+	boneco = b
+	add_child(b)
+	b.rotation = Vector3.ZERO
+	b.tocar("parado")
+	_cor_buffs()
+
+
 func buff(e: int, sim: bool) -> void:
 	if sim == buffs.has(e):
 		return
@@ -295,6 +318,8 @@ func _cor_buffs() -> void:
 		cor = Color(0.9, 0.5, 0.5)   # bebeu Ale (C3 29 tipo 0)
 	elif buffs.has(-2):
 		cor = Color(0.5, 0.9, 0.5)   # Remedy of Love (tipo 1)
+	elif heroi == 6:
+		cor = Color(1, 0.1, 0.1)     # PK de segundo nivel: o corpo fica vermelho (ZzzCharacter, PKLevel 6)
 	lento = 0.5 if buffs.has(56) else (0.33 if buffs.has(86) else 1.0)
 	if boneco:
 		boneco.tinta_buff(cor, 0.5 if buffs.has(18) else 1.0)

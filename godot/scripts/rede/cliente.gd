@@ -50,6 +50,7 @@ signal item_removido(slot: int)
 signal durabilidade(slot: int, valor: int)
 signal largou(ok: bool, slot: int)
 signal nao_consumiu
+signal item_melhorado(slot: int, item: Dictionary)   # F3 14: joia usada no item, o item como ficou
 signal skills(lista: Array)
 signal skill_nova(indice: int, numero: int)
 signal skill_saiu(indice: int, numero: int)
@@ -72,7 +73,13 @@ signal amigo_estado(nome: String, servidor: int)
 signal pedido_amizade(nome: String)
 signal saiu(tipo: int)
 signal pedido_grupo(id: int)                       # C1 40: alguem chamou pro grupo
-signal grupo(lista: Array)                         # C1 42: quem esta no grupo
+signal grupo(lista: Array)                         # C1 42: quem esta no grupo (nome, indice, mapa, x, y, vida, vida_max)
+signal heroi(id: int, estado: int)                 # C1 F3 08: estado de heroi mudou (0 novo .. 6 PK)
+signal bau_trava(estado: int)                       # C1 83: 0 sem senha, 1 trancado, 10 senha errada, 11 nao criou, 12 aberto, 13 senha da conta errada
+signal rage_alvos(skill: int, alvos: Array)          # C1 4B: os alvos do Dark Side (ate 5)
+signal vida_invocacao(porcento: int)               # C1 F3 20: vida do bicho invocado (o OpenMU nao manda)
+signal grupo_saiu                                   # C1 43: sai do grupo (fui tirado, sai ou o grupo acabou)
+signal grupo_vida(lista: Array)                     # C1 44: [[indice, 0..10]] a vida de cada membro em decimos
 signal pedido_duelo(id: int, nome: String)          # C1 AA 02: alguem chamou pro duelo
 signal duelo(resultado: int, id: int, nome: String) # C1 AA 01: 0 comecou, outro numero recusado
 signal ponto(ok: bool, atributo: int, maximo_dep: int, sd_max: int, ag_max: int)   # F3 06: ponto distribuido
@@ -208,6 +215,16 @@ func largar_item(x: int, y: int, slot: int) -> void:
 # skill num alvo (ataque, cura, buff; o alvo pode ser eu mesmo)
 func skill_alvo(skill: int, alvo: int) -> void:
 	con.enviar(PackedByteArray([0xC3, 0, 0x19, (skill >> 8) & 0xFF, skill & 0xFF, (alvo >> 8) & 0xFF, alvo & 0xFF]))
+
+
+# Rage Fighter: C3 4A avisa os outros do golpe (a animacao); o dano vem do C3 19 que segue
+func skill_rage(skill: int, alvo: int) -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0x4A, (skill >> 8) & 0xFF, skill & 0xFF, 0, (alvo >> 8) & 0xFF, alvo & 0xFF]))
+
+
+# C1 4B: Dark Side; o servidor escolhe ate 5 alvos perto, responde com eles e ja bate
+func skill_rage_area(skill: int, alvo: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x4B, (skill >> 8) & 0xFF, skill & 0xFF, (alvo >> 8) & 0xFF, alvo & 0xFF]))
 
 
 # skill de area: centro (x, y), giro 0..255 e o contador de animacao (1..50, um por pedido)
@@ -475,6 +492,26 @@ func responder_grupo(aceito: bool, id: int) -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0x41, 1 if aceito else 0, (id >> 8) & 0xFF, id & 0xFF]))
 
 
+# C1 83: 00 destranca o bau (senha de 4 digitos), 01 cria a senha (com a senha da conta), 02 tira a senha
+func senha_bau(sub: int, pin: int, senha := "") -> void:
+	var p := PackedByteArray([0xC1, 0, 0x83, sub, pin & 0xFF, (pin >> 8) & 0xFF])
+	if sub == 0:
+		p.append(0)   # o pacote do OpenMU tem 7 bytes
+	else:
+		p.append_array(_texto(senha, 20))
+		p.append(0)
+	con.enviar(p)
+
+
+func pedir_grupo() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x42]))
+
+
+# C1 43: o lider tira quem quiser; cada um tira a si mesmo (sai do grupo)
+func tirar_do_grupo(indice: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x43, indice]))
+
+
 func chamar_duelo(id: int, nome: String) -> void:
 	var p := PackedByteArray([0xC1, 0, 0xAA, 0x01, (id >> 8) & 0xFF, id & 0xFF])
 	p.append_array(_nome10(nome))
@@ -703,7 +740,8 @@ func _tratar(p: PackedByteArray) -> void:
 					"sd": p[42] | (p[43] << 8), "sd_max": p[44] | (p[45] << 8),
 					"ag": p[46] | (p[47] << 8), "ag_max": p[48] | (p[49] << 8),
 					"forca": p[26] | (p[27] << 8), "agilidade": p[28] | (p[29] << 8), "vitalidade": p[30] | (p[31] << 8),
-					"energia": p[32] | (p[33] << 8), "comando": p[62] | (p[63] << 8) if p.size() > 63 else 0}
+					"energia": p[32] | (p[33] << 8), "comando": p[62] | (p[63] << 8) if p.size() > 63 else 0,
+					"heroi": p[56] if p.size() > 56 else 3}
 				_mudar("jogo")
 				entrou.emit(info)
 				return
@@ -776,6 +814,18 @@ func _tratar(p: PackedByteArray) -> void:
 				else:
 					fogos.emit(p[4], p[5], p[6])
 				return
+		[0xF3, 0x08]:
+			if p.size() >= 7:
+				heroi.emit(((p[4] << 8) | p[5]) & 0x7FFF, p[6])
+			return
+		[0xF3, 0x20]:
+			if p.size() >= 5:
+				vida_invocacao.emit(p[4])
+			return
+		[0xF3, 0x14]:
+			if p.size() >= 17:
+				item_melhorado.emit(p[4], item_de(p, 5))
+			return
 		[0xF3, 0x05]:
 			nivel.emit({"nivel": p[4] | (p[5] << 8), "pontos": p[6] | (p[7] << 8),
 				"vida_max": p[8] | (p[9] << 8), "mana_max": p[10] | (p[11] << 8)})
@@ -859,6 +909,9 @@ func _tratar(p: PackedByteArray) -> void:
 	match cod:
 		0x12:
 			_ler_personagens(p)
+		0x45:
+			if p[0] == 0xC2:
+				_ler_transformados(p)
 		0xA0:
 			quest_lista.emit(p[3], p.slice(4))
 		0xA1:
@@ -1020,10 +1073,35 @@ func _tratar(p: PackedByteArray) -> void:
 				var l := []
 				for i in p[4]:
 					var o := 5 + i * 24
-					if o + 14 > p.size():
+					if o + 24 > p.size():
 						break
-					l.append({"nome": _ler_texto(p, o, 10), "mapa": p[o + 11], "x": p[o + 12], "y": p[o + 13]})
+					l.append({"nome": _ler_texto(p, o, 10), "indice": p[o + 10], "mapa": p[o + 11], "x": p[o + 12],
+						"y": p[o + 13], "vida": _ler_le(p, o + 16), "vida_max": _ler_le(p, o + 20)})
 				grupo.emit(l)
+		0x4A:
+			if p.size() >= 9:
+				skill_animacao.emit((p[3] << 8) | p[4], ((p[5] << 8) | p[6]) & 0x7FFF, ((p[7] << 8) | p[8]) & 0x7FFF)
+		0x4B:
+			if p[0] == 0xC1 and p.size() >= 16:
+				var l := []
+				for i in 5:
+					var t := p[6 + i * 2] | (p[7 + i * 2] << 8)
+					if t != 0x2710:
+						l.append(t & 0x7FFF)
+				rage_alvos.emit(p[4] | (p[5] << 8), l)
+		0x83:
+			if p[0] == 0xC1 and p.size() >= 4:
+				bau_trava.emit(p[3])
+		0x43:
+			if p[0] == 0xC1:
+				grupo_saiu.emit()
+		0x44:
+			if p[0] == 0xC1 and p.size() >= 4:
+				var l := []
+				for i in p[3]:
+					if 4 + i < p.size():
+						l.append([p[4 + i] >> 4, p[4 + i] & 0x0F])
+				grupo_vida.emit(l)
 		0xAA:
 			if p[0] == 0xC1 and sub == 0x02 and p.size() >= 16:
 				pedido_duelo.emit(p[4] | (p[5] << 8), _ler_texto(p, 6, 10))
@@ -1124,8 +1202,23 @@ func _ler_personagens(p: PackedByteArray) -> void:
 		objeto_entrou.emit({"id": id, "tipo": "eu" if id == meu_id else "jogador",
 			"nome": _ler_texto(p, o + 22, 10), "classe": p[o + 4] >> 3,
 			"x": p[o + 2], "y": p[o + 3], "ax": p[o + 32], "ay": p[o + 33],
-			"equip": aparencia(p.slice(o + 4, o + 22)), "efeitos": Array(p.slice(o + 36, o + 36 + p[o + 35]))})
+			"equip": aparencia(p.slice(o + 4, o + 22)), "efeitos": Array(p.slice(o + 36, o + 36 + p[o + 35])),
+			"heroi": p[o + 34] & 0x0F})
 		o += 36 + p[o + 35]
+
+
+# C2 45: jogador transformado (anel): id, x, y, monstro (u16 BE), nome, destino, giro<<4|heroi, aparencia e efeitos
+func _ler_transformados(p: PackedByteArray) -> void:
+	var o := 5
+	for i in p[4]:
+		if o + 38 > p.size():
+			break
+		var id := ((p[o] << 8) | p[o + 1]) & 0x7FFF
+		objeto_entrou.emit({"id": id, "tipo": "eu" if id == meu_id else "jogador", "skin": (p[o + 4] << 8) | p[o + 5],
+			"nome": _ler_texto(p, o + 6, 10), "classe": p[o + 19] >> 3, "x": p[o + 2], "y": p[o + 3],
+			"ax": p[o + 16], "ay": p[o + 17], "heroi": p[o + 18] & 0x0F, "equip": aparencia(p.slice(o + 19, o + 37)),
+			"efeitos": Array(p.slice(o + 38, o + 38 + p[o + 37]))})
+		o += 38 + p[o + 37]
 
 
 # C2 20: itens no chao (S6: id, x, y e os 12 bytes do item; zen e o item 14/15 com o valor

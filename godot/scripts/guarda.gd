@@ -11,16 +11,22 @@ signal retirar(slot: int)
 signal zen_guardar(valor: int)
 signal zen_tirar(valor: int)
 signal combinar
+signal cadeado             # botao da senha do bau
 
 var modo := "bau"          # "bau" ou "caos"
 var zen_bau := 0
 var aviso := ""            # resultado da ultima mistura
 var esperando := -1        # slot da grade que mandei mover
+var trancado := false      # bau com senha e ainda trancado (C1 83 estado 1)
+var tem_senha := false
+const CADEADO := Rect2(87, 391, 36, 29)
 var _campo: LineEdit
 
 
 func _ready() -> void:
 	super._ready()
+	_tex.bau_cadeado = load(Inventario.PASTA + "bau_cadeado.png")
+	_tex.bau_cadeado2 = load(Inventario.PASTA + "bau_cadeado2.png")
 	_campo = LineEdit.new()
 	_campo.placeholder_text = "quanto"
 	_campo.position = Vector2(22, 352)
@@ -171,7 +177,19 @@ func _draw() -> void:
 	_texto(f, Vector2(0, y0), ajuda, L, 9, Color(1, 0.86, 0.45))
 	var linha := 1 if Rect2(13, 391, 36, 29).has_point(_mouse) else 0
 	draw_texture_rect_region(_tex.inv_sair, Rect2(13, 391, 36, 29), Rect2(0, 29 * linha, 36, 29))
-	_texto(f, Vector2(52, 410), "Fechar (Esc)", 120, 9, Color(0.75, 0.75, 0.8), HORIZONTAL_ALIGNMENT_LEFT)
+	if modo == "bau":
+		# cadeado fechado com o bau trancado, aberto sem senha ou destrancado (newui_Bt_lock e lock02)
+		var em_cima := CADEADO.has_point(_mouse)
+		draw_texture_rect_region(_tex.bau_cadeado if trancado else _tex.bau_cadeado2, CADEADO,
+			Rect2(0, 29 if em_cima else 0, 36, 29))
+		_texto(f, Vector2(126, 404), "Trancado" if trancado else ("Com senha" if tem_senha else "Sem senha"), 60, 8,
+			Color(1, 0.6, 0.4) if trancado else Color(0.75, 0.75, 0.8), HORIZONTAL_ALIGNMENT_LEFT)
+		_texto(f, Vector2(126, 414), "Esc fecha", 60, 8, Color(0.6, 0.6, 0.65), HORIZONTAL_ALIGNMENT_LEFT)
+		if em_cima:
+			DicaItem.mostrar(self, f, [{"t": DicaItem.t(242), "cor": DicaItem.BRANCO}], CADEADO)
+			return
+	else:
+		_texto(f, Vector2(52, 410), "Fechar (Esc)", 120, 9, Color(0.75, 0.75, 0.8), HORIZONTAL_ALIGNMENT_LEFT)
 	if sob >= 0 and not na_mao:
 		DicaItem.mostrar(self, f, DicaItem.linhas(itens[sob]), _rect(sob))
 	else:
@@ -204,6 +222,9 @@ func _clique() -> void:
 	if Rect2(13, 391, 36, 29).has_point(_mouse) or Rect2(160, 2, 26, 22).has_point(_mouse):
 		fechar.emit()
 		return
+	if modo == "bau" and CADEADO.has_point(_mouse):
+		cadeado.emit()
+		return
 	var b := _botoes()
 	for k in b:
 		if b[k].has_point(_mouse):
@@ -227,6 +248,9 @@ func _clique() -> void:
 		guardar.emit(de, d.y * COLUNAS + d.x)
 		return
 	var s := slot_sob_mouse()
+	if s >= 0 and modo == "bau" and trancado:
+		cadeado.emit()   # trancado: o servidor nao deixa tirar; abre o teclado pra destrancar
+		return
 	if s >= 0:
 		esperando = s
 		retirar.emit(s)

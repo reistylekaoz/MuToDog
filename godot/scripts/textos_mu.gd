@@ -11,6 +11,9 @@ extends Control
 
 const NUMEROS := preload("res://dados/hud/fonte_numeros.png")
 const AMARELO := Color(1.0, 0.8, 0.1)
+# cor do nome pelo estado de heroi (SetPlayerColor): 0 novo, 1 heroi, 2 heroi menor, 3 comum, 4 aviso de PK, 5 e 6 PK
+const CORES_HEROI := [Color8(150, 255, 240), Color8(100, 120, 255), Color8(140, 180, 255), Color8(200, 220, 255),
+	Color8(255, 150, 60), Color8(255, 80, 30), Color8(255, 0, 0)]
 const JOIAS := ["14,13", "14,14", "14,16", "14,22", "14,31", "14,41", "14,42", "14,43", "14,44", "12,15", "12,30", "12,31"]
 
 static var atual: TextosMU
@@ -77,6 +80,30 @@ func _draw() -> void:
 			_nome(cam, f, tam, e)
 	for p in _pontos:
 		_numero(cam, p)
+	_foco(f, tam)
+
+
+# foco: o monstro do mouse (ou o alvo) com o nome no alto da tela, como o cliente faz com o mouse em cima
+# (nome em (255, 230, 200) no fundo (100, 0, 0)) e uma barra de 20 pedacos. O 1.04d nao recebe a vida do
+# monstro: a barra sai da vida maxima do banco menos o dano que este cliente viu ele levar.
+func _foco(f: Font, tam: int) -> void:
+	var e: Entidade = jogo.sobre if is_instance_valid(jogo.sobre) else null
+	if (e == null or e.tipo != "monstro") and jogo.entidades.has(jogo.alvo_id):
+		e = jogo.entidades[jogo.alvo_id]
+	if e == null or e.tipo != "monstro" or e.morto:
+		return
+	var k := get_viewport_rect().size.x / 640.0
+	var info: Array = jogo.monstros_vida.get(str(e.numero), [0, 0])
+	var nome := e.nome if info[0] <= 0 else "%s  Lv %d" % [e.nome, info[0]]
+	var h := f.get_height(tam)
+	_caixa(f, tam, nome, Vector2(320 * k, 2 * k + h), Color8(255, 230, 200), Color8(100, 0, 0, 255), false, false)
+	if info[1] <= 0:
+		return
+	var resto := clampf(1.0 - float(e.dano_visto) / info[1], 0.0, 1.0)
+	var b := Rect2(round(320 * k - 50 * k), round(4 * k + h), round(100 * k), round(4 * k))
+	draw_rect(b, Color8(0, 0, 0, 200))
+	for i in ceili(resto * 20):
+		draw_rect(Rect2(b.position.x + (1 + 5 * i) * k, b.position.y + k, 4 * k, 2 * k), Color8(250, 10, 0))
 
 
 func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
@@ -84,7 +111,7 @@ func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
 	if cam.is_position_behind(p):
 		return
 	var s := cam.unproject_position(p)
-	var cor := Color8(200, 220, 255)       # jogador comum (SetPlayerColor 3)
+	var cor: Color = CORES_HEROI[clampi(e.heroi, 0, 6)]
 	var fundo := Color8(10, 30, 50, 150)
 	match e.tipo:
 		"eu":
@@ -95,6 +122,16 @@ func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
 			cor = Color8(255, 230, 200)
 			fundo = Color8(100, 0, 0, 255)
 	_caixa(f, tam, e.nome, s, cor, fundo, false, false)
+	# RenderPartyHP: membro do grupo (menos eu) com a barra de 42x5 em cima do nome, 10 pedacos de 3x2
+	if e.tipo == "jogador" and jogo.janela_grupo:
+		var passo: int = jogo.janela_grupo.passo_de(e.nome)
+		if passo >= 0:
+			var k := get_viewport_rect().size.y / 480.0
+			var b := Rect2(round(s.x - 21 * k), round(s.y - f.get_height(tam) - 7 * k), round(42 * k), round(5 * k))
+			draw_rect(b, Color8(0, 0, 0, 255))
+			draw_rect(b.grow(-k * 0.5), Color8(0x33, 0, 0, 255))
+			for i in passo:
+				draw_rect(Rect2(b.position.x + (2 + 4 * i) * k, b.position.y + 1.5 * k, 3 * k, 2 * k), Color8(250, 10, 0))
 	# loja pessoal aberta: o titulo em cima do nome (PersonalShopTitleImp), mais forte com o mouse
 	var titulo: String = jogo.titulos_lojas.get(e.id, "")
 	if titulo != "":
