@@ -314,6 +314,20 @@ func _json(c: String) -> Dictionary:
 	return d if d is Dictionary else {}
 
 
+# --ver_monstros 3,15: lista os monstros vistos (id e tile) nesses segundos depois de entrar (spots do servidor)
+func _teste_ver_monstros(segundos: Array) -> void:
+	var antes := 0.0
+	for t in segundos:
+		await get_tree().create_timer(float(t) - antes).timeout
+		antes = float(t)
+		var l := []
+		for e: Entidade in entidades.values():
+			if e.tipo == "monstro":
+				l.append("%s %d %s" % [e.nome, e.id, e.tile])
+		l.sort()
+		print("TESTE monstros em %ss: %d\n  %s" % [t, l.size(), "\n  ".join(l)])
+
+
 # --- tela de entrada -------------------------------------------------------
 
 func _estilo(cor: Color, borda := Color(0, 0, 0, 0)) -> StyleBoxFlat:
@@ -826,6 +840,8 @@ func _entrou(info: Dictionary) -> void:
 		_chao_teste(info.x, info.y)
 	if _parametros().has("uma_skill"):
 		_teste_uma_skill(int(_parametros().uma_skill))
+	if _parametros().has("ver_monstros"):
+		_teste_ver_monstros(str(_parametros().ver_monstros).split(","))
 	if _parametros().has("segurar"):
 		_teste_segurar(int(_parametros().segurar))
 	if _parametros().has("comando"):
