@@ -129,6 +129,16 @@ signal guilda_jogador_saiu(id: int, mestre: bool)    # C1 5D: tirar a guilda des
 signal guilda_jogadores(lista: Array)                # C2 65: [{guilda, cargo, tipo, relacao, id, novo}]
 signal guilda_info(info: Dictionary)                 # C1 66: id, tipo, alianca, nome, logo (32 bytes)
 signal chat_guilda(nome: String, texto: String)      # C1 00 com "@" na frente
+signal relacao_pedido(tipo: int, pedido: int, id: int)            # C1 E5: tipo 1 alianca, 2 rival; pedido 1 entrar, 2 sair
+signal relacao_resultado(tipo: int, pedido: int, resultado: int, id: int)   # C1 E6
+signal alianca_lista(ok: bool, rivais: int, aliadas: int, guildas: Array)  # C2 E9: [{membros, logo, nome}]
+signal alianca_tirou(resultado: int, pedido: int, tipo: int)      # C1 EB 01
+signal guerra_resultado(resultado: int)              # C1 60: 0 nao achou, 1 pedido, 2 mestre off, 3 sem guilda, 4 falhou, 5 nao e mestre, 6 ja em guerra
+signal guerra_pedido(guilda: String, tipo: int)      # C1 61: tipo 0 guerra, 1 Battle Soccer
+signal guerra_comecou(guilda: String, tipo: int, time: int)       # C1 62
+signal guerra_fim(resultado: int, guilda: String)    # C1 63: 0 perdeu, 1 ganhou, 2 o outro mestre cancelou, 3 cancelada
+signal guerra_placar(meu: int, dele: int, tipo: int) # C1 64
+signal futebol_placar(vermelho: String, gols_v: int, azul: String, gols_a: int)  # C1 F3 23: gols_v 255 tira o placar
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -566,6 +576,30 @@ func cargo_guilda(tipo: int, cargo: int, nome: String) -> void:
 	con.enviar(p)
 
 
+# C1 E5: tipo 1 alianca, 2 rival; pedido 1 entrar, 2 sair; o alvo e o mestre da outra guilda
+func pedir_relacao(tipo: int, pedido: int, id: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xE5, tipo, pedido, (id >> 8) & 0xFF, id & 0xFF]))
+
+
+func responder_relacao(tipo: int, pedido: int, ok: bool, id: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xE6, tipo, pedido, 1 if ok else 0, (id >> 8) & 0xFF, id & 0xFF]))
+
+
+func pedir_alianca() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xE9]))
+
+
+# C1 EB 01: o mestre da alianca tira uma guilda dela
+func tirar_da_alianca(guilda: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xEB, 0x01])
+	p.append_array(_texto(guilda, 8))
+	con.enviar(p)
+
+
+func responder_guerra(ok: bool) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x61, 1 if ok else 0]))
+
+
 func pedir_grupo() -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0x42]))
 
@@ -965,6 +999,14 @@ func _tratar(p: PackedByteArray) -> void:
 			if p.size() >= 15:
 				amigo_novo.emit(_ler_texto(p, 4, 10), p[14])
 				return
+		[0xEB, 0x01]:
+			if p.size() >= 7:
+				alianca_tirou.emit(p[4], p[5], p[6])
+				return
+		[0xF3, 0x23]:
+			if p.size() >= 22:
+				futebol_placar.emit(_ler_texto(p, 4, 8), p[12], _ler_texto(p, 13, 8), p[21])
+				return
 		[0xC3, 0x01]:
 			if p.size() >= 14:
 				amigo_saiu.emit(_ler_texto(p, 4, 10))
@@ -1137,6 +1179,36 @@ func _tratar(p: PackedByteArray) -> void:
 			if p[0] == 0xC1 and p.size() >= 57:
 				guilda_info.emit({"id": _ler_le(p, 4), "tipo": p[8], "alianca": _ler_texto(p, 9, 8),
 					"nome": _ler_texto(p, 17, 8), "logo": p.slice(25, 57)})
+		0xE5:
+			if p[0] == 0xC1 and p.size() >= 7:
+				relacao_pedido.emit(p[3], p[4], ((p[5] << 8) | p[6]) & 0x7FFF)
+		0xE6:
+			if p[0] == 0xC1 and p.size() >= 8:
+				relacao_resultado.emit(p[3], p[4], p[5], ((p[6] << 8) | p[7]) & 0x7FFF)
+		0xE9:
+			if p[0] == 0xC2 and p.size() >= 8:
+				var l := []
+				for i in p[4]:
+					var o := 8 + i * 41
+					if o + 41 > p.size():
+						break
+					l.append({"membros": p[o], "logo": p.slice(o + 1, o + 33), "nome": _ler_texto(p, o + 33, 8)})
+				alianca_lista.emit(p[5] != 0, p[6], p[7], l)
+		0x60:
+			if p[0] == 0xC1 and p.size() >= 4:
+				guerra_resultado.emit(p[3])
+		0x61:
+			if p[0] == 0xC1 and p.size() >= 12:
+				guerra_pedido.emit(_ler_texto(p, 3, 8), p[11])
+		0x62:
+			if p[0] == 0xC1 and p.size() >= 13:
+				guerra_comecou.emit(_ler_texto(p, 3, 8), p[11], p[12])
+		0x63:
+			if p[0] == 0xC1 and p.size() >= 12:
+				guerra_fim.emit(p[3], _ler_texto(p, 4, 8))
+		0x64:
+			if p[0] == 0xC1 and p.size() >= 6:
+				guerra_placar.emit(p[3], p[4], p[5])
 		0x71:
 			con.enviar(PackedByteArray([0xC1, 0, 0x71]))
 		0x30:

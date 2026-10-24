@@ -34,7 +34,8 @@ var buffs := {}        # efeitos ligados (C1 07, C1 1B, C1 2D e a lista do C2 12
 var lento := 1.0       # gelo anda e mexe na metade (Cold: um terco)
 var guilda := -1       # C2 65: id da guilda, cargo (128 mestre) e relacao com a minha (2 rival)
 var guilda_cargo := 255
-var guilda_relacao := 0
+var guilda_relacao := 0       # do C2 65 (o OpenMU manda 0)
+var guilda_rel := 0           # a que vale: 1 alianca, 2 rival, 4 guilda mestre da alianca, 8 alianca rival (GR_*)
 var _auras := {}       # efeito -> EfeitoMU que fica enquanto o buff durar
 
 

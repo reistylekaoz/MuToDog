@@ -246,7 +246,7 @@ const PARTICULAS := {
 	572: [["areia", "pes", 20]],
 }
 # NPC que fica no ar (CreateMonster: Position[2] = chao + 140): a Lala da Noria
-const FLUTUA := {242: 1.4}
+const FLUTUA := {242: 1.4, 200: 0.3}   # a bola do Battle Soccer fica 30 acima do chao (MoveCharacter: Height + 30)
 # cor do corpo (BodyLight): o Poison Bull nasce envenenado (eDeBuff_Poison = 0,3 1 0,5);
 # Alpha Crust verde agua, Dark Phoenix sem luz do chao, os Hero de Crywolf azulados
 const TINTA := {8: Color(0.3, 1, 0.5), 74: Color(0.1, 1.0, 0.8), 77: Color(0.6, 0.6, 0.6),

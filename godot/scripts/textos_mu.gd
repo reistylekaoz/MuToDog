@@ -121,6 +121,11 @@ func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
 		"monstro":
 			cor = Color8(255, 230, 200)
 			fundo = Color8(100, 0, 0, 255)
+	if not jogo.guerra.is_empty() and e.tipo in ["eu", "jogador"]:
+		if jogo.inimigo_da_guerra(e):
+			fundo = Color8(50, 0, 0, 150)
+		elif e.guilda >= 0 and e.guilda == jogo.minha_guilda:
+			fundo = Color8(30, 50, 0, 150)
 	_caixa(f, tam, e.nome, s, cor, fundo, false, false)
 	# RenderPartyHP: membro do grupo (menos eu) com a barra de 42x5 em cima do nome, 10 pedacos de 3x2
 	if e.tipo == "jogador" and jogo.janela_grupo:
@@ -133,7 +138,8 @@ func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
 			for i in passo:
 				draw_rect(Rect2(b.position.x + (2 + 4 * i) * k, b.position.y + 1.5 * k, 3 * k, 2 * k), Color8(250, 10, 0))
 	var y := f.get_height(tam) + 2
-	# guilda: "[Nome] Master" em cima do nome (AddGuildName); verde pra mim e pra minha guilda, vermelho pro rival
+	# guilda: "[Nome] Master" em cima do nome e "<Alianca> Alliance master" em cima dela (AddGuildName); verde pra mim
+	# e pra minha guilda, vermelho pro rival e a alianca dele, azul claro pros outros
 	if e.guilda >= 0 and e.tipo in ["eu", "jogador"] and Guildas.info.has(e.guilda):
 		var g := "[%s]" % Guildas.nome(e.guilda)
 		var c := Guildas.cargo(e.guilda_cargo) if e.guilda_cargo != 0 else DicaItem.t(1330)
@@ -141,17 +147,31 @@ func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
 			g += " " + c
 		var cor_g := Color8(230, 230, 255)
 		var fundo_g := Color8(10, 30, 50, 150)
+		var r: int = e.guilda_rel | e.guilda_relacao
 		if e.tipo == "eu":
 			cor_g = Color8(200, 255, 0)
 			fundo_g = Color8(60, 100, 0, 150)
-		elif e.guilda == jogo.minha_guilda:
-			cor_g = Color8(200, 255, 0)
-			fundo_g = Color8(20, 50, 80, 150)
-		elif e.guilda_relacao == 2:
+		elif r & 10:
 			cor_g = Color8(255, 30, 0)
 			fundo_g = Color8(0, 0, 0, 150)
+		elif e.guilda == jogo.minha_guilda or r != 0:
+			cor_g = Color8(200, 255, 0)
+			fundo_g = Color8(20, 50, 80, 150)
 		_caixa(f, tam, g, s - Vector2(0, y), cor_g, fundo_g, false, false)
 		y += f.get_height(tam) + 2
+		var alianca: String = Guildas.info[e.guilda].alianca
+		if alianca != "":
+			# o original escreve "Alliance" pro GR_UNION e logo apaga (o if seguinte sobrescreve): fica sem sufixo
+			var u := "<%s>" % alianca
+			var mestre: bool = e.guilda_cargo == 128
+			if r & 4:
+				u += " " + DicaItem.t(1296 if mestre else 1295)
+			elif r & 2:
+				u += " " + DicaItem.t(1298 if mestre else 1297)
+			elif r & 8:
+				u += " " + DicaItem.t(1299)
+			_caixa(f, tam, u, s - Vector2(0, y), cor_g, fundo_g, false, false)
+			y += f.get_height(tam) + 2
 	# loja pessoal aberta: o titulo em cima do nome (PersonalShopTitleImp), mais forte com o mouse
 	var titulo: String = jogo.titulos_lojas.get(e.id, "")
 	if titulo != "":

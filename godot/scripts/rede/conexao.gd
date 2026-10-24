@@ -25,6 +25,8 @@ static var _gravar := OS.get_environment("MU_GRAVAR")
 static var _t0 := -1
 static var _fita: Array = []
 static var _tocando := false   # tocando gravacao: mesmo com a fita no fim, nao abre rede de verdade
+static var _parada_desde := -1  # a fita para enquanto o mapa carrega (o navegador demora mais que a gravacao)
+static var _visto := -1         # ultima vez que alguem leu a fita: quadro lento ou fita sem leitor nao contam
 
 
 static func tocar(arquivo: String) -> void:
@@ -33,7 +35,37 @@ static func tocar(arquivo: String) -> void:
 		var c := linha.split(" ")
 		_fita.append([int(c[0]), c[1].hex_decode()])
 	_t0 = Time.get_ticks_msec()
+	_visto = _t0
 	_tocando = true
+
+
+# a fita anda no tempo do jogo: o que passar de 150 ms entre duas leituras (carga de modelo, quadro
+# travado do navegador) nao conta, senao a gravacao corre na frente do roteiro
+static func _andar() -> void:
+	var agora := Time.get_ticks_msec()
+	if agora - _visto > 150 and _parada_desde < 0:
+		_t0 += agora - _visto - 150
+	_visto = agora
+
+
+# relogio da fita em ms (parado enquanto segura); -1 fora da gravacao
+static func relogio() -> int:
+	if not _tocando:
+		return -1
+	_andar()
+	return (_parada_desde if _parada_desde >= 0 else Time.get_ticks_msec()) - _t0
+
+
+# segura a fita (o relogio dela nao anda) ate soltar; fora da gravacao nao faz nada
+static func segurar(parar: bool) -> void:
+	if not _tocando:
+		return
+	if parar and _parada_desde < 0:
+		_parada_desde = Time.get_ticks_msec()
+	elif not parar and _parada_desde >= 0:
+		_t0 += Time.get_ticks_msec() - _parada_desde
+		_parada_desde = -1
+		_visto = Time.get_ticks_msec()
 
 
 func abrir(host: String, porta: int) -> void:
@@ -133,6 +165,9 @@ func atualizar() -> bool:
 func pacotes() -> Array[PackedByteArray]:
 	var lista: Array[PackedByteArray] = []
 	if _tocando or (aberta and tcp == null and wsp == null and ponte.is_empty()):
+		_andar()
+		if _parada_desde >= 0:
+			return lista
 		var agora := Time.get_ticks_msec() - _t0
 		while not _fita.is_empty() and _fita[0][0] <= agora:
 			lista.append(_fita.pop_front()[1])

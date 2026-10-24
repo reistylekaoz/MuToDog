@@ -91,6 +91,11 @@ var criar_guilda: JanelaCriarGuilda           # aberta pelo Guild Master de Devi
 var minha_guilda := -1                        # id da minha guilda (C2 65 com o meu id)
 var meu_cargo_guilda := 255
 var _guildas_pedidas := {}                    # ids que ja pedi no C1 66
+var guerra := {}                              # guerra ou Battle Soccer em curso: guilda, tipo, time, meu, dele (C1 62 e 64)
+var placar: PlacarGuerra                      # placar de 131x70 acima da barra (rodada 8)
+var _cacar_jogador := ""                      # roteiro A:Nome: ataca esse jogador sempre que der (teste da guerra)
+var _chutar := false                          # roteiro F: leva a bola do Battle Soccer pro gol do meu time
+var _bola_inicio := Vector2i(-1, -1)
 var troca: Troca            # troca com outro jogador (D > Troca)
 var loja_pessoal: LojaPessoal   # a minha loja (S) e a de quem vende (clique no titulo)
 var helper: MuHelper        # MU Helper (Z configura, Home liga)
@@ -210,6 +215,7 @@ func _ready() -> void:
 		print("TESTE grupo vida %s" % [l])
 		janela_grupo.vidas(l))
 	_ligar_guilda()
+	_ligar_guilda2()
 	cli.pedido_duelo.connect(func(id, n):
 		print("TESTE pedido de duelo de %s" % n)
 		_perguntar("%s te chamou pra um duelo." % n, func(ok): cli.responder_duelo(ok, id, n)))
@@ -366,14 +372,33 @@ func _json(c: String) -> Dictionary:
 var _teste_tirados := []
 
 
+# espera do roteiro: tocando gravacao, conta no relogio da fita (o navegador lento atrasa os timers e o roteiro
+# saia do passo da gravacao)
+func _esperar(s: float) -> void:
+	if Conexao.relogio() < 0:
+		await get_tree().create_timer(s).timeout
+		return
+	var fim := Conexao.relogio() + int(s * 1000.0)
+	while Conexao.relogio() < fim:
+		await get_tree().process_frame
+
+
 func _teste_roteiro(passos: Array) -> void:
 	for passo: String in passos:
-		await get_tree().create_timer(2.0).timeout
+		await _esperar(2.0)
 		var a := passo.substr(2)
 		match passo.substr(0, 1):
 			"d":
+				# o roteiro nao leva espaco: d:/war_Ursos diz "/war Ursos"
+				a = a.replace("_", " ")
 				print("TESTE roteiro diz %s" % a)
 				cli.dizer(meu_nome, a)
+			"F":
+				_chutar = true
+				print("TESTE roteiro chuta a bola pro gol")
+			"A":
+				_cacar_jogador = a.replace("_", " ")
+				print("TESTE roteiro ataca o jogador %s sempre que der" % a)
 			"p":
 				var perto: ItemChao = null
 				for it: ItemChao in itens.values():
@@ -394,7 +419,7 @@ func _teste_roteiro(passos: Array) -> void:
 				if s >= 0:
 					inv.usar_ou_equipar(s)
 			"e":
-				await get_tree().create_timer(float(a)).timeout
+				await _esperar(float(a))
 			"x":
 				# x:12-50: larga no chao o que estiver nesses slots da mochila (lixo de teste do GM)
 				var f := a.split("-")
@@ -554,8 +579,12 @@ func _teste_ver_monstros(segundos: Array) -> void:
 		for e: Entidade in entidades.values():
 			if e.tipo == "monstro":
 				l.append("%s %d %s" % [e.nome, e.id, e.tile])
+			elif e.tipo != "eu":
+				l.append("(%s %d) %s %d %s" % [e.tipo, e.numero, e.nome, e.id, e.tile])
 		l.sort()
-		print("TESTE monstros em %ss: %d\n  %s" % [t, l.size(), "\n  ".join(l)])
+		print("TESTE monstros em %ss: %d" % [t, l.size()])
+		for x in l:
+			print("TESTE   %s" % x)
 
 
 # --- tela de entrada -------------------------------------------------------
@@ -828,7 +857,12 @@ func _montar_ui() -> void:
 	janela_guilda = JanelaGuilda.new()
 	janela_guilda.sair.connect(_sair_da_guilda)
 	janela_guilda.acao_membro.connect(_acao_membro_guilda)
+	janela_guilda.pedir_alianca.connect(cli.pedir_alianca)
+	janela_guilda.tirar_alianca.connect(_tirar_da_alianca)
+	janela_guilda.sair_alianca.connect(_sair_da_alianca)
 	hud.add_child(janela_guilda)
+	placar = PlacarGuerra.new()
+	hud.add_child(placar)
 	criar_guilda = JanelaCriarGuilda.new()
 	criar_guilda.responder_mestre.connect(func(sim):
 		print("TESTE guilda: resposta ao Guild Master %s" % sim)
@@ -1109,7 +1143,9 @@ func _entrou(info: Dictionary) -> void:
 	inv.zen = info.zen
 	_hud_nivel()
 	cli.pedir_quests()
+	Conexao.segurar(true)   # gravacao: a fita espera o mapa carregar, pro roteiro andar junto com ela
 	await _abrir_mapa(info.mapa, info.x, info.y)
+	Conexao.segurar(false)
 	_msg("Entrou em %s (%d, %d)." % [mapas.get(str(info.mapa), "mapa %d" % info.mapa), info.x, info.y])
 	print("TESTE entrou %s" % info)
 	if _parametros().has("chao_teste"):
@@ -1267,8 +1303,8 @@ func _objeto_entrou(o: Dictionary) -> void:
 	if o.tipo == "npc":
 		e.numero = o.numero
 	entidades[o.id] = e
-	# armadilha (Meteorite Trap da Lost Tower, as da Dungeon): o cliente nao desenha
-	if tipo == "outro":
+	# armadilha (Meteorite Trap da Lost Tower, as da Dungeon): o cliente nao desenha; a bola do Battle Soccer sim
+	if tipo == "outro" and not bola(e):
 		e.visible = false
 	if e.boneco and o.has("equip") and not skin:
 		e.boneco.vestir(o.equip)
@@ -1333,7 +1369,9 @@ func _objeto_morreu(id: int) -> void:
 func _mapa_mudou(mapa: int, x: int, y: int) -> void:
 	print("TESTE mapa mudou %d (%d, %d)" % [mapa, x, y])
 	if mapa != mapa_atual:
+		Conexao.segurar(true)
 		await _abrir_mapa(mapa, x, y)
+		Conexao.segurar(false)
 		_msg("Foi pra %s (%d, %d)." % [mapas.get(str(mapa), "mapa %d" % mapa), x, y])
 		# gravacao com --andar (a gravacao do --mover): anda de novo no mapa novo, como no teste
 		var p := _parametros()
@@ -1349,6 +1387,12 @@ func _mapa_mudou(mapa: int, x: int, y: int) -> void:
 		_restante.clear()
 		if longe:
 			EfeitoSkill.teleporte(EfeitoMU.criar(mundo), eu, false)
+		# --voltar x,y (teste da guerra): quem morreu e renasceu na cidade anda de volta pra la
+		if _parametros().has("voltar") and longe:
+			var xy: PackedStringArray = str(_parametros().voltar).split(",")
+			await get_tree().create_timer(1.5).timeout
+			print("TESTE voltando pra %s" % _parametros().voltar)
+			andar_ate(Vector2i(int(xy[0]), int(xy[1])))
 
 
 # --- mover de mapa ----------------------------------------------------------------
@@ -1443,7 +1487,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 		_botao_barra("personagem")
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 		var e := _entidade_na_tela(ev.position)
-		if e and e.tipo == "monstro":
+		if e and (e.tipo == "monstro" or bola(e) or e.tipo == "jogador" and (inimigo_da_guerra(e) or ev.ctrl_pressed)):
 			mirar(e.id)
 			return
 		if e and e.tipo == "npc":
@@ -1479,7 +1523,7 @@ func _cursor_mu() -> void:
 			tipo = "cursor_pegar"
 		elif is_instance_valid(sobre) and sobre.tipo == "npc":
 			tipo = "cursor_falar"
-		elif is_instance_valid(sobre) and sobre.tipo == "monstro" and not mundo.zona_segura(eu.tile.x, eu.tile.y):
+		elif is_instance_valid(sobre) and (sobre.tipo == "monstro" or bola(sobre) or inimigo_da_guerra(sobre)) and not mundo.zona_segura(eu.tile.x, eu.tile.y):
 			tipo = "cursor_ataque"
 		elif Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			tipo = "cursor_push"
@@ -1739,6 +1783,14 @@ func _cacador(dt: float) -> void:
 func _combate(dt: float) -> void:
 	if _cacar > 0:
 		_cacador(dt)
+	if _chutar and eu and not eu.morto:
+		_chutar_bola()
+	if _cacar_jogador != "" and alvo_id < 0 and eu and not eu.morto:
+		for e: Entidade in entidades.values():
+			if e.nome == _cacar_jogador and not e.morto and not mundo.zona_segura(e.tile.x, e.tile.y):
+				print("TESTE mirando o jogador %s em %s" % [e.nome, e.tile])
+				mirar(e.id)
+				break
 	_recarga -= dt
 	_repensar -= dt
 	if eu.morto:
@@ -1962,6 +2014,22 @@ func _comando(c: int, alvo: int) -> void:
 			else:
 				cli.pedir_entrar_guilda(alvo)
 				_msg("[color=#9ad0ff]%s[/color]" % (DicaItem.t(477) % n))
+		JanelaComandos.ALIANCA, JanelaComandos.RIVAL, JanelaComandos.FIM_RIVAL:
+			# CommandGuildUnion e CommandGuildRival: so o mestre (1320), o outro tem que ter guilda (1385) e ser mestre (507);
+			# sem caixa de confirmacao, o resultado vem no C1 E6
+			var o: Entidade = entidades.get(alvo)
+			if meu_cargo_guilda != 128:
+				_msg("[color=#e8b04a]%s[/color]" % DicaItem.t(1320))
+			elif c == JanelaComandos.ALIANCA and (o == null or o.guilda < 0):
+				_msg("[color=#e8b04a]%s[/color]" % DicaItem.t(1385))
+			elif o == null or o.guilda_cargo != 128:
+				_msg("[color=#e8b04a]%s[/color]" % DicaItem.t(507))
+			else:
+				var tipo := 1 if c == JanelaComandos.ALIANCA else 2
+				var pedido := 2 if c == JanelaComandos.FIM_RIVAL else 1
+				print("TESTE guilda relacao: pedindo %d/%d a %s" % [tipo, pedido, n])
+				cli.pedir_relacao(tipo, pedido, alvo)
+				_msg("[color=#9ad0ff]Pedido mandado pra %s, mestre da guilda %s.[/color]" % [n, Guildas.nome(o.guilda)])
 		JanelaComandos.AMIGO:
 			cli.adicionar_amigo(n)
 			_msg("[color=#9ad0ff]Pedido de amizade mandado pra %s.[/color]" % n)
@@ -4116,11 +4184,12 @@ func _ligar_guilda() -> void:
 		if r == 1 and janela_guilda.visible:
 			cli.pedir_lista_guilda())
 	cli.guilda_lista.connect(func(i):
-		print("TESTE guilda lista %s pontos %d: %s" % [i.em_guilda, i.pontos,
+		print("TESTE guilda lista %s pontos %d rival '%s': %s" % [i.em_guilda, i.pontos, i.rival,
 			i.membros.map(func(m): return "%s %d %s" % [m.nome, m.cargo, "on" if m.online else "off"])])
 		janela_guilda.guilda = minha_guilda
 		janela_guilda.meu_cargo = meu_cargo_guilda
-		janela_guilda.definir(i))
+		janela_guilda.definir(i)
+		_relacoes())
 	cli.guilda_saiu.connect(func(r):
 		print("TESTE guilda saiu %d" % r)
 		var t := {0: DicaItem.t(401), 1: "Voce saiu da guilda.", 2: "So o mestre desfaz a guilda.", 3: "Nao deu pra sair da guilda.",
@@ -4162,6 +4231,7 @@ func _ligar_guilda() -> void:
 				e.guilda_cargo = x.cargo
 				e.guilda_relacao = x.relacao
 				e.marca_guilda()
+				_relacao_de(e)
 			if not Guildas.info.has(x.guilda) and not _guildas_pedidas.has(x.guilda):
 				_guildas_pedidas[x.guilda] = true
 				cli.pedir_info_guilda(x.guilda))
@@ -4171,6 +4241,16 @@ func _ligar_guilda() -> void:
 		for e: Entidade in entidades.values():
 			if is_instance_valid(e) and e.guilda == i.id:
 				e.marca_guilda()
+		if i.id == minha_guilda:
+			var antes := janela_guilda.alianca
+			janela_guilda.alianca = i.alianca
+			if janela_guilda.visible and janela_guilda.aba == 2 and i.alianca != "":
+				cli.pedir_alianca()
+			elif i.alianca == "":
+				janela_guilda.aliadas = []
+			if antes != i.alianca:
+				print("TESTE guilda alianca agora '%s'" % i.alianca)
+		_relacoes()
 		janela_guilda.queue_redraw())
 	cli.chat_guilda.connect(func(n, t):
 		print("TESTE chat guilda %s: %s" % [n, t])
@@ -4270,7 +4350,8 @@ func _acao_membro_guilda(acao: int, nome: String, cargo: int) -> void:
 
 
 # roteiro G: G:criar,Nome (pinta uma marca de teste e cria), G:pintar,Nome (so pinta), G:abrir, G:aba,N, G:sair, G:tirar,Nome, G:cargo,Nome,0|1,
-# G:tira_cargo,Nome, G:entrar,Mestre (o comando GUILDA da janela D)
+# G:tira_cargo,Nome, G:entrar,Mestre (o comando GUILDA da janela D); rodada 8: G:alianca,Mestre, G:rival,Mestre,
+# G:fim_rival,Mestre (botoes da janela D), G:tirar_alianca,Guilda e G:sair_alianca (botoes da aba Alliance)
 func _teste_guilda(v: Array) -> void:
 	print("TESTE roteiro guilda %s" % [v])
 	match v[0]:
@@ -4302,8 +4383,12 @@ func _teste_guilda(v: Array) -> void:
 		"abrir":
 			if not janela_guilda.visible:
 				_alternar_guilda()
+		"fechar":
+			janela_guilda.visible = false
 		"aba":
 			janela_guilda.aba = int(v[1])
+			if janela_guilda.aba == 2 and janela_guilda.alianca != "":
+				cli.pedir_alianca()
 			janela_guilda.queue_redraw()
 		"sair":
 			_sair_da_guilda()
@@ -4316,7 +4401,223 @@ func _teste_guilda(v: Array) -> void:
 			get_tree().create_timer(0.5).timeout.connect(cli.pedir_lista_guilda)
 		"tira_cargo":
 			_acao_membro_guilda(1, v[1], 64)
-		"entrar":
+		"entrar", "alianca", "rival", "fim_rival":
+			var cmd: int = {"entrar": JanelaComandos.GUILDA, "alianca": JanelaComandos.ALIANCA, "rival": JanelaComandos.RIVAL,
+				"fim_rival": JanelaComandos.FIM_RIVAL}[v[0]]
 			for e: Entidade in entidades.values():
 				if e.nome == v[1]:
-					_comando(JanelaComandos.GUILDA, e.id)
+					_comando(cmd, e.id)
+		"tirar_alianca":
+			_tirar_da_alianca(v[1])
+		"sair_alianca":
+			_sair_da_alianca()
+
+
+# --- guilda 2: alianca, rival, guerra e Battle Soccer (rodada 8) ----------------------
+
+func _ligar_guilda2() -> void:
+	cli.relacao_pedido.connect(func(tipo, pedido, id):
+		# ReceiveGuildRelationShip: caixa de OK e Cancel com tres linhas; com outra caixa aberta recusa sozinha
+		var n: String = entidades[id].nome if entidades.has(id) else "?"
+		print("TESTE guilda relacao: %s pediu %d/%d" % [n, tipo, pedido])
+		var l := [DicaItem.t(1280) % n, DicaItem.t(1281 if pedido == 1 else 1282), DicaItem.t(1283)]
+		if tipo == 2:
+			l = [DicaItem.t(1284) % n, DicaItem.t(1286 if pedido == 1 else 1285), DicaItem.t(1283)]
+		for c in hud.get_children():
+			if c is CaixaMU and not c.is_queued_for_deletion():
+				cli.responder_relacao(tipo, pedido, false, id)
+				return
+		_caixa_mu(l, func(ok, _t): cli.responder_relacao(tipo, pedido, ok, id)))
+	cli.relacao_resultado.connect(func(tipo, pedido, r, _id):
+		print("TESTE guilda relacao resultado %d/%d: %d" % [tipo, pedido, r])
+		var t := ""
+		if r == 1:
+			t = DicaItem.t((1381 if pedido == 1 else 1382) if tipo == 1 else (1383 if pedido == 1 else 1384))
+		else:
+			var erros := {0: 1328, 0x10: 1637, 0x11: 1386, 0x15: 1250, 0x16: 1251, 0x17: 1252, 0x18: 1253, 0x19: 1254,
+				0x1A: 1255, 0x1B: 1333, 0x1C: 1329, 0x1D: 1331, 0x1E: 1287, 0x20: 1268, 0xA1: 2991, 0xA2: 2992, 0xA3: 2993}
+			t = DicaItem.t(erros[r]) if erros.has(r) else "Guilda: resposta %d." % r
+		_msg("[color=%s]%s[/color]" % ["#9fe0a0" if r == 1 else "#e8b04a", t])
+		# o rival so chega no C2 52; a alianca chega no C1 66 que o servidor manda de novo
+		if r == 1:
+			cli.pedir_lista_guilda())
+	cli.alianca_lista.connect(func(ok, rivais, aliadas, l):
+		print("TESTE guilda alianca lista ok %s rivais %d aliadas %d: %s" % [ok, rivais, aliadas,
+			l.map(func(g): return "%s %d" % [g.nome, g.membros])])
+		janela_guilda.definir_alianca(l if ok else []))
+	cli.alianca_tirou.connect(func(r, _pedido, _tipo):
+		print("TESTE guilda alianca tirou %d" % r)
+		if r == 1:
+			_msg("[color=#9fe0a0]%s[/color]" % DicaItem.t(1382))
+			if janela_guilda.aliadas.size() > 2:
+				cli.pedir_alianca()
+			else:
+				janela_guilda.aliadas = []
+				janela_guilda.queue_redraw()
+		else:
+			_msg("[color=#e8b04a]%s[/color]" % DicaItem.t(1328)))
+	cli.guerra_resultado.connect(func(r):
+		print("TESTE guerra resultado %d" % r)
+		_msg("[color=%s]%s[/color]" % ["#9fe0a0" if r == 1 else "#e8b04a", DicaItem.t(519 + r) if r <= 6 else "Guerra: %d." % r]))
+	cli.guerra_pedido.connect(func(g, tipo):
+		print("TESTE guerra: %s chamou (tipo %d)" % [g, tipo])
+		_caixa_mu([DicaItem.t(430) % g, DicaItem.t(432 if tipo == 1 else 431)], func(ok, _t):
+			print("TESTE guerra: respondi %s" % ok)
+			cli.responder_guerra(ok)))
+	cli.guerra_comecou.connect(func(g, tipo, time):
+		print("TESTE guerra comecou contra %s tipo %d time %d" % [g, tipo, time])
+		guerra = {"guilda": g, "tipo": tipo, "time": time, "meu": 0, "dele": 0}
+		_aviso(DicaItem.t(526 if tipo == 0 else 533) % g)
+		_relacoes()
+		_placar())
+	cli.guerra_placar.connect(func(meu, dele, _tipo):
+		print("TESTE guerra placar %d x %d" % [meu, dele])
+		if not guerra.is_empty():
+			guerra.meu = meu
+			guerra.dele = dele
+			_placar())
+	cli.guerra_fim.connect(func(r, g):
+		print("TESTE guerra fim %d contra %s" % [r, g])
+		_aviso(DicaItem.t(527 + r) if r <= 5 else DicaItem.t(480))
+		guerra = {}
+		placar.visible = false
+		if alvo_id >= 0 and entidades.has(alvo_id) and entidades[alvo_id].tipo == "jogador":
+			alvo_id = -1
+		_relacoes())
+	cli.futebol_placar.connect(func(v, gv, a, ga):
+		print("TESTE futebol placar %s %d x %d %s" % [v, gv, ga, a])
+		if gv == 255:
+			placar.visible = false
+		else:
+			placar.futebol(v, gv, a, ga))
+
+
+# aviso no meio da tela (o CreateNotice do original) e no registro
+func _aviso(t: String) -> void:
+	_msg("[color=#ffd060]%s[/color]" % t)
+	_mostrar_aviso(t)
+
+
+func _placar() -> void:
+	if guerra.is_empty():
+		placar.visible = false
+		return
+	placar.guerra(Guildas.nome(minha_guilda), Guildas.tex(minha_guilda), guerra.meu, guerra.guilda,
+		Guildas.tex(_guilda_por_nome(guerra.guilda)), guerra.dele, guerra.time)
+
+
+func _guilda_por_nome(n: String) -> int:
+	for id in Guildas.info:
+		if Guildas.info[id].nome == n:
+			return id
+	return -1
+
+
+# o jogador e da guilda com quem estou em guerra (GuildTeam 2): ataca com o clique, sem Ctrl
+func inimigo_da_guerra(e: Entidade) -> bool:
+	return not guerra.is_empty() and e.tipo == "jogador" and e.guilda >= 0 and Guildas.nome(e.guilda) == guerra.guilda
+
+
+# GR_* de cada jogador visto: o OpenMU nao manda a relacao no C2 65, entao sai do nome da alianca (C1 66)
+# e do rival da minha guilda (C2 52)
+func _relacoes() -> void:
+	for e: Entidade in entidades.values():
+		if is_instance_valid(e) and e.tipo in ["eu", "jogador"]:
+			_relacao_de(e)
+
+
+func _relacao_de(e: Entidade) -> void:
+	var r := e.guilda_relacao
+	if e.guilda >= 0 and Guildas.info.has(e.guilda):
+		var g: Dictionary = Guildas.info[e.guilda]
+		var minha_alianca: String = Guildas.info[minha_guilda].alianca if Guildas.info.has(minha_guilda) else ""
+		if g.alianca != "" and (g.alianca == minha_alianca or e.guilda == minha_guilda):
+			r |= 1
+			if g.alianca == g.nome:
+				r |= 4
+		var rival := janela_guilda.rival
+		if rival != "" and e.guilda != minha_guilda:
+			if g.nome == rival:
+				r |= 2
+			else:
+				var gr := _guilda_por_nome(rival)
+				if gr >= 0 and Guildas.info[gr].alianca != "" and Guildas.info[gr].alianca == g.alianca:
+					r |= 8
+	e.guilda_rel = r
+
+
+func _tirar_da_alianca(nome: String) -> void:
+	_caixa_mu([DicaItem.t(1423) % nome, DicaItem.t(1369)], func(ok, _t):
+		if ok:
+			print("TESTE guilda: tirando %s da alianca" % nome)
+			cli.tirar_da_alianca(nome))
+
+
+func _sair_da_alianca() -> void:
+	if janela_guilda.sou_mestre_da_alianca():
+		_caixa_mu([DicaItem.t(1271)], func(_ok, _t): pass, false, false)
+		return
+	print("TESTE guilda: saindo da alianca")
+	cli.pedir_relacao(1, 2, cli.meu_id)
+
+
+# aviso grande no alto da tela por 5 s (guerra comecou e acabou)
+var _rotulo_aviso: Label
+
+
+func _mostrar_aviso(t: String) -> void:
+	if _rotulo_aviso == null:
+		_rotulo_aviso = Label.new()
+		_rotulo_aviso.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_rotulo_aviso.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_rotulo_aviso.add_theme_color_override("font_color", Color8(255, 220, 90))
+		_rotulo_aviso.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		_rotulo_aviso.add_theme_constant_override("outline_size", 4)
+		hud.add_child(_rotulo_aviso)
+	var v := get_viewport().get_visible_rect().size
+	_rotulo_aviso.add_theme_font_size_override("font_size", int(13 * v.x / 640.0))
+	_rotulo_aviso.text = t
+	_rotulo_aviso.position = Vector2(0, 110 * v.y / 480.0)
+	_rotulo_aviso.size = Vector2(v.x, 30)
+	_rotulo_aviso.modulate.a = 1.0
+	_rotulo_aviso.visible = true
+	var tw := create_tween()
+	tw.tween_interval(4.0)
+	tw.tween_property(_rotulo_aviso, "modulate:a", 0.0, 1.0)
+
+
+# a bola do Battle Soccer (Arena): nao morre, anda 2 tiles (3 com skill) pro lado oposto de quem bate
+func bola(e: Entidade) -> bool:
+	return e != null and e.tipo == "outro" and e.nome == "Soccerball"
+
+
+# roteiro F: fica atras da bola e bate nela ate entrar no gol; o time 1 (quem chamou) faz gol no de cima
+# (y 139 e 140, Arena do OpenMU), o time 0 no de baixo (y 181 e 182)
+func _chutar_bola() -> void:
+	var b: Entidade = null
+	for e: Entidade in entidades.values():
+		if bola(e):
+			b = e
+	if guerra.is_empty() or eu.andando():
+		return
+	if b == null:
+		# depois do gol a bola volta pro meio, longe da vista: anda pra onde ela estava no comeco
+		if _bola_inicio.x >= 0 and _repensar <= 0.0:
+			_repensar = 1.0
+			andar_ate(_bola_inicio)
+		return
+	if _bola_inicio.x < 0:
+		_bola_inicio = b.tile
+	var lado := -1 if int(guerra.time) == 1 else 1
+	var ponto := b.tile - Vector2i(0, lado)
+	if eu.tile != ponto:
+		if _repensar <= 0.0:
+			_repensar = 0.5
+			andar_ate(ponto)
+		return
+	if _recarga > 0.0:
+		return
+	_recarga = RECARGA
+	eu.olhar_para(b)
+	print("TESTE chutando a bola em %s" % b.tile)
+	cli.atacar(b.id, 38, maxi(ClienteMU.PASSOS.find(Vector2i(0, lado)), 0))

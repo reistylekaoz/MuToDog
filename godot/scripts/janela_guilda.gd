@@ -3,10 +3,14 @@ extends Control
 # Janela da guilda do cliente S6 (CNewUIGuildInfoWindow, tecla G), 190x429 na direita.
 # Sem guilda: so o texto de como entrar (185 a 187). Com guilda: tres abas, Guild (marca, pontos,
 # membros e o botao de sair ou desfazer), Members (lista com cargo e servidor; o mestre ganha
-# Position, Dissolve e Release) e Alliance (o texto de como fazer a alianca, que fica pra rodada 8).
+# Position, Dissolve e Release) e Alliance (sem alianca o texto de como fazer; com alianca a lista do
+# C2 E9 com marca, nome e membros, e os botoes de tirar uma guilda e de sair da alianca).
 
 signal sair()                              # Leave ou Disband
 signal acao_membro(acao: int, nome: String, cargo: int)   # 0 Position, 1 Dissolve (tira o cargo), 2 Release
+signal pedir_alianca()                     # abriu a aba Alliance com alianca: C1 E9
+signal tirar_alianca(guilda: String)       # 1422: o mestre da alianca tira a guilda escolhida
+signal sair_alianca()                      # 1324: sai da alianca (o mestre dela nao sai)
 
 const PASTA := "res://dados/hud/"
 const L := 190.0
@@ -27,6 +31,9 @@ var rival := ""
 var membros: Array = []
 var escolhido := -1
 var rolagem := 0
+var alianca := ""          # nome da alianca (o da guilda mestre dela), vazio sem alianca
+var aliadas: Array = []    # [{membros, logo, nome, tex}] do C2 E9, a mais nova em cima
+var aliada_escolhida := -1
 var _tex := {}
 var _esc := 1.0
 var _mouse := Vector2(-100, -100)
@@ -68,6 +75,8 @@ func limpar() -> void:
 	guilda = -1
 	meu_cargo = 255
 	membros = []
+	alianca = ""
+	aliadas = []
 	escolhido = -1
 	queue_redraw()
 
@@ -186,7 +195,50 @@ func _aba_membros(f: Font) -> void:
 			_botao(_tex.btn_pequeno, _btn_membro(i), 64, DicaItem.t(1307 + i))
 
 
+func definir_alianca(l: Array) -> void:
+	aliadas = []
+	for g: Dictionary in l:
+		var d := g.duplicate()
+		d.tex = Guildas.textura(Guildas.cores_da_logo(g.logo))
+		aliadas.push_front(d)
+	aliada_escolhida = -1
+	queue_redraw()
+
+
+func sou_mestre_da_alianca() -> bool:
+	return sou_mestre() and alianca != "" and alianca == Guildas.nome(guilda)
+
+
+func _btn_alianca(i: int) -> Rect2:
+	return Rect2(30 + i * 70, 230, 64, 29)
+
+
+func _linha_alianca(i: int) -> Rect2:
+	return Rect2(15, 130 + i * LINHA, 160, LINHA)
+
+
 func _aba_alianca(f: Font) -> void:
+	if alianca != "":
+		# GIW 767-800: o fundo, o cabecalho Name e Members e a lista de 160x80 com linhas de 13
+		draw_rect(Rect2(12, 125, 165, 85), Color8(21, 21, 21, 150))
+		draw_rect(Rect2(12, 110, 165, 15), Color8(59, 59, 59, 150))
+		_moldura(Rect2(10, 109, 171, 106))
+		draw_string(f, Vector2(34, 121), DicaItem.t(1389), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color.WHITE)
+		draw_string(f, Vector2(140, 121), DicaItem.t(1330), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color.WHITE)
+		for i in mini(aliadas.size(), 6):
+			var g: Dictionary = aliadas[i]
+			var r := _linha_alianca(i)
+			var cor := Color8(230, 220, 220)
+			if i == aliada_escolhida:
+				draw_rect(r, Color8(220, 210, 180, 230))
+				cor = Color.BLACK
+			draw_texture_rect(g.tex, Rect2(r.position.x + 4, r.position.y + 2, 8, 8), false)
+			draw_string(f, Vector2(r.position.x + 16, r.position.y + 10), str(g.nome), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, cor)
+			draw_string(f, Vector2(r.position.x + 100, r.position.y + 10), str(g.membros), HORIZONTAL_ALIGNMENT_RIGHT, 50, 10, cor)
+		if sou_mestre():
+			_botao(_tex.btn_pequeno, _btn_alianca(0), 64, DicaItem.t(1422))
+			_botao(_tex.btn_pequeno, _btn_alianca(1), 64, DicaItem.t(1324))
+		return
 	var y := 116
 	for grupo in [[1257, 1261], [1262, 1264], [1265, 1267]]:
 		for n in range(grupo[0], grupo[1] + 1):
@@ -233,10 +285,24 @@ func clicar(p: Vector2) -> void:
 	for i in 3:
 		if _aba(i).has_point(p):
 			aba = i
+			if i == 2 and alianca != "":
+				pedir_alianca.emit()
 			queue_redraw()
 			return
 	if aba == 0 and _btn_sair_guilda().has_point(p):
 		sair.emit()
+	elif aba == 2 and alianca != "":
+		for i in mini(aliadas.size(), 6):
+			if _linha_alianca(i).has_point(p):
+				aliada_escolhida = i
+				queue_redraw()
+				return
+		if not sou_mestre():
+			return
+		if _btn_alianca(0).has_point(p) and aliada_escolhida >= 0 and aliadas[aliada_escolhida].nome != Guildas.nome(guilda):
+			tirar_alianca.emit(str(aliadas[aliada_escolhida].nome))
+		elif _btn_alianca(1).has_point(p):
+			sair_alianca.emit()
 	elif aba == 1:
 		for j in mini(VISIVEIS, membros.size() - rolagem):
 			if _linha(j).has_point(p):
