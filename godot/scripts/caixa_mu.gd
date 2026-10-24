@@ -36,11 +36,29 @@ func _init(textos: Array = [], cancelar := true, com_senha := false) -> void:
 func _ready() -> void:
 	for n in ["inv_fundo", "msg_topo", "msg_meio", "msg_baixo", "msg_ok", "msg_cancelar", "btn_vazio"]:
 		_tex[n] = load(PASTA + n + ".png")
+	linhas = _quebrar_linhas(linhas)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	get_viewport().size_changed.connect(_ajustar)
 	_ajustar()
 	if senha:
 		_campo.grab_focus()
+
+
+# frase maior que a caixa quebra em mais linhas (SeparateTextIntoLines do cliente)
+func _quebrar_linhas(textos: Array) -> Array:
+	var f := get_theme_default_font()
+	var r := []
+	for t in textos:
+		var atual := ""
+		for p in str(t).split(" ", false):
+			var tenta: String = p if atual == "" else atual + " " + p
+			if atual != "" and f.get_string_size(tenta, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x > L - 20:
+				r.append(atual)
+				atual = p
+			else:
+				atual = tenta
+		r.append(atual)
+	return r
 
 
 func altura() -> float:

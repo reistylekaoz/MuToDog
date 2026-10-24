@@ -17,6 +17,7 @@ var musica := AudioStreamPlayer.new()
 var vento := AudioStreamPlayer.new()
 var floresta := AudioStreamPlayer.new()
 var fundo := AudioStreamPlayer.new()
+var evento := AudioStreamPlayer.new()
 var mudo := false
 var _efeitos: Array[AudioStreamPlayer] = []   # sons soltos (dados/sons: subir de nivel, fogos, medalha...)
 var _db_efeitos := -6.0
@@ -33,6 +34,7 @@ func _ready() -> void:
 	add_child(floresta)
 	fundo.volume_db = -12.0
 	add_child(fundo)
+	add_child(evento)
 	var w := load(PASTA + "vento.wav") as AudioStreamWAV
 	if w:
 		w.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -52,7 +54,7 @@ func atualizar(mapa: int, seguro: bool, tile: int, x := 0, y := 0) -> void:
 		fundo.stop()
 		vento.stop()
 		_faixa = ""
-		var pasta := "res://dados/mundo%d/" % (mapa + 1)
+		var pasta := "res://dados/mundo%d/" % PacoteMapa.mundo_do_mapa(mapa)
 		if ResourceLoader.exists(pasta + "fundo.wav"):
 			var w := load(pasta + "fundo.wav") as AudioStreamWAV
 			w.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -61,7 +63,7 @@ func atualizar(mapa: int, seguro: bool, tile: int, x := 0, y := 0) -> void:
 			fundo.play()
 			print("TESTE fundo %d" % mapa)
 	if mapa not in [0, 2, 3] and (_faixa == "" or not musica.playing):
-		var mp := "res://dados/mundo%d/musica.mp3" % (mapa + 1)
+		var mp := "res://dados/mundo%d/musica.mp3" % PacoteMapa.mundo_do_mapa(mapa)
 		if ResourceLoader.exists(mp):
 			_faixa = mp
 			musica.stream = load(mp)
@@ -120,6 +122,24 @@ func tocar(nome: String) -> void:
 	p.stream = load(c)
 	p.volume_db = _db_efeitos
 	p.play()
+
+
+# som que repete ate parar (PlayBuffer com loop: o iBloodCastle.wav durante o castelo)
+func laco(nome: String) -> void:
+	var c := "res://dados/sons/%s.wav" % nome
+	if mudo or not ResourceLoader.exists(c):
+		return
+	var w := (load(c) as AudioStreamWAV).duplicate() as AudioStreamWAV
+	w.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	w.loop_end = int(w.get_length() * w.mix_rate)
+	evento.stream = w
+	evento.volume_db = _db_efeitos
+	evento.play()
+	print("TESTE laco %s" % nome)
+
+
+func parar_laco() -> void:
+	evento.stop()
 
 
 func alternar() -> bool:

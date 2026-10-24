@@ -130,7 +130,10 @@ const PORTAS := {3: [86, 20, 65, 88]}
 # Noria: luz (flare01) no osso do objeto, cor (0,4 0,7 1) x Luminosity sorteada 0,7..1,0 a cada
 # quadro: tipo -> [[ossos], escala]; 39 ainda tem duas lightning2 girando no osso 57
 const LUZ_OSSO := {4: {1: [[2, 4, 6], 0.5], 9: [[1], 1.5], 17: [[4, 7, 10, 13], 1.0], 35: [[3], 1.5],
-	39: [[61, 62, 63, 64, 65], 1.0]}}
+	39: [[61, 62, 63, 64, 65], 1.0]},
+	# Blood Castle (o mesmo World12 nos 8 niveis): tocha 11 com luz laranja pulsando em 7 ossos
+	# (sin((giro*20 + tempo) * 0,001) * 0,5 + 0,5) e o brilho branco 13 no osso 3 (Flare)
+	12: {11: [[1, 2, 4, 6, 9, 10, 11], 0.5, "tocha"], 13: [[3], 1.0, "flare"]}}
 const COR_FOGO := Color(0.85, 0.51, 0.34)   # Luminosity media 0,85 x (1, 0,6, 0,4)
 # cor do fundo (SetWorldClearColor) e mapa sem chao desenhado (Icarus: so ilhas no ceu)
 const CEU := {11: Color8(3, 25, 44), 52: Color8(178, 178, 178)}
@@ -832,6 +835,7 @@ func _luzes_nos_ossos(m: Node3D) -> void:
 		var tr := Transform3D(Basis(Quaternion(o.q[0], o.q[1], o.q[2], o.q[3])) * float(o.s), Vector3(o.p[0], o.p[1], o.p[2]))
 		var lista: Array = tabela[t][0].duplicate()
 		var esc: float = tabela[t][1]
+		var jeito: String = tabela[t][2] if tabela[t].size() > 2 else ""
 		if m.numero == 4 and t == 39:
 			lista.append(57)
 		for i: int in lista:
@@ -840,7 +844,7 @@ func _luzes_nos_ossos(m: Node3D) -> void:
 			var p := _no_mundo(tr * Vector3(pose[i][0], pose[i][1], pose[i][2]))
 			var girando: bool = m.numero == 4 and t == 39 and i == 57
 			for sentido in ([1.0, -1.0] if girando else [0.0]):
-				var t2 := raio if girando else tex
+				var t2 := raio if girando else (EfeitoMU.textura("flare") if jeito == "flare" else tex)
 				var sp := MeshInstance3D.new()
 				var q := QuadMesh.new()
 				q.size = Vector2(t2.get_width(), t2.get_height()) * esc * 0.01
@@ -857,6 +861,8 @@ func _luzes_nos_ossos(m: Node3D) -> void:
 				if girando:
 					_giram.append([mat, sentido])
 				else:
+					mat.set_meta("jeito", jeito)
+					mat.set_meta("fase", rad_to_deg(2.0 * atan2(float(o.q[2]), float(o.q[3]))) * 20.0)
 					_luz_osso.append(mat)
 
 
@@ -1144,7 +1150,15 @@ func _process(dt: float) -> void:
 	if not _luz_osso.is_empty():
 		var l := randf_range(0.7, 1.0)
 		for mt in _luz_osso:
-			mt.set_shader_parameter("cor", Color(0.4 * l, 0.7 * l, l))
+			match mt.get_meta("jeito", ""):
+				"tocha":
+					var lt := sin((mt.get_meta("fase", 0.0) + _t * 1000.0) * 0.001) * 0.5 + 0.5
+					mt.set_shader_parameter("cor", Color(lt, lt * 0.5, 0.0))
+				"flare":
+					var lf := sin(_t) * 0.3 + 0.7
+					mt.set_shader_parameter("cor", Color(lf, lf, lf))
+				_:
+					mt.set_shader_parameter("cor", Color(0.4 * l, 0.7 * l, l))
 	for g in _giram:
 		(g[0] as ShaderMaterial).set_shader_parameter("giro", deg_to_rad(fmod(_t * 100.0, 360.0)) * g[1])
 	if not _portas.is_empty():

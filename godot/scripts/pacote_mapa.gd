@@ -8,12 +8,24 @@ extends RefCounted
 # partida. Nos testes headless os dados estao no projeto e nada e carregado.
 # Uso: await PacoteMapa.carregar(no_qualquer, numero_do_mundo)
 
-const FORA := [2, 3, 4, 5, 7, 8, 9, 11, 31, 32, 34, 35, 38, 39, 52, 57, 58, 64, 75, 80, 81, 82]
+const FORA := [2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 31, 32, 34, 35, 38, 39, 52, 57, 58, 64, 75, 80, 81, 82]
 # pacote 0 (mapas/mundo0.pck): os monstros dos eventos (Blood Castle, Kalima, Chaos Castle,
 # Imperial Fortress, Doppelganger...), baixado na primeira vez que um deles aparece
 const MONSTROS := 0
 static var _prontos := {}
 static var _tentados := {}
+static var _baixando := {}
+
+
+# mapa do servidor -> pasta World do cliente: o cliente soma 1, mas os 8 Blood Castle (11 a 17
+# e o 52) usam o World12 e o Devil Square 5 a 7 (mapa 32) usa o World10 do 1 a 4
+# (MapManager::Load do cliente: iMapWorld = WD_11BLOODCASTLE1 + 1)
+static func mundo_do_mapa(mapa: int) -> int:
+	if mapa in [11, 12, 13, 14, 15, 16, 17, 52]:
+		return 12
+	if mapa == 32:
+		return 10
+	return mapa + 1
 
 
 static func tem(numero: int) -> bool:
@@ -36,21 +48,42 @@ static func montar_pc() -> void:
 
 
 static func precisa(numero: int) -> bool:
-	return OS.has_feature("web") and (numero in FORA or numero == MONSTROS) and not _prontos.has(numero) \
+	return OS.has_feature("web") and numero in FORA and not _prontos.has(numero) \
 		and not ResourceLoader.exists("res://dados/mundo%d/altura.png" % numero)
 
 
-# o modelo desse monstro so vem no pacote dos monstros (e ele ainda nao foi tentado)
+# o pacote dos monstros tambem e o numero 0, que e a Lorencia (vem no principal): o altura.png nao serve de prova
+static func precisa_monstros() -> bool:
+	return OS.has_feature("web") and not _prontos.has(MONSTROS)
+
+
+# o modelo desse monstro so vem no pacote dos monstros (que nao foi tentado ou ainda esta baixando:
+# quem aparece durante o download tambem espera; se o download falhou, fica o provisorio)
 static func falta_monstro(numero: int) -> bool:
 	var m: Array = Boneco.NPCS.get(numero, [])
-	return not m.is_empty() and precisa(MONSTROS) and not _tentados.has(MONSTROS) \
+	return not m.is_empty() and precisa_monstros() and (not _tentados.has(MONSTROS) or _baixando.has(MONSTROS)) \
 		and not ResourceLoader.exists(Boneco.PASTA + m[0] + ".glb")
 
 
+# por que o monstro nao tem modelo (log dos testes)
+static func porque(numero: int) -> String:
+	var m: Array = Boneco.NPCS.get(numero, [])
+	return "modelo %s existe=%s pacote_pronto=%s tentado=%s altura0=%s" % [m[0] if not m.is_empty() else "-",
+		ResourceLoader.exists(Boneco.PASTA + str(m[0]) + ".glb") if not m.is_empty() else false, _prontos.has(MONSTROS),
+		_tentados.has(MONSTROS), ResourceLoader.exists("res://dados/mundo0/altura.png")]
+
+
 static func carregar(pai: Node, numero: int) -> bool:
-	if not precisa(numero):
+	if not (precisa_monstros() if numero == MONSTROS else precisa(numero)):
 		return true
 	_tentados[numero] = true
+	_baixando[numero] = true
+	var ok := await _baixar(pai, numero)
+	_baixando.erase(numero)
+	return ok
+
+
+static func _baixar(pai: Node, numero: int) -> bool:
 	var http := HTTPRequest.new()
 	pai.add_child(http)
 	var base := str(JavaScriptBridge.eval("location.href")).get_slice("?", 0).get_base_dir()

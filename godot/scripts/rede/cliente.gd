@@ -159,6 +159,14 @@ signal gens_jogadores(lista: Array)                  # C2 F8 05: [{id, gens, pos
 signal pet_modo(tipo: int, modo: int, alvo: int)     # C1 A7: ordem do corvo aceita (0 normal, 1 aleatorio, 2 com o dono, 3 alvo; alvo 0xFFFF = nenhum)
 signal pet_ataque(tipo: int, ataque: int, dono: int, alvo: int)   # C1 A8: o corvo de "dono" ataca (0 um alvo, 1 luz em area)
 signal pet_info(info: Dictionary)                    # C1 A9: tipo (0 corvo, 1 cavalo), armazem (254 subiu, 255 desceu), slot, nivel, exp, vida
+signal evento_entrada(evento: String, resultado: int)   # C1 90 (Devil Square) e C1 9A (Blood Castle): 0 entrou, 1 sem convite...
+signal evento_abre(tipo: int, minutos: int, gente: int, minutos_baixo: int)   # C1 91: falta pra abrir (1 DS, 2 BC, 4 CC, 5 IT)
+signal evento_contagem(estado: int)                    # C1 92: a contagem de 30 s (0 a 2 DS, 3 a 7 BC, 10 a 13 CC)
+signal ds_placar(minha_pos: int, lista: Array)         # C1 93: [{nome, pontos, exp, zen}] do Devil Square
+signal bc_resultado(ok: bool, nome: String, pontos: int, exp: int, zen: int)   # C1 93 com 0xFF no [4]
+signal bc_estado(estado: int, segundos: int, maximo: int, mortos: int, dono: int, item: int)   # C1 9B
+signal terreno(atributo: int, tirar: bool, areas: Array)   # C1 46: [[x1, y1, x2, y2]] (portao e ponte do Blood Castle)
+signal texto_servidor(numero: int)                     # C1 F3 40 com 1, 3 ou 4: caixa com o texto numero (falas do Charon e do Archangel)
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -432,6 +440,22 @@ func quest_estado(quest: int, estado: int) -> void:
 
 func fechar_npc() -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0x31]))
+
+
+# C1 90: entrar no Devil Square pelo Charon (nivel 0 a 6; o cliente manda 0xFF no lugar do convite
+# e o servidor procura na mochila)
+func entrar_devil(nivel: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x90, nivel, 0xFF]))
+
+
+# C1 9A: entrar no Blood Castle pelo Messenger of Archangel (castelo 1 a 8)
+func entrar_blood(castelo: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x9A, castelo, 0xFF]))
+
+
+# C1 91: quanto falta pra abrir o evento (clique direito no convite ou na capa)
+func perguntar_evento(tipo: int, nivel: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x91, tipo, nivel]))
 
 
 func comprar(slot: int) -> void:
@@ -1007,7 +1031,12 @@ func _tratar(p: PackedByteArray) -> void:
 				return
 		[0xF3, 0x40]:
 			if p.size() >= 7:
-				if p[4] == 58:
+				if p[4] == 1:
+					# ReceiveServerCommand: 1 = fala de evento (20 ou mais vira 830 + n - 20, senao 650 + n)
+					texto_servidor.emit(830 + p[5] - 20 if p[5] >= 20 else 650 + p[5])
+				elif p[4] == 3 or p[4] == 4:
+					texto_servidor.emit((710 if p[4] == 3 else 725) + p[5])
+				elif p[4] == 58:
 					redemoinho.emit(((p[5] << 8) | p[6]) & 0x7FFF)
 				else:
 					fogos.emit(p[4], p[5], p[6])
@@ -1385,6 +1414,49 @@ func _tratar(p: PackedByteArray) -> void:
 		0x30:
 			if p[0] == 0xC3:
 				janela_npc.emit(p[3])
+		0x90:
+			if p[0] == 0xC1 and p.size() >= 4:
+				evento_entrada.emit("ds", p[3])
+		0x9A:
+			if p[0] == 0xC1 and p.size() >= 4:
+				evento_entrada.emit("bc", p[3])
+		0x91:
+			if p[0] == 0xC1 and p.size() >= 7:
+				evento_abre.emit(p[3], p[4], p[5], p[6])
+		0x92:
+			if p[0] == 0xC1 and p.size() >= 4:
+				evento_contagem.emit(p[3])
+		0x93:
+			# placar: no Blood Castle [3] diz se deu certo e [4] vem 0xFF; no Devil Square [3] e a minha
+			# posicao, [4] quantos e cada um com 24 bytes (nome 10, pontos, exp e zen em LE de 4 a partir do 12)
+			if p[0] == 0xC1 and p.size() >= 5:
+				if p[4] == 0xFF and p.size() >= 29:
+					var pts := _ler_le(p, 17)
+					# os pontos do castelo tem sinal (Blood Castle Point: %d; quem falha perde 300)
+					bc_resultado.emit(p[3] != 0, _ler_texto(p, 5, 10), pts - 0x100000000 if pts >= 0x80000000 else pts, _ler_le(p, 21),
+						_ler_le(p, 25))
+				elif p[4] != 0xFF:
+					var l := []
+					for i in mini(p[4], 10):
+						var o := 5 + i * 24
+						if o + 24 > p.size():
+							break
+						l.append({"nome": _ler_texto(p, o, 10), "pontos": _ler_le(p, o + 12), "exp": _ler_le(p, o + 16),
+							"zen": _ler_le(p, o + 20)})
+					ds_placar.emit(p[3], l)
+		0x9B:
+			# estado, segundos, monstros pedidos e mortos (LE de 2), quem leva a arma e o nivel dela
+			if p[0] == 0xC1 and p.size() >= 13:
+				bc_estado.emit(p[3], p[4] | (p[5] << 8), p[6] | (p[7] << 8), p[8] | (p[9] << 8), p[10] | (p[11] << 8), p[12])
+		0x46:
+			if p[0] == 0xC1 and p.size() >= 7 and p[3] == 0:
+				var l := []
+				for i in p[6]:
+					var o := 7 + i * 4
+					if o + 4 > p.size():
+						break
+					l.append([p[o], p[o + 1], p[o + 2], p[o + 3]])
+				terreno.emit(p[4], p[5] != 0, l)
 		0x31:
 			# C2 31: tipo da janela, quantidade e itens de 1 + 12 bytes (slot e item)
 			if p[0] == 0xC2:

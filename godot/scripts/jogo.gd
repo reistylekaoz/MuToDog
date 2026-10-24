@@ -73,6 +73,8 @@ var dialogo: DialogoNPC     # conversa do NPC (Elf Soldier): C3 F9 01
 var janela_quest: JanelaQuest   # quests de troca de classe (Sebina, Marlon, Devin): C1 A0 a A4
 var quest_legado := QuestLegado.new()   # o estado delas (a lista chega antes do HUD)
 var quest_nova := QuestNova.new()       # quests novas do S6 (F6): Elf Soldier
+var janela_evento: JanelaEvento  # entrada do Devil Square (Charon) e do Blood Castle (Mensageiro): C1 90 e 9A
+var eventos: Eventos           # contagem, tempo do Blood Castle e placar (C1 92, 93 e 9B)
 var janela_quest_nova: JanelaQuestNova  # o passo da quest no NPC: F6 0B e 0C
 var janela_minhas_quests: JanelaMinhasQuests   # janela T
 var janela_master: JanelaMaster                # janela A: arvore de skills master
@@ -347,6 +349,7 @@ var _auto := false
 var _cacar := 0      # testes: --cacar N mata N monstros sozinho (mira o mais perto, pega o que cair)
 var _mortos := 0
 var _cacar_t := 0.0
+var _sem_modelo := {}  # monstro sem modelo ja avisado no log
 var _tentados := []  # itens do chao que o cacador ja foi pegar
 
 
@@ -557,6 +560,11 @@ func _teste_roteiro(passos: Array) -> void:
 							perto = e
 					print("TESTE roteiro ordem do corvo %s em %s" % [a, perto.nome if perto else "-"])
 					pets.mandar(Pets.COMANDO + int(a), perto)
+			"K":
+				# K:N caca N monstros a partir daqui (dentro do evento)
+				_cacar = int(a)
+				_mortos = 0
+				print("TESTE roteiro caca %d" % _cacar)
 			"b":
 				print("TESTE roteiro buffs na janela: %s" % [janela_buffs.lista().map(func(x): return "%d %s" % [x, JanelaBuffs.nome(x)])])
 				print("TESTE roteiro buffs no meu boneco: %s" % [eu.buffs.keys()])
@@ -805,6 +813,17 @@ func _montar_ui() -> void:
 		cli.quest_estado(qq, e))
 	janela_quest.fechar.connect(_fechar_loja)
 	hud.add_child(janela_quest)
+	janela_evento = JanelaEvento.new()
+	janela_evento.entrar.connect(func(n):
+		print("TESTE evento entrar %s %d" % [janela_evento.modo, n])
+		if janela_evento.modo == "ds":
+			cli.entrar_devil(n)
+		else:
+			cli.entrar_blood(n))
+	janela_evento.fechar.connect(_fechar_loja)
+	hud.add_child(janela_evento)
+	eventos = Eventos.new()
+	hud.add_child(eventos)
 	quest_nova.monstros = monstros
 	dialogo.quest_nova = quest_nova
 	dialogo.quest_escolhida.connect(func(n, g, l): cli.quest_escolher(n, g, l))
@@ -953,7 +972,7 @@ func _montar_ui() -> void:
 	sair.pressed.connect(_sair)
 	hud.add_child(sair)
 	# o Sair sai da frente das janelas coladas na direita (inventario, loja, bau, C e D)
-	var direita: Array[Control] = [inv, loja, dialogo, janela_quest, janela_quest_nova, janela_minhas_quests, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper, pets.janela]
+	var direita: Array[Control] = [inv, loja, dialogo, janela_quest, janela_evento, janela_quest_nova, janela_minhas_quests, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper, pets.janela]
 	var mover_sair := func():
 		var x := hud.size.x
 		for j in direita:
@@ -1258,17 +1277,19 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	mapa_atual = mapa
 	EfeitoMontaria.mapa = mapa
 	# navegador: Lost Tower e Atlans vem num pacote a parte; a rede espera ele baixar
-	if PacoteMapa.precisa(mapa + 1):
+	if PacoteMapa.precisa(PacoteMapa.mundo_do_mapa(mapa)):
 		_msg("Carregando %s..." % mapas.get(str(mapa), "o mapa"))
 		cli.segurar = true
-		await PacoteMapa.carregar(self, mapa + 1)
+		await PacoteMapa.carregar(self, PacoteMapa.mundo_do_mapa(mapa))
 		cli.segurar = false
 		if mapa_atual != mapa:
 			return
 	mundo = Node3D.new()
 	mundo.set_script(load("res://scripts/mundo.gd"))
 	mundo.modo_jogo = true
-	mundo.numero = mapa + 1
+	mundo.numero = PacoteMapa.mundo_do_mapa(mapa)
+	eventos.em_castelo = mapa in [11, 12, 13, 14, 15, 16, 17, 52]
+	janela_evento.visible = false   # o servidor leva pro evento sem mandar o C1 90 de volta
 	mundo.alvo = Vector2(x + 0.5, y + 0.5)
 	mundo.distancia = 20.0
 	mundo.inclinacao = 50.0
@@ -1349,6 +1370,9 @@ func _objeto_entrou(o: Dictionary) -> void:
 	e.por_heroi(o.get("heroi", 3))
 	if o.tipo == "npc":
 		e.numero = o.numero
+		if e.boneco == null and not _sem_modelo.has(o.numero):
+			_sem_modelo[o.numero] = true
+			print("TESTE sem modelo %d %s: %s" % [o.numero, nome, PacoteMapa.porque(o.numero)])
 	e.skin = skin
 	if _gens_vistos.has(o.id):
 		_gens_de(e, _gens_vistos[o.id])
@@ -1701,6 +1725,7 @@ func _process(dt: float) -> void:
 	if som == null:
 		som = Som.new()
 		add_child(som)
+		eventos.som = som
 		_volumes()
 	# a loja fecha se eu andar pra longe do NPC (o servidor tambem esquece)
 	if npc_falando >= 0 and (not entidades.has(npc_falando) or _distancia(eu.tile, entidades[npc_falando].tile) > 5):
@@ -2236,6 +2261,7 @@ func _fechar_loja() -> void:
 	guarda.visible = false
 	dialogo.visible = false
 	janela_quest.visible = false
+	janela_evento.visible = false
 	janela_quest_nova.visible = false
 	inv.soltar()
 
@@ -2268,10 +2294,63 @@ func _ligar_loja_e_amigos() -> void:
 			guarda.abrir_guarda("caos", gob.nome if gob else "", {})
 			if not inv.visible:
 				inv.alternar()
-		if tipo > 3:
-			var nomes := {6: "o guarda da Arena", 0x0C: "o mercador de cash"}
+		if tipo == 4 or tipo == 6:
+			# OpenningProcess: o cliente ja manda o fechar do NPC e mostra a janela de entrada
+			janela_evento.abrir("ds" if tipo == 4 else "bc", minha_classe >> 2, meu_nivel, _master_ativo())
+			print("TESTE janela evento %s botao %d" % [janela_evento.modo, janela_evento.ativo])
+			if _parametros().has("evento"):
+				janela_evento.clicar(janela_evento.ativo)
+		elif tipo > 3:
+			var nomes := {0x0C: "o mercador de cash"}
 			_msg("[color=#9a9ab0]A janela de %s ainda nao foi feita neste cliente.[/color]" % nomes.get(tipo, "esse NPC (tipo %d)" % tipo))
 			_fechar_loja())
+	cli.evento_entrada.connect(func(qual, r):
+		print("TESTE evento entrada %s %d" % [qual, r])
+		janela_evento.visible = false
+		var nome := DicaItem.t(39 if qual == "ds" else 1146)
+		var textos := {1: DicaItem.t(677 if qual == "ds" else 854), 2: DicaItem.t(678) if qual == "ds" else DicaItem.t(852, [nome]),
+			3: DicaItem.t(686), 4: DicaItem.t(687), 5: DicaItem.t(679) if qual == "ds" else DicaItem.t(853, [nome, 10]),
+			6: DicaItem.t(2043, [nome]) if qual == "ds" else DicaItem.t(867, [1]), 7: DicaItem.t(2043, [nome])}
+		if textos.has(r):
+			_caixa_mu([textos[r]], func(_ok, _t): pass, false, false))
+	cli.evento_abre.connect(func(tipo, minutos, _gente, _baixo):
+		print("TESTE evento abre %d em %d min" % [tipo, minutos])
+		var t := ""
+		if tipo == 1:
+			t = DicaItem.t(643) if minutos == 0 else DicaItem.t(644, [minutos])
+		elif tipo == 2:
+			t = DicaItem.t(850, [DicaItem.t(1146)]) if minutos == 0 else DicaItem.t(851, [minutos, DicaItem.t(1146)])
+		if t != "":
+			_caixa_mu([t], func(_ok, _t): pass, false, false))
+	cli.evento_contagem.connect(func(v):
+		eventos.contagem(v)
+		print("TESTE evento contagem %d: %s" % [v, eventos.texto_contagem()]))
+	cli.ds_placar.connect(func(pos, l):
+		print("TESTE ds placar pos %d de %d: %s" % [pos, l.size(), JSON.stringify(l)])
+		var c := CaixaPlacar.new("ds")
+		c.heroi = meu_nome
+		c.minha_pos = pos
+		c.lista = l
+		hud.add_child(c))
+	cli.bc_resultado.connect(func(ok, nome, pontos, exp, zen):
+		print("TESTE bc resultado %s %s pontos %d exp %d zen %d" % [ok, nome, pontos, exp, zen])
+		var c := CaixaPlacar.new("bc")
+		c.bc = {"ok": ok, "pontos": pontos, "exp": exp, "zen": zen}
+		hud.add_child(c))
+	cli.bc_estado.connect(func(estado, seg, maximo, mortos, _dono, _item):
+		if estado != eventos.bc_tipo - 1 or mortos != eventos.bc_mortos or seg % 30 == 0:
+			print("TESTE bc estado %d %d s monstros %d/%d" % [estado, seg, mortos, maximo])
+		eventos.estado_castelo(estado, seg, maximo, mortos))
+	cli.terreno.connect(func(atributo, tirar, areas):
+		# ChangeTerrainAttributes: liga ou tira o atributo nos retangulos (portao e ponte do Blood Castle)
+		print("TESTE terreno %d %s %s" % [atributo, "tira" if tirar else "poe", str(areas)])
+		if mundo == null or mundo.atributos.is_empty():
+			return
+		for a in areas:
+			mundo.mudar_atributo(atributo, tirar, a[0], a[1], a[2], a[3]))
+	cli.texto_servidor.connect(func(n):
+		print("TESTE texto do servidor %d" % n)
+		_caixa_mu([DicaItem.t(n)], func(_ok, _t): pass, false, false))
 	cli.loja.connect(func(l, tipo):
 		print("TESTE loja %d itens (tipo %d, janela %d)" % [l.size(), tipo, _janela_npc])
 		var n: Entidade = entidades.get(npc_falando)

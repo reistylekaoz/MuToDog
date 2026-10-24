@@ -168,6 +168,16 @@ func _grade() -> void:
 				grade.set_point_solid(Vector2i(x, y))
 
 
+# C1 46 (ChangeTerrainAttributes): liga ou tira o atributo num retangulo e refaz o caminho la
+# (o portao e a ponte do Blood Castle, a entrada dos eventos)
+func mudar_atributo(atributo: int, tirar: bool, x1: int, y1: int, x2: int, y2: int) -> void:
+	for y in range(maxi(y1, 0), mini(y2, TILES - 1) + 1):
+		for x in range(maxi(x1, 0), mini(x2, TILES - 1) + 1):
+			var i := y * TILES + x
+			atributos[i] = (atributos[i] & ~atributo) if tirar else (atributos[i] | atributo)
+			grade.set_point_solid(Vector2i(x, y), not anda(x, y))
+
+
 func anda(x: int, y: int) -> bool:
 	if x < 0 or y < 0 or x >= TILES or y >= TILES:
 		return false
