@@ -24,6 +24,8 @@ var _fala: Array[String] = []
 var _respostas := []           # [[linhas, resultado]]; quest da lista: resultado -1 - posicao
 var _quests := []              # [[numero, grupo]] do F6 0A
 var quest_nova: QuestNova      # o jogo passa: assuntos e as palavras 1007, 1501, 1502
+var contribuicao := 0         # F9 01: contribuicao no Gens (RenderContributePoint)
+var minha_gens := 0
 var _pagina := 0
 var _sob := -1
 var _tex := {}
@@ -32,7 +34,7 @@ var _mouse := Vector2(-100, -100)
 
 
 func _ready() -> void:
-	for n in ["inv_fundo", "inv_topo", "inv_esq", "inv_dir", "inv_baixo", "inv_sair", "dlg_linha", "dlg_seta_e", "dlg_seta_d"]:
+	for n in ["inv_fundo", "inv_topo", "inv_esq", "inv_dir", "inv_baixo", "inv_sair", "dlg_linha", "dlg_seta_e", "dlg_seta_d", "gens_ponto"]:
 		_tex[n] = load(Inventario.PASTA + n + ".png")
 	if FileAccess.file_exists("res://dados/npc_dialogo.json"):
 		_dados = JSON.parse_string(FileAccess.get_file_as_string("res://dados/npc_dialogo.json"))
@@ -67,7 +69,8 @@ func estado(e: int) -> void:
 	var d: Dictionary = _dados.get("dialogo", {}).get("%d,%d" % [npc, e], {})
 	var f := get_theme_default_font()
 	_fala.clear()
-	for parte in str(d.get("fala", "")).split(";"):
+	# a aspa curva do original chegou como dois U+FFFD no json (543,2 e 567,0)
+	for parte in str(d.get("fala", "")).replace("\ufffd\ufffd", "'").split(";"):
 		_fala.append_array(_quebrar(f, parte.strip_edges()))
 	_respostas.clear()
 	var i := 1
@@ -132,6 +135,10 @@ func _draw() -> void:
 	draw_texture_rect(_tex.dlg_linha, Rect2(1, 181, 188, 21), false)
 	var f := get_theme_default_font()
 	_texto(f, Vector2(0, 24), nome, L, 11, Color8(150, 255, 240), HORIZONTAL_ALIGNMENT_CENTER)
+	# o steward do meu Gens mostra a minha contribuicao embaixo do nome
+	if (npc == 543 and minha_gens == 1) or (npc == 544 and minha_gens == 2):
+		draw_texture_rect(_tex.gens_ponto, Rect2(11, 27, 168, 18), false)
+		_texto(f, Vector2(0, 40), DicaItem.t(2986).replace("%u", "%d") % contribuicao, L, TAM, Color8(255, 230, 210), HORIZONTAL_ALIGNMENT_CENTER)
 	for i in POR_PAGINA:
 		var k := _pagina * POR_PAGINA + i
 		if k < _fala.size():

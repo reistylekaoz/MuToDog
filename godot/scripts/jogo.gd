@@ -91,6 +91,9 @@ var criar_guilda: JanelaCriarGuilda           # aberta pelo Guild Master de Devi
 var minha_guilda := -1                        # id da minha guilda (C2 65 com o meu id)
 var meu_cargo_guilda := 255
 var _guildas_pedidas := {}                    # ids que ja pedi no C1 66
+var minha_gens := 0                           # F8 07: 1 Duprian, 2 Vanert (rodada 9)
+var janela_gens: JanelaGens                   # tecla B
+var _gens_vistos := {}                        # id -> F8 05 de quem ainda nao entrou na tela
 var guerra := {}                              # guerra ou Battle Soccer em curso: guilda, tipo, time, meu, dele (C1 62 e 64)
 var placar: PlacarGuerra                      # placar de 131x70 acima da barra (rodada 8)
 var _cacar_jogador := ""                      # roteiro A:Nome: ataca esse jogador sempre que der (teste da guerra)
@@ -216,6 +219,7 @@ func _ready() -> void:
 		janela_grupo.vidas(l))
 	_ligar_guilda()
 	_ligar_guilda2()
+	_ligar_gens()
 	cli.pedido_duelo.connect(func(id, n):
 		print("TESTE pedido de duelo de %s" % n)
 		_perguntar("%s te chamou pra um duelo." % n, func(ok): cli.responder_duelo(ok, id, n)))
@@ -396,6 +400,12 @@ func _teste_roteiro(passos: Array) -> void:
 			"F":
 				_chutar = true
 				print("TESTE roteiro chuta a bola pro gol")
+			"o":
+				# o:N escolhe a resposta N da conversa do NPC aberta
+				print("TESTE roteiro responde %s" % a)
+				dialogo.escolher(int(a) - 1)
+			"B":
+				_alternar_gens()
 			"A":
 				_cacar_jogador = a.replace("_", " ")
 				print("TESTE roteiro ataca o jogador %s sempre que der" % a)
@@ -752,6 +762,12 @@ func _montar_ui() -> void:
 		if r == 902:
 			cli.buff_npc()
 			_fechar_loja()
+		elif r == 903 or r == 904:
+			cli.gens_entrar(r - 902)
+		elif r == 905:
+			cli.gens_sair()
+		elif r == 906 or r == 907:
+			cli.gens_pedir_premio(r - 905)
 		elif r == 901:
 			cli.quests_disponiveis()
 		else:
@@ -863,6 +879,8 @@ func _montar_ui() -> void:
 	hud.add_child(janela_guilda)
 	placar = PlacarGuerra.new()
 	hud.add_child(placar)
+	janela_gens = JanelaGens.new()
+	hud.add_child(janela_gens)
 	criar_guilda = JanelaCriarGuilda.new()
 	criar_guilda.responder_mestre.connect(func(sim):
 		print("TESTE guilda: resposta ao Guild Master %s" % sim)
@@ -1302,6 +1320,9 @@ func _objeto_entrou(o: Dictionary) -> void:
 	e.por_heroi(o.get("heroi", 3))
 	if o.tipo == "npc":
 		e.numero = o.numero
+	e.skin = skin
+	if _gens_vistos.has(o.id):
+		_gens_de(e, _gens_vistos[o.id])
 	entidades[o.id] = e
 	# armadilha (Meteorite Trap da Lost Tower, as da Dungeon): o cliente nao desenha; a bola do Battle Soccer sim
 	if tipo == "outro" and not bola(e):
@@ -1487,7 +1508,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 		_botao_barra("personagem")
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 		var e := _entidade_na_tela(ev.position)
-		if e and (e.tipo == "monstro" or bola(e) or e.tipo == "jogador" and (inimigo_da_guerra(e) or ev.ctrl_pressed)):
+		if e and (e.tipo == "monstro" or bola(e) or e.tipo == "jogador" and (inimigo_da_guerra(e) or inimigo_gens(e) or ev.ctrl_pressed)):
 			mirar(e.id)
 			return
 		if e and e.tipo == "npc":
@@ -1523,7 +1544,7 @@ func _cursor_mu() -> void:
 			tipo = "cursor_pegar"
 		elif is_instance_valid(sobre) and sobre.tipo == "npc":
 			tipo = "cursor_falar"
-		elif is_instance_valid(sobre) and (sobre.tipo == "monstro" or bola(sobre) or inimigo_da_guerra(sobre)) and not mundo.zona_segura(eu.tile.x, eu.tile.y):
+		elif is_instance_valid(sobre) and (sobre.tipo == "monstro" or bola(sobre) or inimigo_da_guerra(sobre) or inimigo_gens(sobre)) and not mundo.zona_segura(eu.tile.x, eu.tile.y):
 			tipo = "cursor_ataque"
 		elif Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			tipo = "cursor_push"
@@ -2186,9 +2207,11 @@ func _volumes() -> void:
 
 func _ligar_loja_e_amigos() -> void:
 	_ligar_quests()
-	cli.dialogo_npc.connect(func(numero):
+	cli.dialogo_npc.connect(func(numero, contribuicao):
 		var n: Entidade = entidades.get(npc_falando)
-		print("TESTE dialogo do npc %d (%s)" % [numero, n.nome if n else "?"])
+		print("TESTE dialogo do npc %d (%s) contribuicao %d" % [numero, n.nome if n else "?", contribuicao])
+		dialogo.contribuicao = contribuicao
+		dialogo.minha_gens = minha_gens
 		if dialogo.tem(numero):
 			dialogo.abrir(numero, n.nome if n else "")
 			if _parametros().has("resposta"):
@@ -3446,6 +3469,9 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k == KEY_U:
 		menu.alternar(brilho)
 		return true
+	if k == KEY_B:
+		_alternar_gens()
+		return true
 	if k == KEY_G:
 		_alternar_guilda()
 		return true
@@ -4621,3 +4647,87 @@ func _chutar_bola() -> void:
 	eu.olhar_para(b)
 	print("TESTE chutando a bola em %s" % b.tile)
 	cli.atacar(b.id, 38, maxi(ClienteMU.PASSOS.find(Vector2i(0, lado)), 0))
+
+
+# --- Gens (rodada 9) ---------------------------------------------------------------
+
+# respostas do servidor viram o estado da conversa do NPC (ProcessGens*Receive)
+const _GENS_ENTROU := {0: 5, 1: 9, 2: 11, 3: 8, 4: 10, 5: 12, 6: 18, 7: 19}
+const _GENS_SAIU := {0: 16, 1: 15, 2: 14, 3: 17}
+const _GENS_PREMIO := {0: 20, 1: 21, 2: 22, 3: 23, 4: 24, 5: 17, 6: 25}
+
+
+func _ligar_gens() -> void:
+	cli.gens_entrou.connect(func(r, g):
+		print("TESTE gens entrou %d no %d" % [r, g])
+		if r == 0:
+			_minha_gens(g, 14, 0)
+			cli.gens_pedir_info()
+		_estado_gens(_GENS_ENTROU.get(r, 6)))
+	cli.gens_saiu.connect(func(r):
+		print("TESTE gens saiu %d" % r)
+		if r == 0:
+			_minha_gens(0, 0, 0)
+			janela_gens.visible = false
+		_estado_gens(_GENS_SAIU.get(r, 7)))
+	cli.gens_premio.connect(func(r):
+		print("TESTE gens premio %d" % r)
+		_estado_gens(_GENS_PREMIO.get(r, 22)))
+	cli.gens_info.connect(func(i):
+		print("TESTE gens info %s" % i)
+		_minha_gens(i.gens, i.titulo, i.contribuicao)
+		janela_gens.definir(i))
+	cli.gens_jogadores.connect(func(l):
+		print("TESTE gens jogadores %s" % [l.map(func(x): return "%d g%d t%d c%d" % [x.id, x.gens, x.titulo, x.contribuicao])])
+		for x: Dictionary in l:
+			_gens_vistos[x.id] = x
+			if entidades.has(x.id):
+				_gens_de(entidades[x.id], x))
+
+
+func _estado_gens(n: int) -> void:
+	if dialogo.visible:
+		dialogo.estado(n)
+
+
+func _minha_gens(g: int, titulo: int, contribuicao: int) -> void:
+	minha_gens = g
+	dialogo.minha_gens = g
+	dialogo.contribuicao = contribuicao
+	dialogo.queue_redraw()
+	if eu:
+		eu.gens = g
+		eu.gens_titulo = titulo
+		eu.gens_contribuicao = contribuicao
+
+
+func _gens_de(e: Entidade, x: Dictionary) -> void:
+	e.gens = x.gens
+	e.gens_titulo = x.titulo
+	e.gens_contribuicao = x.contribuicao
+
+
+# tecla B: sem Gens so avisa (3094); abrir pede a info (F8 0B)
+func _alternar_gens() -> void:
+	if minha_gens == 0:
+		_msg("[color=#e8b04a]%s[/color]" % DicaItem.t(3094))
+		janela_gens.visible = false
+		return
+	janela_gens.visible = not janela_gens.visible
+	print("TESTE janela gens %s" % janela_gens.visible)
+	if janela_gens.visible:
+		for j in [inv, janela_personagem, comandos]:
+			if j.visible:
+				j.alternar()
+		janela_guilda.visible = false
+		amigos.visible = false
+		cli.gens_pedir_info()
+
+
+# Vulcanus (WD_63PK_FIELD, IsStrifeMap): o jogador do outro Gens e alvo com o clique; da mesma guilda ou do
+# grupo so com Ctrl (o clique normal nao pega)
+func inimigo_gens(e: Entidade) -> bool:
+	if mapa_atual != 63 or e == null or e.tipo != "jogador" or e.gens == minha_gens:
+		return false
+	var amigo := (e.guilda >= 0 and e.guilda == minha_guilda) or (janela_grupo and janela_grupo.passo_de(e.nome) >= 0)
+	return not amigo

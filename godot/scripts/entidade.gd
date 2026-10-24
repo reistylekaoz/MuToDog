@@ -36,6 +36,10 @@ var guilda := -1       # C2 65: id da guilda, cargo (128 mestre) e relacao com a
 var guilda_cargo := 255
 var guilda_relacao := 0       # do C2 65 (o OpenMU manda 0)
 var guilda_rel := 0           # a que vale: 1 alianca, 2 rival, 4 guilda mestre da alianca, 8 alianca rival (GR_*)
+var skin := 0                 # C2 45: monstro em que o jogador se transformou (0 = ele mesmo)
+var gens := 0                 # F8 05 e F8 07: 1 Duprian, 2 Vanert; titulo 1 (Grand Duke) a 14 (Private)
+var gens_titulo := 0
+var gens_contribuicao := 0
 var _auras := {}       # efeito -> EfeitoMU que fica enquanto o buff durar
 
 

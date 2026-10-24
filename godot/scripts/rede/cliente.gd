@@ -59,7 +59,7 @@ signal area_animacao(skill: int, quem: int, x: int, y: int, giro: int)
 signal efeito(ativo: bool, quem: int, efeito: int)
 signal aparencia_mudou(quem: int, slot: int, chave: String, nivel: int)
 signal janela_npc(tipo: int)
-signal dialogo_npc(npc: int)   # C3 F9 01: NPC de conversa (Elf Soldier e cia), numero do monstro
+signal dialogo_npc(npc: int, contribuicao: int)   # C3 F9 01: NPC de conversa (Elf Soldier, Gens), numero do monstro e a contribuicao no Gens
 signal loja(itens: Dictionary, tipo: int)   # tipo 0 normal (loja ou bau), 3 maquina do caos
 signal bau_zen(no_bau: int, na_mochila: int)
 signal mistura(resultado: int, item: Dictionary)   # 0 falhou, 1 deu certo, 2 falta zen, 3 itens demais...
@@ -139,6 +139,11 @@ signal guerra_comecou(guilda: String, tipo: int, time: int)       # C1 62
 signal guerra_fim(resultado: int, guilda: String)    # C1 63: 0 perdeu, 1 ganhou, 2 o outro mestre cancelou, 3 cancelada
 signal guerra_placar(meu: int, dele: int, tipo: int) # C1 64
 signal futebol_placar(vermelho: String, gols_v: int, azul: String, gols_a: int)  # C1 F3 23: gols_v 255 tira o placar
+signal gens_entrou(resultado: int, gens: int)        # F8 02: 0 entrou, 1 ja tem, 2 saiu ha pouco, 3 nivel, 4 guilda em outro, 5 mestre sem Gens, 6 grupo, 7 alianca
+signal gens_saiu(resultado: int)                     # F8 04: 0 saiu, 1 sem Gens, 2 mestre nao sai, 3 NPC do outro Gens
+signal gens_premio(resultado: int)                   # F8 0A: 0 entregue, 1 fora do periodo, 2 sem direito, 3 mochila cheia, 4 ja pegou, 5 outro Gens, 6 sem Gens
+signal gens_info(info: Dictionary)                   # F8 07: gens (1 Duprian, 2 Vanert), posicao, titulo (1 a 14), contribuicao, falta
+signal gens_jogadores(lista: Array)                  # C2 F8 05: [{id, gens, posicao, titulo, contribuicao}]
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -600,6 +605,23 @@ func responder_guerra(ok: bool) -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0x61, 1 if ok else 0]))
 
 
+# Gens: F8 01 entrar (1 Duprian, 2 Vanert), F8 03 sair, F8 09 premio, F8 0B info (janela B)
+func gens_entrar(gens: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xF8, 0x01, gens]))
+
+
+func gens_sair() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xF8, 0x03]))
+
+
+func gens_pedir_premio(gens: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xF8, 0x09, gens]))
+
+
+func gens_pedir_info() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xF8, 0x0B]))
+
+
 func pedir_grupo() -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0x42]))
 
@@ -993,7 +1015,35 @@ func _tratar(p: PackedByteArray) -> void:
 				return
 		[0xF9, 0x01]:
 			if p.size() >= c + 4:
-				dialogo_npc.emit(p[c + 2] | (p[c + 3] << 8))
+				dialogo_npc.emit(p[c + 2] | (p[c + 3] << 8), _ler_le(p, c + 6) if p.size() >= c + 10 else 0)
+				return
+		[0xF8, 0x02]:
+			if p.size() >= 6:
+				gens_entrou.emit(p[4], p[5])
+				return
+		[0xF8, 0x04]:
+			if p.size() >= 5:
+				gens_saiu.emit(p[4])
+				return
+		[0xF8, 0x0A]:
+			if p.size() >= 5:
+				gens_premio.emit(p[4])
+				return
+		[0xF8, 0x07]:
+			if p.size() >= 24:
+				gens_info.emit({"gens": p[4], "posicao": _ler_le(p, 8), "titulo": _ler_le(p, 12), "contribuicao": _ler_le(p, 16),
+					"falta": _ler_le(p, 20)})
+				return
+		[0xF8, 0x05]:
+			if p[0] == 0xC2 and p.size() >= 6:
+				var l := []
+				for i in p[5]:
+					var o := 6 + i * 16
+					if o + 16 > p.size():
+						break
+					l.append({"gens": p[o], "id": ((p[o + 1] << 8) | p[o + 2]) & 0x7FFF, "posicao": _ler_le(p, o + 4),
+						"titulo": _ler_le(p, o + 8), "contribuicao": _ler_le(p, o + 12)})
+				gens_jogadores.emit(l)
 				return
 		[0xC1, 0x01]:
 			if p.size() >= 15:

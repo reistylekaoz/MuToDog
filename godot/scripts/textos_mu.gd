@@ -14,6 +14,7 @@ const AMARELO := Color(1.0, 0.8, 0.1)
 # cor do nome pelo estado de heroi (SetPlayerColor): 0 novo, 1 heroi, 2 heroi menor, 3 comum, 4 aviso de PK, 5 e 6 PK
 const CORES_HEROI := [Color8(150, 255, 240), Color8(100, 120, 255), Color8(140, 180, 255), Color8(200, 220, 255),
 	Color8(255, 150, 60), Color8(255, 80, 30), Color8(255, 0, 0)]
+const MARCA_GENS := [null, preload("res://dados/hud/gens_marca_d.png"), preload("res://dados/hud/gens_marca_v.png")]
 const JOIAS := ["14,13", "14,14", "14,16", "14,22", "14,31", "14,41", "14,42", "14,43", "14,44", "12,15", "12,30", "12,31"]
 
 static var atual: TextosMU
@@ -126,6 +127,16 @@ func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
 			fundo = Color8(50, 0, 0, 150)
 		elif e.guilda >= 0 and e.guilda == jogo.minha_guilda:
 			fundo = Color8(30, 50, 0, 150)
+	# Gens (Chat.cpp): a marca do titulo (40x55, 0,8 da folha) colada a esquerda do nome; em Vulcanus quem e do
+	# outro Gens e ja tem contribuicao aparece so com a marca, sem o nome
+	if e.tipo in ["eu", "jogador"] and (e.gens == 1 or e.gens == 2) and (jogo.eu_skin if e.tipo == "eu" else e.skin) == 0:
+		var k := get_viewport_rect().size.x / 640.0
+		var h := f.get_height(tam)
+		if jogo.inimigo_gens(e) and e.gens_contribuicao > 0:
+			_marca_gens(Rect2(s.x - 19 * k, s.y - h / 2.0 - 27.5 * k, 40 * k, 55 * k), e)
+			return
+		var w := f.get_string_size(e.nome, HORIZONTAL_ALIGNMENT_LEFT, -1, tam).x + 3.0
+		_marca_gens(Rect2(round(s.x - w / 2.0) - 40 * k + 1, s.y - h / 2.0 - 27.5 * k, 40 * k, 55 * k), e)
 	_caixa(f, tam, e.nome, s, cor, fundo, false, false)
 	# RenderPartyHP: membro do grupo (menos eu) com a barra de 42x5 em cima do nome, 10 pedacos de 3x2
 	if e.tipo == "jogador" and jogo.janela_grupo:
@@ -191,6 +202,10 @@ func _caixa(f: Font, tam: int, texto: String, s: Vector2, cor: Color, fundo: Col
 	draw_string(f, base, texto, HORIZONTAL_ALIGNMENT_LEFT, -1, tam, cor)
 	if negrito:
 		draw_string(f, base + Vector2(0.6, 0), texto, HORIZONTAL_ALIGNMENT_LEFT, -1, tam, cor)
+
+
+func _marca_gens(r: Rect2, e: Entidade) -> void:
+	draw_texture_rect_region(MARCA_GENS[e.gens], r, JanelaGens.regiao_marca(e.gens_titulo))
 
 
 static func _joia(d: Dictionary) -> bool:
