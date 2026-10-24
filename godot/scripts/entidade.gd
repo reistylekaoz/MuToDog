@@ -35,6 +35,8 @@ var lento := 1.0       # gelo anda e mexe na metade (Cold: um terco)
 var guilda := -1       # C2 65: id da guilda, cargo (128 mestre) e relacao com a minha (2 rival)
 var guilda_cargo := 255
 var guilda_relacao := 0       # do C2 65 (o OpenMU manda 0)
+var fala: PackedStringArray = []   # balao de fala (rodada 10): ate 2 linhas, some em fala_ate (ms)
+var fala_ate := 0
 var guilda_rel := 0           # a que vale: 1 alianca, 2 rival, 4 guilda mestre da alianca, 8 alianca rival (GR_*)
 var skin := 0                 # C2 45: monstro em que o jogador se transformou (0 = ele mesmo)
 var gens := 0                 # F8 05 e F8 07: 1 Duprian, 2 Vanert; titulo 1 (Grand Duke) a 14 (Private)
@@ -199,7 +201,11 @@ func altura() -> float:
 
 
 func nome_visivel() -> bool:
-	return _destaque or not _nome_escondido()
+	return _destaque or not _nome_escondido() or falando()
+
+
+func falando() -> bool:
+	return not fala.is_empty() and Time.get_ticks_msec() < fala_ate
 
 
 func destacar(sim: bool) -> void:

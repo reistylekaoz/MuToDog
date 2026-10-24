@@ -71,6 +71,18 @@ signal amigo_novo(nome: String, servidor: int)
 signal amigo_saiu(nome: String)
 signal amigo_estado(nome: String, servidor: int)
 signal pedido_amizade(nome: String)
+signal caixa_cartas(quantas: int, maximo: int)        # C2 C0: cartas guardadas e o maximo
+signal amigo_resultado(resultado: int, nome: String)  # C1 C1 que nao foi 1 (nao existe, ja tem, lista cheia...)
+signal amigo_nao_apagou(nome: String)                 # C1 C3 00
+signal fala(nome: String, texto: String)              # C1 00 sem "@" (o "~", "@@", "$" e "#" vem junto)
+signal cochicho(nome: String, texto: String)          # C1 02
+signal cochicho_falhou()                              # C1 0C: ninguem com esse nome
+signal carta(info: Dictionary)                        # C3 C6: indice, de, data, titulo, estado (0 lida, 1 nao, 2 nova)
+signal carta_enviada(resultado: int, id: int)         # C1 C5
+signal carta_aberta(info: Dictionary)                 # C4 C7: indice, texto, aparencia, giro, animacao
+signal carta_apagada(ok: bool, indice: int)           # C1 C8
+signal sala_chat(info: Dictionary)                    # C3 CA: ip, sala, token, tipo, amigo, ok (0 nao deu, 1 ok, 2 sem servidor)
+signal convite_sala(ok: int, pedido: int)             # C3 CB
 signal saiu(tipo: int)
 signal pedido_grupo(id: int)                       # C1 40: alguem chamou pro grupo
 signal grupo(lista: Array)                         # C1 42: quem esta no grupo (nome, indice, mapa, x, y, vida, vida_max)
@@ -478,6 +490,60 @@ func apagar_amigo(nome: String) -> void:
 func responder_amizade(aceita: bool, nome: String) -> void:
 	var p := PackedByteArray([0xC1, 0, 0xC2, 1 if aceita else 0])
 	p.append_array(_nome10(nome))
+	con.enviar(p)
+
+
+# cochicho (C1 02): nome de quem recebe em 10 bytes e o texto
+func cochichar(para: String, texto: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0x02])
+	p.append_array(_nome10(para))
+	var t := texto.to_utf8_buffer().slice(0, 89)
+	t.append(0)
+	p.append_array(t)
+	con.enviar(p)
+
+
+# C1 C4: "Refuse Chat" manda 0, aceitar manda 1 (o OpenMU so olha o bit 1: com 2 o personagem some como offline)
+func estado_chat(estado: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xC4, estado]))
+
+
+# C4 C5 (SendLetter): id da janela, quem recebe, titulo de 60, giro e pose da foto, tamanho e o texto
+func enviar_carta(id: int, para: String, titulo: String, texto: String, giro: int, animacao: int) -> void:
+	var p := PackedByteArray([0xC4, 0, 0, 0xC5])
+	p.append_array(PackedByteArray([id & 0xFF, (id >> 8) & 0xFF, (id >> 16) & 0xFF, (id >> 24) & 0xFF]))
+	p.append_array(_nome10(para))
+	p.append_array(_texto(titulo, 60))
+	p.append_array(PackedByteArray([giro & 0xFF, animacao & 0xFF]))
+	var t := texto.to_utf8_buffer().slice(0, 1000)
+	p.append_array(PackedByteArray([t.size() & 0xFF, t.size() >> 8]))
+	p.append_array(t)
+	if t.is_empty():
+		p.append(0)
+	con.enviar(p)
+
+
+func ler_carta(indice: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xC7, 0, indice & 0xFF, indice >> 8]))
+
+
+func apagar_carta(indice: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xC8, 0, indice & 0xFF, indice >> 8]))
+
+
+# C1 CA: abre uma sala de chat com o amigo (os dois online e amigos um do outro)
+func abrir_sala(amigo: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xCA])
+	p.append_array(_nome10(amigo))
+	con.enviar(p)
+
+
+# C1 CB: chama o amigo pra sala aberta; sala e pedido vao em big endian
+func convidar_sala(amigo: String, sala: int, pedido: int) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xCB])
+	p.append_array(_nome10(amigo))
+	p.append_array(PackedByteArray([sala >> 8, sala & 0xFF, (pedido >> 24) & 0xFF, (pedido >> 16) & 0xFF,
+		(pedido >> 8) & 0xFF, pedido & 0xFF]))
 	con.enviar(p)
 
 
@@ -1045,10 +1111,6 @@ func _tratar(p: PackedByteArray) -> void:
 						"titulo": _ler_le(p, o + 8), "contribuicao": _ler_le(p, o + 12)})
 				gens_jogadores.emit(l)
 				return
-		[0xC1, 0x01]:
-			if p.size() >= 15:
-				amigo_novo.emit(_ler_texto(p, 4, 10), p[14])
-				return
 		[0xEB, 0x01]:
 			if p.size() >= 7:
 				alianca_tirou.emit(p[4], p[5], p[6])
@@ -1056,10 +1118,6 @@ func _tratar(p: PackedByteArray) -> void:
 		[0xF3, 0x23]:
 			if p.size() >= 22:
 				futebol_placar.emit(_ler_texto(p, 4, 8), p[12], _ler_texto(p, 13, 8), p[21])
-				return
-		[0xC3, 0x01]:
-			if p.size() >= 14:
-				amigo_saiu.emit(_ler_texto(p, 4, 10))
 				return
 	match cod:
 		0x12:
@@ -1181,11 +1239,52 @@ func _tratar(p: PackedByteArray) -> void:
 			mensagem.emit(_ler_texto(p, ini, p.size() - ini))
 		0x00:
 			if p[0] == 0xC1 and p.size() > 13:
-				var fala := _ler_texto(p, 13, p.size() - 13)
-				if fala.begins_with("@"):
-					chat_guilda.emit(_ler_texto(p, 3, 10), fala.trim_prefix("@@").trim_prefix("@"))
+				var t := _ler_texto(p, 13, p.size() - 13)
+				if t.begins_with("@") and not t.begins_with("@@"):
+					chat_guilda.emit(_ler_texto(p, 3, 10), t.trim_prefix("@"))
 				else:
-					mensagem.emit("%s: %s" % [_ler_texto(p, 3, 10), fala])
+					fala.emit(_ler_texto(p, 3, 10), t)
+		0x02:
+			if p[0] == 0xC1 and p.size() > 13:
+				cochicho.emit(_ler_texto(p, 3, 10), _ler_texto(p, 13, p.size() - 13))
+		0x0C:
+			if p[0] == 0xC1:
+				cochicho_falhou.emit()
+		0xC1:
+			# C1 C1: resultado, nome e servidor; 1 = entrou na lista
+			if p[0] == 0xC1 and p.size() >= 14:
+				if p[3] == 1:
+					amigo_novo.emit(_ler_texto(p, 4, 10), p[14] if p.size() > 14 else 0xFF)
+				else:
+					amigo_resultado.emit(p[3], _ler_texto(p, 4, 10))
+		0xC3:
+			if p[0] == 0xC1 and p.size() >= 14:
+				if p[3] == 1:
+					amigo_saiu.emit(_ler_texto(p, 4, 10))
+				else:
+					amigo_nao_apagou.emit(_ler_texto(p, 4, 10))
+		0xC5:
+			if p[0] == 0xC1 and p.size() >= 8:
+				carta_enviada.emit(p[3], _ler_le(p, 4))
+		0xC6:
+			if p[0] == 0xC3 and p.size() >= 79:
+				carta.emit({"indice": p[4] | (p[5] << 8), "de": _ler_texto(p, 6, 10), "data": _ler_texto(p, 16, 30),
+					"titulo": _ler_texto(p, 46, 32), "estado": p[78]})
+		0xC7:
+			if p[0] == 0xC4 and p.size() >= 28:
+				var n := p[6] | (p[7] << 8)
+				carta_aberta.emit({"indice": p[4] | (p[5] << 8), "classe": p[8] >> 3, "aparencia": aparencia(p.slice(8, 26)), "giro": p[26],
+					"animacao": p[27], "texto": _ler_texto(p, 28, mini(n, p.size() - 28))})
+		0xC8:
+			if p[0] == 0xC1 and p.size() >= 6:
+				carta_apagada.emit(p[3] != 0, p[4] | (p[5] << 8))
+		0xCA:
+			if p[0] == 0xC3 and p.size() >= 36:
+				sala_chat.emit({"ip": _ler_texto(p, 3, 15), "sala": p[18] | (p[19] << 8), "token": _ler_le(p, 20),
+					"tipo": p[24], "amigo": _ler_texto(p, 25, 10), "ok": p[35]})
+		0xCB:
+			if p[0] == 0xC3 and p.size() >= 8:
+				convite_sala.emit(p[3], (p[4] << 24) | (p[5] << 16) | (p[6] << 8) | p[7])
 		0x50:
 			if p[0] == 0xC1 and p.size() >= 5:
 				guilda_pedido_entrar.emit(((p[3] << 8) | p[4]) & 0x7FFF)
@@ -1296,6 +1395,7 @@ func _tratar(p: PackedByteArray) -> void:
 						break
 					l.append({"nome": _ler_texto(p, o, 10), "servidor": p[o + 10]})
 				amigos.emit(l, p[4])
+				caixa_cartas.emit(p[4], p[5])
 		0x40:
 			if p[0] == 0xC1 and p.size() >= 5:
 				pedido_grupo.emit((p[3] << 8) | p[4])

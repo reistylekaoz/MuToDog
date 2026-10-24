@@ -4734,5 +4734,52 @@
   "acoes": {
    "parado": 0
   }
+ },
+ "emotes_jogador": {
+  "esqueleto": "Player/player.bmd",
+  "partes": [
+   "Player/HelmClass01.bmd"
+  ],
+  "acoes": {
+   "saudar": 187,
+   "saudar_f": 188,
+   "tchau": 189,
+   "tchau_f": 190,
+   "aplaudir": 191,
+   "aplaudir_f": 192,
+   "vibrar": 193,
+   "vibrar_f": 194,
+   "apontar": 195,
+   "apontar_f": 196,
+   "gesto": 197,
+   "gesto_f": 198,
+   "duvida": 199,
+   "duvida_f": 200,
+   "chorar": 201,
+   "chorar_f": 202,
+   "sem_jeito": 203,
+   "sem_jeito_f": 204,
+   "olhar": 205,
+   "olhar_f": 206,
+   "vitoria": 207,
+   "vitoria_f": 208,
+   "sorrir": 209,
+   "sorrir_f": 210,
+   "dormir": 211,
+   "dormir_f": 212,
+   "frio": 213,
+   "frio_f": 214,
+   "de_novo": 215,
+   "de_novo_f": 216,
+   "respeito": 217,
+   "continencia": 218,
+   "investida": 228,
+   "sentar": 233,
+   "sentar_f": 235,
+   "curando": 237,
+   "curando_f": 238,
+   "pose": 239,
+   "pose_f": 240
+  }
  }
 }

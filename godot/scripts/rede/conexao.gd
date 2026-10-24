@@ -16,6 +16,7 @@ var cripto := Cripto.new()
 var buffer := PackedByteArray()
 var aberta := false
 var erro := ""
+var canal := ""      # "" = jogo; "sala" = servidor de chat (na fita vai como terceira coluna)
 var _desde := 0
 
 # gravacao: MU_GRAVAR=<arquivo> grava cada pacote recebido (ms e hex, um por
@@ -33,7 +34,7 @@ static func tocar(arquivo: String) -> void:
 	_fita = []
 	for linha in FileAccess.get_file_as_string(arquivo).split("\n", false):
 		var c := linha.split(" ")
-		_fita.append([int(c[0]), c[1].hex_decode()])
+		_fita.append([int(c[0]), c[1].hex_decode(), c[2] if c.size() > 2 else ""])
 	_t0 = Time.get_ticks_msec()
 	_visto = _t0
 	_tocando = true
@@ -169,8 +170,12 @@ func pacotes() -> Array[PackedByteArray]:
 		if _parada_desde >= 0:
 			return lista
 		var agora := Time.get_ticks_msec() - _t0
-		while not _fita.is_empty() and _fita[0][0] <= agora:
-			lista.append(_fita.pop_front()[1])
+		var i := 0
+		while i < _fita.size() and _fita[i][0] <= agora:
+			if _fita[i][2] == canal:
+				lista.append(_fita.pop_at(i)[1])
+			else:
+				i += 1
 		return lista
 	while buffer.size() >= 3:
 		var t := buffer[0]
@@ -194,7 +199,7 @@ func pacotes() -> Array[PackedByteArray]:
 					_t0 = Time.get_ticks_msec()
 				var f := FileAccess.open(_gravar, FileAccess.READ_WRITE if FileAccess.file_exists(_gravar) else FileAccess.WRITE)
 				f.seek_end()
-				f.store_line("%d %s" % [Time.get_ticks_msec() - _t0, p.hex_encode()])
+				f.store_line("%d %s%s" % [Time.get_ticks_msec() - _t0, p.hex_encode(), "" if canal == "" else " " + canal])
 				f.close()
 	return lista
 

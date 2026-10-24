@@ -580,6 +580,35 @@ static func novo(nome: String, escala := 1.0) -> Boneco:
 	return b
 
 
+# as poses da foto da carta (saudar, aplaudir... AT_GREETING1 a AT_RUSH1): ficam num GLB a parte (emotes_jogador,
+# esqueleto do player.bmd e uma malha so) pra nao pesar os 7 modelos de classe; a foto junta ao boneco
+static var _emotes: AnimationLibrary
+
+
+func com_emotes() -> int:
+	if anim == null or familia != "jogador":
+		return 0
+	if _emotes == null:
+		var cena = load(PASTA + "emotes_jogador.glb") if ResourceLoader.exists(PASTA + "emotes_jogador.glb") else null
+		if cena == null:
+			return 0
+		var no: Node = cena.instantiate()
+		var ap := no.find_children("*", "AnimationPlayer", true, false)
+		if not ap.is_empty():
+			_emotes = (ap[0] as AnimationPlayer).get_animation_library("")
+		no.free()
+	if _emotes == null:
+		return 0
+	var lib := anim.get_animation_library("")
+	var n := 0
+	for nome in _emotes.get_animation_list():
+		if not lib.has_animation(nome):
+			_emotes.get_animation(nome).loop_mode = Animation.LOOP_LINEAR
+			lib.add_animation(nome, _emotes.get_animation(nome))
+			n += 1
+	return n
+
+
 # BlendMesh do cliente: a malha n desenha somada (brilha), como gelo, asa de besouro e o caldeirao do Goblin;
 # n = -1: as da arma que o conversor marcou "soma:" (cajado do Lizard King, besta da Valkyrie); -2: todas;
 # -3: as de textura *_R (a pele de luz: aneis da estatua e cestos do Illusion Temple, asa do boneco de neve)

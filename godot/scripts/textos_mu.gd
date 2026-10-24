@@ -112,6 +112,15 @@ func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
 	if cam.is_position_behind(p):
 		return
 	var s := cam.unproject_position(p)
+	# balao de fala (CHATBOX): as linhas logo acima da cabeca, fundo azul escuro, e o nome sobe em cima delas;
+	# nos ultimos 0,4 s vai sumindo
+	if e.falando():
+		var h := f.get_height(tam)
+		var a := clampf((e.fala_ate - Time.get_ticks_msec()) / 400.0, 0.5, 1.0)
+		for i in range(e.fala.size() - 1, -1, -1):
+			_caixa(f, tam, e.fala[i], s, Color8(230, 220, 200, int(255 * a)), Color8(10, 30, 50, int(150 * a)), false, false)
+			s.y -= h
+		s.y -= 2
 	var cor: Color = CORES_HEROI[clampi(e.heroi, 0, 6)]
 	var fundo := Color8(10, 30, 50, 150)
 	match e.tipo:

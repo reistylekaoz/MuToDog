@@ -85,7 +85,8 @@ var caixa_senha: CaixaSenha                     # teclado da senha do bau
 var caixa_fruta: CaixaFruta                    # fruta: soma ou tira pontos
 var guarda: Guarda          # bau e maquina do caos
 var _janela_npc := 0        # tipo da janela que o servidor abriu (0 loja, 2 bau, 3 maquina do caos)
-var amigos: Amigos
+var amigos: JanelaAmigos                      # F: amigos, cartas e salas (rodada 10)
+var correio: Correio                          # o mensageiro inteiro e a caixa de chat do Enter
 var janela_guilda: JanelaGuilda               # janela G (rodada 7)
 var criar_guilda: JanelaCriarGuilda           # aberta pelo Guild Master de Devias (C1 54)
 var minha_guilda := -1                        # id da minha guilda (C2 65 com o meu id)
@@ -397,6 +398,9 @@ func _teste_roteiro(passos: Array) -> void:
 				a = a.replace("_", " ")
 				print("TESTE roteiro diz %s" % a)
 				cli.dizer(meu_nome, a)
+			"M":
+				# mensageiro (rodada 10): M:diz,texto / M:carta,para,titulo,texto / M:ler,0 / M:sala,Nome ...
+				await correio.roteiro(a.replace("_", " ").split(","))
 			"F":
 				_chutar = true
 				print("TESTE roteiro chuta a bola pro gol")
@@ -865,11 +869,9 @@ func _montar_ui() -> void:
 		print("TESTE helper salvo")
 		_msg("[color=#9fe0a0]Configuracao do MU Helper salva.[/color]"))
 	hud.add_child(janela_helper)
-	amigos = Amigos.new()
-	amigos.adicionar.connect(func(n): cli.adicionar_amigo(n))
-	amigos.apagar.connect(func(n): cli.apagar_amigo(n))
-	amigos.responder.connect(func(a, n): cli.responder_amizade(a, n))
-	hud.add_child(amigos)
+	correio = Correio.new(self, cli, hud)
+	add_child(correio)
+	amigos = correio.amigos
 	janela_guilda = JanelaGuilda.new()
 	janela_guilda.sair.connect(_sair_da_guilda)
 	janela_guilda.acao_membro.connect(_acao_membro_guilda)
@@ -2286,26 +2288,11 @@ func _ligar_loja_e_amigos() -> void:
 		_hud_nivel()
 		_vestir_eu()
 		_contar_pocoes())
-	cli.amigos.connect(func(l, cartas):
-		print("TESTE amigos %s" % [l])
-		amigos.definir(l, cartas))
-	cli.amigo_novo.connect(func(n, sv):
-		print("TESTE amigo novo %s" % n)
-		amigos.novo(n, sv))
-	cli.amigo_saiu.connect(func(n):
-		print("TESTE amigo apagado %s" % n)
-		amigos.saiu(n))
-	cli.amigo_estado.connect(func(n, sv):
-		print("TESTE amigo %s no servidor %d" % [n, sv])
-		amigos.estado(n, sv))
-	cli.pedido_amizade.connect(func(n):
-		print("TESTE pedido de amizade de %s" % n)
-		amigos.pedido(n)
-		_msg("[color=#9ad0ff]%s quer ser seu amigo. Aperte F pra responder.[/color]" % n))
 	cli.saiu.connect(func(tipo):
 		print("TESTE saiu %d" % tipo)
 		if tipo == 1:
 			meu_nome = ""
+			correio.fechar_tudo()
 			_limpar_mundo()
 			hud.visible = false
 			painel.visible = true
@@ -3466,6 +3453,9 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k == KEY_F:
 		amigos.alternar()
 		return true
+	if k in [KEY_ENTER, KEY_KP_ENTER]:
+		correio.caixa.abrir()
+		return true
 	if k == KEY_U:
 		menu.alternar(brilho)
 		return true
@@ -3496,7 +3486,9 @@ func _teclas(ev: InputEventKey) -> bool:
 		helper.alternar()
 		return true
 	if k == KEY_ESCAPE:
-		if criar_guilda.visible:
+		if correio.fechar_topo():
+			pass
+		elif criar_guilda.visible:
 			criar_guilda.fechar()
 		elif janela_guilda.visible:
 			janela_guilda.visible = false
@@ -4278,9 +4270,6 @@ func _ligar_guilda() -> void:
 				print("TESTE guilda alianca agora '%s'" % i.alianca)
 		_relacoes()
 		janela_guilda.queue_redraw())
-	cli.chat_guilda.connect(func(n, t):
-		print("TESTE chat guilda %s: %s" % [n, t])
-		_msg("[color=#9fe0a0]%s: %s[/color]" % [n, t]))
 
 
 func _sem_guilda(id: int) -> void:
