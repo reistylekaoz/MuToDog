@@ -41,6 +41,12 @@ var info_skills := {}
 # pocoes (CNewUIItemHotKey): Q W E R -> [item ou {}, quantidade]
 var pocoes: Array = [[{}, 0], [{}, 0], [{}, 0], [{}, 0]]
 var _extra := 0.0               # quanto a barra sobe quando a lista de skills abre
+# Hero->m_pPet: com o Dark Raven vestido as 4 ordens (120 a 123) ficam numa fileira em cima da lista
+var comandos_pet := false:
+	set(v):
+		if v != comandos_pet:
+			comandos_pet = v
+			_ajustar()
 
 var _tex := {}
 var _mouse := Vector2(-1, -1)
@@ -65,7 +71,7 @@ func _ajustar() -> void:
 	var v := get_viewport_rect().size
 	_esc = v.x / 640.0
 	scale = Vector2(_esc, _esc)
-	_extra = (39.0 if skills.size() <= 18 else 77.0) if lista_aberta else 0.0
+	_extra = (39.0 if skills.size() <= 18 and not comandos_pet else 77.0) if lista_aberta else 0.0
 	size = Vector2(640, 51 + _extra)
 	position = Vector2(0, v.y - (51.0 + _extra) * _esc)
 	queue_redraw()
@@ -113,7 +119,7 @@ func _draw() -> void:
 	# atalhos de skill 1..5 e a skill atual
 	for i in 5:
 		var n: int = atalhos[i] if i < atalhos.size() else -1
-		if n < 0 or n not in skills:
+		if n < 0 or not usavel(n):
 			continue
 		var q := _r(222 + 32 * i, 431, 32, 38)
 		if n == skill_atual:
@@ -129,6 +135,15 @@ func _draw() -> void:
 			var k := atalhos.find(skills[i])
 			if k >= 0:
 				_numero(q.position.x + 26, q.position.y + TOPO + 26, (k + 1) % 10)
+		# RenderPetSkill: x 353, y 352
+		if comandos_pet:
+			for i in Pets.COMANDOS:
+				var q := _caixa_pet(i)
+				draw_texture_rect(_tex.skillbox_uso if Pets.COMANDO + i == skill_atual else _tex.skillbox2, q, false)
+				_icone_skill(Pets.COMANDO + i, Rect2(q.position + Vector2(6, 6), Vector2(20, 28)))
+				var k := atalhos.find(Pets.COMANDO + i)
+				if k >= 0:
+					_numero(q.position.x + 26, q.position.y + TOPO + 26, (k + 1) % 10)
 	# dica em cima da barra (RenderTipText, y 418)
 	var d := dica()
 	if d != "":
@@ -173,6 +188,15 @@ func _caixa_lista(i: int) -> Rect2:
 	return _r(x, y, 32, 38)
 
 
+func _caixa_pet(i: int) -> Rect2:
+	return _r(353.0 + 32.0 * i, 352.0, 32, 38)
+
+
+# da pra usar agora: aprendida, ou ordem do corvo com o corvo vestido
+func usavel(n: int) -> bool:
+	return n in skills or (Pets.e_comando(n) and comandos_pet)
+
+
 # icone da skill nas folhas newui_skill (20 x 28 cada), como o RenderSkillIcon
 const ICONE_ESPECIAL := {232: [2, 7, 2], 238: [2, 3, 8], 234: [2, 9, 2], 235: [2, 0, 8], 236: [2, 1, 8],
 	237: [2, 2, 8], 230: [2, 2, 3], 233: [2, 8, 2], 225: [2, 11, 3],
@@ -190,7 +214,9 @@ func _icone_skill(n: int, r: Rect2) -> void:
 		draw_texture_rect_region(_tex.master_icones, r, Rect2((ic % 25) * 20, (ic / 25) * 28, 20, 28))
 		return
 	var c: Array
-	if ICONE_ESPECIAL.has(n):
+	if Pets.e_comando(n):
+		c = [3, n - Pets.COMANDO, 0]   # newui_command, um ao lado do outro
+	elif ICONE_ESPECIAL.has(n):
 		c = ICONE_ESPECIAL[n]
 	elif n in [221, 222]:
 		c = [2, n - 221 + 8, 3]
@@ -204,6 +230,8 @@ func _icone_skill(n: int, r: Rect2) -> void:
 
 
 func nome_skill(n: int) -> String:
+	if Pets.e_comando(n):
+		return Pets.dica_comando(n)
 	var i: Array = info_skills.get(str(n), ["Skill %d" % n, 0, 0, 0, 0, 0])
 	var t: String = i[0]
 	if i[4] > 0:
@@ -218,8 +246,12 @@ func _skill_em(p: Vector2) -> int:
 		for i in skills.size():
 			if _caixa_lista(i).has_point(p):
 				return skills[i]
+		if comandos_pet:
+			for i in Pets.COMANDOS:
+				if _caixa_pet(i).has_point(p):
+					return Pets.COMANDO + i
 	for i in 5:
-		if i < atalhos.size() and atalhos[i] in skills and _r(222 + 32 * i, 431, 32, 38).has_point(p):
+		if i < atalhos.size() and usavel(atalhos[i]) and _r(222 + 32 * i, 431, 32, 38).has_point(p):
 			return atalhos[i]
 	return -1
 

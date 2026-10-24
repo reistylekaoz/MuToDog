@@ -71,7 +71,7 @@ static func _carregar() -> void:
 static func t(i: int, args := []) -> String:
 	_carregar()
 	var s: String = _txt.get(str(i), "?%d" % i)
-	return s % args if not args.is_empty() else s.replace("%%", "%")
+	return s.replace("%u", "%d") % args if not args.is_empty() else s.replace("%%", "%")
 
 
 static func _linha(texto: String, cor := BRANCO, negrito := false) -> Dictionary:
@@ -105,6 +105,12 @@ static func asa(k: String) -> int:
 static func linhas(it: Dictionary, topo := []) -> Array:
 	_carregar()
 	var k := ItensMU.chave(it)
+	# corvo e cavalo: a ficha do pet (C1 A9) no lugar da caixa normal, quando ja chegou
+	if k == Pets.CORVO or k == Pets.CAVALO:
+		var lp := Pets.linhas(it, topo)
+		if not lp.is_empty():
+			return lp
+	Pets.onde = []
 	var p: Dictionary = _bmd.get(k, {})
 	var g: int = it.grupo
 	var n: int = it.numero
@@ -245,17 +251,8 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 	if g == 10 and lv >= 5:
 		l.append_array([_vazia(), _linha(t(93), AZUL, true)])
 	if p.magia > 0 and g != 13:
-		var cetro := g == 2
-		var m: int = p.magia + POR_NIVEL[lv]
-		if exc > 0:
-			m += p.magia * 25 / nivel_drop + 5
-		if anc:
-			m += 2 + (p.nivel + 30) / 60
-		m /= 2
-		if not cetro:
-			m += lv * 2
-		var qual := 1234 if cetro else (1691 if g == 5 and n >= 21 and n <= 29 else 79)
-		l.append_array([_vazia(), _linha(t(qual, [m]), AZUL, true)])
+		var qual := 1234 if g == 2 else (1691 if g == 5 and n >= 21 and n <= 29 else 79)
+		l.append_array([_vazia(), _linha(t(qual, [magia(it)]), AZUL, true)])
 
 	# opcao 380 e harmony vem antes das opcoes (ZzzInventory.cpp RenderItemInfo)
 	l.append_array(_opcao_380(it, k))
@@ -458,6 +455,26 @@ static func numeros(it: Dictionary) -> Dictionary:
 			d += 2 + d * 3 / (p.nivel + 30) + (p.nivel + 30) / 30
 		r.defesa = d
 	return r
+
+# MagicPower do item: % de magia do cajado (ou do ataque do pet, no cetro); 0 se nao tem
+static func magia(it: Dictionary) -> int:
+	_carregar()
+	var k := ItensMU.chave(it)
+	var p: Dictionary = _bmd.get(k, {})
+	if p.is_empty() or p.magia <= 0 or it.grupo == 13:
+		return 0
+	var lv: int = clampi(it.get("nivel", 0), 0, 15)
+	var exc: int = it.get("exc", 0) if asa(k) == 0 else 0
+	var m: int = p.magia + POR_NIVEL[lv]
+	if exc > 0:
+		m += p.magia * 25 / maxi(p.nivel, 1) + 5
+	if (it.get("anc", 0) & 3) > 0 and it.grupo < 12:
+		m += 2 + (p.nivel + 30) / 60
+	m /= 2
+	if it.grupo != 2:
+		m += lv * 2
+	return m
+
 
 static func _fim(l: Array) -> Array:
 	while not l.is_empty() and l[-1].t == "":

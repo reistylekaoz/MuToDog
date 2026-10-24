@@ -276,6 +276,7 @@ func _draw() -> void:
 				var v := DicaItem._milhar(ItensMU.preco_venda(itens[s]))
 				topo.append(DicaItem._linha(DicaItem.t(63, [v]), Color8(255, 204, 26)))
 			DicaItem.equipados = _equipados()
+			Pets.onde = [0, s]
 			DicaItem.mostrar(self, f, DicaItem.linhas(itens[s], topo), _rect_slot(s))
 		else:
 			DicaItem.esconder(self)

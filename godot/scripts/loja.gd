@@ -97,6 +97,7 @@ func _draw() -> void:
 	_texto(f, Vector2(52, 410), "Fechar (Esc)", 120, 9, Color(0.75, 0.75, 0.8), HORIZONTAL_ALIGNMENT_LEFT)
 	if sob >= 0 and not vendendo:
 		var preco := DicaItem._linha(DicaItem.t(62, [DicaItem._milhar(ItensMU.preco(itens[sob]))]), Color8(255, 204, 26))
+		Pets.onde = [6, sob]
 		DicaItem.mostrar(self, f, DicaItem.linhas(itens[sob], [preco]), _rect(sob))
 	else:
 		DicaItem.esconder(self)

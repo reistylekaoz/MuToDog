@@ -156,6 +156,9 @@ signal gens_saiu(resultado: int)                     # F8 04: 0 saiu, 1 sem Gens
 signal gens_premio(resultado: int)                   # F8 0A: 0 entregue, 1 fora do periodo, 2 sem direito, 3 mochila cheia, 4 ja pegou, 5 outro Gens, 6 sem Gens
 signal gens_info(info: Dictionary)                   # F8 07: gens (1 Duprian, 2 Vanert), posicao, titulo (1 a 14), contribuicao, falta
 signal gens_jogadores(lista: Array)                  # C2 F8 05: [{id, gens, posicao, titulo, contribuicao}]
+signal pet_modo(tipo: int, modo: int, alvo: int)     # C1 A7: ordem do corvo aceita (0 normal, 1 aleatorio, 2 com o dono, 3 alvo; alvo 0xFFFF = nenhum)
+signal pet_ataque(tipo: int, ataque: int, dono: int, alvo: int)   # C1 A8: o corvo de "dono" ataca (0 um alvo, 1 luz em area)
+signal pet_info(info: Dictionary)                    # C1 A9: tipo (0 corvo, 1 cavalo), armazem (254 subiu, 255 desceu), slot, nivel, exp, vida
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -521,6 +524,16 @@ func enviar_carta(id: int, para: String, titulo: String, texto: String, giro: in
 	if t.is_empty():
 		p.append(0)
 	con.enviar(p)
+
+
+# C1 A7: ordem pro corvo (tipo 0 Dark Raven); alvo so no modo 3 (0xFFFF nos outros)
+func comando_pet(tipo: int, modo: int, alvo := 0xFFFF) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xA7, tipo, modo, (alvo >> 8) & 0xFF, alvo & 0xFF]))
+
+
+# C1 A9: ficha do pet (tipo 0 corvo, 1 cavalo) no armazem (0 mochila, 1 bau, 2 e 3 troca, 4 caos, 6 loja do NPC) e slot
+func pedir_info_pet(tipo: int, armazem: int, slot: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xA9, tipo, armazem, slot]))
 
 
 func ler_carta(indice: int) -> void:
@@ -1127,6 +1140,15 @@ func _tratar(p: PackedByteArray) -> void:
 				_ler_transformados(p)
 		0xA0:
 			quest_lista.emit(p[3], p.slice(4))
+		0xA7:
+			if p.size() >= 7:
+				pet_modo.emit(p[3], p[4], (p[5] << 8) | p[6])
+		0xA8:
+			if p.size() >= 9:
+				pet_ataque.emit(p[3], p[4], ((p[5] << 8) | p[6]) & 0x7FFF, ((p[7] << 8) | p[8]) & 0x7FFF)
+		0xA9:
+			if p.size() >= 13:
+				pet_info.emit({"tipo": p[3], "armazem": p[4], "slot": p[5], "nivel": p[6], "exp": _ler_le(p, 8), "vida": p[12]})
 		0xA1:
 			if p.size() >= 5:
 				quest_npc.emit(p[3], p[4])

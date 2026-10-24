@@ -191,6 +191,7 @@ func _draw() -> void:
 	else:
 		_texto(f, Vector2(52, 410), "Fechar (Esc)", 120, 9, Color(0.75, 0.75, 0.8), HORIZONTAL_ALIGNMENT_LEFT)
 	if sob >= 0 and not na_mao:
+		Pets.onde = [1, sob]
 		DicaItem.mostrar(self, f, DicaItem.linhas(itens[sob]), _rect(sob))
 	else:
 		DicaItem.esconder(self)

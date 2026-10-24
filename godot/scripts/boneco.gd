@@ -1201,7 +1201,7 @@ func vestir(equip: Dictionary) -> void:
 		_equip[s] = k
 		_niveis[s] = nv
 		_tirar(s)
-		if k != "":
+		if k != "" and not (s == 1 and k == Pets.CORVO):   # o Dark Raven voa sozinho (Corvo), nao vai na mao
 			_por(s, k)
 	if antes != [_equip.get(0, ""), _equip.get(1, ""), _equip.get(7, "")]:
 		_repor()

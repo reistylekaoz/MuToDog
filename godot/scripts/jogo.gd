@@ -94,6 +94,8 @@ var meu_cargo_guilda := 255
 var _guildas_pedidas := {}                    # ids que ja pedi no C1 66
 var minha_gens := 0                           # F8 07: 1 Duprian, 2 Vanert (rodada 9)
 var janela_gens: JanelaGens                   # tecla B
+var pets: Pets                                # o corvo e o cavalo do Dark Lord (ordens, ficha, janela)
+var borda_direita := -1.0                     # x da janela aberta mais a esquerda na direita (-1 = nenhuma)
 var _gens_vistos := {}                        # id -> F8 05 de quem ainda nao entrou na tela
 var guerra := {}                              # guerra ou Battle Soccer em curso: guilda, tipo, time, meu, dele (C1 62 e 64)
 var placar: PlacarGuerra                      # placar de 131x70 acima da barra (rodada 8)
@@ -538,6 +540,23 @@ func _teste_roteiro(passos: Array) -> void:
 					guarda.retirar.emit(k)
 			"i":
 				print("TESTE roteiro mochila: %s" % [inv.itens.keys().map(func(k): return "%d %s +%d" % [k, ItensMU.nome(inv.itens[k]), inv.itens[k].nivel])])
+			"P":
+				# pets (rodada 11): P:0 a P:3 manda a ordem (a 3 no monstro mais perto), P:j abre a janela do pet,
+				# P:a0 ou P:a1 escolhe a aba (cavalo, corvo), P:i mostra as fichas vestidas
+				if a == "j":
+					_alternar_pet()
+				elif a.begins_with("a"):
+					pets.janela.aba = int(a.substr(1))
+					print("TESTE roteiro pet aba %d" % pets.janela.aba)
+				elif a == "i":
+					print("TESTE roteiro pets vestidos %s comando %d" % [Pets.vestidos, pets.comando])
+				else:
+					var perto: Entidade = null
+					for e: Entidade in entidades.values():
+						if e.tipo == "monstro" and not e.morto and (perto == null or _distancia(eu.tile, e.tile) < _distancia(eu.tile, perto.tile)):
+							perto = e
+					print("TESTE roteiro ordem do corvo %s em %s" % [a, perto.nome if perto else "-"])
+					pets.mandar(Pets.COMANDO + int(a), perto)
 			"b":
 				print("TESTE roteiro buffs na janela: %s" % [janela_buffs.lista().map(func(x): return "%d %s" % [x, JanelaBuffs.nome(x)])])
 				print("TESTE roteiro buffs no meu boneco: %s" % [eu.buffs.keys()])
@@ -883,6 +902,8 @@ func _montar_ui() -> void:
 	hud.add_child(placar)
 	janela_gens = JanelaGens.new()
 	hud.add_child(janela_gens)
+	pets = Pets.new(self, cli, hud)
+	add_child(pets)
 	criar_guilda = JanelaCriarGuilda.new()
 	criar_guilda.responder_mestre.connect(func(sim):
 		print("TESTE guilda: resposta ao Guild Master %s" % sim)
@@ -915,8 +936,13 @@ func _montar_ui() -> void:
 	janela_personagem.adicionar.connect(func(a): cli.adicionar_ponto(a))
 	janela_personagem.abrir_quests.connect(func(): if not janela_minhas_quests.visible: janela_minhas_quests.alternar())
 	janela_personagem.abrir_master.connect(_alternar_master)
+	janela_personagem.abrir_pet.connect(_alternar_pet)
 	hud.add_child(janela_personagem)
 	inv.visibility_changed.connect(janela_personagem._ajustar)
+	# a janela do pet vive junto da C e no lugar da mochila
+	pets.janela.inventario = inv
+	janela_personagem.visibility_changed.connect(func(): if not janela_personagem.visible: pets.janela.visible = false)
+	inv.visibility_changed.connect(func(): if inv.visible: pets.janela.visible = false)
 	comandos = JanelaComandos.new()
 	comandos.executar.connect(_comando)
 	hud.add_child(comandos)
@@ -927,12 +953,13 @@ func _montar_ui() -> void:
 	sair.pressed.connect(_sair)
 	hud.add_child(sair)
 	# o Sair sai da frente das janelas coladas na direita (inventario, loja, bau, C e D)
-	var direita: Array[Control] = [inv, loja, dialogo, janela_quest, janela_quest_nova, janela_minhas_quests, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper]
+	var direita: Array[Control] = [inv, loja, dialogo, janela_quest, janela_quest_nova, janela_minhas_quests, guarda, janela_personagem, comandos, troca, loja_pessoal, janela_helper, pets.janela]
 	var mover_sair := func():
 		var x := hud.size.x
 		for j in direita:
 			if j.visible:
 				x = minf(x, j.position.x)
+		borda_direita = x
 		sair.position.x = x - 90
 	for j in direita:
 		j.visibility_changed.connect(mover_sair, CONNECT_DEFERRED)
@@ -1926,6 +1953,17 @@ func _master_skill(info: Dictionary) -> void:
 	master.pontos = info.pontos
 	janela_master.subiu(info.indice, info.nivel, info.valor, info.prox)
 	_msg("[color=#9fe0a0]%s no nivel %d (%d pontos master).[/color]" % [_info_skill(info.skill)[0], info.nivel, info.pontos])
+
+
+# botao Pet da janela C: a janela do pet entra no lugar da mochila, a esquerda da C
+func _alternar_pet() -> void:
+	if not pets.janela.visible:
+		for j in [inv, comandos, janela_minhas_quests, janela_helper, janela_master]:
+			j.visible = false
+		if not janela_personagem.visible:
+			janela_personagem.alternar()
+		janela_personagem._ajustar()
+	pets.janela.alternar()
 
 
 func _alternar_master() -> void:
@@ -3534,6 +3572,10 @@ func _teclas(ev: InputEventKey) -> bool:
 			_usar_pocao(q)
 		return true
 	var n := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0].find(k)
+	# Shift+1 a 4: as ordens do corvo
+	if n >= 0 and n < Pets.COMANDOS and ev.shift_pressed:
+		_escolher_skill(Pets.COMANDO + n)
+		return true
 	if n >= 0:
 		var sob := barra_mu.skill_sob_mouse() if barra_mu.lista_aberta else -1
 		if sob >= 0:
@@ -3544,7 +3586,7 @@ func _teclas(ev: InputEventKey) -> bool:
 			_salvar_atalhos()
 			_msg("%s no %d." % [_info_skill(sob)[0], (n + 1) % 10])
 			barra_mu.queue_redraw()
-		elif barra_mu.atalhos[n] in barra_mu.skills:
+		elif barra_mu.usavel(barra_mu.atalhos[n]):
 			_escolher_skill(barra_mu.atalhos[n])
 		return true
 	return false
@@ -3554,6 +3596,8 @@ func _teclas(ev: InputEventKey) -> bool:
 
 # [nome, alcance, tipo, alvo, mana, ag, anda ate o alvo]
 func _info_skill(n: int) -> Array:
+	if Pets.e_comando(n):
+		return [Pets.nome_comando(n), 0, -1, 0, 0, 0, false]
 	return barra_mu.info_skills.get(str(n), ["Skill %d" % n, 1, 0, 0, 0, 0, false])
 
 
@@ -3568,7 +3612,7 @@ func _atualizar_skills() -> void:
 	barra_mu.skills = l
 	print("TESTE barra skills %s" % [l])
 	_carregar_atalhos()
-	if barra_mu.skill_atual not in l:
+	if barra_mu.skill_atual not in l and not Pets.e_comando(barra_mu.skill_atual):
 		barra_mu.skill_atual = l[0] if not l.is_empty() else -1
 	barra_mu.queue_redraw()
 
@@ -3634,6 +3678,12 @@ func _acao_skill(n: int) -> String:
 # mouse estiver, sem mensagem; sem monstro no mouse, segue no ultimo; teleporte e Nova nao repetem
 func _skill_no_mouse(tela: Vector2, de_novo := false) -> void:
 	var n: int = barra_mu.skill_atual
+	if Pets.e_comando(n):
+		# SendPetCommand: uma vez por clique
+		_segura_direito = false
+		if not de_novo:
+			pets.mandar(n, _entidade_na_tela(tela))
+		return
 	if de_novo and n in [6, 15, 40]:
 		_segura_direito = false
 		return

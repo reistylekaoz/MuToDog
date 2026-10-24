@@ -4781,5 +4781,14 @@
    "pose": 239,
    "pose_f": 240
   }
+ },
+ "corvo": {
+  "esqueleto": "Skill/DarkSpirit.bmd",
+  "acoes": {
+   "voa": 0,
+   "voando": 1,
+   "parado": 2,
+   "ataque": 3
+  }
  }
 }

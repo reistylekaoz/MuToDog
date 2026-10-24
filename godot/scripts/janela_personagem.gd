@@ -8,6 +8,7 @@ extends Control
 
 signal abrir_quests                # o botao de quest abre a janela T
 signal abrir_master                # o botao master abre a janela A
+signal abrir_pet                   # o botao pet abre a janela do pet (Dark Horse e Dark Raven)
 signal adicionar(atributo: int)   # 0 forca, 1 agilidade, 2 vitalidade, 3 energia, 4 comando
 
 const PASTA := "res://dados/hud/"
@@ -272,6 +273,9 @@ func _clique(p: Vector2) -> void:
 	if Rect2(50, 392, 36, 29).has_point(p):
 		alternar()
 		abrir_quests.emit()
+		return
+	if Rect2(87, 392, 36, 29).has_point(p):
+		abrir_pet.emit()
 		return
 	if Rect2(124, 392, 36, 29).has_point(p):
 		abrir_master.emit()

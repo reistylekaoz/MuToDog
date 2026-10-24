@@ -22,14 +22,21 @@ static class Personagens
     // texturas: pasta a mais onde procurar textura (a Uniria le as dela de Data/Item)
     record Def(string esqueleto, string[]? partes, Dictionary<string, int> acoes, int[]? esconde, Arma[]? armas, string? texturas = null);
 
-    public static async Task Rodar(string data, string saida)
+    // so: converte so esses nomes (separados por virgula) e soma no personagens.json que ja existe
+    public static async Task Rodar(string data, string saida, string? so = null)
     {
         Directory.CreateDirectory(saida);
         var defs = JsonSerializer.Deserialize<Dictionary<string, Def>>(
             File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "personagens.json")))!;
         var info = new Dictionary<string, object>();
+        var lista = so?.Split(',');
+        var json = Path.Combine(saida, "personagens.json");
+        if (lista != null && File.Exists(json))
+            foreach (var (k, v) in JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(json))!)
+                info[k] = v;
         foreach (var (nome, d) in defs)
         {
+            if (lista != null && !lista.Contains(nome)) continue;
             try
             {
                 var esq = await Ler(data, d.esqueleto);
@@ -56,7 +63,7 @@ static class Personagens
             }
             catch (Exception e) { Console.WriteLine($"  {nome}: {e.Message}"); }
         }
-        File.WriteAllText(Path.Combine(saida, "personagens.json"), JsonSerializer.Serialize(info));
+        File.WriteAllText(json, JsonSerializer.Serialize(info));
     }
 
     // conversor acoes <arquivo.bmd>: quadros de cada acao e altura do osso 0 no comeco e no fim

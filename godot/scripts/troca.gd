@@ -264,8 +264,10 @@ func _draw() -> void:
 	elif bz.has_point(_mouse):
 		_texto(f, Vector2(_mouse.x - 60, _mouse.y - 6), "Pôr o zen escrito", 0, 9, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
 	if sob_dele >= 0:
+		Pets.onde = [3, sob_dele]
 		DicaItem.mostrar(self, f, DicaItem.linhas(dele[sob_dele]), _rect_em(DELE, dele, sob_dele))
 	elif sob_meu >= 0 and not na_mao:
+		Pets.onde = [2, sob_meu]
 		DicaItem.mostrar(self, f, DicaItem.linhas(itens[sob_meu]), _rect_em(MEU, itens, sob_meu))
 	else:
 		DicaItem.esconder(self)
