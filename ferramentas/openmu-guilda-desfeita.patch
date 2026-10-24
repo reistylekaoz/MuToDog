@@ -1,0 +1,15 @@
+diff --git a/src/GameServer/GameServer.cs b/src/GameServer/GameServer.cs
+index 2804226..121c6de 100644
+--- a/src/GameServer/GameServer.cs
++++ b/src/GameServer/GameServer.cs
+@@ -407,8 +407,9 @@ public sealed class GameServer : IGameServer, IDisposable, IAsyncDisposable, IGa
+     /// <inheritdoc/>
+     public async ValueTask GuildDeletedAsync(uint guildId)
+     {
+-        await this._gameContext.RemoveGuildAsync(guildId).ConfigureAwait(false);
++        // estudo: tira os jogadores antes de apagar a lista deles (na ordem de cima ninguem saia da guilda)
+         await this._gameContext.ForEachGuildPlayerAsync(guildId, p => this.RemovePlayerFromGuildAsync(p, false).AsTask()).ConfigureAwait(false);
++        await this._gameContext.RemoveGuildAsync(guildId).ConfigureAwait(false);
+ 
+         //// todo: alliance things?
+     }

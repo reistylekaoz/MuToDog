@@ -118,6 +118,17 @@ signal quest_progresso(indice: int, info: Dictionary, do_npc: bool)   # F6 0C (d
 signal quest_concluiu(indice: int, resultado: int)   # F6 0D: 1 concluiu, 2 limite de zen, 3 mochila cheia
 signal quest_desistiu(grupo: int)                    # F6 0F
 signal quests_ativas(lista: Array)                   # F6 1A: [indice] em andamento
+# guilda (rodada 7)
+signal guilda_pedido_entrar(id: int)                 # C1 50: alguem quer entrar na minha guilda
+signal guilda_resposta(resultado: int)               # C1 51: 0 recusou, 1 entrou, 2 cheia, 3 saiu do jogo, 4 nao e mestre, 5 ja tem guilda, 6 ocupado, 7 nivel
+signal guilda_lista(info: Dictionary)                # C2 52: em_guilda, pontos, rival, membros [{nome, servidor, online, cargo}]
+signal guilda_saiu(resultado: int)                   # C1 53: 0 senha errada, 1 saiu, 2 so o mestre desfaz, 3 falhou, 4 desfeita, 5 tirou o membro
+signal guilda_criar_janela()                         # C1 54: mostra a janela de criar guilda
+signal guilda_criada(ok: bool, erro: int)            # C1 56
+signal guilda_jogador_saiu(id: int, mestre: bool)    # C1 5D: tirar a guilda desse jogador
+signal guilda_jogadores(lista: Array)                # C2 65: [{guilda, cargo, tipo, relacao, id, novo}]
+signal guilda_info(info: Dictionary)                 # C1 66: id, tipo, alianca, nome, logo (32 bytes)
+signal chat_guilda(nome: String, texto: String)      # C1 00 com "@" na frente
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -500,6 +511,58 @@ func senha_bau(sub: int, pin: int, senha := "") -> void:
 	else:
 		p.append_array(_texto(senha, 20))
 		p.append(0)
+	con.enviar(p)
+
+
+# --- guilda ---------------------------------------------------------------------
+
+# C1 50: pede pra entrar na guilda do mestre com esse id
+func pedir_entrar_guilda(id: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x50, (id >> 8) & 0xFF, id & 0xFF]))
+
+
+func responder_guilda(aceito: bool, id: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x51, 1 if aceito else 0, (id >> 8) & 0xFF, id & 0xFF]))
+
+
+func pedir_lista_guilda() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x52]))
+
+
+# C1 53: tira esse nome da guilda; o proprio nome sai, o mestre tirando a si mesmo desfaz
+func tirar_da_guilda(nome: String, senha := "") -> void:
+	var p := PackedByteArray([0xC1, 0, 0x53])
+	p.append_array(_nome10(nome))
+	p.append_array(_texto(senha, 20))
+	con.enviar(p)
+
+
+# C1 54: resposta ao Guild Master (1 abre a criacao, 0 fecha)
+func responder_mestre_guilda(criar: bool) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x54, 1 if criar else 0]))
+
+
+# C1 55: nome de 8 e a marca de 64 cores em 32 bytes (a primeira no nibble alto)
+func criar_guilda(nome: String, marca: PackedByteArray) -> void:
+	var p := PackedByteArray([0xC1, 0, 0x55, 0])
+	p.append_array(_texto(nome, 8))
+	for i in 32:
+		p.append(((marca[i * 2] & 0x0F) << 4) | (marca[i * 2 + 1] & 0x0F))
+	con.enviar(p)
+
+
+func cancelar_criar_guilda() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x57]))
+
+
+func pedir_info_guilda(guilda: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x66, 0, guilda & 0xFF, (guilda >> 8) & 0xFF, (guilda >> 16) & 0xFF, (guilda >> 24) & 0xFF]))
+
+
+# C1 E1: tipo 1 nomeia, 2 troca, 3 tira o cargo; cargo 32 Battle Master, 64 assistente
+func cargo_guilda(tipo: int, cargo: int, nome: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xE1, tipo, cargo])
+	p.append_array(_nome10(nome))
 	con.enviar(p)
 
 
@@ -1026,7 +1089,54 @@ func _tratar(p: PackedByteArray) -> void:
 			mensagem.emit(_ler_texto(p, ini, p.size() - ini))
 		0x00:
 			if p[0] == 0xC1 and p.size() > 13:
-				mensagem.emit("%s: %s" % [_ler_texto(p, 3, 10), _ler_texto(p, 13, p.size() - 13)])
+				var fala := _ler_texto(p, 13, p.size() - 13)
+				if fala.begins_with("@"):
+					chat_guilda.emit(_ler_texto(p, 3, 10), fala.trim_prefix("@@").trim_prefix("@"))
+				else:
+					mensagem.emit("%s: %s" % [_ler_texto(p, 3, 10), fala])
+		0x50:
+			if p[0] == 0xC1 and p.size() >= 5:
+				guilda_pedido_entrar.emit(((p[3] << 8) | p[4]) & 0x7FFF)
+		0x51:
+			if p[0] == 0xC1 and p.size() >= 4:
+				guilda_resposta.emit(p[3])
+		0x52:
+			if p[0] == 0xC2 and p.size() >= 24:
+				var l := []
+				for i in p[5]:
+					var o := 24 + i * 13
+					if o + 13 > p.size():
+						break
+					l.append({"nome": _ler_texto(p, o, 10), "servidor": p[o + 11] & 0x7F,
+						"online": (p[o + 11] & 0x80) != 0, "cargo": p[o + 12]})
+				guilda_lista.emit({"em_guilda": p[4] != 0, "pontos": _ler_le(p, 8), "pontos_atual": p[12],
+					"rival": _ler_texto(p, 13, 8), "membros": l})
+		0x53:
+			if p[0] == 0xC1 and p.size() >= 4:
+				guilda_saiu.emit(p[3])
+		0x54:
+			if p[0] == 0xC1:
+				guilda_criar_janela.emit()
+		0x56:
+			if p[0] == 0xC1 and p.size() >= 5:
+				guilda_criada.emit(p[3] != 0, p[4])
+		0x5D:
+			if p[0] == 0xC1 and p.size() >= 5:
+				guilda_jogador_saiu.emit(((p[3] & 0x7F) << 8) | p[4], (p[3] & 0x80) != 0)
+		0x65:
+			if p[0] == 0xC2 and p.size() >= 5:
+				var l := []
+				for i in p[4]:
+					var o := 5 + i * 12
+					if o + 12 > p.size():
+						break
+					l.append({"guilda": _ler_le(p, o), "cargo": p[o + 4], "tipo": p[o + 5], "relacao": p[o + 6],
+						"id": ((p[o + 7] & 0x7F) << 8) | p[o + 8], "novo": (p[o + 7] & 0x80) != 0})
+				guilda_jogadores.emit(l)
+		0x66:
+			if p[0] == 0xC1 and p.size() >= 57:
+				guilda_info.emit({"id": _ler_le(p, 4), "tipo": p[8], "alianca": _ler_texto(p, 9, 8),
+					"nome": _ler_texto(p, 17, 8), "logo": p.slice(25, 57)})
 		0x71:
 			con.enviar(PackedByteArray([0xC1, 0, 0x71]))
 		0x30:

@@ -1346,6 +1346,47 @@ static func _encaixe(k: String, esquerda: bool, rf := false, costas := true) -> 
 	return t
 
 
+# marca da guilda no braco direito (RenderGuild): RenderPlane3D(5, 7) preso no osso 26 (o ombro), girado (80, 45, 135) e
+# deslocado (20, -5, -10); o Rage Fighter desce (5, 0, -21). A cor 0 da marca e transparente.
+var _marca: BoneAttachment3D
+
+
+func por_marca(tex: Texture2D) -> void:
+	if _marca:
+		_marca.queue_free()
+		_marca = null
+	if tex == null or esqueleto == null or esqueleto.find_bone("osso26") < 0:
+		return
+	var w := 5.0
+	var h := 7.0
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var v := [Vector3(-w, -w, -h), Vector3(w, w, -h), Vector3(w, w, h), Vector3(-w, -w, h)]
+	var uv := [Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)]
+	for i in [0, 1, 2, 0, 2, 3]:
+		st.set_uv(uv[i])
+		st.add_vertex(v[i])
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = tex
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var mi := MeshInstance3D.new()
+	mi.name = "marca_guilda"
+	mi.mesh = st.commit()
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var t := ModelosMU.transf_mu(80, 45, 135, 20, -5, -10)
+	if nome_modelo == "classe_rf":
+		t.origin = Vector3(5, 0, -21)
+	mi.transform = t
+	_marca = BoneAttachment3D.new()
+	_marca.bone_name = "osso26"
+	esqueleto.add_child(_marca)
+	_marca.add_child(mi)
+
+
 var _osso_asa := -1
 
 

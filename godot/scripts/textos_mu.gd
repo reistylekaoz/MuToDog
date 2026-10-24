@@ -132,11 +132,31 @@ func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
 			draw_rect(b.grow(-k * 0.5), Color8(0x33, 0, 0, 255))
 			for i in passo:
 				draw_rect(Rect2(b.position.x + (2 + 4 * i) * k, b.position.y + 1.5 * k, 3 * k, 2 * k), Color8(250, 10, 0))
+	var y := f.get_height(tam) + 2
+	# guilda: "[Nome] Master" em cima do nome (AddGuildName); verde pra mim e pra minha guilda, vermelho pro rival
+	if e.guilda >= 0 and e.tipo in ["eu", "jogador"] and Guildas.info.has(e.guilda):
+		var g := "[%s]" % Guildas.nome(e.guilda)
+		var c := Guildas.cargo(e.guilda_cargo) if e.guilda_cargo != 0 else DicaItem.t(1330)
+		if e.guilda_cargo != 255:
+			g += " " + c
+		var cor_g := Color8(230, 230, 255)
+		var fundo_g := Color8(10, 30, 50, 150)
+		if e.tipo == "eu":
+			cor_g = Color8(200, 255, 0)
+			fundo_g = Color8(60, 100, 0, 150)
+		elif e.guilda == jogo.minha_guilda:
+			cor_g = Color8(200, 255, 0)
+			fundo_g = Color8(20, 50, 80, 150)
+		elif e.guilda_relacao == 2:
+			cor_g = Color8(255, 30, 0)
+			fundo_g = Color8(0, 0, 0, 150)
+		_caixa(f, tam, g, s - Vector2(0, y), cor_g, fundo_g, false, false)
+		y += f.get_height(tam) + 2
 	# loja pessoal aberta: o titulo em cima do nome (PersonalShopTitleImp), mais forte com o mouse
 	var titulo: String = jogo.titulos_lojas.get(e.id, "")
 	if titulo != "":
 		var em_cima: bool = e == jogo.sobre
-		_caixa(f, tam, titulo, s - Vector2(0, f.get_height(tam) + 2), Color8(250, 150, 0) if em_cima else Color8(230, 230, 0),
+		_caixa(f, tam, titulo, s - Vector2(0, y), Color8(250, 150, 0) if em_cima else Color8(230, 230, 0),
 			Color8(250, 150, 0, 128) if em_cima else Color8(108, 57, 41, 128), false, false)
 
 

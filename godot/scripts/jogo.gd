@@ -86,6 +86,11 @@ var caixa_fruta: CaixaFruta                    # fruta: soma ou tira pontos
 var guarda: Guarda          # bau e maquina do caos
 var _janela_npc := 0        # tipo da janela que o servidor abriu (0 loja, 2 bau, 3 maquina do caos)
 var amigos: Amigos
+var janela_guilda: JanelaGuilda               # janela G (rodada 7)
+var criar_guilda: JanelaCriarGuilda           # aberta pelo Guild Master de Devias (C1 54)
+var minha_guilda := -1                        # id da minha guilda (C2 65 com o meu id)
+var meu_cargo_guilda := 255
+var _guildas_pedidas := {}                    # ids que ja pedi no C1 66
 var troca: Troca            # troca com outro jogador (D > Troca)
 var loja_pessoal: LojaPessoal   # a minha loja (S) e a de quem vende (clique no titulo)
 var helper: MuHelper        # MU Helper (Z configura, Home liga)
@@ -204,6 +209,7 @@ func _ready() -> void:
 	cli.grupo_vida.connect(func(l):
 		print("TESTE grupo vida %s" % [l])
 		janela_grupo.vidas(l))
+	_ligar_guilda()
 	cli.pedido_duelo.connect(func(id, n):
 		print("TESTE pedido de duelo de %s" % n)
 		_perguntar("%s te chamou pra um duelo." % n, func(ok): cli.responder_duelo(ok, id, n)))
@@ -469,9 +475,11 @@ func _teste_roteiro(passos: Array) -> void:
 					print("TESTE roteiro teclado: %s" % caixa_senha.titulo())
 					caixa_senha._conta.text = v[2]
 					caixa_senha._ok()
+			"G":
+				_teste_guilda(a.split(","))
 			"n":
 				for e: Entidade in entidades.values():
-					if e.tipo == "npc" and e.nome.containsn(a):
+					if e.tipo == "npc" and (e.nome.containsn(a) or str(e.numero) == a):
 						print("TESTE roteiro fala com %s" % e.nome)
 						falar_com(e.id)
 						break
@@ -655,7 +663,7 @@ func _montar_ui() -> void:
 	botao_helper.pressed.connect(func(): helper.alternar())
 	linha_topo.add_child(botao_helper)
 	var ajuda := Label.new()
-	ajuda.text = "Clique: anda, ataca, pega, fala com NPC · botao direito: skill · 1 a 5 troca a skill · Q W E R pocoes · I inventario · C personagem · F amigos · U menu · setas giram · roda aproxima · M mover de mapa · S loja pessoal · Z MU Helper (Home liga) · - = brilho"
+	ajuda.text = "Clique: anda, ataca, pega, fala com NPC · botao direito: skill · 1 a 5 troca a skill · Q W E R pocoes · I inventario · C personagem · F amigos · G guilda · U menu · setas giram · roda aproxima · M mover de mapa · S loja pessoal · Z MU Helper (Home liga) · - = brilho"
 	ajuda.add_theme_font_size_override("font_size", 12)
 	ajuda.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
 	ajuda.add_theme_constant_override("outline_size", 3)
@@ -817,6 +825,21 @@ func _montar_ui() -> void:
 	amigos.apagar.connect(func(n): cli.apagar_amigo(n))
 	amigos.responder.connect(func(a, n): cli.responder_amizade(a, n))
 	hud.add_child(amigos)
+	janela_guilda = JanelaGuilda.new()
+	janela_guilda.sair.connect(_sair_da_guilda)
+	janela_guilda.acao_membro.connect(_acao_membro_guilda)
+	hud.add_child(janela_guilda)
+	criar_guilda = JanelaCriarGuilda.new()
+	criar_guilda.responder_mestre.connect(func(sim):
+		print("TESTE guilda: resposta ao Guild Master %s" % sim)
+		cli.responder_mestre_guilda(sim))
+	criar_guilda.criar.connect(func(n, m):
+		print("TESTE guilda: criando %s" % n)
+		cli.criar_guilda(n, m))
+	criar_guilda.avisar.connect(func(t):
+		print("TESTE guilda aviso: %s" % t)
+		_caixa_mu([t], func(_ok, _t): pass, false, false))
+	hud.add_child(criar_guilda)
 	menu = MenuSistema.new()
 	menu.musica.connect(func(_v): _volumes())
 	menu.efeitos.connect(func(_v): _volumes())
@@ -1187,6 +1210,9 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	mundo.seguir = eu
 	_vestir_eu()
 	eu.por_heroi(meu_heroi)
+	eu.guilda = minha_guilda
+	eu.guilda_cargo = meu_cargo_guilda
+	eu.marca_guilda()
 	if eu_skin:
 		eu.trocar_boneco(Boneco.do_npc(eu_skin))
 	if janela_buffs:
@@ -1927,6 +1953,15 @@ func _comando(c: int, alvo: int) -> void:
 		JanelaComandos.GRUPO:
 			cli.chamar_grupo(alvo)
 			_msg("[color=#9ad0ff]Convite de grupo mandado pra %s.[/color]" % n)
+		JanelaComandos.GUILDA:
+			# NewUICommandWindow: eu ja tenho guilda (255), o outro nao e mestre (507), senao pede (477)
+			if minha_guilda >= 0:
+				_msg("[color=#e8b04a]%s[/color]" % DicaItem.t(255))
+			elif not entidades.has(alvo) or entidades[alvo].guilda_cargo != 128:
+				_msg("[color=#e8b04a]%s[/color]" % DicaItem.t(507))
+			else:
+				cli.pedir_entrar_guilda(alvo)
+				_msg("[color=#9ad0ff]%s[/color]" % (DicaItem.t(477) % n))
 		JanelaComandos.AMIGO:
 			cli.adicionar_amigo(n)
 			_msg("[color=#9ad0ff]Pedido de amizade mandado pra %s.[/color]" % n)
@@ -3343,6 +3378,9 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k == KEY_U:
 		menu.alternar(brilho)
 		return true
+	if k == KEY_G:
+		_alternar_guilda()
+		return true
 	if k == KEY_TAB:
 		hud.move_child(minimapa, -1)
 		if not minimapa.alternar(mapa_atual):
@@ -3364,7 +3402,11 @@ func _teclas(ev: InputEventKey) -> bool:
 		helper.alternar()
 		return true
 	if k == KEY_ESCAPE:
-		if janela_master.visible:
+		if criar_guilda.visible:
+			criar_guilda.fechar()
+		elif janela_guilda.visible:
+			janela_guilda.visible = false
+		elif janela_master.visible:
 			if not janela_master.tecla_enter_esc(false):
 				janela_master.alternar()
 		elif minimapa.visible:
@@ -4056,3 +4098,225 @@ func _livre_buffs() -> void:
 	if janela_grupo.livre != janela_buffs.livre:
 		janela_grupo.livre = janela_buffs.livre
 		janela_grupo.queue_redraw()
+
+
+# --- guilda (rodada 7) -------------------------------------------------------------
+
+func _ligar_guilda() -> void:
+	cli.guilda_pedido_entrar.connect(func(id):
+		var n: String = entidades[id].nome if entidades.has(id) else "?"
+		print("TESTE guilda: %s pediu pra entrar" % n)
+		_caixa_mu([n, DicaItem.t(429)], func(ok, _t): cli.responder_guilda(ok, id)))
+	cli.guilda_resposta.connect(func(r):
+		print("TESTE guilda resposta %d" % r)
+		var t := {0: "O mestre da guilda recusou o pedido.", 1: "Voce entrou na guilda.", 2: "A guilda esta cheia.",
+			3: "O jogador saiu do jogo.", 4: DicaItem.t(507), 5: DicaItem.t(518), 6: "O mestre da guilda esta ocupado.",
+			7: "So personagem do nivel 6 pra cima entra numa guilda."}
+		_msg("[color=%s]%s[/color]" % ["#9fe0a0" if r == 1 else "#e8b04a", t.get(r, "Guilda: resposta %d." % r)])
+		if r == 1 and janela_guilda.visible:
+			cli.pedir_lista_guilda())
+	cli.guilda_lista.connect(func(i):
+		print("TESTE guilda lista %s pontos %d: %s" % [i.em_guilda, i.pontos,
+			i.membros.map(func(m): return "%s %d %s" % [m.nome, m.cargo, "on" if m.online else "off"])])
+		janela_guilda.guilda = minha_guilda
+		janela_guilda.meu_cargo = meu_cargo_guilda
+		janela_guilda.definir(i))
+	cli.guilda_saiu.connect(func(r):
+		print("TESTE guilda saiu %d" % r)
+		var t := {0: DicaItem.t(401), 1: "Voce saiu da guilda.", 2: "So o mestre desfaz a guilda.", 3: "Nao deu pra sair da guilda.",
+			4: "A guilda foi desfeita.", 5: "O membro saiu da guilda."}
+		_msg("[color=%s]%s[/color]" % ["#e8b04a" if r in [0, 2, 3] else "#9fe0a0", t.get(r, "Guilda: %d." % r)])
+		if r in [1, 4]:
+			_sem_guilda(cli.meu_id)
+		elif r == 5:
+			cli.pedir_lista_guilda())
+	cli.guilda_criar_janela.connect(func():
+		print("TESTE guilda: janela de criar")
+		_fechar_loja()
+		criar_guilda.abrir())
+	cli.guilda_criada.connect(func(ok, erro):
+		print("TESTE guilda criada %s erro %d" % [ok, erro])
+		if ok:
+			criar_guilda.fechar(false)
+			_msg("[color=#9fe0a0]%s[/color]" % ("Guilda %s criada." % criar_guilda.nome() if criar_guilda.nome() != "" else "Guilda criada."))
+		else:
+			var t := {0: 516, 179: 516, 2: 517, 3: 518, 4: 940, 5: 941}
+			_msg("[color=#e8b04a]%s[/color]" % (DicaItem.t(t[erro]) if t.has(erro) else "A guilda nao foi criada (%d)." % erro)))
+	cli.guilda_jogador_saiu.connect(func(id, _mestre):
+		print("TESTE guilda: %d saiu da guilda" % id)
+		_sem_guilda(id)
+		if janela_guilda.visible and minha_guilda >= 0:
+			cli.pedir_lista_guilda())
+	cli.guilda_jogadores.connect(func(l):
+		print("TESTE guilda jogadores %s" % [l.map(func(x): return "%d g%d c%d" % [x.id, x.guilda, x.cargo])])
+		for x: Dictionary in l:
+			if x.id == cli.meu_id:
+				minha_guilda = x.guilda
+				meu_cargo_guilda = x.cargo
+				janela_guilda.guilda = x.guilda
+				janela_guilda.meu_cargo = x.cargo
+				janela_guilda.em_guilda = true
+			if entidades.has(x.id):
+				var e: Entidade = entidades[x.id]
+				e.guilda = x.guilda
+				e.guilda_cargo = x.cargo
+				e.guilda_relacao = x.relacao
+				e.marca_guilda()
+			if not Guildas.info.has(x.guilda) and not _guildas_pedidas.has(x.guilda):
+				_guildas_pedidas[x.guilda] = true
+				cli.pedir_info_guilda(x.guilda))
+	cli.guilda_info.connect(func(i):
+		print("TESTE guilda info %d %s alianca '%s' logo %s" % [i.id, i.nome, i.alianca, i.logo.hex_encode()])
+		Guildas.guardar(i)
+		for e: Entidade in entidades.values():
+			if is_instance_valid(e) and e.guilda == i.id:
+				e.marca_guilda()
+		janela_guilda.queue_redraw())
+	cli.chat_guilda.connect(func(n, t):
+		print("TESTE chat guilda %s: %s" % [n, t])
+		_msg("[color=#9fe0a0]%s: %s[/color]" % [n, t]))
+
+
+func _sem_guilda(id: int) -> void:
+	if id == cli.meu_id:
+		minha_guilda = -1
+		meu_cargo_guilda = 255
+		janela_guilda.limpar()
+	if entidades.has(id):
+		var e: Entidade = entidades[id]
+		e.guilda = -1
+		e.guilda_cargo = 255
+		e.marca_guilda()
+
+
+func _alternar_guilda() -> void:
+	janela_guilda.visible = not janela_guilda.visible
+	if not janela_guilda.visible:
+		return
+	for j in [inv, janela_personagem, comandos]:
+		if j.visible:
+			j.alternar()
+	amigos.visible = false
+	janela_guilda.meu_nome = meu_nome
+	janela_guilda.nivel = meu_nivel
+	janela_guilda.comando = int(DicaItem.eu.get("comando", 0))
+	janela_guilda.dark_lord = (minha_classe >> 2) == 4
+	janela_guilda.guilda = minha_guilda
+	janela_guilda.meu_cargo = meu_cargo_guilda
+	janela_guilda.em_guilda = minha_guilda >= 0
+	janela_guilda.aba = 1
+	janela_guilda.queue_redraw()
+	cli.pedir_lista_guilda()
+
+
+# caixa de mensagem do cliente (CaixaMU); com --aceitar responde OK sozinha (senha vazia, ou --senha_guilda X)
+func _caixa_mu(linhas: Array, resposta: Callable, senha := false, cancelar := true) -> CaixaMU:
+	var c := CaixaMU.new(linhas, cancelar, senha)
+	c.respondeu.connect(resposta)
+	hud.add_child(c)
+	if _parametros().has("aceitar") and cancelar:
+		if senha:
+			c._campo.text = str(_parametros().get("senha_guilda", ""))
+		c.responder(true)
+	return c
+
+
+func _senha_guilda(linhas: Array, nome: String) -> void:
+	_caixa_mu(linhas, func(ok, t):
+		# o cliente original barra a senha vazia (401); o OpenMU guarda o SecurityCode das contas como "" e so aceita
+		# vazio nelas, entao a caixa manda o que foi digitado
+		if not ok:
+			return
+		print("TESTE guilda: tirando %s" % nome)
+		cli.tirar_da_guilda(nome, t), true)
+
+
+func _sair_da_guilda() -> void:
+	var senha := DicaItem.t(428).replace("WEBZEN.COM ", "")
+	if meu_cargo_guilda == 128:
+		_caixa_mu([DicaItem.t(1363), DicaItem.t(1364), DicaItem.t(1365), DicaItem.t(1366)], func(ok, _t):
+			if ok:
+				_senha_guilda([senha], meu_nome))
+	else:
+		_senha_guilda([DicaItem.t(427), senha], meu_nome)
+
+
+func _acao_membro_guilda(acao: int, nome: String, cargo: int) -> void:
+	print("TESTE guilda acao %d em %s (cargo %d)" % [acao, nome, cargo])
+	if nome == meu_nome:
+		return
+	match acao:
+		0:
+			if cargo == 128:
+				return
+			var c := _caixa_mu([DicaItem.t(1315)], func(_ok, _t): pass)
+			c.escolhas = [DicaItem.t(1311), DicaItem.t(1312)]
+			c._ajustar()
+			c.escolheu.connect(func(i):
+				if i >= 0:
+					cli.cargo_guilda(1 if cargo == 0 else 2, [64, 32][i], nome)
+					get_tree().create_timer(0.5).timeout.connect(cli.pedir_lista_guilda))
+		1:
+			if not cargo in [32, 64]:
+				return
+			_caixa_mu([DicaItem.t(1486) % nome, DicaItem.t(1368)], func(ok, _t):
+				if ok:
+					cli.cargo_guilda(3, 0, nome)
+					get_tree().create_timer(0.5).timeout.connect(cli.pedir_lista_guilda))
+		2:
+			_caixa_mu([DicaItem.t(1486) % nome, DicaItem.t(1369)], func(ok, _t):
+				if ok:
+					_senha_guilda([DicaItem.t(428).replace("WEBZEN.COM ", "")], nome))
+
+
+# roteiro G: G:criar,Nome (pinta uma marca de teste e cria), G:pintar,Nome (so pinta), G:abrir, G:aba,N, G:sair, G:tirar,Nome, G:cargo,Nome,0|1,
+# G:tira_cargo,Nome, G:entrar,Mestre (o comando GUILDA da janela D)
+func _teste_guilda(v: Array) -> void:
+	print("TESTE roteiro guilda %s" % [v])
+	match v[0]:
+		"criar", "pintar":
+			# pintar: so pinta e fica no passo da marca (foto); criar segue ate o resumo e cria
+			if not criar_guilda.visible:
+				print("TESTE roteiro guilda: a janela de criar nao abriu")
+				return
+			criar_guilda.avancar()
+			criar_guilda.definir_nome(v[1])
+			# moldura amarela, cruz vermelha e o centro azul
+			for i in 64:
+				var x := i % 8
+				var y := i / 8
+				var c := 0
+				if x == 0 or y == 0 or x == 7 or y == 7:
+					c = 6
+				elif x == y or x == 7 - y:
+					c = 4
+				elif x in [3, 4] or y in [3, 4]:
+					c = 11
+				criar_guilda.pintar(i, c)
+			criar_guilda.cor = 6
+			if v[0] == "pintar":
+				return
+			criar_guilda.avancar()
+			await get_tree().create_timer(1.0).timeout
+			criar_guilda.avancar()
+		"abrir":
+			if not janela_guilda.visible:
+				_alternar_guilda()
+		"aba":
+			janela_guilda.aba = int(v[1])
+			janela_guilda.queue_redraw()
+		"sair":
+			_sair_da_guilda()
+		"tirar":
+			_acao_membro_guilda(2, v[1], 0)
+		"cargo":
+			for m: Dictionary in janela_guilda.membros:
+				if m.nome == v[1]:
+					cli.cargo_guilda(1 if int(m.cargo) == 0 else 2, [64, 32][int(v[2])], v[1])
+			get_tree().create_timer(0.5).timeout.connect(cli.pedir_lista_guilda)
+		"tira_cargo":
+			_acao_membro_guilda(1, v[1], 64)
+		"entrar":
+			for e: Entidade in entidades.values():
+				if e.nome == v[1]:
+					_comando(JanelaComandos.GUILDA, e.id)
