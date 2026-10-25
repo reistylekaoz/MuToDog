@@ -15,6 +15,7 @@ signal objeto_saiu(id: int)
 signal objeto_andou(id: int, x: int, y: int, passos: Array)
 signal objeto_moveu(id: int, x: int, y: int)
 signal objeto_morreu(id: int)
+signal morte(id: int, matador: int)   # C1 17 com quem matou (o Chaos Castle conta monstros e jogadores)
 signal mapa_mudou(mapa: int, x: int, y: int)
 signal vida(atual: int)
 signal golpe(id: int, dano: int, tipo: int, escudo: int)
@@ -451,6 +452,11 @@ func entrar_devil(nivel: int) -> void:
 # C1 9A: entrar no Blood Castle pelo Messenger of Archangel (castelo 1 a 8)
 func entrar_blood(castelo: int) -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0x9A, castelo, 0xFF]))
+
+
+# C1 AF 01: entrar no Chaos Castle com a Armor of Guardsman (nivel da armadura e a casa dela na mochila)
+func entrar_caos(nivel: int, slot: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xAF, 0x01, nivel, slot]))
 
 
 # C1 91: quanto falta pra abrir o evento (clique direito no convite ou na capa)
@@ -1225,6 +1231,8 @@ func _tratar(p: PackedByteArray) -> void:
 			objeto_moveu.emit(((p[3] << 8) | p[4]) & 0x7FFF, p[5], p[6])
 		0x17:
 			objeto_morreu.emit(((p[3] << 8) | p[4]) & 0x7FFF)
+			if p.size() >= 9:
+				morte.emit(((p[3] << 8) | p[4]) & 0x7FFF, ((p[7] << 8) | p[8]) & 0x7FFF)
 		0x16:
 			experiencia.emit(((p[3] << 8) | p[4]) & 0x7FFF, (p[5] << 8) | p[6])
 		0x20:
@@ -1420,6 +1428,10 @@ func _tratar(p: PackedByteArray) -> void:
 		0x9A:
 			if p[0] == 0xC1 and p.size() >= 4:
 				evento_entrada.emit("bc", p[3])
+		0xAF:
+			# C1 AF 01: resposta da entrada no Chaos Castle (o resultado no [4])
+			if p[0] == 0xC1 and p.size() >= 5 and p[3] == 0x01:
+				evento_entrada.emit("cc", p[4])
 		0x91:
 			if p[0] == 0xC1 and p.size() >= 7:
 				evento_abre.emit(p[3], p[4], p[5], p[6])

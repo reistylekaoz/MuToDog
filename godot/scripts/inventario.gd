@@ -9,6 +9,7 @@ extends Control
 signal mover(de: int, para: int)
 signal usar(slot: int, alvo: int)
 signal fruta(slot: int)   # fruta (13,15): o jogo pergunta se soma ou tira antes de usar
+signal armadura_caos(slot: int)   # Armor of Guardsman (13,29): o jogo pergunta quando abre o Chaos Castle
 signal largar_no_chao(slot: int)
 signal aviso(texto: String)
 
@@ -407,6 +408,9 @@ func usar_ou_equipar(s: int) -> void:
 		return
 	if ItensMU.chave(it) == "13,15" and s >= MOCHILA:
 		fruta.emit(s)
+		return
+	if ItensMU.chave(it) == "13,29" and s >= MOCHILA:
+		armadura_caos.emit(s)
 		return
 	if ItensMU.consome(it):
 		usar.emit(s, 0)

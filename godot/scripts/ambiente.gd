@@ -47,7 +47,7 @@ const LUZES := {
 # todo mapa; na soma, malha -1 = o objeto inteiro, lista = varias malhas, 3o valor = luz da malha
 # objeto que o cliente nao desenha (HiddenMesh = -2): marcador de pose e de som (tipo do .obj)
 const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 64, 70, 76, 83],
-	7: [38, 67],
+	7: [38, 67], 19: [6, 7, 8, 9, 10, 11, 12],
 	31: [0, 4, 11, 37, 39, 41, 42, 43, 44, 45, 46, 47, 48, 52, 53, 54, 66, 67, 68, 69, 71, 72, 73, 74, 75, 76, 88],
 	32: [1, 3, 42, 44, 45, 53, 67],
 	34: [56, 57, 58, 59, 60, 62, 63, 67, 70],
@@ -151,7 +151,11 @@ const NEVOA := {32: [Color(0.05, 0.05, 0.1), 4.0, 7.0, -1.0, Rect2(54.49, 67.84,
 # nuvem presa no objeto (RenderObjectVisual): tipo -> [subtipo do BITMAP_CLOUD, cor]
 # Aida 59, 62, 63: subtipo 1, 20 por quadro (o cliente esconde o objeto antes e ela nao sai;
 # aqui sai); Crywolf 77 e 78: subtipo 9, 1 a cada 6 quadros, sobe 6 s e desce apagando
-const NUVEM_OBJ := {34: {59: [1, Color(0.01, 0.03, 0.05)], 62: [1, Color(0.05, 0.05, 0.05)], 63: [1, Color(0.05, 0.02, 0.02)]},
+# Chaos Castle 6 a 11: azul bem escuro (0,05 0,05 0,1), 12: cinza (0,3); o cliente usa os subtipos 0 a 5 e 7
+# do BITMAP_CLOUD, aqui todos viram o 1 (parada em volta do objeto)
+const NUVEM_OBJ := {19: {6: [1, Color(0.05, 0.05, 0.1)], 7: [1, Color(0.05, 0.05, 0.1)], 8: [1, Color(0.05, 0.05, 0.1)],
+		9: [1, Color(0.05, 0.05, 0.1)], 10: [1, Color(0.05, 0.05, 0.1)], 11: [1, Color(0.05, 0.05, 0.1)], 12: [1, Color(0.3, 0.3, 0.3)]},
+	34: {59: [1, Color(0.01, 0.03, 0.05)], 62: [1, Color(0.05, 0.05, 0.05)], 63: [1, Color(0.05, 0.02, 0.02)]},
 	35: {77: [9, Color(0.02, 0.03, 0.02)], 78: [9, Color(0.03, 0.06, 0.05)]}}
 # Terra das Provas 53: fumaca rosada subindo (BITMAP_SMOKE subtipo 22, 1 a cada 3 quadros)
 const FUMACA_ROSA := {32: [53]}
@@ -641,6 +645,9 @@ func _bica_agua(o: Dictionary) -> void:
 # altura = 2x a da textura, topo puxado -50 em X, textura com deslocamento sorteado
 # por linha. O vento mexe o topo no shader.
 func _grama(mapa: Image, luz: Image, extra: Image) -> void:
+	# sem grama no Chaos Castle (pasta 19) e no Valley of Loren (31): TerrainGrassEnable = false
+	if mundo.numero in [19, 31]:
+		return
 	var texs := {}
 	for i in 3:
 		var c: String = mundo.pasta + "grama/%d.png" % i

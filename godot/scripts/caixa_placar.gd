@@ -5,12 +5,15 @@ extends CaixaMU
 # Rank, point, EXP e Reward em verde, cada um numa linha de 16 (o meu em laranja) e "My Info" no pe.
 # Blood Castle (CBloodCastleResultMsgBox): a 100 do alto, 6 meios; a frase verde de deu certo ou nao,
 # exp, zen (so se deu certo) e os pontos.
+# Chaos Castle (CChaosCastleResultMsgBox): igual ao Blood Castle no tamanho; a frase, exp, monstros e
+# jogadores mortos. O OpenMU nao manda as duas contagens (so os pontos: 2 por monstro, 1 por jogador):
+# o jogo conta as mortes que viu com o meu nome de matador (C1 17).
 
 var modo := "ds"
 var heroi := ""
 var minha_pos := 0
 var lista: Array = []          # ds: [{nome, pontos, exp, zen}]
-var bc := {}                   # bc: {ok, pontos, exp, zen}
+var bc := {}                   # bc: {ok, pontos, exp, zen}; cc: {ok, exp, monstros, jogadores}
 var _frase: Array[String] = []
 
 
@@ -26,6 +29,10 @@ func _ready() -> void:
 	if modo == "bc":
 		var t := DicaItem.t(858) + " " + DicaItem.t(857) if bc.get("ok", false) else DicaItem.t(860) + " " + DicaItem.t(859)
 		_frase = _quebrar(get_theme_default_font(), t, 210.0)
+	elif modo == "cc":
+		# o texto ingles do "missao cumprida" e do "falhou" do castelo vem vazio no Text_eng (1154 e 1155):
+		# fica a frase do guardiao (1151) ou "Unfortunately, you have failed" (860) e "Try again next time" (1153)
+		_frase.assign([DicaItem.t(1151)] if bc.get("ok", false) else [DicaItem.t(860), DicaItem.t(1153)])
 	_ajustar()
 
 
@@ -84,6 +91,8 @@ func _draw() -> void:
 	var f := get_theme_default_font()
 	if modo == "ds":
 		_desenhar_ds(f)
+	elif modo == "cc":
+		_desenhar_cc(f)
 	else:
 		_desenhar_bc(f)
 
@@ -146,3 +155,18 @@ func _desenhar_bc(f: Font) -> void:
 		_escrever(f, 0, y, DicaItem.t(862, [int(bc.get("zen", 0))]), Color8(255, 210, 210), L, HORIZONTAL_ALIGNMENT_CENTER)
 		y += 24
 	_escrever(f, 0, y, DicaItem.t(863, [int(bc.get("pontos", 0))]), Color8(210, 210, 255), L, HORIZONTAL_ALIGNMENT_CENTER)
+
+
+# CNewChaosCastleSystem::RenderMatchResult
+func _desenhar_cc(f: Font) -> void:
+	var y := 40.0
+	for linha in _frase:
+		_escrever(f, 0, y, linha, Color8(128, 255, 128), L, HORIZONTAL_ALIGNMENT_CENTER)
+		y += 16
+	y = 40.0 + 16 + 30
+	var cor := Color8(210, 255, 210)
+	_escrever(f, 0, y, DicaItem.t(861, [int(bc.get("exp", 0))]), cor, L, HORIZONTAL_ALIGNMENT_CENTER)
+	y += 20
+	_escrever(f, 0, y, DicaItem.t(1162, [int(bc.get("monstros", 0))]), cor, L, HORIZONTAL_ALIGNMENT_CENTER)
+	y += 20
+	_escrever(f, 0, y, DicaItem.t(1163, [int(bc.get("jogadores", 0))]), cor, L, HORIZONTAL_ALIGNMENT_CENTER)

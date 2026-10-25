@@ -75,6 +75,9 @@ var quest_legado := QuestLegado.new()   # o estado delas (a lista chega antes do
 var quest_nova := QuestNova.new()       # quests novas do S6 (F6): Elf Soldier
 var janela_evento: JanelaEvento  # entrada do Devil Square (Charon) e do Blood Castle (Mensageiro): C1 90 e 9A
 var eventos: Eventos           # contagem, tempo do Blood Castle e placar (C1 92, 93 e 9B)
+var caos: ChaosCastle          # Chaos Castle: o castelo encolhe, buracos e armas do castelo (rodada 14)
+var _caos_slot := -1           # a Armor of Guardsman do clique direito, esperando o C1 91
+var _caos_mortes := {"monstros": 0, "jogadores": 0}   # o que eu matei no castelo (o OpenMU nao manda)
 var janela_quest_nova: JanelaQuestNova  # o passo da quest no NPC: F6 0B e 0C
 var janela_minhas_quests: JanelaMinhasQuests   # janela T
 var janela_master: JanelaMaster                # janela A: arvore de skills master
@@ -165,6 +168,7 @@ func _ready() -> void:
 	cli.objeto_andou.connect(_objeto_andou)
 	cli.objeto_moveu.connect(_objeto_moveu)
 	cli.objeto_morreu.connect(_objeto_morreu)
+	cli.morte.connect(_morte_caos)
 	cli.mapa_mudou.connect(_mapa_mudou)
 	cli.vida.connect(func(v): barra_mu.vida = v; _hud_nivel())
 	cli.sd.connect(func(v): barra_mu.sd = v; _hud_nivel())
@@ -378,7 +382,8 @@ func _json(c: String) -> Dictionary:
 # --roteiro "d:/item 14 9;p;u:14,9;e:5": passos com 2 s entre eles. d: diz no chat (comando de GM tambem),
 # p: pega o item do chao mais perto, u:grupo,numero[,nivel]: usa o item da mochila, e:N: espera N s,
 # f:1 ou f:2: Create ou Decrease na caixa da fruta, b: mostra os buffs (janela e boneco),
-# x:12-50: larga no chao o que esta nesses slots, t: tira o que esta vestido, v: veste de volta
+# x:12-50: larga no chao o que esta nesses slots, t: tira o que esta vestido, v: veste de volta,
+# O: OK na caixa do MU aberta por cima, T:N: tira so o slot N
 var _teste_tirados := []
 
 
@@ -406,6 +411,20 @@ func _teste_roteiro(passos: Array) -> void:
 			"M":
 				# mensageiro (rodada 10): M:diz,texto / M:carta,para,titulo,texto / M:ler,0 / M:sala,Nome ...
 				await correio.roteiro(a.replace("_", " ").split(","))
+			"T":
+				# T:8 tira so o que esta nesse slot vestido pra mochila (o Fenrir barra a entrada nos eventos)
+				var k := int(a)
+				if inv.itens.has(k):
+					var para := inv.lugar_livre(inv.itens[k])
+					print("TESTE roteiro tira %s do %d pro %d" % [ItensMU.nome(inv.itens[k]), k, para])
+					if para >= 0:
+						inv._mandar(k, para)
+			"O":
+				# O: aperta OK na caixa do MU aberta por cima (a do Chaos Castle)
+				var caixas := hud.get_children().filter(func(c): return c is CaixaMU)
+				print("TESTE roteiro OK na caixa (%d abertas)" % caixas.size())
+				if not caixas.is_empty():
+					caixas[-1].responder(true)
 			"F":
 				_chutar = true
 				print("TESTE roteiro chuta a bola pro gol")
@@ -824,6 +843,10 @@ func _montar_ui() -> void:
 	hud.add_child(janela_evento)
 	eventos = Eventos.new()
 	hud.add_child(eventos)
+	caos = ChaosCastle.new()
+	add_child(caos)
+	eventos.estagio.connect(func(n): caos.encolher(n))
+	inv.armadura_caos.connect(_armadura_caos)
 	quest_nova.monstros = monstros
 	dialogo.quest_nova = quest_nova
 	dialogo.quest_escolhida.connect(func(n, g, l): cli.quest_escolher(n, g, l))
@@ -1289,6 +1312,16 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	mundo.modo_jogo = true
 	mundo.numero = PacoteMapa.mundo_do_mapa(mapa)
 	eventos.em_castelo = mapa in [11, 12, 13, 14, 15, 16, 17, 52]
+	# Chaos Castle: armas do castelo em todo mundo (o eu e quem aparecer) e o vento dele (aChaos)
+	var era_caos := eventos.caos
+	eventos.caos = ChaosCastle.e_caos(mapa)
+	Boneco.no_caos = eventos.caos
+	if eventos.caos:
+		_caos_mortes = {"monstros": 0, "jogadores": 0}
+		if som:
+			som.laco("achaos")
+	elif era_caos and som:
+		som.parar_laco()
 	janela_evento.visible = false   # o servidor leva pro evento sem mandar o C1 90 de volta
 	mundo.alvo = Vector2(x + 0.5, y + 0.5)
 	mundo.distancia = 20.0
@@ -1302,6 +1335,7 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 			mundo.giro = float(c[2])
 	mundo.brilho = brilho
 	add_child(mundo)
+	caos.entrar(mundo, mapa)
 	mundo.brilho_mudou.connect(func(v: float) -> void:
 		brilho = v
 		_msg("Brilho %s (o padrao e 2,0)" % str(snappedf(v, 0.1)).replace(".", ",")))
@@ -1440,6 +1474,49 @@ func _objeto_morreu(id: int) -> void:
 		_msg("[color=#e05050]Voce morreu.[/color]")
 
 
+# Chaos Castle: conta o que eu matei; quem morre num buraco cai (FallingStartCharacter)
+func _morte_caos(id: int, matador: int) -> void:
+	if not caos.ativo or not entidades.has(id):
+		return
+	var e: Entidade = entidades[id]
+	if matador == cli.meu_id and id != cli.meu_id:
+		if e.tipo == "monstro":
+			_caos_mortes.monstros += 1
+		elif e.tipo == "jogador":
+			_caos_mortes.jogadores += 1
+	if mundo and not mundo.atributos.is_empty() and mundo.atributos[e.tile.y * 256 + e.tile.x] & ChaosCastle.SEM_CHAO:
+		print("TESTE caiu no buraco %s em %s" % [e.nome, e.tile])
+		if som:
+			som.tocar("queda_grito")
+		var t := e.create_tween()
+		t.tween_property(e, "position:y", e.position.y - 30.0, 1.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+
+# clique direito na Armor of Guardsman: so na zona segura; pergunta quando abre (C1 91 tipo 4)
+func _armadura_caos(slot: int) -> void:
+	if eu == null or mundo == null or not mundo.zona_segura(eu.tile.x, eu.tile.y):
+		_caixa_mu([DicaItem.t(2330)], func(_ok, _t): pass, false, false)
+		return
+	_caos_slot = slot
+	print("TESTE armadura do caos no slot %d nivel %d" % [slot, int(inv.itens[slot].get("nivel", 0))])
+	cli.perguntar_evento(4, int(inv.itens[slot].get("nivel", 0)))
+
+
+# C1 91 do Chaos Castle (ReceiveEventZoneOpenTime valor 4): minutos pra abrir; com OK manda o AF 01
+func _caos_abre(minutos: int, gente: int) -> void:
+	var cc := DicaItem.t(1147)
+	var linhas: Array = []
+	if minutos == 0:
+		linhas = [DicaItem.t(850, [cc]), DicaItem.t(1156, [cc, gente, 100])]
+	else:
+		linhas = [DicaItem.t(1164, [minutos / 60]) + DicaItem.t(851, [minutos % 60, cc])]
+	print("TESTE cc abre: %s" % " / ".join(linhas))
+	_caixa_mu(linhas, func(ok, _t):
+		if ok and _caos_slot >= 0 and inv.itens.has(_caos_slot):
+			print("TESTE entrar no caos nivel %d slot %d" % [int(inv.itens[_caos_slot].get("nivel", 0)), _caos_slot])
+			cli.entrar_caos(int(inv.itens[_caos_slot].get("nivel", 0)), _caos_slot), false, true)
+
+
 func _mapa_mudou(mapa: int, x: int, y: int) -> void:
 	print("TESTE mapa mudou %d (%d, %d)" % [mapa, x, y])
 	if mapa != mapa_atual:
@@ -1561,7 +1638,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 		_botao_barra("personagem")
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 		var e := _entidade_na_tela(ev.position)
-		if e and (e.tipo == "monstro" or bola(e) or e.tipo == "jogador" and (inimigo_da_guerra(e) or inimigo_gens(e) or ev.ctrl_pressed)):
+		if e and (e.tipo == "monstro" or bola(e) or e.tipo == "jogador" and (inimigo_da_guerra(e) or inimigo_gens(e) or caos.ativo or ev.ctrl_pressed)):
 			mirar(e.id)
 			return
 		if e and e.tipo == "npc":
@@ -1726,6 +1803,7 @@ func _process(dt: float) -> void:
 		som = Som.new()
 		add_child(som)
 		eventos.som = som
+		caos.som = som
 		_volumes()
 	# a loja fecha se eu andar pra longe do NPC (o servidor tambem esquece)
 	if npc_falando >= 0 and (not entidades.has(npc_falando) or _distancia(eu.tile, entidades[npc_falando].tile) > 5):
@@ -2307,14 +2385,25 @@ func _ligar_loja_e_amigos() -> void:
 	cli.evento_entrada.connect(func(qual, r):
 		print("TESTE evento entrada %s %d" % [qual, r])
 		janela_evento.visible = false
+		if qual == "cc":
+			# ReceiveMoveToEventMatchResult2
+			var cc := DicaItem.t(1147)
+			var tc := {1: DicaItem.t(854), 2: DicaItem.t(852, [cc]), 3: DicaItem.t(686), 4: DicaItem.t(687),
+				5: DicaItem.t(853, [cc, 100]), 6: DicaItem.t(867, [6]), 7: DicaItem.t(423), 8: DicaItem.t(2043, [cc])}
+			if tc.has(r):
+				_caixa_mu([tc[r]], func(_ok, _t): pass, false, false)
+			return
 		var nome := DicaItem.t(39 if qual == "ds" else 1146)
 		var textos := {1: DicaItem.t(677 if qual == "ds" else 854), 2: DicaItem.t(678) if qual == "ds" else DicaItem.t(852, [nome]),
 			3: DicaItem.t(686), 4: DicaItem.t(687), 5: DicaItem.t(679) if qual == "ds" else DicaItem.t(853, [nome, 10]),
 			6: DicaItem.t(2043, [nome]) if qual == "ds" else DicaItem.t(867, [1]), 7: DicaItem.t(2043, [nome])}
 		if textos.has(r):
 			_caixa_mu([textos[r]], func(_ok, _t): pass, false, false))
-	cli.evento_abre.connect(func(tipo, minutos, _gente, _baixo):
+	cli.evento_abre.connect(func(tipo, minutos, gente, baixo):
 		print("TESTE evento abre %d em %d min" % [tipo, minutos])
+		if tipo == 4:
+			_caos_abre(minutos * 256 + baixo, gente)
+			return
 		var t := ""
 		if tipo == 1:
 			t = DicaItem.t(643) if minutos == 0 else DicaItem.t(644, [minutos])
@@ -2334,6 +2423,13 @@ func _ligar_loja_e_amigos() -> void:
 		hud.add_child(c))
 	cli.bc_resultado.connect(func(ok, nome, pontos, exp, zen):
 		print("TESTE bc resultado %s %s pontos %d exp %d zen %d" % [ok, nome, pontos, exp, zen])
+		if eventos.caos:
+			# o OpenMU manda o placar do Blood Castle tambem no Chaos Castle
+			print("TESTE cc resultado monstros %d jogadores %d" % [_caos_mortes.monstros, _caos_mortes.jogadores])
+			var k := CaixaPlacar.new("cc")
+			k.bc = {"ok": ok, "exp": exp, "monstros": _caos_mortes.monstros, "jogadores": _caos_mortes.jogadores}
+			hud.add_child(k)
+			return
 		var c := CaixaPlacar.new("bc")
 		c.bc = {"ok": ok, "pontos": pontos, "exp": exp, "zen": zen}
 		hud.add_child(c))

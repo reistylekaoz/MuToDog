@@ -427,6 +427,7 @@ const APAGADAS := {49: 5}
 const CLASSES := ["classe_dw", "classe_dk", "classe_elf", "classe_mg", "classe_dl", "classe_sum", "classe_rf"]
 
 static var _info := {}
+static var no_caos := false   # dentro do Chaos Castle: asa e pet somem e a arma e a do castelo
 
 var anim: AnimationPlayer
 var nome_modelo := ""
@@ -1183,6 +1184,8 @@ const OSSO_MAO := {0: "osso33", 1: "osso42"}
 func vestir(equip: Dictionary) -> void:
 	if esqueleto == null or familia != "jogador":
 		return
+	if no_caos:
+		equip = ChaosCastle.vestido_no_caos(nome_modelo, equip)
 	var niveis: Dictionary = equip.get("niveis", {})
 	var cor: String = equip.get("fenrir", "red")
 	if cor != _fenrir and _equip.get(8, "") == "13,37" and equip.get(8, "") == "13,37":

@@ -8,7 +8,7 @@ extends RefCounted
 # partida. Nos testes headless os dados estao no projeto e nada e carregado.
 # Uso: await PacoteMapa.carregar(no_qualquer, numero_do_mundo)
 
-const FORA := [2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 31, 32, 34, 35, 38, 39, 52, 57, 58, 64, 75, 80, 81, 82]
+const FORA := [2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 19, 31, 32, 34, 35, 38, 39, 52, 57, 58, 64, 75, 80, 81, 82]
 # pacote 0 (mapas/mundo0.pck): os monstros dos eventos (Blood Castle, Kalima, Chaos Castle,
 # Imperial Fortress, Doppelganger...), baixado na primeira vez que um deles aparece
 const MONSTROS := 0
@@ -25,6 +25,8 @@ static func mundo_do_mapa(mapa: int) -> int:
 		return 12
 	if mapa == 32:
 		return 10
+	if mapa in [18, 19, 20, 21, 22, 23, 53]:
+		return 19
 	return mapa + 1
 
 
@@ -85,6 +87,8 @@ static func carregar(pai: Node, numero: int) -> bool:
 
 static func _baixar(pai: Node, numero: int) -> bool:
 	var http := HTTPRequest.new()
+	# o padrao le 64 KB por quadro: 21 MB num navegador lento passavam de um minuto
+	http.download_chunk_size = 4 * 1024 * 1024
 	pai.add_child(http)
 	var base := str(JavaScriptBridge.eval("location.href")).get_slice("?", 0).get_base_dir()
 	var destino := "user://mundo%d.pck" % numero
