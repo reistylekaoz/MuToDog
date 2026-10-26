@@ -69,6 +69,9 @@ const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 
 	# Doppelganger 1 a 4 (CGMDoppelGanger*::MoveObject: HiddenMesh = -2)
 	66: [70, 80, 99, 101], 67: [0, 1, 2, 3, 4, 5, 6, 47, 48], 68: [22, 47, 48],
 	69: [47, 48, 59, 60, 61, 62, 81, 82, 83, 97, 107, 108],
+	# Imperial Fortress 1 a 4 (GMEmpireGuardian*::MoveObject: HiddenMesh = -2, os pontos de fogo, fumaca e luz)
+	70: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132], 71: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132],
+	72: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132], 73: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132],
 }
 # brilho do mapa sobre o escolhido (a neve de Devias estoura com o 2,0 da Lorencia; a luz
 # pintada da Lost Tower e bem mais escura que a da Lorencia e o chao some; a areia de Tarkan
@@ -1186,6 +1189,25 @@ func _chuva(m: Node3D) -> void:
 		_cai2 = c
 
 
+# chuva do Imperial Fortress (GMEmpireGuardian1 CreateRain, so com o clima 1 chuva ou 3 tempestade, que chega
+# no C1 F7 02 depois do mapa montado): 80 gotas de 4 a 6 m acima do heroi, 30..53 por quadro a 30 graus
+func chover(sim: bool, tex: Texture2D) -> void:
+	if _cai2:
+		_cai2.queue_free()
+		_cai2 = null
+	if not sim or tex == null:
+		return
+	var c := _particulas(tex, 80, 0.05, true)
+	var q := c.mesh as QuadMesh
+	q.size = Vector2(0.04, 0.5)
+	(q.material as StandardMaterial3D).billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
+	c.initial_velocity_min = 7.5
+	c.initial_velocity_max = 13.25
+	c.lifetime = 0.5
+	c.preprocess = c.lifetime
+	_cai2 = c
+
+
 func _particulas(tex: Texture2D, n: int, tam: float, neve: bool) -> CPUParticles3D:
 	var c := CPUParticles3D.new()
 	c.amount = n
@@ -1353,7 +1375,7 @@ func _process(dt: float) -> void:
 		(_agua_kalima.material_override.next_pass as ShaderMaterial).set_shader_parameter("origem", o)
 	if (_cai or _cai2) and mundo.seguir and is_instance_valid(mundo.seguir):
 		var h: Vector3 = mundo.seguir.global_position
-		var alto := 3.0 if mundo.numero in [3, 11, 63, 80] else 2.0
+		var alto := 3.0 if mundo.numero in [3, 11, 63, 80, 70, 71, 72] else 2.0
 		for c in [_cai, _cai2]:
 			if c:
 				c.global_position = h + Vector3(0, alto, -2.0)

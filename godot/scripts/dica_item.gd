@@ -130,6 +130,9 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 	var cor := BRANCO
 	if k in ["14,13", "14,14", "12,15", "14,16", "14,22", "14,31", "13,53", "13,52", "14,111"]:
 		cor = AMARELO
+	elif g == 14 and it.get("numero", 0) >= 101 and it.get("numero", 0) <= 109:
+		# IsSecromiconQuestItem: o papel, o Gaion's Order, os 6 pedacos e o Secromicon inteiro
+		cor = AMARELO
 	elif geracao > 0:
 		cor = AMARELO if lv >= 7 else (AZUL if tem_opcao else BRANCO)
 	elif anc:
@@ -167,6 +170,18 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 			var ld := _linha(t(frase))
 			ld["fundo"] = FUNDO_AZUL
 			l.append(ld)
+	elif k == "14,101":
+		# Suspicious Scrap of Paper: 5 viram o Gaion's Order
+		l.append(_linha(t(1181, [it.get("durabilidade", 0), 5])))
+		l.append(_linha(t(2788)))
+	elif k == "14,102":
+		for frase in [2784, 2785, 2786]:
+			l.append(_linha(t(frase)))
+	elif g == 14 and it.get("numero", 0) >= 103 and it.get("numero", 0) <= 108:
+		l.append(_linha(t(2790)))
+	elif k == "14,109":
+		l.append(_linha(t(2792)))
+		l.append(_linha(t(2793)))
 	elif k == "13,125":
 		l.append(_linha(t(2259, [t(3057)]), AZUL))
 

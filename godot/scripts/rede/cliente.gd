@@ -185,6 +185,9 @@ signal doppel_gelo(estado: int, pos: int)      # BF 11: 0 o Ice Walker apareceu 
 signal doppel_info(segundos: int, grupo: Array)   # BF 12: tempo e [{id, mapa, pos}]
 signal doppel_resultado(resultado: int, exp: int) # BF 13: 0 venceu, 1 morreu ou saiu, 2 os monstros passaram
 signal doppel_meta(maximo: int, passaram: int)    # BF 14
+signal imperial_entrada(resultado: int, dia: int, zona: int, clima: int, ms: int)  # F7 02: 0 entrou (ou zona nova)
+signal imperial_tempo(tipo: int, ms: int, monstros: int)  # F7 04: 0 saque, 1 espera, 2 corrida contra o tempo
+signal imperial_resultado(resultado: int, exp: int)       # F7 06: 0 falhou, 1 zona limpa, 2 venceu
 signal evento_entrada(evento: String, resultado: int)   # C1 90 (Devil Square) e C1 9A (Blood Castle): 0 entrou, 1 sem convite...
 signal evento_abre(tipo: int, minutos: int, gente: int, minutos_baixo: int)   # C1 91: falta pra abrir (1 DS, 2 BC, 4 CC, 5 IT)
 signal evento_contagem(estado: int)                    # C1 92: a contagem de 30 s (0 a 2 DS, 3 a 7 BC, 10 a 13 CC)
@@ -516,6 +519,11 @@ func templo_premio() -> void:
 # C1 BF 0E: entrar no Doppelganger (o cliente manda sempre a casa 0xFF; o servidor acha o espelho)
 func doppel_entrar() -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0xBF, 0x0E, 0xFF]))
+
+
+# C1 F7 01: entrar no Imperial Fortress pelo Jerint (o servidor acha o Gaion's Order na mochila)
+func imperial_entrar() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xF7, 0x01, 0x01]))
 
 
 func entrar_caos(nivel: int, slot: int) -> void:
@@ -1652,6 +1660,9 @@ func _tratar(p: PackedByteArray) -> void:
 				_ler_templo(p, sub)
 			elif p[0] == 0xC1 and sub >= 0x0E and sub <= 0x14:
 				_ler_doppel(p, sub)
+		0xF7:
+			if p[0] == 0xC1:
+				_ler_imperial(p, sub)
 		0xAE:
 			if p[0] == 0xC2 and p.size() >= 4:
 				helper_dados.emit(p.slice(4, 4 + 257))
@@ -1740,6 +1751,21 @@ func _ler_doppel(p: PackedByteArray, sub: int) -> void:
 		0x14:
 			if p.size() >= 6:
 				doppel_meta.emit(p[4], p[5])
+
+
+# F7 02, 04 e 06: Imperial Fortress (ReceiveEnterEmpireGuardianEvent, ReceiveRemainTickEmpireGuardian e
+# ReceiveResultEmpireGuardian; o DWORD alinhado em 8, little endian)
+func _ler_imperial(p: PackedByteArray, sub: int) -> void:
+	match sub:
+		0x02:
+			if p.size() >= 12:
+				imperial_entrada.emit(p[4], p[5], p[6], p[7], _ler_le(p, 8))
+		0x04:
+			if p.size() >= 13:
+				imperial_tempo.emit(p[4], _ler_le(p, 8), p[12])
+		0x06:
+			if p.size() >= 12:
+				imperial_resultado.emit(p[4], _ler_le(p, 8))
 
 
 # 3F: loja pessoal (o S6 manda as listas em C2, as respostas em C1 e o preco em C3)

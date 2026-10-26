@@ -24,6 +24,8 @@ var _db_efeitos := -6.0
 var _faixa := ""
 var _mapa := -1
 var doppel := false  # Doppelganger com a moldura ligada (CGMDoppelGanger::PlayBGM: sem ela, silencio)
+var imperial := -1   # Imperial Fortress: clima do F7 02 (1 chuva, 2 neblina, 3 tempestade; 4 = mapa 72, dentro)
+var _fundo_imp := ""
 var templo := 0      # estado do Illusion Temple (C1 BF 09 + 1): 0 nada, 1 espera, 2 pronto, 3 partida, 4 fim
 
 
@@ -78,6 +80,29 @@ func atualizar(mapa: int, seguro: bool, tile: int, x := 0, y := 0) -> void:
 			musica.play()
 			print("TESTE musica templo %s" % it.get_file())
 		return
+	# Imperial Fortress (GMEmpireGuardian*::PlayBGM e PlayObjectSound): a mesma musica nos 4 mapas, sempre;
+	# o fundo pelo clima (sol, nenhum) e no 72 o de dentro
+	if mapa >= 69 and mapa <= 72:
+		var im := Imperial.SONS % "musica.mp3"
+		if (im != _faixa or not musica.playing) and ResourceLoader.exists(im):
+			_faixa = im
+			musica.stream = load(im)
+			musica.play()
+			print("TESTE musica imperial")
+		var nomes := {1: "chuva_som.wav", 2: "neblina_som.wav", 3: "tempestade_som.wav", 4: "dentro_som.wav"}
+		var fs: String = Imperial.SONS % nomes[imperial] if nomes.has(imperial) else ""
+		if fs != _fundo_imp:
+			_fundo_imp = fs
+			fundo.stop()
+			if fs != "" and ResourceLoader.exists(fs):
+				var w := (load(fs) as AudioStreamWAV).duplicate() as AudioStreamWAV
+				w.loop_mode = AudioStreamWAV.LOOP_FORWARD
+				w.loop_end = int(w.get_length() * w.mix_rate)
+				fundo.stream = w
+				fundo.play()
+				print("TESTE fundo imperial %s" % fs.get_file())
+		return
+	_fundo_imp = ""
 	if mapa >= 65 and mapa <= 68:
 		var dp := Doppel.SONS % "musica.mp3" if doppel else ""
 		if dp == "" or not ResourceLoader.exists(dp):

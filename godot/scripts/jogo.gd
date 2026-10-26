@@ -80,6 +80,8 @@ var janela_templo: JanelaTemplo   # entrada do Illusion Temple pela Mirage (NPC 
 var templo: Templo               # HUD do Illusion Temple (rodada 16)
 var janela_doppel: JanelaDoppel   # entrada do Doppelganger pelo Lugard (NPC janela 0x23)
 var doppel: Doppel               # moldura do Doppelganger (rodada 17)
+var janela_imperial: JanelaImperial   # entrada do Imperial Fortress pelo Jerint (NPC janela 0x24)
+var imperial: Imperial           # tempo e clima do Imperial Fortress (rodada 18)
 var _templo_fx := {}             # "id:o que" -> EfeitoMU preso em alguem (reliquia, skills 210 e 211)
 var _templo_preso := false       # Restraint (211) em mim: nao anda ate o C1 BF 07
 var _mirage_t := 0.0             # Mirage sem janela do servidor: o cliente abre a dele
@@ -465,6 +467,9 @@ func _teste_roteiro(passos: Array) -> void:
 			"D":
 				# D:0 Enter, D:1 Close na janela do Lugard
 				janela_doppel.clicar(int(a))
+			"Y":
+				# Y:0 Enter, Y:1 Close na janela do Jerint
+				janela_imperial.clicar(int(a))
 			"N":
 				# N:numero fala com o NPC do templo desse numero (o mais perto)
 				for e: Entidade in entidades.values():
@@ -893,6 +898,7 @@ func _montar_ui() -> void:
 	hud.add_child(janela_duelo)
 	_ligar_templo()
 	_ligar_doppel()
+	_ligar_imperial()
 	caos = ChaosCastle.new()
 	add_child(caos)
 	eventos.estagio.connect(func(n): caos.encolher(n))
@@ -1355,8 +1361,17 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	if doppel:
 		doppel.mapa(mapa)
 		# a musica e os sons do evento vem no pacote dos monstros dos eventos
-		if Doppel.no_doppel(mapa) and PacoteMapa.precisa(PacoteMapa.MONSTROS):
+		if Doppel.no_doppel(mapa) and PacoteMapa.precisa_monstros():
 			PacoteMapa.carregar(self, PacoteMapa.MONSTROS)
+	if imperial:
+		imperial.mapa(mapa)
+		# a musica, os sons do clima e a chuva vem no pacote dos eventos: o F7 02 (clima) espera ele
+		if Imperial.no_imperial(mapa) and PacoteMapa.precisa_monstros():
+			cli.segurar = true
+			await PacoteMapa.carregar(self, PacoteMapa.MONSTROS)
+			cli.segurar = false
+			if mapa_atual != mapa:
+				return
 	# navegador: Lost Tower e Atlans vem num pacote a parte; a rede espera ele baixar
 	if PacoteMapa.precisa(PacoteMapa.mundo_do_mapa(mapa)):
 		_msg("Carregando %s..." % mapas.get(str(mapa), "o mapa"))
@@ -1394,6 +1409,8 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	mundo.brilho = brilho
 	add_child(mundo)
 	caos.entrar(mundo, mapa)
+	if imperial:
+		imperial.ambiente = mundo.ambiente
 	mundo.brilho_mudou.connect(func(v: float) -> void:
 		brilho = v
 		_msg("Brilho %s (o padrao e 2,0)" % str(snappedf(v, 0.1)).replace(".", ",")))
@@ -1873,6 +1890,7 @@ func _process(dt: float) -> void:
 		caos.som = som
 		templo.som = som
 		doppel.som = som
+		imperial.som = som
 		_volumes()
 	# a loja fecha se eu andar pra longe do NPC (o servidor tambem esquece)
 	if npc_falando >= 0 and (not entidades.has(npc_falando) or _distancia(eu.tile, entidades[npc_falando].tile) > 5):
@@ -2502,6 +2520,8 @@ func _fechar_loja() -> void:
 		janela_templo.visible = false
 	if janela_doppel:
 		janela_doppel.visible = false
+	if janela_imperial:
+		janela_imperial.visible = false
 	inv.soltar()
 
 
@@ -2621,6 +2641,50 @@ func _ligar_doppel() -> void:
 		for n in textos.get(r, [2766]):
 			l.append(DicaItem.t(n) if n > 0 else " ")
 		_caixa_mu(l, func(_ok, _t): pass, false, false))
+
+
+# --- Imperial Fortress (rodada 18) ----------------------------------------------------
+
+func _ligar_imperial() -> void:
+	janela_imperial = JanelaImperial.new()
+	janela_imperial.entrar.connect(func():
+		print("TESTE imperial entrar")
+		cli.imperial_entrar())
+	janela_imperial.fechar.connect(_fechar_loja)
+	hud.add_child(janela_imperial)
+	imperial = Imperial.new()
+	hud.add_child(imperial)
+	cli.imperial_entrada.connect(_imperial_entrada)
+	cli.imperial_tempo.connect(func(t, ms, n): imperial.tempo(t, ms, n))
+	cli.imperial_resultado.connect(func(r, xp):
+		print("TESTE imperial resultado %d (exp %d)" % [r, xp])
+		imperial.fim()
+		# ReceiveResultEmpireGuardian: 0 falhou, 1 zona limpa, 2 venceu (com a exp)
+		var l := []
+		match r:
+			0: l = [DicaItem.t(2803), DicaItem.t(2804)]
+			1: l = [DicaItem.t(2801, [imperial.dia]), DicaItem.t(2832, [imperial.zona])]
+			2: l = [DicaItem.t(2801, [imperial.dia]), DicaItem.t(2802), DicaItem.t(861, [xp])]
+		if not l.is_empty():
+			_caixa_mu(l, func(_ok, _t): pass, false, false))
+
+
+# ReceiveEnterEmpireGuardianEvent: 0 entrou (ou zona nova: dia, zona, clima e tempo); os outros so avisam
+func _imperial_entrada(r: int, dia: int, zona: int, clima: int, ms: int) -> void:
+	print("TESTE imperial entrada %d" % r)
+	if r == 0:
+		_fechar_loja()
+		imperial.entrar(dia, zona, clima, ms)
+		return
+	var l := []
+	match r:
+		1: l = [DicaItem.t(2798), " ", DicaItem.t(2799, [ms / 60000])]
+		2: l = [DicaItem.t(2839)]
+		3: l = [DicaItem.t(2841)]
+		4: l = [DicaItem.t(2842)]
+		5: l = [DicaItem.t(2843)]
+	if not l.is_empty():
+		_caixa_mu(l, func(_ok, _t): pass, false, false)
 
 
 # CGMDoppelGanger::RenderMonster: nos 4 mapas o Ice Walker troca o corpo (malha 0) e o brilho somado
@@ -2784,6 +2848,9 @@ func _ligar_loja_e_amigos() -> void:
 		elif tipo == 0x23:
 			janela_doppel.abrir(cli.janela_minutos)
 			print("TESTE janela doppelganger %d min" % cli.janela_minutos)
+		elif tipo == 0x24:
+			janela_imperial.abrir(0)
+			print("TESTE janela imperial")
 		elif tipo > 3:
 			var nomes := {0x0C: "o mercador de cash"}
 			_msg("[color=#9a9ab0]A janela de %s ainda nao foi feita neste cliente.[/color]" % nomes.get(tipo, "esse NPC (tipo %d)" % tipo))

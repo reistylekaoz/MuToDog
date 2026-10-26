@@ -78,7 +78,9 @@ foreach (var (idx, nome) in nomesTile)
 {
     var f = Achar(pasta, nome + ".OZJ");
     // Illusion Temple: o tile 4 e o AlphaTileGround03 (transparente, ve o vazio embaixo; MapManager.cpp)
-    var alfa = mundo == 47 && idx == 4 ? Achar(pasta, "AlphaTileGround03.OZT") : null;
+    // Imperial Fortress (World70 a 73): o tile 10 e o AlphaTile01, todo transparente
+    var alfa = mundo == 47 && idx == 4 ? Achar(pasta, "AlphaTileGround03.OZT")
+        : mundo >= 70 && mundo <= 73 && idx == 10 ? Achar(pasta, "AlphaTile01.OZT") : null;
     if (f == null && alfa == null) continue;
     TextureData t = alfa != null ? await new OZTReader().Load(alfa) : await new OZJReader().Load(f!);
     using var im = Imagem(t);
