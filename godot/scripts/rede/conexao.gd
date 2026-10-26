@@ -194,14 +194,24 @@ func pacotes() -> Array[PackedByteArray]:
 		buffer = buffer.slice(n)
 		if not p.is_empty():
 			lista.append(p)
-			if _gravar != "":
-				if _t0 < 0:
-					_t0 = Time.get_ticks_msec()
-				var f := FileAccess.open(_gravar, FileAccess.READ_WRITE if FileAccess.file_exists(_gravar) else FileAccess.WRITE)
-				f.seek_end()
-				f.store_line("%d %s%s" % [Time.get_ticks_msec() - _t0, p.hex_encode(), "" if canal == "" else " " + canal])
-				f.close()
+			anotar(p, canal)
 	return lista
+
+
+# grava o pacote como recebido (o roteiro tambem anota os que ele monta, pra fita tocar igual no navegador)
+static func anotar(p: PackedByteArray, canal := "") -> void:
+	if _gravar == "":
+		return
+	if _t0 < 0:
+		_t0 = Time.get_ticks_msec()
+	var f := FileAccess.open(_gravar, FileAccess.READ_WRITE if FileAccess.file_exists(_gravar) else FileAccess.WRITE)
+	f.seek_end()
+	f.store_line("%d %s%s" % [Time.get_ticks_msec() - _t0, p.hex_encode(), "" if canal == "" else " " + canal])
+	f.close()
+
+
+static func tocando() -> bool:
+	return _tocando
 
 
 func enviar(pacote: PackedByteArray) -> void:

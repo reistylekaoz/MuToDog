@@ -23,6 +23,7 @@ var _efeitos: Array[AudioStreamPlayer] = []   # sons soltos (dados/sons: subir d
 var _db_efeitos := -6.0
 var _faixa := ""
 var _mapa := -1
+var templo := 0      # estado do Illusion Temple (C1 BF 09 + 1): 0 nada, 1 espera, 2 pronto, 3 partida, 4 fim
 
 
 func _ready() -> void:
@@ -62,6 +63,20 @@ func atualizar(mapa: int, seguro: bool, tile: int, x := 0, y := 0) -> void:
 			fundo.stream = w
 			fundo.play()
 			print("TESTE fundo %d" % mapa)
+	# Illusion Temple (CursedTemple::PlayBGM): sem estado nao toca nada, na espera cursedtemplewait e do
+	# pronto em diante cursedtempleplay (musica_jogo.mp3)
+	if mapa >= 45 and mapa <= 50:
+		var it := "" if templo == 0 else "res://dados/mundo47/" + ("musica.mp3" if templo == 1 else "musica_jogo.mp3")
+		if it == "":
+			if _faixa != "":
+				musica.stop()
+				_faixa = ""
+		elif (it != _faixa or not musica.playing) and ResourceLoader.exists(it):
+			_faixa = it
+			musica.stream = load(it)
+			musica.play()
+			print("TESTE musica templo %s" % it.get_file())
+		return
 	if mapa not in [0, 2, 3] and (_faixa == "" or not musica.playing):
 		var mp := "res://dados/mundo%d/musica.mp3" % PacoteMapa.mundo_do_mapa(mapa)
 		if ResourceLoader.exists(mp):
@@ -106,7 +121,7 @@ func volumes(v_musica: float, v_efeitos: float) -> void:
 
 # som de uma vez (PlayBuffer do cliente); ate 6 ao mesmo tempo
 func tocar(nome: String) -> void:
-	var c := "res://dados/sons/%s.wav" % nome
+	var c := nome if nome.begins_with("res://") else "res://dados/sons/%s.wav" % nome
 	if mudo or not ResourceLoader.exists(c):
 		return
 	var p: AudioStreamPlayer = null
@@ -126,7 +141,7 @@ func tocar(nome: String) -> void:
 
 # som que repete ate parar (PlayBuffer com loop: o iBloodCastle.wav durante o castelo)
 func laco(nome: String) -> void:
-	var c := "res://dados/sons/%s.wav" % nome
+	var c := nome if nome.begins_with("res://") else "res://dados/sons/%s.wav" % nome
 	if mudo or not ResourceLoader.exists(c):
 		return
 	var w := (load(c) as AudioStreamWAV).duplicate() as AudioStreamWAV

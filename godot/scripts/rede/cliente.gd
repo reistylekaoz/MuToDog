@@ -166,6 +166,18 @@ signal duelo_fim(resultado: int, id: int, nome: String)
 signal duelo_placar(id1: int, id2: int, pontos1: int, pontos2: int)
 signal duelo_vida(id1: int, id2: int, vida1: int, vida2: int, sd1: int, sd2: int)
 signal duelo_venceu(vencedor: String, perdedor: String)
+# Illusion Temple (C1 BF, estruturas do cliente): resposta da entrada (0 entrou, 3 nivel do pergaminho, 4 lotado,
+# 5 vezes por dia, 7 PK, 8 anel), estado ciclico (tempo, quem leva a reliquia e onde, placar, minha equipe e o grupo),
+# gente em cada templo, skill usada e acabada, pontos de abate, quem pegou a reliquia, resultado e o estado da partida
+signal templo_entrada(resultado: int)
+signal templo_info(info: Dictionary)
+signal templo_gente(lista: Array)
+signal templo_skill(ok: bool, skill: int, de: int, alvo: int)
+signal templo_skill_fim(skill: int, alvo: int)
+signal templo_pontos(pontos: int)
+signal templo_reliquia(id: int, nome: String)
+signal templo_resultado(aliados: int, ilusao: int, lista: Array)
+signal templo_estado(templo: int, estado: int)
 signal evento_entrada(evento: String, resultado: int)   # C1 90 (Devil Square) e C1 9A (Blood Castle): 0 entrou, 1 sem convite...
 signal evento_abre(tipo: int, minutos: int, gente: int, minutos_baixo: int)   # C1 91: falta pra abrir (1 DS, 2 BC, 4 CC, 5 IT)
 signal evento_contagem(estado: int)                    # C1 92: a contagem de 30 s (0 a 2 DS, 3 a 7 BC, 10 a 13 CC)
@@ -477,6 +489,20 @@ func duelo_responder(aceita: bool, id: int, nome: String) -> void:
 
 func duelo_parar() -> void:
 	con.enviar(PackedByteArray([0xC3, 0, 0xAA, 0x03]))
+
+
+# C1 BF 00: entrar no Illusion Temple (templo 1 a 6, o 6 e o do master; o cliente manda a casa 0xFF e o
+# servidor acha o pergaminho), BF 02: skill do templo (numero em big endian, alvo e distancia), BF 05: premio
+func templo_entrar(templo: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xBF, 0x00, templo, 0xFF]))
+
+
+func templo_usar(skill: int, alvo: int, distancia: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xBF, 0x02, (skill >> 8) & 0xFF, skill & 0xFF, alvo & 0xFF, distancia]))
+
+
+func templo_premio() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xBF, 0x05]))
 
 
 func entrar_caos(nivel: int, slot: int) -> void:
@@ -1608,9 +1634,63 @@ func _tratar(p: PackedByteArray) -> void:
 		0xBF:
 			if sub == 0x51 and p.size() >= 13:
 				helper_estado.emit(p[12] != 0, p[4] != 0, _ler_le(p, 8))
+			elif p[0] == 0xC1 and sub <= 0x09:
+				_ler_templo(p, sub)
 		0xAE:
 			if p[0] == 0xC2 and p.size() >= 4:
 				helper_dados.emit(p.slice(4, 4 + 257))
+
+
+# BF 00 a 09: Illusion Temple (ReceiveCursedTemple* do WSclient.cpp; WORD em little endian)
+func _ler_templo(p: PackedByteArray, sub: int) -> void:
+	# id do objeto (0xFFFF = ninguem; o bit de cima e so marca, como no resto)
+	var w := func(o: int) -> int:
+		var v: int = (p[o] | (p[o + 1] << 8)) if o + 1 < p.size() else 0xFFFF
+		return v if v == 0xFFFF else v & 0x7FFF
+	match sub:
+		0x00:
+			if p.size() >= 5:
+				templo_entrada.emit(p[4])
+		0x01:
+			if p.size() < 14:
+				return
+			var grupo := []
+			for i in p[13]:
+				var o := 14 + i * 5
+				if o + 5 > p.size():
+					break
+				grupo.append({"id": w.call(o), "mapa": p[o + 2], "x": p[o + 3], "y": p[o + 4]})
+			templo_info.emit({"tempo": p[4] | (p[5] << 8), "reliquia": w.call(6), "rx": p[8], "ry": p[9], "aliados": p[10],
+				"ilusao": p[11], "equipe": p[12], "grupo": grupo})
+		0x02:
+			if p.size() >= 11:
+				templo_skill.emit(p[4] != 0, (p[5] << 8) | p[6], w.call(7), w.call(9))
+		0x03:
+			if p.size() >= 10:
+				templo_gente.emit(Array(p.slice(4, 10)))
+		0x04:
+			if p.size() < 7:
+				return
+			var l := []
+			for i in p[6]:
+				var o := 7 + i * 17
+				if o + 17 > p.size():
+					break
+				l.append({"nome": _ler_texto(p, o, 10), "mapa": p[o + 10], "equipe": p[o + 11], "classe": p[o + 12],
+					"exp": _ler_le(p, o + 13)})
+			templo_resultado.emit(p[4], p[5], l)
+		0x06:
+			if p.size() >= 5:
+				templo_pontos.emit(p[4])
+		0x07:
+			if p.size() >= 8:
+				templo_skill_fim.emit((p[4] << 8) | p[5], w.call(6))
+		0x08:
+			if p.size() >= 6:
+				templo_reliquia.emit(w.call(4), _ler_texto(p, 6, 10))
+		0x09:
+			if p.size() >= 6:
+				templo_estado.emit(p[4], p[5])
 
 
 # 3F: loja pessoal (o S6 manda as listas em C2, as respostas em C1 e o preco em C3)

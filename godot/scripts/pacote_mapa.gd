@@ -8,7 +8,7 @@ extends RefCounted
 # partida. Nos testes headless os dados estao no projeto e nada e carregado.
 # Uso: await PacoteMapa.carregar(no_qualquer, numero_do_mundo)
 
-const FORA := [2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 19, 25, 31, 32, 34, 35, 38, 39, 52, 57, 58, 63, 64, 65, 75, 80, 81, 82]
+const FORA := [2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 19, 25, 31, 32, 34, 35, 38, 39, 47, 52, 57, 58, 63, 64, 65, 75, 80, 81, 82]
 # pacote 0 (mapas/mundo0.pck): os monstros dos eventos (Blood Castle, Kalima, Chaos Castle,
 # Imperial Fortress, Doppelganger...), baixado na primeira vez que um deles aparece
 const MONSTROS := 0
@@ -30,6 +30,9 @@ static func mundo_do_mapa(mapa: int) -> int:
 	# os 7 Kalimas usam a pasta World25 (iMapWorld = WD_24HELLAS + 1)
 	if mapa in [24, 25, 26, 27, 28, 29, 36]:
 		return 25
+	# os 6 Illusion Temple (45 a 50) usam a pasta World47 (iMapWorld = WD_45CURSEDTEMPLE_LV1 + 2)
+	if mapa in [45, 46, 47, 48, 49, 50]:
+		return 47
 	return mapa + 1
 
 

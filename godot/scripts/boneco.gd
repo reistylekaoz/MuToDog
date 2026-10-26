@@ -112,6 +112,12 @@ const NPCS := {
 	163: ["monster72_crossbow20", 0.9], 165: ["monster72_crossbow20", 0.9], 167: ["monster72_crossbow20", 0.9],
 	169: ["monster72_crossbow20", 0.9], 171: ["monster72_crossbow20", 0.9], 173: ["monster72_crossbow20", 0.9],
 	427: ["monster72_crossbow20", 0.9], 380: ["npc_songsom", 1, -3], 381: ["npc_allied", 1.2], 382: ["npc_illusion", 1.2],
+	# Illusion Temple: os espiritos (raio, gelo e veneno dos 6 templos) e os jogadores de cada equipe
+	# (o servidor manda o jogador com a aparencia 404 ou 405: o cliente desenha o player.bmd com a roupa
+	# unitedsoldier ou illusionist, CursedTemple::CreateCharacter)
+	386: ["monster124", 1], 387: ["monster125", 1], 388: ["monster126", 1], 389: ["monster124", 1], 390: ["monster125", 1], 391: ["monster126", 1], 392: ["monster124", 1], 393: ["monster125", 1], 394: ["monster126", 1],
+	395: ["monster124", 1], 396: ["monster125", 1], 397: ["monster126", 1], 398: ["monster124", 1], 399: ["monster125", 1], 400: ["monster126", 1], 401: ["monster124", 1], 402: ["monster125", 1], 403: ["monster126", 1],
+	404: ["templo_aliado", 1], 405: ["templo_ilusao", 1],
 	383: ["npc_songko", 1.8, -3], 384: ["npc_songk2", 1.5, -3], 467: ["npc_snowman", 1, -3], 477: ["xmas_snowman", 1.3, -3],
 	468: ["npc_xmassanta", 0.43], 469: ["npc_xmassanta", 0.43], 470: ["npc_xmassanta", 0.43], 471: ["npc_xmassanta", 0.43],
 	472: ["npc_xmassanta", 0.43], 473: ["npc_xmassanta", 0.43], 474: ["npc_xmassanta", 0.43], 475: ["npc_xmassanta", 0.43],

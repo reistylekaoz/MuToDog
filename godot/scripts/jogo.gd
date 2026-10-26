@@ -76,6 +76,11 @@ var quest_nova := QuestNova.new()       # quests novas do S6 (F6): Elf Soldier
 var janela_evento: JanelaEvento  # entrada do Devil Square (Charon) e do Blood Castle (Mensageiro): C1 90 e 9A
 var eventos: Eventos           # contagem, tempo do Blood Castle e placar (C1 92, 93 e 9B)
 var janela_duelo: JanelaDuelo  # placar do duelo (C1 AA)
+var janela_templo: JanelaTemplo   # entrada do Illusion Temple pela Mirage (NPC janela 0x14)
+var templo: Templo               # HUD do Illusion Temple (rodada 16)
+var _templo_fx := {}             # "id:o que" -> EfeitoMU preso em alguem (reliquia, skills 210 e 211)
+var _templo_preso := false       # Restraint (211) em mim: nao anda ate o C1 BF 07
+var _mirage_t := 0.0             # Mirage sem janela do servidor: o cliente abre a dele
 var caos: ChaosCastle          # Chaos Castle: o castelo encolhe, buracos e armas do castelo (rodada 14)
 var _caos_slot := -1           # a Armor of Guardsman do clique direito, esperando o C1 91
 var _caos_mortes := {"monstros": 0, "jogadores": 0}   # o que eu matei no castelo (o OpenMU nao manda)
@@ -431,6 +436,36 @@ func _teste_roteiro(passos: Array) -> void:
 				dialogo.escolher(int(a) - 1)
 			"B":
 				_alternar_gens()
+			"I":
+				# I:sub,bytes em hex: pacote C1 BF do Illusion Temple montado aqui (o OpenMU nao tem o evento)
+				# (EU vira o meu id em little endian; NOME o meu nome em 10 bytes). Vai pra fita como recebido;
+				# tocando a fita, ela mesma entrega
+				if Conexao.tocando():
+					continue
+				var pi := a.split(",")
+				var pq := PackedByteArray([0xC1, 0, 0xBF, pi[0].hex_to_int()])
+				if pi.size() > 1:
+					var nb := meu_nome.to_utf8_buffer()
+					nb.resize(10)
+					pq.append_array(pi[1].replace("EU", "%02x%02x" % [cli.meu_id & 0xFF, cli.meu_id >> 8]).replace("NOME", nb.hex_encode()).hex_decode())
+				pq[1] = pq.size()
+				print("TESTE roteiro templo injeta BF %s (%d bytes)" % [pi[0], pq.size()])
+				Conexao.anotar(pq)
+				cli._ler_templo(pq, pq[3])
+			"S":
+				# S:skill,id usa a skill do templo nesse alvo como se fosse Shift + botao direito
+				var ps := a.split(",")
+				templo.skill = int(ps[0])
+				_skill_templo(entidades.get(int(ps[1])) if ps.size() > 1 else null)
+			"J":
+				# J:0 Enter, J:1 Close na janela da Mirage
+				janela_templo.clicar(int(a))
+			"N":
+				# N:numero fala com o NPC do templo desse numero (o mais perto)
+				for e: Entidade in entidades.values():
+					if e.tipo == "npc" and e.numero == int(a):
+						falar_com(e.id)
+						break
 			"A":
 				_cacar_jogador = a.replace("_", " ")
 				print("TESTE roteiro ataca o jogador %s sempre que der" % a)
@@ -851,6 +886,7 @@ func _montar_ui() -> void:
 	hud.add_child(eventos)
 	janela_duelo = JanelaDuelo.new()
 	hud.add_child(janela_duelo)
+	_ligar_templo()
 	caos = ChaosCastle.new()
 	add_child(caos)
 	eventos.estagio.connect(func(n): caos.encolher(n))
@@ -1307,6 +1343,9 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	_limpar_mundo()
 	mapa_atual = mapa
 	EfeitoMontaria.mapa = mapa
+	if templo:
+		templo.mapa(mapa)
+		_templo_preso = false
 	# navegador: Lost Tower e Atlans vem num pacote a parte; a rede espera ele baixar
 	if PacoteMapa.precisa(PacoteMapa.mundo_do_mapa(mapa)):
 		_msg("Carregando %s..." % mapas.get(str(mapa), "o mapa"))
@@ -1635,6 +1674,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 		barra_mu.fechar_lista()
 		skill_numero = -1
 		seguindo = -1
+	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT and ev.shift_pressed and templo.mostrando:
+		_skill_templo(_entidade_na_tela(ev.position))
+		return
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT:
 		if comandos.selecionado >= 0:
 			_comando_no_mouse(ev.position)
@@ -1722,7 +1764,7 @@ func _marcar_clique(t: Vector2i) -> void:
 
 
 func andar_ate(t: Vector2i) -> void:
-	if loja_pessoal.aberta:
+	if loja_pessoal.aberta or _templo_preso:
 		return
 	var de: Vector2i = eu.fila[0] if eu.andando() else eu.tile
 	var c: Array[Vector2i] = mundo.caminho(de, t)
@@ -1792,6 +1834,7 @@ func _process(dt: float) -> void:
 	_combate(dt)
 	_seguir(dt)
 	_skills(dt)
+	_templo_quadro(dt)
 	_cursor_mu()
 	if not _restante.is_empty() and eu.tile == _fim_enviado:
 		_mandar_trecho()
@@ -1812,6 +1855,7 @@ func _process(dt: float) -> void:
 		add_child(som)
 		eventos.som = som
 		caos.som = som
+		templo.som = som
 		_volumes()
 	# a loja fecha se eu andar pra longe do NPC (o servidor tambem esquece)
 	if npc_falando >= 0 and (not entidades.has(npc_falando) or _distancia(eu.tile, entidades[npc_falando].tile) > 5):
@@ -2407,10 +2451,14 @@ func _ir_ao_npc() -> void:
 		eu.olhar_para(n)
 		if npc_falando >= 0:
 			_fechar_loja()
+		npc_alvo = -1
+		if Templo.no_templo(mapa_atual) and _npc_do_templo(n):
+			return
 		print("TESTE falando com %s (%d)" % [n.nome, n.id])
 		cli.falar_npc(n.id)
 		npc_falando = n.id
-		npc_alvo = -1
+		if n.numero == 385:
+			_mirage_t = 0.8
 	elif not eu.andando() or _repensar <= 0.0:
 		_repensar = 0.8
 		_ir_perto(n.tile, 2)
@@ -2433,7 +2481,188 @@ func _fechar_loja() -> void:
 	janela_quest.visible = false
 	janela_evento.visible = false
 	janela_quest_nova.visible = false
+	if janela_templo:
+		janela_templo.visible = false
 	inv.soltar()
+
+
+# --- Illusion Temple (rodada 16) ----------------------------------------------------
+
+func _ligar_templo() -> void:
+	janela_templo = JanelaTemplo.new()
+	janela_templo.entrar.connect(func(n):
+		print("TESTE templo entrar %d" % n)
+		if n < 0:
+			_msg("[color=#ff5050]%s[/color]" % DicaItem.t(2367))
+		else:
+			cli.templo_entrar(n))
+	janela_templo.fechar.connect(_fechar_loja)
+	hud.add_child(janela_templo)
+	templo = Templo.new()
+	for k in barra_mu.info_skills:
+		templo.nomes_skill[int(k)] = str(barra_mu.info_skills[k][0])
+	templo.usar.connect(func(sk, alvo):
+		var e: Entidade = entidades.get(alvo)
+		var d := _distancia(eu.tile, e.tile) if e else 0
+		print("TESTE templo usa skill %d em %d (distancia %d)" % [sk, alvo, d])
+		cli.templo_usar(sk, alvo, d)
+		eu.tocar_skill("magia", e.position if e else eu.position))
+	templo.falar.connect(func(id):
+		print("TESTE templo barra cheia: fala com %d" % id)
+		cli.falar_npc(id)
+		npc_falando = id)
+	templo.aviso.connect(func(t, erro):
+		_msg("[color=%s]%s[/color]" % ["#ff5050" if erro else "#e8e8e8", t]))
+	hud.add_child(templo)
+	cli.templo_entrada.connect(func(r):
+		print("TESTE templo entrada %d" % r)
+		if r == 0:
+			janela_templo.visible = false
+			_fechar_loja()
+			return
+		var textos := {3: 2367, 4: 2368, 5: 2369, 7: 2091, 8: 2090}
+		_msg("[color=#ff5050]%s[/color]" % DicaItem.t(textos.get(r, 2367))))
+	cli.templo_gente.connect(func(l): janela_templo.contar(l))
+	cli.templo_estado.connect(func(t, e):
+		print("TESTE templo %d estado do servidor %d" % [t, e])
+		if e == 1:
+			_fechar_loja()
+		templo.mudar_estado(e))
+	cli.templo_info.connect(func(d):
+		var antes: int = templo.reliquia
+		templo.receber(d)
+		if templo.reliquia != antes:
+			_reliquia_em(antes, false)
+			_reliquia_em(templo.reliquia, true))
+	cli.templo_reliquia.connect(func(id, nome):
+		print("TESTE templo reliquia com %d (%s)" % [id, nome])
+		_reliquia_em(templo.reliquia, false)
+		templo.reliquia = id
+		_reliquia_em(id, true))
+	cli.templo_pontos.connect(func(n): templo.receber_pontos(n))
+	cli.templo_skill.connect(_templo_skill)
+	cli.templo_skill_fim.connect(func(sk, alvo):
+		print("TESTE templo skill %d acabou em %d" % [sk, alvo])
+		_fx_templo(alvo, str(sk), false)
+		if sk == Templo.RESTRICAO and alvo == cli.meu_id:
+			_templo_preso = false)
+	cli.templo_resultado.connect(func(a, i, l):
+		templo.mostrando = false
+		templo.queue_redraw()
+		som.tocar(Templo.SOM % "end01")
+		var cx := CaixaTemplo.new()
+		cx.heroi = meu_nome
+		cx.aliados = a
+		cx.ilusao = i
+		cx.lista = l
+		cx.classes = classes
+		cx.minha_equipe = templo.equipe
+		for e in l:
+			if str(e.nome) == meu_nome:
+				cx.minha_equipe = int(e.equipe)
+		cx.fechou.connect(func():
+			print("TESTE templo pede o premio")
+			cli.templo_premio())
+		hud.add_child(cx))
+
+
+# NPC janela 0x14 (Mirage); o OpenMU nao manda (Mirage sem janela): o cliente abre a dele
+func _abrir_templo() -> void:
+	_mirage_t = 0.0
+	_janela_npc = 0x14
+	janela_templo.abrir(meu_nivel, _master_ativo())
+	print("TESTE janela templo templo %d" % janela_templo.templo)
+
+
+# clique num NPC dentro do templo: comandantes so falam; estatua e bancos enchem a barra
+func _npc_do_templo(n: Entidade) -> bool:
+	if n.numero == 381 or n.numero == 382:
+		_caixa_mu([DicaItem.t(2359 if n.numero == 381 else 2362)], func(_r): pass, false, false)
+		return true
+	var tenho := false
+	for k in inv.itens:
+		if int(inv.itens[k].grupo) == 14 and int(inv.itens[k].numero) == 64:
+			tenho = true
+	return templo.clicou_npc(n.numero, n.id, tenho)
+
+
+func _skill_templo(e: Entidade) -> void:
+	var inimigo: bool = e != null and e.tipo == "jogador" and e != eu
+	templo.tentar(e.id if e else -1, inimigo, _distancia(eu.tile, e.tile) if e else 99)
+
+
+# C1 BF 02: 210 escudo em quem usou, 211 prende o alvo, 212 leva quem usou ate a reliquia, 213 queima o alvo
+func _templo_skill(ok: bool, sk: int, de: int, alvo: int) -> void:
+	print("TESTE templo skill %d de %d em %d: %s" % [sk, de, alvo, "ok" if ok else "falhou"])
+	templo.skill_voltou(de)
+	if not ok:
+		return
+	var quem: Entidade = entidades.get(de)
+	var nele: Entidade = entidades.get(alvo)
+	if quem and quem != eu:
+		quem.tocar_skill("magia", nele.position if nele else quem.position)
+	match sk:
+		Templo.PROTECAO:
+			_fx_templo(alvo, str(sk), true)
+		Templo.RESTRICAO:
+			_fx_templo(alvo, str(sk), true)
+			if alvo == cli.meu_id:
+				_templo_preso = true
+		Templo.QUEIMA:
+			if nele:
+				var ef := EfeitoMU.criar(mundo)
+				ef.chao("magic_ground2", nele.global_position, 1.6, Color(1, 0.2, 0.1), 1.0, {"vgiro": 3.0, "some": 0.5})
+				for j in 6:
+					ef.sprite("flare01", nele.global_position + Vector3(randf_range(-0.4, 0.4), 0.3 + j * 0.25, randf_range(-0.4, 0.4)),
+						1.0, Color(1, 0.3, 0.1), 0.8, {"some": 0.5})
+
+
+# efeito preso em alguem enquanto dura: "reliquia" (eventsungmul em cima da cabeca), "210" (eventshild) e
+# "211" (eventroofe)
+func _fx_templo(id: int, qual: String, sim: bool) -> void:
+	var chave := "%d:%s" % [id, qual]
+	if _templo_fx.has(chave):
+		if is_instance_valid(_templo_fx[chave]):
+			_templo_fx[chave].queue_free()
+		_templo_fx.erase(chave)
+	var e: Entidade = entidades.get(id)
+	if not sim or e == null:
+		return
+	var ef := EfeitoMU.criar(e)
+	var sempre := 1e9
+	match qual:
+		"reliquia":
+			ef.modelo("eventsungmul", e.global_position + Vector3.UP * 2.6, 1.0, Color(1, 1, 1), sempre,
+				{"segue": e, "desl": Vector3.UP * 2.6, "vgiro": 1.5})
+			ef.sprite("flare01", e.global_position + Vector3.UP * 2.6, 1.6, Color(1, 0.3, 0.2), sempre, {"segue": e, "desl": Vector3.UP * 2.6})
+		"210":
+			ef.modelo("eventshild", e.global_position + Vector3.UP * 0.9, 1.0, Color(0.5, 0.6, 1), sempre, {"segue": e, "desl": Vector3.UP * 0.9})
+		"211":
+			ef.modelo("eventroofe", e.global_position, 1.0, Color(0.7, 0.7, 0.7), sempre, {"segue": e})
+	_templo_fx[chave] = ef
+	print("TESTE templo efeito %s em %d" % [qual, id])
+
+
+func _reliquia_em(id: int, sim: bool) -> void:
+	if id == 0xFFFF or id < 0:
+		return
+	if sim:
+		som.tocar(Templo.SOM % "holy01")
+	_fx_templo(id, "reliquia", sim)
+
+
+func _templo_quadro(dt: float) -> void:
+	if _mirage_t > 0.0:
+		_mirage_t -= dt
+		if _mirage_t <= 0.0 and npc_falando >= 0 and _janela_npc == 0 and not janela_templo.visible:
+			print("TESTE Mirage sem janela do servidor: o cliente abre a entrada")
+			_abrir_templo()
+	if templo == null or not templo.mostrando:
+		return
+	templo.meu_id = cli.meu_id
+	if templo.progresso_npc >= 0 and (eu.andando() or alvo_id >= 0):
+		templo.cancelar_progresso()
+	templo.meu_tile = eu.tile
 
 
 func _volumes() -> void:
@@ -2470,6 +2699,8 @@ func _ligar_loja_e_amigos() -> void:
 			print("TESTE janela evento %s botao %d" % [janela_evento.modo, janela_evento.ativo])
 			if _parametros().has("evento"):
 				janela_evento.clicar(janela_evento.ativo)
+		elif tipo == 0x14:
+			_abrir_templo()
 		elif tipo > 3:
 			var nomes := {0x0C: "o mercador de cash"}
 			_msg("[color=#9a9ab0]A janela de %s ainda nao foi feita neste cliente.[/color]" % nomes.get(tipo, "esse NPC (tipo %d)" % tipo))

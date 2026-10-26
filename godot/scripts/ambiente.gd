@@ -61,6 +61,7 @@ const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 
 	57: [57, 67, 71, 72, 73, 74, 77, 78],
 	58: [67, 70, 80],
 	64: [0, 1, 2, 3, 4, 5, 6, 67],
+	47: [70, 71, 72, 73, 74, 75, 76, 77, 78, 79],
 	75: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132, 158],
 	80: [54, 55, 56, 57, 58, 67],
 	81: [67, 113, 114, 115, 116, 118],
@@ -88,6 +89,8 @@ const SOMA := {
 	38: {76: [0, Vector2(-0.01, 0.0)], 85: [3, Vector2.ZERO], 95: [0, Vector2.ZERO], 103: [1, Vector2.ZERO], 105: [1, Vector2.ZERO]},
 	39: {1: [1, Vector2.ZERO], 2: [1, Vector2.ZERO], 8: [1, Vector2.ZERO], 10: [2, Vector2.ZERO], 12: [0, Vector2(1.0, 1.0)], 27: [2, Vector2(0.0, -1.0)], 31: [0, Vector2.ZERO], 35: [1, Vector2.ZERO], 36: [1, Vector2.ZERO], 76: [0, Vector2.ZERO]},
 	52: {56: [0, Vector2.ZERO], 73: [-1, Vector2.ZERO], 78: [0, Vector2.ZERO], 79: [0, Vector2.ZERO], 104: [4, Vector2.ZERO], 110: [[0, 1, 2], Vector2.ZERO], 113: [9, Vector2.ZERO], 114: [9, Vector2.ZERO], 121: [1, Vector2.ZERO]},
+	47: {39: [0, Vector2.ZERO], 41: [0, Vector2.ZERO], 46: [2, Vector2.ZERO], 62: [1, Vector2.ZERO],
+		64: [-1, Vector2.ZERO], 65: [-1, Vector2.ZERO], 66: [-1, Vector2.ZERO], 80: [-1, Vector2.ZERO]},
 	58: {20: [1, Vector2.ZERO], 68: [0, Vector2.ZERO], 69: [0, Vector2.ZERO], 71: [0, Vector2.ZERO]},
 	64: {16: [0, Vector2.ZERO], 67: [0, Vector2(0.0, 0.1), 0.2], 68: [0, Vector2(0.0, 0.1), 0.2]},
 	80: {8: [[0, 1], Vector2(0.0, -1.0), 0.3]},
@@ -103,6 +106,7 @@ const PULSA := {8: {23: [2.0, 0.3, 0.5], 32: [4.0, 0.5, 0.5], 34: [4.0, 0.5, 0.5
 	52: {56: [3.0, 0.3, 0.5], 104: [2.0, 0.5, 0.5], 121: [2.0, 0.5, 0.5]},
 	58: {68: [1.0, 0.5, 0.8], 69: [1.0, 0.5, 0.8], 71: [1.0, 0.5, 0.8]},
 	64: {16: [2.0, 0.5, 0.5]},
+	47: {64: [1.0, 0.5, 0.5], 65: [1.0, 0.5, 0.5], 80: [1.0, 0.5, 0.5]},
 	81: {54: [2.0, 0.5, 1.25], 58: [1.0, 0.5, 0.5], 63: [1.0, 0.5, 0.5], 119: [1.0, 0.5, 0.5]},
 	82: {54: [2.0, 0.5, 1.25], 58: [1.0, 0.5, 0.5], 63: [1.0, 0.5, 0.5], 119: [1.0, 0.5, 0.5]},
 }
@@ -117,14 +121,16 @@ const BRILHO := {9: {63: Color(1 / 1.7, 1, 1), 64: Color(1, 0.32, 0.32)}}
 const SPRITE := {25: {35: ["flare01", Color(0.3, 0.6, 1), 1.5, 2.0, 0.2, 0.8], 36: ["flare01", Color(0.3, 0.5, 1), 1.0, 1.0, 0.0, 1.0]},
 	63: {26: ["flare01", Color(0.8, 0.2, 0), 8.0, 5.0, 0.1, 1.0], 27: ["flare01", Color(0, 0.2, 0.8), 8.0, 5.0, 0.1, 1.0],
 		28: ["flare01", Color(0, 0.6, 0.6), 8.0, 5.0, 0.1, 1.0]},
-	65: {36: ["flare01", Color(1, 0.2, 0), 2.0, 1.0, 0.0, 1.0]}}
+	65: {36: ["flare01", Color(1, 0.2, 0), 2.0, 1.0, 0.0, 1.0]},
+	47: {76: ["flare01", Color(0.9, 0.28, 0.22), 6.0, 7.0, 0.15, 0.85], 77: ["flare01", Color(0.21, 0.28, 0.9), 6.0, 7.0, 0.15, 0.85]}}
 # luz pintada no chao por tipo: [cor, raio] (Arena 34: (0,9 0,2 0,1) x 0,5..0,7, raio 3)
 # textura *_R (TextureScript m_bBright): a malha desenha somada em qualquer objeto. Ligado nos mapas
 # da rodada 15: o ceu de estrelas (ChrisSky_R) e a aurora da Santa, a lava (PKMagma_R) da Arena, BosBBb_R do Kalima
 const TEXTURA_R := [25, 63, 65]
-const LUZ_COR := {65: {34: [Color(0.9, 0.2, 0.1) * 0.6, 3]}}
+const LUZ_COR := {65: {34: [Color(0.9, 0.2, 0.1) * 0.6, 3]},
+	47: {76: [Color(0.7, 0.28, 0.21), 3], 77: [Color(0.21, 0.28, 0.7), 3]}}
 # fogo no objeto (Arena 36: CreateParticle BITMAP_FIRE junto do brilho)
-const FOGO_TIPO := {65: [36]}
+const FOGO_TIPO := {65: [36], 47: [76, 77]}
 # cachoeira do Kalima (RenderHellasVisual 37 a 40): [textura, por segundo, sobe (a nevoa do pe)]
 const CASCATA := {25: {37: ["waterfall5", 25.0, false], 38: ["waterfall2", 12.0, false], 39: ["waterfall3", 25.0, true],
 	40: ["waterfall2", 6.0, false]}}
@@ -173,10 +179,14 @@ const NEVOA := {32: [Color(0.05, 0.05, 0.1), 4.0, 7.0, -1.0, Rect2(54.49, 67.84,
 # aqui sai); Crywolf 77 e 78: subtipo 9, 1 a cada 6 quadros, sobe 6 s e desce apagando
 # Chaos Castle 6 a 11: azul bem escuro (0,05 0,05 0,1), 12: cinza (0,3); o cliente usa os subtipos 0 a 5 e 7
 # do BITMAP_CLOUD, aqui todos viram o 1 (parada em volta do objeto)
+# Illusion Temple (CursedTemple::RenderObjectVisual): 70 a 73 e 79 nuvem colorida (fLumi baixo); 74 e escura
+# e some na soma
 const NUVEM_OBJ := {19: {6: [1, Color(0.05, 0.05, 0.1)], 7: [1, Color(0.05, 0.05, 0.1)], 8: [1, Color(0.05, 0.05, 0.1)],
 		9: [1, Color(0.05, 0.05, 0.1)], 10: [1, Color(0.05, 0.05, 0.1)], 11: [1, Color(0.05, 0.05, 0.1)], 12: [1, Color(0.3, 0.3, 0.3)]},
 	34: {59: [1, Color(0.01, 0.03, 0.05)], 62: [1, Color(0.05, 0.05, 0.05)], 63: [1, Color(0.05, 0.02, 0.02)]},
-	35: {77: [9, Color(0.02, 0.03, 0.02)], 78: [9, Color(0.03, 0.06, 0.05)]}}
+	35: {77: [9, Color(0.02, 0.03, 0.02)], 78: [9, Color(0.03, 0.06, 0.05)]},
+	47: {70: [1, Color(0.013, 0.045, 0.038)], 71: [1, Color(0.055, 0.031, 0.051)], 72: [1, Color(0.035, 0.04, 0.045)],
+		73: [1, Color(0.04, 0.04, 0.04)], 79: [1, Color(0.006, 0.007, 0.01)]}}
 # Terra das Provas 53: fumaca rosada subindo (BITMAP_SMOKE subtipo 22, 1 a cada 3 quadros)
 const FUMACA_ROSA := {32: [53]}
 const PERTO_NEBLINA := 28.0   # emissor preso em objeto so liga a ate 28 tiles do heroi
@@ -250,7 +260,11 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 		if luz_cor.has(t):
 			_luz(extra, p, luz_cor[t][0], luz_cor[t][1])
 		if t in fogo_tipo:
-			add_child(_fogo(tex_fogo, p))
+			var fg := _fogo(tex_fogo, p)
+			if m.numero == 47:
+				# templo: BITMAP_TORCH_FIRE com a cor da tocha (76 vermelha, 77 azul)
+				fg.color_ramp.set_color(0, sprite[t][1] * 1.2)
+			add_child(fg)
 			fogos += 1
 		if cascata.has(t):
 			# sao muitas (189 no Kalima): so ligam perto do heroi, como a neblina presa nos objetos

@@ -61,7 +61,7 @@ static class Extras
         // musica e som de fundo do mapa todo (PlayBGM e PlayWorldAmbientSounds do SceneManager.cpp do cliente)
         var sons = mundo switch { 2 => ("Dungeon.mp3", "aDungeon.wav"), 5 => ("lost_tower_a.mp3", "aTower.wav"),
             8 => ("atlans.mp3", "aWater.wav"), 9 => ("tarkan.mp3", "desert.wav"),
-            11 => ("icarus.mp3", "aHeaven.wav"), 25 => ("kalima.mp3", "aKalima.wav"), 63 => ("Santa_Village.mp3", ""), 65 => ("DuelArena.mp3", ""), 31 => ("castle.mp3", ""), 32 => ("huntingground.mp3", ""),
+            11 => ("icarus.mp3", "aHeaven.wav"), 25 => ("kalima.mp3", "aKalima.wav"), 63 => ("Santa_Village.mp3", ""), 65 => ("DuelArena.mp3", ""), 47 => ("cursedtemplewait.mp3", ""), 31 => ("castle.mp3", ""), 32 => ("huntingground.mp3", ""),
             34 => ("Aida.mp3", ""), 35 => ("crywolf1st.mp3", ""), 38 => ("kanturu_1st.mp3", ""), 39 => ("kanturu_2nd.mp3", ""),
             52 => ("elbeland.mp3", ""), 57 => ("SwampOfCalmness.mp3", ""), 58 => ("Raklion.mp3", ""), 64 => ("PK_Field.mp3", ""),
             80 => ("iDoppelganger.mp3", "aWind.wav"), 81 => ("Karutan_A.mp3", "Karutan/Karutan_desert_env.wav"),
@@ -74,6 +74,9 @@ static class Extras
             if (sons.Item2 != "") File.Copy(som, Path.Combine(dest, "fundo.wav"), true);
             Console.WriteLine($"  {sons.Item1}, {sons.Item2} -> musica.mp3, fundo.wav");
         }
+        // Illusion Temple: musica de espera (musica.mp3) e a da partida (musica_jogo.mp3), trocada pelo estado do templo
+        if (mundo == 47)
+            File.Copy(Achar(Achar(data, "Music")!, "cursedtempleplay.mp3")!, Path.Combine(dest, "musica_jogo.mp3"), true);
         if (mundo is 3 or 4)
         {
             var npc = Achar(data, "NPC") ?? throw new Exception("sem NPC");

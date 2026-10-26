@@ -234,6 +234,13 @@
   "npc_songk2",
   "npc_songko",
   "npc_songsom",
-  "npc_xmassanta"
+  "npc_xmassanta",
+  "monster124",
+  "monster125",
+  "monster126"
+ ],
+ "47": [
+  "templo_aliado",
+  "templo_ilusao"
  ]
 }

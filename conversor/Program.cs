@@ -77,8 +77,10 @@ var tiles = new List<object>();
 foreach (var (idx, nome) in nomesTile)
 {
     var f = Achar(pasta, nome + ".OZJ");
-    if (f == null) continue;
-    var t = await new OZJReader().Load(f);
+    // Illusion Temple: o tile 4 e o AlphaTileGround03 (transparente, ve o vazio embaixo; MapManager.cpp)
+    var alfa = mundo == 47 && idx == 4 ? Achar(pasta, "AlphaTileGround03.OZT") : null;
+    if (f == null && alfa == null) continue;
+    TextureData t = alfa != null ? await new OZTReader().Load(alfa) : await new OZJReader().Load(f!);
     using var im = Imagem(t);
     // um tile do MU cobre 64 px da textura; o Godot usa um array de 256x256, entao guarda a repeticao
     tiles.Add(new { i = idx, nome, repete = t.Width / 64f });
