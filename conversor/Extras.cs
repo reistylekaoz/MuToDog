@@ -5,6 +5,7 @@
 //   folha1.png, folha2.png  neve (Devias) ou folha (Lorencia, Noria): leaf01 e leaf02
 //   warp0<1..3>.glb  portal de Devias e Noria (Data/Npc/warp0X.bmd, com a acao 0 como "anda")
 //   agua/<0..31>.png, bolha.png  Atlans: agua que corre no chao e bolha
+//   agua1.png, agua2.png  Kalima: a agua que faz as vezes de chao
 //   musica.mp3, fundo.wav  Dungeon, Lost Tower, Atlans e Tarkan: musica do mapa todo e o som de fundo
 //     (SceneManager.cpp; vao no pacote do mapa, o pck principal do navegador esta no limite)
 using Client.Data.BMD;
@@ -50,10 +51,17 @@ static class Extras
                 await Png(Achar(obj8, $"wt{i:00}.OZJ")!, Path.Combine(dest, "agua", $"{i}.png"));
             await Png(Achar(obj8, "drop01.OZJ")!, Path.Combine(dest, "bolha.png"));
         }
+        // Kalima: o chao e so agua (CSWaterTerrain): water1.tga com as ondas e water2.jpg somado por cima
+        if (mundo == 25)
+        {
+            var obj25 = Achar(data, "Object25") ?? throw new Exception("sem Object25");
+            await Png(Achar(obj25, "water1.OZT")!, Path.Combine(dest, "agua1.png"));
+            await Png(Achar(obj25, "water2.OZJ")!, Path.Combine(dest, "agua2.png"));
+        }
         // musica e som de fundo do mapa todo (PlayBGM e PlayWorldAmbientSounds do SceneManager.cpp do cliente)
         var sons = mundo switch { 2 => ("Dungeon.mp3", "aDungeon.wav"), 5 => ("lost_tower_a.mp3", "aTower.wav"),
             8 => ("atlans.mp3", "aWater.wav"), 9 => ("tarkan.mp3", "desert.wav"),
-            11 => ("icarus.mp3", "aHeaven.wav"), 31 => ("castle.mp3", ""), 32 => ("huntingground.mp3", ""),
+            11 => ("icarus.mp3", "aHeaven.wav"), 25 => ("kalima.mp3", "aKalima.wav"), 63 => ("Santa_Village.mp3", ""), 65 => ("DuelArena.mp3", ""), 31 => ("castle.mp3", ""), 32 => ("huntingground.mp3", ""),
             34 => ("Aida.mp3", ""), 35 => ("crywolf1st.mp3", ""), 38 => ("kanturu_1st.mp3", ""), 39 => ("kanturu_2nd.mp3", ""),
             52 => ("elbeland.mp3", ""), 57 => ("SwampOfCalmness.mp3", ""), 58 => ("Raklion.mp3", ""), 64 => ("PK_Field.mp3", ""),
             80 => ("iDoppelganger.mp3", "aWind.wav"), 81 => ("Karutan_A.mp3", "Karutan/Karutan_desert_env.wav"),

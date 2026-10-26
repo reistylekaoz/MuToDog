@@ -147,6 +147,12 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 	var desc := {"14,13": 572, "14,14": 573, "14,16": 621, "12,15": 574}
 	if desc.has(k):
 		l.append(_linha(t(desc[k])))
+	if k == "14,28":
+		l.append_array(_lost_map(lv))
+	elif k == "14,29":
+		var marcas: int = it.get("durabilidade", 0)
+		l.append(_linha(t(1181, [marcas, 5])))
+		l.append(_linha(t(1182) if marcas >= 5 else t(1183, [5 - marcas]), AMARELO))
 
 	if p.is_empty():
 		return _fim(l)
@@ -272,6 +278,33 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 
 
 # os 12 bytes do item quando vieram do servidor (cliente.gd item_de); sem eles, o valor de "nada"
+# nivel minimo de cada Kalima (g_iKalimaLevel do GMHellas.cpp): MG, DL e RF entram antes
+const KALIMA_NIVEL := [40, 131, 181, 231, 281, 331, 350]
+const KALIMA_NIVEL_DL := [20, 111, 161, 211, 261, 311, 350]
+
+
+static func kalima_minimo(classe: int, nivel_mapa: int) -> int:
+	var t_niv: Array = KALIMA_NIVEL_DL if (classe >> 2) in [3, 4, 6] else KALIMA_NIVEL
+	return t_niv[clampi(nivel_mapa, 1, 7) - 1]
+
+
+# Lost Map (RenderHellasItemInfo): os 7 Kalimas com o nivel minimo, o do item em amarelo,
+# o "joga na tela" em azul e o aviso se o personagem nao chega no primeiro
+static func _lost_map(lv: int) -> Array:
+	var l := [_linha("%s %s       %s" % [t(58), t(368), t(935)])]
+	for i in 7:
+		l.append(_linha("%d             %3d~%3d" % [i + 1, kalima_minimo(eu.classe, i + 1), 400], AMARELO if lv == i + 1 else BRANCO))
+	l.append(_vazia())
+	l.append(_linha(t(1184), AZUL))
+	var minimo := kalima_minimo(eu.classe, 1)
+	if eu.nivel < minimo:
+		l.append(_vazia())
+		var aviso := _linha(t(1123, [minimo]))
+		aviso["fundo"] = FUNDO_VERMELHO
+		l.append(aviso)
+	return l
+
+
 static func _byte(it: Dictionary, i: int, nada: int) -> int:
 	var b = it.get("bytes", null)
 	return int(b[i]) if b != null and b.size() > i else nada

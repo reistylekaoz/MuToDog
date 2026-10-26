@@ -21,6 +21,9 @@ extends Node3D
 # - neblina: Terra das Provas e Crywolf em volta do heroi (CreateMist), Aida e Crywolf presa nos
 #   objetos, e a fumaca rosada da Terra das Provas;
 # - bichos em volta do heroi (bichos.gd): passaro, morcego, borboleta, rato, peixe, besouro.
+# - Kalima: sem terreno, so a agua por cima (CSWaterTerrain), cachoeiras e luzes azuis;
+# - Santa Village: neve, luzes coloridas pulsando (26 a 28);
+# - Arena de duelo: luz no chao (34), fumaca (35) e fogo com brilho (36).
 # A agua do chao corre no proprio shader do terreno (terreno.gdshader).
 
 const PASTA := "res://dados/ambiente/"
@@ -47,7 +50,7 @@ const LUZES := {
 # todo mapa; na soma, malha -1 = o objeto inteiro, lista = varias malhas, 3o valor = luz da malha
 # objeto que o cliente nao desenha (HiddenMesh = -2): marcador de pose e de som (tipo do .obj)
 const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 64, 70, 76, 83],
-	7: [38, 67], 19: [6, 7, 8, 9, 10, 11, 12],
+	7: [38, 67], 19: [6, 7, 8, 9, 10, 11, 12], 25: [35, 36, 37, 38, 39, 40], 63: [26, 27, 28], 65: [34, 35, 36],
 	31: [0, 4, 11, 37, 39, 41, 42, 43, 44, 45, 46, 47, 48, 52, 53, 54, 66, 67, 68, 69, 71, 72, 73, 74, 75, 76, 88],
 	32: [1, 3, 42, 44, 45, 53, 67],
 	34: [56, 57, 58, 59, 60, 62, 63, 67, 70],
@@ -108,9 +111,26 @@ const LUZ_TIPO := {9: {7: 3, 61: 2, 65: 2, 66: 2}}
 const COR_LAVA := Color(0.65, 0.39, 0.13)
 # Tarkan 63 e 64: brilho Impack03 pulsando na pedra (63 azulado, 64 vermelho)
 const BRILHO := {9: {63: Color(1 / 1.7, 1, 1), 64: Color(1, 0.32, 0.32)}}
+# sprite somado no objeto escondido: tipo -> [textura, cor, escala do sprite (x o.Scale), pulso: l = sin(t * vel) * amp + base]
+# Kalima 35 e 36 (BITMAP_LIGHT 6 e BITMAP_TRUE_BLUE: luz azul parada); Santa 26 a 28 (GMSantaTown:
+# BITMAP_LIGHT a 8 x Scale, (sin(WorldTime * 0,005) + 1) * 0,1 + 0,9); Arena 36 (BITMAP_LIGHT a 2 x Scale)
+const SPRITE := {25: {35: ["flare01", Color(0.3, 0.6, 1), 1.5, 2.0, 0.2, 0.8], 36: ["flare01", Color(0.3, 0.5, 1), 1.0, 1.0, 0.0, 1.0]},
+	63: {26: ["flare01", Color(0.8, 0.2, 0), 8.0, 5.0, 0.1, 1.0], 27: ["flare01", Color(0, 0.2, 0.8), 8.0, 5.0, 0.1, 1.0],
+		28: ["flare01", Color(0, 0.6, 0.6), 8.0, 5.0, 0.1, 1.0]},
+	65: {36: ["flare01", Color(1, 0.2, 0), 2.0, 1.0, 0.0, 1.0]}}
+# luz pintada no chao por tipo: [cor, raio] (Arena 34: (0,9 0,2 0,1) x 0,5..0,7, raio 3)
+# textura *_R (TextureScript m_bBright): a malha desenha somada em qualquer objeto. Ligado nos mapas
+# da rodada 15: o ceu de estrelas (ChrisSky_R) e a aurora da Santa, a lava (PKMagma_R) da Arena, BosBBb_R do Kalima
+const TEXTURA_R := [25, 63, 65]
+const LUZ_COR := {65: {34: [Color(0.9, 0.2, 0.1) * 0.6, 3]}}
+# fogo no objeto (Arena 36: CreateParticle BITMAP_FIRE junto do brilho)
+const FOGO_TIPO := {65: [36]}
+# cachoeira do Kalima (RenderHellasVisual 37 a 40): [textura, por segundo, sobe (a nevoa do pe)]
+const CASCATA := {25: {37: ["waterfall5", 25.0, false], 38: ["waterfall2", 12.0, false], 39: ["waterfall3", 25.0, true],
+	40: ["waterfall2", 6.0, false]}}
 # Tarkan: fumaca dos pontos escondidos: tipo -> [por segundo, segundos ligada a cada ciclo, ciclo]
 # (70 solta 1 a cada 5 quadros; 76 meio segundo a cada 5; 83 o geiser, meio segundo a cada 10)
-const FUMACA_TIPO := {9: {70: [5.0, 0.0, 0.0], 76: [25.0, 0.5, 5.0], 83: [25.0, 0.5, 10.0]}}
+const FUMACA_TIPO := {9: {70: [5.0, 0.0, 0.0], 76: [25.0, 0.5, 5.0], 83: [25.0, 0.5, 10.0]}, 65: {35: [8.0, 0.0, 0.0]}}
 # Lost Tower: luz girando em cima do bloco de fogo (19 vermelha, 20 azul; Magic_Ground2 e lightning2)
 const GIRA := {5: {19: ["magic_ground2", Color(1, 0.2, 0)], 20: ["lightning2", Color(0.4, 0.8, 1)]}}
 # tipo -> [malha, rolagem] da textura que corre sem somar (StreamMesh: a agua da Noria)
@@ -136,7 +156,7 @@ const LUZ_OSSO := {4: {1: [[2, 4, 6], 0.5], 9: [[1], 1.5], 17: [[4, 7, 10, 13], 
 	12: {11: [[1, 2, 4, 6, 9, 10, 11], 0.5, "tocha"], 13: [[3], 1.0, "flare"]}}
 const COR_FOGO := Color(0.85, 0.51, 0.34)   # Luminosity media 0,85 x (1, 0,6, 0,4)
 # cor do fundo (SetWorldClearColor) e mapa sem chao desenhado (Icarus: so ilhas no ceu)
-const CEU := {11: Color8(3, 25, 44), 52: Color8(178, 178, 178)}
+const CEU := {11: Color8(3, 25, 44), 25: Color8(30, 40, 40), 52: Color8(178, 178, 178)}
 const SEM_CHAO := [11]
 # Icarus: objeto 0 a 5 nao aparece; vira 20 nuvens (BITMAP_CLOUD, Effect/clouds.jpg) somadas
 # em volta dele, a +-250 unidades, 20 a 40 acima, do tamanho da textura x 1,8 a 2,0
@@ -169,7 +189,8 @@ var _pulsam: Array = []        # [material, f, a, b]
 var _agua: Array = []          # materiais da agua de Atlans (textura troca 25 vezes por segundo)
 var _quadros_agua: Array[Texture2D] = []
 var _giram: Array = []         # [sprite, sentido]
-var _brilhos: Array = []       # [material, cor, fase]
+var _brilhos: Array = []       # [material, cor, fase, sprite, pulso]
+var _agua_kalima: MeshInstance3D
 var _luz_osso: Array[ShaderMaterial] = []
 var _portal_mats: Array[ShaderMaterial] = []
 var _fumacas: Array = []       # [particulas, segundos ligada, ciclo, fase]
@@ -199,6 +220,10 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 	var luz_tipo: Dictionary = LUZ_TIPO.get(m.numero, {})
 	var brilho: Dictionary = BRILHO.get(m.numero, {})
 	var fumaca_tipo: Dictionary = FUMACA_TIPO.get(m.numero, {})
+	var sprite: Dictionary = SPRITE.get(m.numero, {})
+	var luz_cor: Dictionary = LUZ_COR.get(m.numero, {})
+	var fogo_tipo: Array = FOGO_TIPO.get(m.numero, [])
+	var cascata: Dictionary = CASCATA.get(m.numero, {})
 	for o in objetos:
 		var p := Vector3(o.p[0], o.p[1], o.p[2])
 		var b := Basis(Quaternion(o.q[0], o.q[1], o.q[2], o.q[3]))
@@ -219,6 +244,20 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 			_luz(extra, p, COR_LAVA, luz_tipo[t])
 		if brilho.has(t):
 			_brilho(p, brilho[t], (o.q[2] if o.q.size() > 2 else 0.0))
+		if sprite.has(t):
+			var sp: Array = sprite[t]
+			_brilho(p, sp[1], randf() * TAU, sp[0], sp[2] * float(o.get("s", 1.0)), [sp[3], sp[4], sp[5]], 0.0)
+		if luz_cor.has(t):
+			_luz(extra, p, luz_cor[t][0], luz_cor[t][1])
+		if t in fogo_tipo:
+			add_child(_fogo(tex_fogo, p))
+			fogos += 1
+		if cascata.has(t):
+			# sao muitas (189 no Kalima): so ligam perto do heroi, como a neblina presa nos objetos
+			var cs := _cascata(cascata[t], p)
+			add_child(cs)
+			_emissores.append([cs, Vector2(p.x, p.y) / 100.0])
+			fogos += 1
 		if fumaca_tipo.has(t):
 			var ft: Array = fumaca_tipo[t]
 			var c := _fumaca(tex_fumaca, p)
@@ -233,6 +272,8 @@ func montar(m: Node3D, mapa: Image, luz: Image, objetos: Array) -> void:
 				_fumacas.append([c, ft[1], ft[2], randf() * ft[2]])
 			fogos += 1
 	_malhas_especiais(m)
+	if m.numero == AGUA_KALIMA and m.modo_jogo:
+		_montar_agua(m)
 	_montar_portal(m)
 	_queda(m)
 	_luzes_nos_ossos(m)
@@ -492,20 +533,21 @@ func _mexer_neblina(dt: float) -> void:
 
 
 # CreateSprite BITMAP_IMPACT em cima da pedra: escala e luz = sin(t * 2 + fase) * 0,3 + 0,7
-func _brilho(pos_mu: Vector3, cor: Color, fase: float) -> void:
+# pulso: [vel, amp, base] de l = sin(t * vel + fase) * amp + base (cor e tamanho)
+func _brilho(pos_mu: Vector3, cor: Color, fase: float, tex := "impack03", esc := 1.5, pulso := [2.0, 0.3, 0.7], alto := 40.0) -> void:
 	var sp := MeshInstance3D.new()
 	var q := QuadMesh.new()
-	q.size = Vector2.ONE * 0.64 * 1.5
+	q.size = Vector2.ONE * 0.64 * esc
 	sp.mesh = q
 	sp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var mat := ShaderMaterial.new()
 	mat.shader = EfeitoMU.SHADER
-	mat.set_shader_parameter("tex", EfeitoMU.textura("impack03"))
+	mat.set_shader_parameter("tex", EfeitoMU.textura(tex))
 	mat.set_shader_parameter("modo", 0)
 	sp.material_override = mat
-	sp.position = _no_mundo(pos_mu + Vector3(0, 0, 40))
+	sp.position = _no_mundo(pos_mu + Vector3(0, 0, alto))
 	add_child(sp)
-	_brilhos.append([mat, cor, fase, sp])
+	_brilhos.append([mat, cor, fase, sp, pulso])
 
 
 # AddTerrainLight: soma a luz nos vertices em volta, caindo em linha reta ate o raio
@@ -645,8 +687,8 @@ func _bica_agua(o: Dictionary) -> void:
 # altura = 2x a da textura, topo puxado -50 em X, textura com deslocamento sorteado
 # por linha. O vento mexe o topo no shader.
 func _grama(mapa: Image, luz: Image, extra: Image) -> void:
-	# sem grama no Chaos Castle (pasta 19) e no Valley of Loren (31): TerrainGrassEnable = false
-	if mundo.numero in [19, 31]:
+	# sem grama no Chaos Castle (pasta 19) e no Valley of Loren (31): TerrainGrassEnable = false; no Kalima (25) o terreno nem e desenhado
+	if mundo.numero in [19, 31, AGUA_KALIMA]:
 		return
 	var texs := {}
 	for i in 3:
@@ -735,10 +777,11 @@ func _malhas_especiais(m: Node3D) -> void:
 			var q: Array = par[1].q
 			var giro := fposmod(rad_to_deg(2.0 * atan2(q[2], q[3])), 360.0)
 			_portas.append([n, t, n.transform.origin, roundf(giro), false])
-		if not soma.has(t) and not corre.has(t):
+		var tex_r: bool = m.numero in TEXTURA_R and not soma.has(t) and not corre.has(t)
+		if not soma.has(t) and not corre.has(t) and not tex_r:
 			continue
-		var info: Array = soma[t] if soma.has(t) else corre[t]
-		var somar := soma.has(t)
+		var info: Array = soma[t] if soma.has(t) else (corre[t] if corre.has(t) else [-1, Vector2.ZERO])
+		var somar: bool = soma.has(t) or tex_r
 		var i := 0
 		for mi: MeshInstance3D in n.find_children("*", "MeshInstance3D", true, false):
 			if mi.mesh == null:
@@ -748,6 +791,9 @@ func _malhas_especiais(m: Node3D) -> void:
 				if (alvo is Array and i in alvo) or (alvo is int and (alvo == -1 or i == alvo)):
 					var orig := mi.mesh.surface_get_material(s) as BaseMaterial3D
 					if orig == null:
+						continue
+					if tex_r and not "_r." in orig.resource_name.to_lower():
+						i += 1
 						continue
 					var chave := [orig, somar]
 					if not feitos.has(chave):
@@ -964,6 +1010,101 @@ static func bolhas(m: Node3D, n: int) -> CPUParticles3D:
 # Devias: neve (leaf01 e, 1 em 10, leaf02 maior) caindo inclinada em volta do heroi
 # (CreateDeviasSnow: 8..23 por quadro de 1/25 s, angulo -30 em X); Noria: folhas
 # soltas no vento pra -X (CreateAtlanseLeaf). 80 de cada vez, como o cliente.
+# Kalima (World25, mapas 24 a 29 e 36): o cliente nao desenha o terreno, so a agua a 350
+# (CSWaterTerrain, o chao fica a 240: quem anda la nada com a agua pela cintura). Grade de meio
+# tile em volta do heroi com as ondas de base do calcBaseWave e a textura pelo normal (cromo:
+# u = N.y * 0,5 + 0,5, v = N.z * 0,5 + 0,1): water1 com teste de alfa (> 0,25) tingida de
+# (0,2 0,5 0,65) e por cima water2 somada com 1 - N.(1, -1, 1). A onda que o heroi solta a cada
+# 1,6 s (addSineWave + calcWave) fica de fora.
+const AGUA_KALIMA := 25
+const NIVEL_AGUA := 350.0
+const _ONDA := """
+uniform vec2 origem;
+varying vec3 n_mu;
+varying vec2 uv_cromo;
+float onda(vec2 q, float t) {
+	float h2 = sin(t * 5.0 + q.y * 0.1 + q.x * 0.1) * 50.0 - sin(t * 3.0 + q.x * 0.1 + q.y * 0.5) * 50.0;
+	float h3 = sin(t + q.y * 0.5 + q.x * 0.5) * 25.0 - sin(t * 2.0 + q.x + q.y * 0.3) * 25.0;
+	return (h2 + h3) * 0.25;
+}
+void vertex() {
+	vec2 q = (VERTEX.xy + origem) / 50.0;
+	float hx = onda(q + vec2(1.0, 0.0), TIME) - onda(q - vec2(1.0, 0.0), TIME);
+	float hy = onda(q + vec2(0.0, 1.0), TIME) - onda(q - vec2(0.0, 1.0), TIME);
+	VERTEX.z += onda(q, TIME);
+	n_mu = normalize(vec3(-hx, -hy, 100.0));
+	uv_cromo = vec2(n_mu.y * 0.5 + 0.5, n_mu.z * 0.5 + 0.1);
+}
+"""
+
+
+func _montar_agua(m: Node3D) -> void:
+	var terreno := m.mu.get_node_or_null("Terreno") as MeshInstance3D
+	if terreno:
+		terreno.visible = false
+	var pm := PlaneMesh.new()
+	pm.orientation = PlaneMesh.FACE_Z
+	pm.size = Vector2(6400, 6400)   # 64 tiles em volta do heroi, meio tile por quadrado
+	pm.subdivide_width = 127
+	pm.subdivide_depth = 127
+	var s1 := Shader.new()
+	s1.code = "shader_type spatial;\nrender_mode unshaded, cull_disabled;\nuniform sampler2D agua : source_color, repeat_enable, filter_linear;\n" + _ONDA + """
+void fragment() {
+	vec4 c = texture(agua, uv_cromo);
+	ALBEDO = c.rgb * vec3(0.2, 0.5, 0.65);
+	ALPHA = c.a;
+	ALPHA_SCISSOR_THRESHOLD = 0.25;
+}
+"""
+	var s2 := Shader.new()
+	s2.code = "shader_type spatial;\nrender_mode unshaded, cull_disabled, blend_add, depth_draw_never;\nuniform sampler2D agua : source_color, filter_nearest;\n" + _ONDA + """
+void fragment() {
+	float a = clamp(1.0 - dot(n_mu, vec3(1.0, -1.0, 1.0)), 0.0, 1.0);
+	ALBEDO = texture(agua, uv_cromo).rgb * vec3(a, a * 2.5, a * 3.0);
+}
+"""
+	var m1 := ShaderMaterial.new()
+	m1.shader = s1
+	m1.set_shader_parameter("agua", load(m.pasta + "agua1.png"))
+	var m2 := ShaderMaterial.new()
+	m2.shader = s2
+	m2.set_shader_parameter("agua", load(m.pasta + "agua2.png"))
+	m1.next_pass = m2
+	_agua_kalima = MeshInstance3D.new()
+	_agua_kalima.name = "AguaKalima"
+	_agua_kalima.mesh = pm
+	_agua_kalima.material_override = m1
+	_agua_kalima.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_agua_kalima.extra_cull_margin = 200.0
+	_agua_kalima.position = Vector3(12800, 12800, NIVEL_AGUA)
+	m.mu.add_child(_agua_kalima)
+
+
+# cachoeira (BITMAP_WATERFALL 1, 2 e 5: cai 7 a 11 por quadro, 30 quadros, 1,6 de escala, luz 0,2;
+# o 3 e a nevoa do pe, que sobe 2 a 6 por quadro por 20 quadros)
+func _cascata(cfg: Array, pos_mu: Vector3) -> CPUParticles3D:
+	var c := CPUParticles3D.new()
+	var sobe: bool = cfg[2]
+	c.lifetime = 0.8 if sobe else 1.2
+	c.amount = maxi(int(cfg[1] * c.lifetime), 2)
+	c.preprocess = c.lifetime
+	c.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	c.emission_box_extents = Vector3(0.3, 0.1, 0.3)
+	c.direction = Vector3.UP if sobe else Vector3.DOWN
+	c.spread = 5.0
+	c.initial_velocity_min = 0.5 if sobe else 1.75
+	c.initial_velocity_max = 1.5 if sobe else 2.75
+	c.gravity = Vector3(0, 0.0 if sobe else -0.6, 0)
+	c.angle_min = 0.0
+	c.angle_max = 360.0
+	c.scale_amount_min = 0.8 if sobe else 1.6
+	c.scale_amount_max = 1.2 if sobe else 1.6
+	c.color = Color(0.2, 0.2, 0.2) * (2.0 if sobe else 1.0)
+	c.mesh = _quad_somado(EfeitoMU.textura(cfg[0]), 0.64)
+	c.position = _no_mundo(pos_mu)
+	return c
+
+
 func _queda(m: Node3D) -> void:
 	if not m.modo_jogo or not ResourceLoader.exists(m.pasta + "folha1.png"):
 		_chuva(m)
@@ -980,6 +1121,11 @@ func _queda(m: Node3D) -> void:
 		var mat := (_cai.mesh as QuadMesh).material as StandardMaterial3D
 		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 		mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	elif m.numero == 63:
+		# Santa Village (GMSantaTown CreateSnow): a neve de Devias, mesma caixa em volta do heroi
+		_cai = _particulas(load(m.pasta + "folha1.png"), 72, 0.08, true)
+		if ResourceLoader.exists(m.pasta + "folha2.png"):
+			_cai2 = _particulas(load(m.pasta + "folha2.png"), 8, 0.16, true)
 	elif m.numero == 58:
 		# Raklion (CGM_Raklion::CreateSnow): neve de 3 a 12 de escala caindo a 30..50 por quadro,
 		# inclinada 50 a 80 graus
@@ -1149,7 +1295,8 @@ func _process(dt: float) -> void:
 		for m in _agua:
 			m.set_shader_parameter("tex", q)
 	for b in _brilhos:
-		var l: float = sin(_t * 2.0 + b[2]) * 0.3 + 0.7
+		var pu: Array = b[4]
+		var l: float = sin(_t * pu[0] + b[2]) * pu[1] + pu[2]
 		(b[0] as ShaderMaterial).set_shader_parameter("cor", Color(b[1].r * l, b[1].g * l, b[1].b * l))
 		(b[3] as Node3D).scale = Vector3.ONE * l
 	for f in _fumacas:
@@ -1180,9 +1327,16 @@ func _process(dt: float) -> void:
 		for mt in _portal_mats:
 			mt.set_shader_parameter("cor", cor)
 	# a neve e as folhas nascem em volta do heroi: de -8 a +8 m em X, de -5 a +9 m em Y do MU
+	if _agua_kalima and mundo.seguir and is_instance_valid(mundo.seguir):
+		# a grade da agua anda com o heroi, presa de tile em tile (as ondas sao do lugar, nao da grade)
+		var h_mu: Vector3 = mundo.mu.global_transform.affine_inverse() * mundo.seguir.global_position
+		var o := Vector2(snappedf(h_mu.x, 100.0), snappedf(h_mu.y, 100.0))
+		_agua_kalima.position = Vector3(o.x, o.y, NIVEL_AGUA)
+		(_agua_kalima.material_override as ShaderMaterial).set_shader_parameter("origem", o)
+		(_agua_kalima.material_override.next_pass as ShaderMaterial).set_shader_parameter("origem", o)
 	if (_cai or _cai2) and mundo.seguir and is_instance_valid(mundo.seguir):
 		var h: Vector3 = mundo.seguir.global_position
-		var alto := 3.0 if mundo.numero in [3, 11, 80] else 2.0
+		var alto := 3.0 if mundo.numero in [3, 11, 63, 80] else 2.0
 		for c in [_cai, _cai2]:
 			if c:
 				c.global_position = h + Vector3(0, alto, -2.0)

@@ -217,7 +217,8 @@ func _falar(t: String, para: String) -> void:
 		linha("cochicho", para, t)
 	else:
 		print("TESTE digitou %s" % t)
-		cli.dizer(jogo.meu_nome, t)
+		if not jogo.comando_local(t):
+			cli.dizer(jogo.meu_nome, t)
 
 
 # --- cartas ----------------------------------------------------------------------------------

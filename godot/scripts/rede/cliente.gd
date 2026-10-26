@@ -93,8 +93,6 @@ signal rage_alvos(skill: int, alvos: Array)          # C1 4B: os alvos do Dark S
 signal vida_invocacao(porcento: int)               # C1 F3 20: vida do bicho invocado (o OpenMU nao manda)
 signal grupo_saiu                                   # C1 43: sai do grupo (fui tirado, sai ou o grupo acabou)
 signal grupo_vida(lista: Array)                     # C1 44: [[indice, 0..10]] a vida de cada membro em decimos
-signal pedido_duelo(id: int, nome: String)          # C1 AA 02: alguem chamou pro duelo
-signal duelo(resultado: int, id: int, nome: String) # C1 AA 01: 0 comecou, outro numero recusado
 signal ponto(ok: bool, atributo: int, maximo_dep: int, sd_max: int, ag_max: int)   # F3 06: ponto distribuido
 # troca (C1 36 a 3D)
 signal pedido_troca(nome: String)                   # C3 36: alguem quer trocar comigo
@@ -160,6 +158,14 @@ signal gens_jogadores(lista: Array)                  # C2 F8 05: [{id, gens, pos
 signal pet_modo(tipo: int, modo: int, alvo: int)     # C1 A7: ordem do corvo aceita (0 normal, 1 aleatorio, 2 com o dono, 3 alvo; alvo 0xFFFF = nenhum)
 signal pet_ataque(tipo: int, ataque: int, dono: int, alvo: int)   # C1 A8: o corvo de "dono" ataca (0 um alvo, 1 luz em area)
 signal pet_info(info: Dictionary)                    # C1 A9: tipo (0 corvo, 1 cavalo), armazem (254 subiu, 255 desceu), slot, nivel, exp, vida
+# duelo (C1 AA): resposta do pedido (0 aceitou, 15 recusou, 16 sem sala, 12 e 28 nivel, 30 zen), pedido que
+# chegou, fim (0 = cancelado), placar e vida/SD em % dos dois, e o vencedor no fim da luta
+signal duelo_resultado(resultado: int, id: int, nome: String)
+signal duelo_pedido(id: int, nome: String)
+signal duelo_fim(resultado: int, id: int, nome: String)
+signal duelo_placar(id1: int, id2: int, pontos1: int, pontos2: int)
+signal duelo_vida(id1: int, id2: int, vida1: int, vida2: int, sd1: int, sd2: int)
+signal duelo_venceu(vencedor: String, perdedor: String)
 signal evento_entrada(evento: String, resultado: int)   # C1 90 (Devil Square) e C1 9A (Blood Castle): 0 entrou, 1 sem convite...
 signal evento_abre(tipo: int, minutos: int, gente: int, minutos_baixo: int)   # C1 91: falta pra abrir (1 DS, 2 BC, 4 CC, 5 IT)
 signal evento_contagem(estado: int)                    # C1 92: a contagem de 30 s (0 a 2 DS, 3 a 7 BC, 10 a 13 CC)
@@ -455,6 +461,24 @@ func entrar_blood(castelo: int) -> void:
 
 
 # C1 AF 01: entrar no Chaos Castle com a Armor of Guardsman (nivel da armadura e a casa dela na mochila)
+# C3 AA 01: chama pro duelo (id em big endian e o nome, o servidor confere os dois)
+func duelo_pedir(id: int, nome: String) -> void:
+	var p := PackedByteArray([0xC3, 0, 0xAA, 0x01, (id >> 8) & 0xFF, id & 0xFF])
+	p.append_array(_texto(nome, 10))
+	con.enviar(p)
+
+
+# C3 AA 02: responde o pedido (aqui o id vai em little endian)
+func duelo_responder(aceita: bool, id: int, nome: String) -> void:
+	var p := PackedByteArray([0xC3, 0, 0xAA, 0x02, 1 if aceita else 0, id & 0xFF, (id >> 8) & 0xFF])
+	p.append_array(_texto(nome, 10))
+	con.enviar(p)
+
+
+func duelo_parar() -> void:
+	con.enviar(PackedByteArray([0xC3, 0, 0xAA, 0x03]))
+
+
 func entrar_caos(nivel: int, slot: int) -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0xAF, 0x01, nivel, slot]))
 
@@ -738,18 +762,6 @@ func pedir_grupo() -> void:
 # C1 43: o lider tira quem quiser; cada um tira a si mesmo (sai do grupo)
 func tirar_do_grupo(indice: int) -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0x43, indice]))
-
-
-func chamar_duelo(id: int, nome: String) -> void:
-	var p := PackedByteArray([0xC1, 0, 0xAA, 0x01, (id >> 8) & 0xFF, id & 0xFF])
-	p.append_array(_nome10(nome))
-	con.enviar(p)
-
-
-func responder_duelo(aceito: bool, id: int, nome: String) -> void:
-	var p := PackedByteArray([0xC1, 0, 0xAA, 0x02, 1 if aceito else 0, id & 0xFF, (id >> 8) & 0xFF])
-	p.append_array(_nome10(nome))
-	con.enviar(p)
 
 
 # C1 F3 06: 1 ponto no atributo (0 forca, 1 agilidade, 2 vitalidade, 3 energia, 4 comando)
@@ -1428,6 +1440,27 @@ func _tratar(p: PackedByteArray) -> void:
 		0x9A:
 			if p[0] == 0xC1 and p.size() >= 4:
 				evento_entrada.emit("bc", p[3])
+		0xAA:
+			var be := func(i: int) -> int: return ((p[i] << 8) | p[i + 1]) & 0x7FFF
+			match p[3] if p[0] == 0xC1 and p.size() >= 4 else -1:
+				0x01:
+					if p.size() >= 7:
+						duelo_resultado.emit(p[4], be.call(5), _ler_texto(p, 7, 10))
+				0x02:
+					if p.size() >= 6:
+						duelo_pedido.emit((p[4] | (p[5] << 8)) & 0x7FFF, _ler_texto(p, 6, 10))
+				0x03:
+					if p.size() >= 7:
+						duelo_fim.emit(p[4], be.call(5), _ler_texto(p, 7, 10))
+				0x04:
+					if p.size() >= 10:
+						duelo_placar.emit(be.call(4), be.call(6), p[8], p[9])
+				0x05:
+					if p.size() >= 12:
+						duelo_vida.emit(be.call(4), be.call(6), p[8], p[9], p[10], p[11])
+				0x0C:
+					if p.size() >= 14:
+						duelo_venceu.emit(_ler_texto(p, 4, 10), _ler_texto(p, 14, 10))
 		0xAF:
 			# C1 AF 01: resposta da entrada no Chaos Castle (o resultado no [4])
 			if p[0] == 0xC1 and p.size() >= 5 and p[3] == 0x01:
@@ -1540,11 +1573,6 @@ func _tratar(p: PackedByteArray) -> void:
 					if 4 + i < p.size():
 						l.append([p[4 + i] >> 4, p[4 + i] & 0x0F])
 				grupo_vida.emit(l)
-		0xAA:
-			if p[0] == 0xC1 and sub == 0x02 and p.size() >= 16:
-				pedido_duelo.emit(p[4] | (p[5] << 8), _ler_texto(p, 6, 10))
-			elif p[0] == 0xC1 and sub == 0x01 and p.size() >= 17:
-				duelo.emit(p[4], (p[5] << 8) | p[6], _ler_texto(p, 7, 10))
 		0xC2:
 			if p[0] == 0xC1 and p.size() >= 13:
 				pedido_amizade.emit(_ler_texto(p, 3, 10))

@@ -75,6 +75,7 @@ var quest_legado := QuestLegado.new()   # o estado delas (a lista chega antes do
 var quest_nova := QuestNova.new()       # quests novas do S6 (F6): Elf Soldier
 var janela_evento: JanelaEvento  # entrada do Devil Square (Charon) e do Blood Castle (Mensageiro): C1 90 e 9A
 var eventos: Eventos           # contagem, tempo do Blood Castle e placar (C1 92, 93 e 9B)
+var janela_duelo: JanelaDuelo  # placar do duelo (C1 AA)
 var caos: ChaosCastle          # Chaos Castle: o castelo encolhe, buracos e armas do castelo (rodada 14)
 var _caos_slot := -1           # a Armor of Guardsman do clique direito, esperando o C1 91
 var _caos_mortes := {"monstros": 0, "jogadores": 0}   # o que eu matei no castelo (o OpenMU nao manda)
@@ -229,12 +230,7 @@ func _ready() -> void:
 	_ligar_guilda()
 	_ligar_guilda2()
 	_ligar_gens()
-	cli.pedido_duelo.connect(func(id, n):
-		print("TESTE pedido de duelo de %s" % n)
-		_perguntar("%s te chamou pra um duelo." % n, func(ok): cli.responder_duelo(ok, id, n)))
-	cli.duelo.connect(func(r, _id, n):
-		print("TESTE duelo %d %s" % [r, n])
-		_msg("[color=#9ad0ff]%s[/color]" % ("Duelo com %s comecou." % n if r == 0 else "O duelo nao comecou (%d)." % r)))
+	_ligar_duelo()
 	cli.itens_cairam.connect(_itens_cairam)
 	cli.itens_sumiram.connect(_itens_sumiram)
 	cli.pegou.connect(_pegou)
@@ -407,7 +403,8 @@ func _teste_roteiro(passos: Array) -> void:
 				# o roteiro nao leva espaco: d:/war_Ursos diz "/war Ursos"
 				a = a.replace("_", " ")
 				print("TESTE roteiro diz %s" % a)
-				cli.dizer(meu_nome, a)
+				if not comando_local(a):
+					cli.dizer(meu_nome, a)
 			"M":
 				# mensageiro (rodada 10): M:diz,texto / M:carta,para,titulo,texto / M:ler,0 / M:sala,Nome ...
 				await correio.roteiro(a.replace("_", " ").split(","))
@@ -458,6 +455,15 @@ func _teste_roteiro(passos: Array) -> void:
 					inv.usar_ou_equipar(s)
 			"e":
 				await _esperar(float(a))
+			"L":
+				# L:14,28: larga no chao o primeiro item da mochila com esse grupo e numero (o Lost Map abre o portao)
+				var v := a.split(",")
+				for k in inv.itens:
+					var it: Dictionary = inv.itens[k]
+					if k >= Inventario.MOCHILA and it.grupo == int(v[0]) and it.numero == int(v[1]):
+						print("TESTE roteiro larga %s do slot %d em %s" % [ItensMU.nome(it), k, eu.tile])
+						cli.largar_item(eu.tile.x, eu.tile.y, k)
+						break
 			"x":
 				# x:12-50: larga no chao o que estiver nesses slots da mochila (lixo de teste do GM)
 				var f := a.split("-")
@@ -843,6 +849,8 @@ func _montar_ui() -> void:
 	hud.add_child(janela_evento)
 	eventos = Eventos.new()
 	hud.add_child(eventos)
+	janela_duelo = JanelaDuelo.new()
+	hud.add_child(janela_duelo)
 	caos = ChaosCastle.new()
 	add_child(caos)
 	eventos.estagio.connect(func(n): caos.encolher(n))
@@ -1796,7 +1804,7 @@ func _process(dt: float) -> void:
 				# teste com &monta: montaria a mostra mesmo na cidade
 				var segura: bool = mundo.zona_segura(e.tile.x, e.tile.y) and not _teste_monta
 				e.boneco.arma_nas_costas(segura)
-				e.boneco.nadando(mapa_atual == 7 and not segura)
+				e.boneco.nadando((mapa_atual == 7 or PacoteMapa.mundo_do_mapa(mapa_atual) == 25) and not segura)
 		_livre_buffs()
 	var seg: bool = mundo.zona_segura(eu.tile.x, eu.tile.y)
 	if som == null:
@@ -2204,8 +2212,7 @@ func _comando(c: int, alvo: int) -> void:
 			if meu_nivel < 30:
 				_msg("[color=#e8b04a]Duelo so a partir do nivel 30.[/color]")
 			else:
-				cli.chamar_duelo(alvo, n)
-				_msg("[color=#9ad0ff]Desafio de duelo mandado pra %s.[/color]" % n)
+				_chamar_duelo(alvo, n)
 		_:
 			_msg("[color=#9a9ab0]%s ainda nao existe neste cliente.[/color]" % comandos.nome(c))
 
@@ -2221,6 +2228,91 @@ func _seguir(dt: float) -> void:
 	if _seguir_t <= 0.0 and _distancia(eu.tile, alvo.tile) > 2:
 		_seguir_t = 0.5
 		andar_ate(alvo.tile)
+
+
+# --- duelo (rodada 15) ------------------------------------------------------------------------
+# ReceiveDuelRequest/Start/End/Score/HP/Result do WSclient.cpp: o pedido abre a caixa do 910/911 com o som
+# da janela; o "aceitou" (0) escreve o 912, abre o placar e toca o iDuelStart; 15 e o 913 (recusou),
+# 16 a caixa do "Colosseum is occupied", 28 o nivel 30 e 30 o zen. No fim da luta (C1 AA 0C) o 2689 e a
+# caixa do vencedor; no fim do duelo (C1 AA 03) o 914 e o placar fecha.
+func _ligar_duelo() -> void:
+	cli.duelo_pedido.connect(func(id, n):
+		print("TESTE duelo pedido de %s (%d)" % [n, id])
+		_som("duelo_janela")
+		_caixa_mu([DicaItem.t(910), n, DicaItem.t(911)], func(ok, _t):
+			print("TESTE duelo respondi %s" % ok)
+			cli.duelo_responder(ok, id, n)))
+	cli.duelo_resultado.connect(_duelo_resultado)
+	cli.duelo_fim.connect(func(r, _id, n):
+		print("TESTE duelo fim %d %s" % [r, n])
+		# o OpenMU manda o fim de novo depois de levar de volta: so o primeiro escreve
+		if r == 0 and janela_duelo.visible:
+			janela_duelo.fechar()
+			_msg("[color=#ff9a4a]%s[/color]" % DicaItem.t(914)))
+	cli.duelo_placar.connect(func(i1, i2, p1, p2):
+		# o OpenMU repete o placar varias vezes por segundo: o teste so escreve o primeiro e quando muda
+		if janela_duelo.placar(i1, i2, p1, p2):
+			print("TESTE duelo placar %d x %d" % [janela_duelo.meus, janela_duelo.dele]))
+	cli.duelo_vida.connect(func(i1, i2, v1, v2, s1, s2): janela_duelo.vidas(i1, i2, v1, v2, s1, s2))
+	cli.duelo_venceu.connect(func(v, p):
+		print("TESTE duelo venceu %s perdeu %s" % [v, p])
+		_msg("[color=#d0d0d0]%s[/color]" % DicaItem.t(2689, [10]))
+		_som("duelo_janela")
+		_caixa_mu([DicaItem.t(2694), DicaItem.t(2695, [v]), DicaItem.t(2696, [p])], func(_ok, _t): pass, false, false))
+
+
+func _duelo_resultado(r: int, id: int, n: String) -> void:
+	print("TESTE duelo resultado %d %s" % [r, n])
+	match r:
+		0:
+			_msg("[color=#ff9a4a]%s[/color]" % DicaItem.t(912, [n]))
+			janela_duelo.abrir(meu_nome, id, n)
+			_som("duelo_comeca")
+		15:
+			_msg("[color=#ff9a4a]%s[/color]" % DicaItem.t(913, [n]))
+		16:
+			_caixa_mu([DicaItem.t(2692), DicaItem.t(2693)], func(_ok, _t): pass, false, false)
+		12, 28:
+			_msg("[color=#ff9a4a]%s[/color]" % DicaItem.t(2704, [30]))
+		30:
+			_msg("[color=#ff9a4a]%s[/color]" % DicaItem.t(1811))
+
+
+func _chamar_duelo(id: int, n: String) -> void:
+	if mapa_atual in ChaosCastle.MAPAS:
+		_msg("[color=#d0d0d0]%s[/color]" % DicaItem.t(1150))
+	elif janela_duelo.visible:
+		_msg("[color=#d0d0d0]%s[/color]" % DicaItem.t(915))
+	elif meu_nivel < 30:
+		_msg("[color=#ff9a4a]%s[/color]" % DicaItem.t(2704, [30]))
+	else:
+		print("TESTE duelo chamei %s (%d)" % [n, id])
+		cli.duelo_pedir(id, n)
+		_msg("[color=#9ad0ff]%s[/color]" % DicaItem.t(2687, [n]))
+
+
+# comandos do chat que o cliente trata sozinho (ZzzInterface.cpp): /duelstart chama quem esta colado
+# (o cliente pede que estejam de frente; aqui basta o mais perto a 1 tile) e /duelend para.
+# /duelstart Nome chama esse pelo nome em qualquer distancia (atalho do estudo, o servidor nao confere)
+func comando_local(t: String) -> bool:
+	var partes := t.strip_edges().split(" ", false)
+	if partes.is_empty():
+		return false
+	match partes[0].to_lower():
+		"/duelstart":
+			for e: Entidade in entidades.values():
+				if is_instance_valid(e) and e.tipo == "jogador" and not e.morto and \
+						((partes.size() > 1 and e.nome == partes[1]) or (partes.size() == 1 and _distancia(eu.tile, e.tile) <= 1)):
+					_chamar_duelo(e.id, e.nome)
+					return true
+			return true
+		"/duelend":
+			if mapa_atual in ChaosCastle.MAPAS:
+				_msg("[color=#d0d0d0]%s[/color]" % DicaItem.t(1150))
+			elif janela_duelo.visible:
+				cli.duelo_parar()
+			return true
+	return false
 
 
 # caixa de sim ou nao no meio da tela (convite de grupo, duelo)
