@@ -261,7 +261,9 @@ static func _ponto(x) -> Vector3:
 	if typeof(x) == TYPE_OBJECT:
 		return (x as Node3D).global_position if is_instance_valid(x) else Vector3.ZERO
 	if x is Callable:
-		return x.call()
+		# a lambda que segura quem ja morreu devolve null
+		var r = x.call() if x.is_valid() else null
+		return r if r is Vector3 else Vector3.ZERO
 	return x
 
 

@@ -47,6 +47,9 @@ func texto_contagem() -> String:
 		# Chaos Castle: o segundo texto e o 828 (Penetration) no lugar do 825
 		var n := 824 + tipo - 11
 		return DicaItem.t(828 if n == 825 else n, [DicaItem.t(1147), falta])
+	if tipo >= 17 and tipo <= 20:
+		# Doppelganger: entrada fecha, comeca, Ice Walker e fim
+		return DicaItem.t(2860 + tipo - 17, [falta])
 	if tipo >= 1 and tipo <= 3:
 		return DicaItem.t(640 + tipo - 1, [falta])
 	return ""

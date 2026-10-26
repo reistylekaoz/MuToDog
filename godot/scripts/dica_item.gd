@@ -12,6 +12,7 @@ const AMARELO := Color8(255, 204, 26)
 const VERDE := Color8(26, 255, 128)
 const ROXO := Color8(255, 26, 255)
 const FUNDO_VERMELHO := Color8(160, 0, 0)   # TEXT_COLOR_DARKRED: texto branco em fundo vermelho
+const FUNDO_AZUL := Color8(0, 0, 160)       # TEXT_COLOR_DARKBLUE: texto branco em fundo azul
 const CINZA := Color8(150, 150, 150)
 const ROSA := Color8(255, 90, 200)          # TEXT_COLOR_REDPURPLE (opcao 380)
 
@@ -127,7 +128,7 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 	# nome: a cor diz o tipo do item
 	var tem_opcao: bool = it.get("skill", false) or it.get("sorte", false) or opcao > 0
 	var cor := BRANCO
-	if k in ["14,13", "14,14", "12,15", "14,16", "14,22", "14,31", "13,53", "13,52"]:
+	if k in ["14,13", "14,14", "12,15", "14,16", "14,22", "14,31", "13,53", "13,52", "14,111"]:
 		cor = AMARELO
 	elif geracao > 0:
 		cor = AMARELO if lv >= 7 else (AZUL if tem_opcao else BRANCO)
@@ -153,6 +154,21 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 		var marcas: int = it.get("durabilidade", 0)
 		l.append(_linha(t(1181, [marcas, 5])))
 		l.append(_linha(t(1182) if marcas >= 5 else t(1183, [5 - marcas]), AMARELO))
+	elif k == "14,110":
+		# Sign of Dimensions: 5 viram o Mirror sozinhos
+		for frase in [2773, 2774, 2775]:
+			l.append(_linha(t(frase)))
+		l.append(_vazia())
+		var sinais: int = it.get("durabilidade", 0)
+		l.append(_linha(t(1181, [sinais, 5])))
+		l.append(_linha(t(2776, [5 - sinais]), AMARELO))
+	elif k == "14,111":
+		for frase in [2777, 2778]:
+			var ld := _linha(t(frase))
+			ld["fundo"] = FUNDO_AZUL
+			l.append(ld)
+	elif k == "13,125":
+		l.append(_linha(t(2259, [t(3057)]), AZUL))
 
 	if p.is_empty():
 		return _fim(l)

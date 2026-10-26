@@ -66,6 +66,9 @@ const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 
 	80: [54, 55, 56, 57, 58, 67],
 	81: [67, 113, 114, 115, 116, 118],
 	82: [67, 113, 114, 115, 116, 118],
+	# Doppelganger 1 a 4 (CGMDoppelGanger*::MoveObject: HiddenMesh = -2)
+	66: [70, 80, 99, 101], 67: [0, 1, 2, 3, 4, 5, 6, 47, 48], 68: [22, 47, 48],
+	69: [47, 48, 59, 60, 61, 62, 81, 82, 83, 97, 107, 108],
 }
 # brilho do mapa sobre o escolhido (a neve de Devias estoura com o 2,0 da Lorencia; a luz
 # pintada da Lost Tower e bem mais escura que a da Lorencia e o chao some; a areia de Tarkan
@@ -162,7 +165,7 @@ const LUZ_OSSO := {4: {1: [[2, 4, 6], 0.5], 9: [[1], 1.5], 17: [[4, 7, 10, 13], 
 	12: {11: [[1, 2, 4, 6, 9, 10, 11], 0.5, "tocha"], 13: [[3], 1.0, "flare"]}}
 const COR_FOGO := Color(0.85, 0.51, 0.34)   # Luminosity media 0,85 x (1, 0,6, 0,4)
 # cor do fundo (SetWorldClearColor) e mapa sem chao desenhado (Icarus: so ilhas no ceu)
-const CEU := {11: Color8(3, 25, 44), 25: Color8(30, 40, 40), 52: Color8(178, 178, 178)}
+const CEU := {11: Color8(3, 25, 44), 25: Color8(30, 40, 40), 52: Color8(178, 178, 178), 66: Color8(148, 179, 223)}
 const SEM_CHAO := [11]
 # Icarus: objeto 0 a 5 nao aparece; vira 20 nuvens (BITMAP_CLOUD, Effect/clouds.jpg) somadas
 # em volta dele, a +-250 unidades, 20 a 40 acima, do tamanho da textura x 1,8 a 2,0

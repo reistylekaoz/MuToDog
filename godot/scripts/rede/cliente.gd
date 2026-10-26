@@ -178,6 +178,13 @@ signal templo_pontos(pontos: int)
 signal templo_reliquia(id: int, nome: String)
 signal templo_resultado(aliados: int, ilusao: int, lista: Array)
 signal templo_estado(templo: int, estado: int)
+signal doppel_entrada(resultado: int)          # BF 0E: 1 falhou, 2 ja comecou, 3 PK, 4 libera o Enter
+signal doppel_monstro(pos: int)                # BF 0F: o monstro da frente no caminho (0 a 22)
+signal doppel_estado(estado: int)              # BF 10: 2 comecou, 3 acabou
+signal doppel_gelo(estado: int, pos: int)      # BF 11: 0 o Ice Walker apareceu (pos), 1 sumiu
+signal doppel_info(segundos: int, grupo: Array)   # BF 12: tempo e [{id, mapa, pos}]
+signal doppel_resultado(resultado: int, exp: int) # BF 13: 0 venceu, 1 morreu ou saiu, 2 os monstros passaram
+signal doppel_meta(maximo: int, passaram: int)    # BF 14
 signal evento_entrada(evento: String, resultado: int)   # C1 90 (Devil Square) e C1 9A (Blood Castle): 0 entrou, 1 sem convite...
 signal evento_abre(tipo: int, minutos: int, gente: int, minutos_baixo: int)   # C1 91: falta pra abrir (1 DS, 2 BC, 4 CC, 5 IT)
 signal evento_contagem(estado: int)                    # C1 92: a contagem de 30 s (0 a 2 DS, 3 a 7 BC, 10 a 13 CC)
@@ -198,6 +205,7 @@ var estado := "parado"
 var usuario := ""
 var senha := ""
 var meu_id := -1
+var janela_minutos := 0   # C3 30: o byte depois do tipo (Doppelganger: minutos pra abrir)
 var liberadas := 0   # F3 00: classes liberadas na conta (1 Summoner, 2 DL, 4 MG, 8 RF)
 var host := ""
 var _ping := 0.0
@@ -503,6 +511,11 @@ func templo_usar(skill: int, alvo: int, distancia: int) -> void:
 
 func templo_premio() -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0xBF, 0x05]))
+
+
+# C1 BF 0E: entrar no Doppelganger (o cliente manda sempre a casa 0xFF; o servidor acha o espelho)
+func doppel_entrar() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xBF, 0x0E, 0xFF]))
 
 
 func entrar_caos(nivel: int, slot: int) -> void:
@@ -1459,6 +1472,7 @@ func _tratar(p: PackedByteArray) -> void:
 			con.enviar(PackedByteArray([0xC1, 0, 0x71]))
 		0x30:
 			if p[0] == 0xC3:
+				janela_minutos = p[4] if p.size() > 4 else 0
 				janela_npc.emit(p[3])
 		0x90:
 			if p[0] == 0xC1 and p.size() >= 4:
@@ -1636,6 +1650,8 @@ func _tratar(p: PackedByteArray) -> void:
 				helper_estado.emit(p[12] != 0, p[4] != 0, _ler_le(p, 8))
 			elif p[0] == 0xC1 and sub <= 0x09:
 				_ler_templo(p, sub)
+			elif p[0] == 0xC1 and sub >= 0x0E and sub <= 0x14:
+				_ler_doppel(p, sub)
 		0xAE:
 			if p[0] == 0xC2 and p.size() >= 4:
 				helper_dados.emit(p.slice(4, 4 + 257))
@@ -1691,6 +1707,39 @@ func _ler_templo(p: PackedByteArray, sub: int) -> void:
 		0x09:
 			if p.size() >= 6:
 				templo_estado.emit(p[4], p[5])
+
+
+# BF 0E a 14: Doppelganger (ReceiveDoppelGanger* do WSclient.cpp; WORD em little endian)
+func _ler_doppel(p: PackedByteArray, sub: int) -> void:
+	match sub:
+		0x0E:
+			if p.size() >= 5:
+				doppel_entrada.emit(p[4])
+		0x0F:
+			if p.size() >= 5:
+				doppel_monstro.emit(p[4])
+		0x10:
+			if p.size() >= 5:
+				doppel_estado.emit(p[4])
+		0x11:
+			if p.size() >= 6:
+				doppel_gelo.emit(p[4], p[5])
+		0x12:
+			if p.size() < 8:
+				return
+			var grupo := []
+			for i in p[6]:
+				var o := 8 + i * 4
+				if o + 4 > p.size():
+					break
+				grupo.append({"id": (p[o] | (p[o + 1] << 8)) & 0x7FFF, "mapa": p[o + 2], "pos": p[o + 3]})
+			doppel_info.emit(p[4] | (p[5] << 8), grupo)
+		0x13:
+			if p.size() >= 5:
+				doppel_resultado.emit(p[4], _ler_le(p, 8) if p.size() >= 12 else 0)
+		0x14:
+			if p.size() >= 6:
+				doppel_meta.emit(p[4], p[5])
 
 
 # 3F: loja pessoal (o S6 manda as listas em C2, as respostas em C1 e o preco em C3)

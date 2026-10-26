@@ -8,7 +8,7 @@ extends RefCounted
 # partida. Nos testes headless os dados estao no projeto e nada e carregado.
 # Uso: await PacoteMapa.carregar(no_qualquer, numero_do_mundo)
 
-const FORA := [2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 19, 25, 31, 32, 34, 35, 38, 39, 47, 52, 57, 58, 63, 64, 65, 75, 80, 81, 82]
+const FORA := [2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 19, 25, 31, 32, 34, 35, 38, 39, 47, 52, 57, 58, 63, 64, 65, 66, 67, 68, 69, 75, 80, 81, 82]
 # pacote 0 (mapas/mundo0.pck): os monstros dos eventos (Blood Castle, Kalima, Chaos Castle,
 # Imperial Fortress, Doppelganger...), baixado na primeira vez que um deles aparece
 const MONSTROS := 0

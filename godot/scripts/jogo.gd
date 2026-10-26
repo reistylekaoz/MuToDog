@@ -78,6 +78,8 @@ var eventos: Eventos           # contagem, tempo do Blood Castle e placar (C1 92
 var janela_duelo: JanelaDuelo  # placar do duelo (C1 AA)
 var janela_templo: JanelaTemplo   # entrada do Illusion Temple pela Mirage (NPC janela 0x14)
 var templo: Templo               # HUD do Illusion Temple (rodada 16)
+var janela_doppel: JanelaDoppel   # entrada do Doppelganger pelo Lugard (NPC janela 0x23)
+var doppel: Doppel               # moldura do Doppelganger (rodada 17)
 var _templo_fx := {}             # "id:o que" -> EfeitoMU preso em alguem (reliquia, skills 210 e 211)
 var _templo_preso := false       # Restraint (211) em mim: nao anda ate o C1 BF 07
 var _mirage_t := 0.0             # Mirage sem janela do servidor: o cliente abre a dele
@@ -389,13 +391,13 @@ var _teste_tirados := []
 
 
 # espera do roteiro: tocando gravacao, conta no relogio da fita (o navegador lento atrasa os timers e o roteiro
-# saia do passo da gravacao)
+# saia do passo da gravacao); ao vivo conta no relogio de verdade (o timer anda pelo quadro, e no headless com
+# muito monstro o quadro atrasa e o roteiro ficava 4 vezes mais lento)
 func _esperar(s: float) -> void:
-	if Conexao.relogio() < 0:
-		await get_tree().create_timer(s).timeout
-		return
-	var fim := Conexao.relogio() + int(s * 1000.0)
-	while Conexao.relogio() < fim:
+	var gravacao := Conexao.relogio() >= 0
+	var agora := func() -> int: return Conexao.relogio() if gravacao else Time.get_ticks_msec()
+	var fim: int = agora.call() + int(s * 1000.0)
+	while agora.call() < fim:
 		await get_tree().process_frame
 
 
@@ -407,7 +409,7 @@ func _teste_roteiro(passos: Array) -> void:
 			"d":
 				# o roteiro nao leva espaco: d:/war_Ursos diz "/war Ursos"
 				a = a.replace("_", " ")
-				print("TESTE roteiro diz %s" % a)
+				print("TESTE roteiro diz %s (%d ms)" % [a, Time.get_ticks_msec()])
 				if not comando_local(a):
 					cli.dizer(meu_nome, a)
 			"M":
@@ -460,6 +462,9 @@ func _teste_roteiro(passos: Array) -> void:
 			"J":
 				# J:0 Enter, J:1 Close na janela da Mirage
 				janela_templo.clicar(int(a))
+			"D":
+				# D:0 Enter, D:1 Close na janela do Lugard
+				janela_doppel.clicar(int(a))
 			"N":
 				# N:numero fala com o NPC do templo desse numero (o mais perto)
 				for e: Entidade in entidades.values():
@@ -887,6 +892,7 @@ func _montar_ui() -> void:
 	janela_duelo = JanelaDuelo.new()
 	hud.add_child(janela_duelo)
 	_ligar_templo()
+	_ligar_doppel()
 	caos = ChaosCastle.new()
 	add_child(caos)
 	eventos.estagio.connect(func(n): caos.encolher(n))
@@ -1346,6 +1352,11 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	if templo:
 		templo.mapa(mapa)
 		_templo_preso = false
+	if doppel:
+		doppel.mapa(mapa)
+		# a musica e os sons do evento vem no pacote dos monstros dos eventos
+		if Doppel.no_doppel(mapa) and PacoteMapa.precisa(PacoteMapa.MONSTROS):
+			PacoteMapa.carregar(self, PacoteMapa.MONSTROS)
 	# navegador: Lost Tower e Atlans vem num pacote a parte; a rede espera ele baixar
 	if PacoteMapa.precisa(PacoteMapa.mundo_do_mapa(mapa)):
 		_msg("Carregando %s..." % mapas.get(str(mapa), "o mapa"))
@@ -1465,6 +1476,8 @@ func _objeto_entrou(o: Dictionary) -> void:
 		e.boneco.vestir(o.equip)
 	for x in o.get("efeitos", []):
 		e.buff(x, true)
+	if e.boneco and Doppel.no_doppel(mapa_atual) and e.tipo != "jogador":
+		_doppel_texturas(e)
 	if Vector2i(o.ax, o.ay) != Vector2i(o.x, o.y):
 		_objeto_andou(o.id, o.ax, o.ay, [])
 
@@ -1513,6 +1526,9 @@ func _objeto_morreu(id: int) -> void:
 	var e: Entidade = entidades[id]
 	e.morrer()
 	helper.morreu(id)
+	# os baus do Doppelganger abrem morrendo (MODEL_DOPPELGANGER_NPC_BOX e GOLDENBOX)
+	if e.numero in [541, 542] and e.tipo != "jogador" and som:
+		som.tocar(Doppel.SONS % "bau.wav")
 	if id == alvo_id:
 		alvo_id = -1
 	if id == cli.meu_id:
@@ -1856,6 +1872,7 @@ func _process(dt: float) -> void:
 		eventos.som = som
 		caos.som = som
 		templo.som = som
+		doppel.som = som
 		_volumes()
 	# a loja fecha se eu andar pra longe do NPC (o servidor tambem esquece)
 	if npc_falando >= 0 and (not entidades.has(npc_falando) or _distancia(eu.tile, entidades[npc_falando].tile) > 5):
@@ -2483,6 +2500,8 @@ func _fechar_loja() -> void:
 	janela_quest_nova.visible = false
 	if janela_templo:
 		janela_templo.visible = false
+	if janela_doppel:
+		janela_doppel.visible = false
 	inv.soltar()
 
 
@@ -2566,6 +2585,67 @@ func _ligar_templo() -> void:
 		hud.add_child(cx))
 
 
+# --- Doppelganger (rodada 17) ---------------------------------------------------------
+
+func _ligar_doppel() -> void:
+	janela_doppel = JanelaDoppel.new()
+	janela_doppel.entrar.connect(func():
+		print("TESTE doppel entrar")
+		cli.doppel_entrar())
+	janela_doppel.fechar.connect(_fechar_loja)
+	hud.add_child(janela_doppel)
+	doppel = Doppel.new()
+	hud.add_child(doppel)
+	cli.doppel_entrada.connect(func(r):
+		print("TESTE doppel entrada %d" % r)
+		janela_doppel.resultado(r)
+		if r == 2 or r == 3:
+			_msg("[color=#ff5050]%s[/color]" % DicaItem.t(2864 if r == 2 else 2865)))
+	cli.doppel_monstro.connect(func(pos): doppel.receber_monstro(pos))
+	cli.doppel_estado.connect(func(e):
+		doppel.estado(e)
+		if e == 2:
+			# ready -> play: a moldura e o aviso de como se perde
+			_fechar_loja()
+			_caixa_mu([DicaItem.t(2763), " ", DicaItem.t(2764), " ", DicaItem.t(2765)], func(_ok, _t): pass, false, false))
+	cli.doppel_gelo.connect(func(e, pos): doppel.receber_gelo(e, pos))
+	cli.doppel_info.connect(func(seg, l):
+		doppel.meu_id = cli.meu_id
+		doppel.receber_info(seg, l))
+	cli.doppel_meta.connect(func(m, n): doppel.receber_meta(m, n))
+	cli.doppel_resultado.connect(func(r, xp):
+		print("TESTE doppel resultado %d (exp %d)" % [r, xp])
+		doppel.fim(r)
+		var textos := {0: [2769, 0, 2770], 1: [2766], 2: [2767, 0, 2768]}
+		var l := []
+		for n in textos.get(r, [2766]):
+			l.append(DicaItem.t(n) if n > 0 else " ")
+		_caixa_mu(l, func(_ok, _t): pass, false, false))
+
+
+# CGMDoppelGanger::RenderMonster: nos 4 mapas o Ice Walker troca o corpo (malha 0) e o brilho somado
+# (malha 1), a Larva troca a pele (malha 0). As texturas vem no pacote dos monstros dos eventos.
+func _doppel_tex(nome: String) -> Texture2D:
+	var c := Doppel.SONS % (nome + ".png")
+	return load(c) if ResourceLoader.exists(c) else null
+
+
+func _doppel_texturas(e: Entidade) -> void:
+	if e.numero == 531 and _doppel_tex("dgicewalker_body"):
+		var corpo := _doppel_tex("dgicewalker_body")
+		var brilho := _doppel_tex("dgicewalker_r")
+		e.boneco.mudar_malha(0, func(mt: BaseMaterial3D) -> void: mt.albedo_texture = corpo)
+		e.boneco.mudar_malha(1, func(mt: BaseMaterial3D) -> void:
+			mt.albedo_texture = brilho
+			mt.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+			mt.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			mt.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			mt.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED)
+	elif e.numero == 532 and _doppel_tex("snake1"):
+		var pele := _doppel_tex("snake1")
+		e.boneco.mudar_malha(0, func(mt: BaseMaterial3D) -> void: mt.albedo_texture = pele)
+
+
 # NPC janela 0x14 (Mirage); o OpenMU nao manda (Mirage sem janela): o cliente abre a dele
 func _abrir_templo() -> void:
 	_mirage_t = 0.0
@@ -2577,7 +2657,7 @@ func _abrir_templo() -> void:
 # clique num NPC dentro do templo: comandantes so falam; estatua e bancos enchem a barra
 func _npc_do_templo(n: Entidade) -> bool:
 	if n.numero == 381 or n.numero == 382:
-		_caixa_mu([DicaItem.t(2359 if n.numero == 381 else 2362)], func(_r): pass, false, false)
+		_caixa_mu([DicaItem.t(2359 if n.numero == 381 else 2362)], func(_ok, _t): pass, false, false)
 		return true
 	var tenho := false
 	for k in inv.itens:
@@ -2701,6 +2781,9 @@ func _ligar_loja_e_amigos() -> void:
 				janela_evento.clicar(janela_evento.ativo)
 		elif tipo == 0x14:
 			_abrir_templo()
+		elif tipo == 0x23:
+			janela_doppel.abrir(cli.janela_minutos)
+			print("TESTE janela doppelganger %d min" % cli.janela_minutos)
 		elif tipo > 3:
 			var nomes := {0x0C: "o mercador de cash"}
 			_msg("[color=#9a9ab0]A janela de %s ainda nao foi feita neste cliente.[/color]" % nomes.get(tipo, "esse NPC (tipo %d)" % tipo))

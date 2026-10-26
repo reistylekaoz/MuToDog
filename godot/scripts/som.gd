@@ -23,6 +23,7 @@ var _efeitos: Array[AudioStreamPlayer] = []   # sons soltos (dados/sons: subir d
 var _db_efeitos := -6.0
 var _faixa := ""
 var _mapa := -1
+var doppel := false  # Doppelganger com a moldura ligada (CGMDoppelGanger::PlayBGM: sem ela, silencio)
 var templo := 0      # estado do Illusion Temple (C1 BF 09 + 1): 0 nada, 1 espera, 2 pronto, 3 partida, 4 fim
 
 
@@ -76,6 +77,18 @@ func atualizar(mapa: int, seguro: bool, tile: int, x := 0, y := 0) -> void:
 			musica.stream = load(it)
 			musica.play()
 			print("TESTE musica templo %s" % it.get_file())
+		return
+	if mapa >= 65 and mapa <= 68:
+		var dp := Doppel.SONS % "musica.mp3" if doppel else ""
+		if dp == "" or not ResourceLoader.exists(dp):
+			if _faixa != "":
+				musica.stop()
+				_faixa = ""
+		elif dp != _faixa or not musica.playing:
+			_faixa = dp
+			musica.stream = load(dp)
+			musica.play()
+			print("TESTE musica doppelganger")
 		return
 	if mapa not in [0, 2, 3] and (_faixa == "" or not musica.playing):
 		var mp := "res://dados/mundo%d/musica.mp3" % PacoteMapa.mundo_do_mapa(mapa)
