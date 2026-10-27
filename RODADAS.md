@@ -42,5 +42,6 @@ contra o OpenMU daqui. Marque `[x]` com a data e o commit ao fechar.
     - Selos de XP com tempo: Seal of Ascension (+150% de XP), Wealth (XP e drop), Master Seal of Ascension e Wealth (XP de master), Healing, Divinity, Sustenance (trava a XP), mexendo no ExperienceRate e BonusExperienceRate.
     - Scrolls com tempo: Quickness (+15 de velocidade), Defense (+60), Wrath (+30 de ataque), Wizardry (+30), Health (+200 de HP), Mana (+300), Battle (+20% de crítico), Strength (+20% de excelente); Elixires (+50 num status) e Talismãs.
     - VIP: hoje o Stats.IsVip só libera comando de chat; passa a somar XP e drop (taxa a decidir) e aparece no cliente.
+    - Base: IGCN.md (como o IGCN x6 faz: item, buff, valor, duração, VIP de dia e de noite, Gold Channel Ticket).
     - Teste ao vivo: usar cada selo e scroll, ver o ícone e o tempo na janela de buffs e a XP ganha antes e depois no mesmo monstro.
 24. [ ] Tela de login do S6 (cenários de login) e o que sobrar no `medir.py`.
