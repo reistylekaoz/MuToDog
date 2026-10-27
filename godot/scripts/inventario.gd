@@ -29,6 +29,7 @@ const EQUIP := {
 }
 const NOMES_SLOT := {0: "mao direita", 1: "mao esquerda", 2: "elmo", 3: "armadura", 4: "calca", 5: "luvas",
 	6: "botas", 7: "asa", 8: "ajudante", 9: "colar", 10: "anel", 11: "anel"}
+const NO_SLOT := {2: "no", 5: "nas", 6: "nas", 8: "no", 9: "no", 10: "no", 11: "no"}   # o resto e "na"
 
 var itens := {}            # slot -> item (cliente.gd item_de)
 var zen := 0
@@ -364,9 +365,9 @@ func _clique(p: Vector2) -> void:
 		elif joia and itens.has(e):
 			_usar_em(na_mao, e)
 		elif itens.has(e):
-			aviso.emit("Ja tem item na %s." % NOMES_SLOT[e])
+			aviso.emit("Ja tem item %s." % _no(e))
 		elif e not in ItensMU.slots(it):
-			aviso.emit("%s nao vai na %s." % [ItensMU.nome(it), NOMES_SLOT[e]])
+			aviso.emit("%s nao vai %s." % [ItensMU.nome(it), _no(e)])
 		else:
 			_mandar(na_mao, e)
 		return
@@ -426,7 +427,12 @@ func usar_ou_equipar(s: int) -> void:
 	if opcoes.is_empty():
 		return
 	for e in opcoes:
-		if not itens.has(e):
-			_mandar(s, e)
+		if not itens.has(int(e)):   # o JSON traz 10.0; a chave do inventario e int
+			_mandar(s, int(e))
 			return
-	aviso.emit("Tire o que esta na %s antes." % NOMES_SLOT[opcoes[0]])
+	aviso.emit("Tire o que esta %s antes." % _no(int(opcoes[0])))
+
+
+# "no anel", "nas luvas", "na asa"
+func _no(e: int) -> String:
+	return "%s %s" % [NO_SLOT.get(e, "na"), NOMES_SLOT[e]]

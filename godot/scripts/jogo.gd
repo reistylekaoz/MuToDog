@@ -82,6 +82,10 @@ var janela_doppel: JanelaDoppel   # entrada do Doppelganger pelo Lugard (NPC jan
 var doppel: Doppel               # moldura do Doppelganger (rodada 17)
 var janela_imperial: JanelaImperial   # entrada do Imperial Fortress pelo Jerint (NPC janela 0x24)
 var imperial: Imperial           # tempo e clima do Imperial Fortress (rodada 18)
+var janela_kanturu: JanelaKanturu   # entrada da Torre do Kanturu pelo Gateway (C1 D1 00)
+var kanturu: Kanturu             # evento do Kanturu no mapa 39 (rodada 19)
+var raklion: Raklion             # evento do Raklion, mapas 57 e 58 (rodada 20)
+var crywolf: Crywolf             # evento de Crywolf no mapa 34 (rodada 20)
 var _templo_fx := {}             # "id:o que" -> EfeitoMU preso em alguem (reliquia, skills 210 e 211)
 var _templo_preso := false       # Restraint (211) em mim: nao anda ate o C1 BF 07
 var _mirage_t := 0.0             # Mirage sem janela do servidor: o cliente abre a dele
@@ -470,6 +474,17 @@ func _teste_roteiro(passos: Array) -> void:
 			"Y":
 				# Y:0 Enter, Y:1 Close na janela do Jerint
 				janela_imperial.clicar(int(a))
+			"Q":
+				# Q:0 Refresh, Q:1 Enter, Q:2 Close na janela do Gateway do Kanturu
+				janela_kanturu.clicar(int(a))
+			"W":
+				# W:3 diz /crywolf ate o Crywolf chegar nesse estado (o servidor guarda o estado da volta anterior)
+				for i in 8:
+					if crywolf.estado == int(a):
+						break
+					print("TESTE roteiro diz /crywolf (estado %d, quer %s)" % [crywolf.estado, a])
+					cli.dizer(meu_nome, "/crywolf")
+					await _esperar(4.0)
 			"N":
 				# N:numero fala com o NPC do templo desse numero (o mais perto)
 				for e: Entidade in entidades.values():
@@ -899,6 +914,7 @@ func _montar_ui() -> void:
 	_ligar_templo()
 	_ligar_doppel()
 	_ligar_imperial()
+	_ligar_kanturu()
 	caos = ChaosCastle.new()
 	add_child(caos)
 	eventos.estagio.connect(func(n): caos.encolher(n))
@@ -1363,6 +1379,12 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 		# a musica e os sons do evento vem no pacote dos monstros dos eventos
 		if Doppel.no_doppel(mapa) and PacoteMapa.precisa_monstros():
 			PacoteMapa.carregar(self, PacoteMapa.MONSTROS)
+	if kanturu:
+		kanturu.mapa(mapa)
+	if raklion:
+		raklion.mapa(mapa)
+	if crywolf:
+		crywolf.mapa(mapa)
 	if imperial:
 		imperial.mapa(mapa)
 		# a musica, os sons do clima e a chuva vem no pacote dos eventos: o F7 02 (clima) espera ele
@@ -1411,6 +1433,15 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 	caos.entrar(mundo, mapa)
 	if imperial:
 		imperial.ambiente = mundo.ambiente
+	if kanturu:
+		kanturu.mapa(mapa, mundo)
+	if raklion:
+		raklion.mapa(mapa, mundo)
+	if crywolf:
+		crywolf.mapa(mapa, mundo)
+		# o cliente pede o estado ao entrar no mapa (ReceiveJoinMapServer e ReceiveTeleport)
+		if mapa == Crywolf.MAPA and cli:
+			cli.crywolf_pedir_info()
 	mundo.brilho_mudou.connect(func(v: float) -> void:
 		brilho = v
 		_msg("Brilho %s (o padrao e 2,0)" % str(snappedf(v, 0.1)).replace(".", ",")))
@@ -1488,6 +1519,9 @@ func _objeto_entrou(o: Dictionary) -> void:
 	entidades[o.id] = e
 	# armadilha (Meteorite Trap da Lost Tower, as da Dungeon): o cliente nao desenha; a bola do Battle Soccer sim
 	if tipo == "outro" and not bola(e):
+		e.visible = false
+	# a Maya (364): o original carrega um Bull Fighter a 0,2 so de marca; o corpo dela e o objeto 0 do mapa 39
+	if o.tipo == "npc" and o.numero == 364:
 		e.visible = false
 	if e.boneco and o.has("equip") and not skin:
 		e.boneco.vestir(o.equip)
@@ -1891,7 +1925,16 @@ func _process(dt: float) -> void:
 		templo.som = som
 		doppel.som = som
 		imperial.som = som
+		kanturu.som = som
+		raklion.som = som
+		crywolf.som = som
 		_volumes()
+	if kanturu:
+		kanturu.heroi = eu
+	if raklion:
+		raklion.heroi = eu
+	if crywolf:
+		crywolf.heroi = eu
 	# a loja fecha se eu andar pra longe do NPC (o servidor tambem esquece)
 	if npc_falando >= 0 and (not entidades.has(npc_falando) or _distancia(eu.tile, entidades[npc_falando].tile) > 5):
 		_fechar_loja()
@@ -2480,7 +2523,11 @@ func _ir_ao_npc() -> void:
 	if n == null:
 		npc_alvo = -1
 		return
-	if _distancia(eu.tile, n.tile) <= 2:
+	# o Gateway do Kanturu fica na parede: o original fala de ate 550 (5,5 tiles) sem andar
+	# o altar do Crywolf: a elfa contrata em cima dele (o servidor confere a posicao igual a do altar)
+	var altar := mapa_atual == Crywolf.MAPA and n.numero >= 205 and n.numero <= 209 and (minha_classe >> 2) == 2
+	var perto := 0 if altar else 2
+	if _distancia(eu.tile, n.tile) <= perto or (n.numero == 367 and Vector2(eu.tile - n.tile).length() <= 5.5):
 		if eu.andando():
 			return
 		eu.olhar_para(n)
@@ -2489,6 +2536,8 @@ func _ir_ao_npc() -> void:
 		npc_alvo = -1
 		if Templo.no_templo(mapa_atual) and _npc_do_templo(n):
 			return
+		if crywolf and _npc_do_crywolf(n):
+			return
 		print("TESTE falando com %s (%d)" % [n.nome, n.id])
 		cli.falar_npc(n.id)
 		npc_falando = n.id
@@ -2496,7 +2545,7 @@ func _ir_ao_npc() -> void:
 			_mirage_t = 0.8
 	elif not eu.andando() or _repensar <= 0.0:
 		_repensar = 0.8
-		_ir_perto(n.tile, 2)
+		_ir_perto(n.tile, perto)
 
 
 func _fechar_loja() -> void:
@@ -2522,6 +2571,8 @@ func _fechar_loja() -> void:
 		janela_doppel.visible = false
 	if janela_imperial:
 		janela_imperial.visible = false
+	if janela_kanturu:
+		janela_kanturu.visible = false
 	inv.soltar()
 
 
@@ -2685,6 +2736,145 @@ func _imperial_entrada(r: int, dia: int, zona: int, clima: int, ms: int) -> void
 		5: l = [DicaItem.t(2843)]
 	if not l.is_empty():
 		_caixa_mu(l, func(_ok, _t): pass, false, false)
+
+
+# --- Kanturu (rodada 19) ------------------------------------------------------------
+
+func _ligar_kanturu() -> void:
+	janela_kanturu = JanelaKanturu.new()
+	janela_kanturu.atualizar.connect(func(): cli.kanturu_pedir_info())
+	janela_kanturu.fechar.connect(_fechar_loja)
+	janela_kanturu.entrar.connect(func():
+		var vestido := {}
+		for k in [7, 8, 10, 11]:
+			if inv.itens.has(k):
+				vestido[k] = inv.itens[k]
+		var r := JanelaKanturu.recusa(vestido, janela_kanturu.estado == JanelaKanturu.ESTADO_TORRE)
+		print("TESTE kanturu entrar %s" % (r if r != "" else "ok"))
+		if r != "":
+			_caixa_mu([JanelaKanturu.texto_caixa(r)], func(_ok, _t): pass, false, false)
+			_fechar_loja()
+			return
+		# sem C1 31: o servidor larga o pedido de entrada quando o NPC fecha
+		cli.kanturu_entrar())
+	hud.add_child(janela_kanturu)
+	kanturu = Kanturu.new()
+	hud.add_child(kanturu)
+	cli.kanturu_info.connect(func(e, d, pode, gente, seg):
+		if npc_falando >= 0 or janela_kanturu.visible:
+			janela_kanturu.info(e, d, pode, gente, seg))
+	cli.kanturu_entrada.connect(func(r):
+		print("TESTE kanturu entrada %d" % r)
+		janela_kanturu.visible = false
+		# o OpenMU manda 1 quando ja levou pro mapa 39 (no original o 1 e "15 jogadores ja entraram")
+		if not (r == 1 and mapa_atual == Kanturu.MAPA):
+			_caixa_mu([JanelaKanturu.texto_caixa(r)], func(_ok, _t): pass, false, false)
+		_fechar_loja())
+	cli.kanturu_estado.connect(func(e, d): kanturu.mudar(e, d))
+	cli.kanturu_resultado.connect(func(r): kanturu.fim(r))
+	cli.kanturu_tempo.connect(func(ms): kanturu.tempo(ms))
+	cli.kanturu_maya.connect(func(t): kanturu.ataque_maya(t))
+	cli.kanturu_contagem.connect(func(m, g): kanturu.contagem(m, g))
+	# Raklion: o servidor manda o estado sozinho (o cliente nunca pede o D1 10)
+	raklion = Raklion.new()
+	add_child(raklion)
+	cli.raklion_estado.connect(func(e, d): raklion.mudar(e, d))
+	_ligar_crywolf()
+
+
+func _nome_classe(n: int) -> String:
+	var b := clampi(n >> 2, 0, 6)
+	return DicaItem.t(DicaItem.NOMES_CLASSE[b][[0, 1, 1, 2][n & 3]])
+
+
+func _ligar_crywolf() -> void:
+	crywolf = Crywolf.new()
+	hud.add_child(crywolf)
+	cli.crywolf_info.connect(func(o, e): crywolf.info(o, e))
+	cli.crywolf_altares.connect(func(v, a): crywolf.estatua_altares(v, a))
+	cli.crywolf_tempo.connect(func(h, m): crywolf.tempo(h, m))
+	cli.crywolf_chefe.connect(func(v, n): crywolf.chefe(v, n))
+	cli.crywolf_rank.connect(func(r, e): crywolf.meu_rank(r, e))
+	cli.crywolf_heroi.connect(func(p, n, c, pt): crywolf.heroi_lista(p, n, c, pt))
+	cli.crywolf_caos.connect(func(b): crywolf.bonus_caos = b)
+	cli.crywolf_balista.connect(func(a, b, c, d): crywolf.balista(a, b, c, d))
+	crywolf.resultado_pronto.connect(func(_l):
+		_caixa_mu(crywolf.linhas_resultado(_nome_classe), func(_ok, _t): pass, false, false))
+	# ReceiveCrywolfAltarContract: 0 recusou (nivel ou espera), 1 contratou: caixa, buff e a pose de cura
+	cli.crywolf_contrato.connect(func(r, est, chave):
+		print("TESTE crywolf contrato %d altar %d chave %d" % [r, est, chave])
+		if r == 0:
+			if meu_nivel < 260:
+				_caixa_mu([DicaItem.t(2004), DicaItem.t(2005)], func(_ok, _t): pass, false, false)
+			else:
+				_caixa_mu([DicaItem.t(2008)], func(_ok, _t): pass, false, false)
+		elif r == 1:
+			_caixa_mu([DicaItem.t(1953), DicaItem.t(1954)], func(_ok, _t): pass, false, false)
+			crywolf.altar_contratado(chave, est)
+			if eu and eu.boneco:
+				eu.boneco.tocar("cura"))
+
+
+# o clique na elfa nos altares do Crywolf e nos NPCs da quest da 3a classe (ZzzInterface): true = ja tratou
+func _npc_do_crywolf(n: Entidade) -> bool:
+	if mapa_atual == Crywolf.MAPA and n.numero >= 205 and n.numero <= 209 and crywolf.painel():
+		var r := crywolf.clique_altar(n.numero, (minha_classe >> 2) == 2)
+		print("TESTE crywolf altar %d: %s" % [n.numero, r])
+		match r:
+			"pode":
+				_caixa_mu([DicaItem.t(2006, [crywolf.contratos_restantes(n.numero)]), DicaItem.t(2007)], func(ok, _t):
+					if not ok:
+						return
+					# CCry_Wolf_Get_Temple::OkBtnDown: montado no Uniria/Dinorant/Fenrir nao contrata
+					var ajudante: Dictionary = inv.itens.get(8, {})
+					if ajudante.get("grupo", -1) == 13 and ajudante.get("numero", -1) in [2, 3, 37]:
+						_caixa_mu([DicaItem.t(1956)], func(_ok, _t): pass, false, false)
+					else:
+						cli.crywolf_contratar(n.id))
+			"destruido":
+				_caixa_mu([DicaItem.t(2003)], func(_ok, _t): pass, false, false)
+			"contratado":
+				_caixa_mu([DicaItem.t(2002)], func(_ok, _t): pass, false, false)
+			_:
+				return false
+		return true
+	if n.numero == 407 and mapa_atual == Crywolf.MAPA:
+		cli.falar_npc(n.id)
+		_caixa_quest3(n.numero)
+		return true
+	if n.numero == 408 and mapa_atual == 41:
+		cli.falar_npc(n.id)
+		_caixa_quest3(n.numero)
+		return true
+	return false
+
+
+# CMapEnterWerwolfMsgBoxLayout (407, quest 5 da 3a classe, 3.000.000 de zen) e CMapEnterGateKeeperMsgBoxLayout
+# (408, quest 6): OK travado fora da quest
+func _caixa_quest3(npc: int) -> void:
+	var l: Array
+	var q := 5 if npc == 407 else 6
+	var pode := quest_legado.estado(q) == QuestLegado.ATIVA or (npc == 407 and quest_legado.estado(q) == QuestLegado.FEITA)
+	if npc == 407:
+		l = [[DicaItem.t(1658), Color8(254, 176, 72)], " ", [DicaItem.t(1659), Color8(170, 218, 146)], " ", DicaItem.t(1660), " ",
+			DicaItem.t(1676), " ", DicaItem.t(1661)]
+	else:
+		l = [[DicaItem.t(1662), Color8(255, 176, 73)], " ", [DicaItem.t(1663), Color8(145, 241, 97)], " ", DicaItem.t(1664), " ",
+			DicaItem.t(1677)]
+	print("TESTE crywolf caixa quest3 %d pode %s" % [npc, pode])
+	var c := CaixaMU.new(l, true, false)
+	c.topo = 50
+	c.ok_travado = not pode
+	c.respondeu.connect(func(ok, _t):
+		if not ok:
+			return
+		if npc == 408:
+			cli.entrar_refugio()
+		elif meu_zen >= 3000000:
+			cli.entrar_quartel()
+		else:
+			_msg(DicaItem.t(423)))
+	hud.add_child(c)
 
 
 # CGMDoppelGanger::RenderMonster: nos 4 mapas o Ice Walker troca o corpo (malha 0) e o brilho somado
@@ -5005,6 +5195,7 @@ func _alternar_guilda() -> void:
 # caixa de mensagem do cliente (CaixaMU); com --aceitar responde OK sozinha (senha vazia, ou --senha_guilda X)
 func _caixa_mu(linhas: Array, resposta: Callable, senha := false, cancelar := true) -> CaixaMU:
 	var c := CaixaMU.new(linhas, cancelar, senha)
+	print("TESTE caixa %s" % [linhas.map(func(l): return l[0] if l is Array else l)])
 	c.respondeu.connect(resposta)
 	hud.add_child(c)
 	if _parametros().has("aceitar") and cancelar:

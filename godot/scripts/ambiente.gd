@@ -49,7 +49,7 @@ const LUZES := {
 # RenderObject de cada GM*.cpp: escondido inclui o 67, que o codigo do Loren Market some em quase
 # todo mapa; na soma, malha -1 = o objeto inteiro, lista = varias malhas, 3o valor = luz da malha
 # objeto que o cliente nao desenha (HiddenMesh = -2): marcador de pose e de som (tipo do .obj)
-const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 64, 70, 76, 83],
+const ESCONDER := {42: [2, 3, 5, 6, 58, 59, 60, 85, 86, 87, 88, 89, 90, 91, 92, 93], 43: [2, 3, 5, 6, 58, 59, 60, 85, 86, 87, 88, 89, 90, 91, 92, 93], 3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 64, 70, 76, 83],
 	7: [38, 67], 19: [6, 7, 8, 9, 10, 11, 12], 25: [35, 36, 37, 38, 39, 40], 63: [26, 27, 28], 65: [34, 35, 36],
 	31: [0, 4, 11, 37, 39, 41, 42, 43, 44, 45, 46, 47, 48, 52, 53, 54, 66, 67, 68, 69, 71, 72, 73, 74, 75, 76, 88],
 	32: [1, 3, 42, 44, 45, 53, 67],
@@ -57,9 +57,12 @@ const ESCONDER := {3: [91, 100], 4: [38], 5: [24, 25], 8: [22, 39], 9: [60, 63, 
 	35: [57, 71, 72, 73, 74, 77, 78, 81, 82, 83, 84],
 	38: [37, 59, 60, 61, 62, 81, 82, 83, 97, 107, 108],
 	39: [45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 65],
+	# Kanturu 3 (M39Kanturu3rd::CreateKanturu3rdObject e MoveKanturu3rdObject: pontos de luz, nuvem e fumaca)
+	40: [1, 32, 45, 47, 48, 51, 52, 53, 54, 57, 58, 70],
 	52: [0, 54, 58, 59, 60, 61, 62, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147],
 	57: [57, 67, 71, 72, 73, 74, 77, 78],
 	58: [67, 70, 80],
+	59: [67, 70, 80],
 	64: [0, 1, 2, 3, 4, 5, 6, 67],
 	47: [70, 71, 72, 73, 74, 75, 76, 77, 78, 79],
 	75: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132, 158],
@@ -94,10 +97,13 @@ const SOMA := {
 	35: {81: [0, Vector2.ZERO]},
 	38: {76: [0, Vector2(-0.01, 0.0)], 85: [3, Vector2.ZERO], 95: [0, Vector2.ZERO], 103: [1, Vector2.ZERO], 105: [1, Vector2.ZERO]},
 	39: {1: [1, Vector2.ZERO], 2: [1, Vector2.ZERO], 8: [1, Vector2.ZERO], 10: [2, Vector2.ZERO], 12: [0, Vector2(1.0, 1.0)], 27: [2, Vector2(0.0, -1.0)], 31: [0, Vector2.ZERO], 35: [1, Vector2.ZERO], 36: [1, Vector2.ZERO], 76: [0, Vector2.ZERO]},
+	# Kanturu 3 (RenderKanturu3rdObjectMesh): 15 a 17 e 33 com a malha 1 correndo, 40 a 42 o cristal somado
+	40: {2: [0, Vector2.ZERO], 15: [1, Vector2(0.0, -0.5)], 16: [1, Vector2(0.0, -0.5)], 17: [1, Vector2(0.0, -0.5)], 33: [1, Vector2(0.0, -1.0)], 40: [0, Vector2(0.0, -0.01)], 41: [0, Vector2(0.0, -0.01)], 42: [0, Vector2(0.0, -0.01)]},
 	52: {56: [0, Vector2.ZERO], 73: [-1, Vector2.ZERO], 78: [0, Vector2.ZERO], 79: [0, Vector2.ZERO], 104: [4, Vector2.ZERO], 110: [[0, 1, 2], Vector2.ZERO], 113: [9, Vector2.ZERO], 114: [9, Vector2.ZERO], 121: [1, Vector2.ZERO]},
 	47: {39: [0, Vector2.ZERO], 41: [0, Vector2.ZERO], 46: [2, Vector2.ZERO], 62: [1, Vector2.ZERO],
 		64: [-1, Vector2.ZERO], 65: [-1, Vector2.ZERO], 66: [-1, Vector2.ZERO], 80: [-1, Vector2.ZERO]},
 	58: {20: [1, Vector2.ZERO], 68: [0, Vector2.ZERO], 69: [0, Vector2.ZERO], 71: [0, Vector2.ZERO]},
+	59: {20: [1, Vector2.ZERO], 68: [0, Vector2.ZERO], 69: [0, Vector2.ZERO], 71: [0, Vector2.ZERO]},
 	64: {16: [0, Vector2.ZERO], 67: [0, Vector2(0.0, 0.1), 0.2], 68: [0, Vector2(0.0, 0.1), 0.2]},
 	80: {8: [[0, 1], Vector2(0.0, -1.0), 0.3]},
 	81: {1: [0, Vector2.ZERO], 54: [0, Vector2.ZERO], 55: [0, Vector2(0.0, 0.1)], 57: [0, Vector2(0.0, 0.1)], 58: [[1, 2], Vector2.ZERO], 63: [[0, 2], Vector2.ZERO], 66: [1, Vector2.ZERO], 119: [1, Vector2.ZERO]},
@@ -111,6 +117,7 @@ const PULSA := {8: {23: [2.0, 0.3, 0.5], 32: [4.0, 0.5, 0.5], 34: [4.0, 0.5, 0.5
 	39: {1: [2.0, 0.5, 0.5], 2: [2.0, 0.5, 0.5], 10: [1.5, 0.4, 0.5]},
 	52: {56: [3.0, 0.3, 0.5], 104: [2.0, 0.5, 0.5], 121: [2.0, 0.5, 0.5]},
 	58: {68: [1.0, 0.5, 0.8], 69: [1.0, 0.5, 0.8], 71: [1.0, 0.5, 0.8]},
+	59: {68: [1.0, 0.5, 0.8], 69: [1.0, 0.5, 0.8], 71: [1.0, 0.5, 0.8]},
 	64: {16: [2.0, 0.5, 0.5]},
 	47: {64: [1.0, 0.5, 0.5], 65: [1.0, 0.5, 0.5], 80: [1.0, 0.5, 0.5]},
 	81: {54: [2.0, 0.5, 1.25], 58: [1.0, 0.5, 0.5], 63: [1.0, 0.5, 0.5], 119: [1.0, 0.5, 0.5]},
@@ -133,16 +140,18 @@ const SPRITE := {25: {35: ["flare01", Color(0.3, 0.6, 1), 1.5, 2.0, 0.2, 0.8], 3
 # textura *_R (TextureScript m_bBright): a malha desenha somada em qualquer objeto. Ligado nos mapas
 # da rodada 15: o ceu de estrelas (ChrisSky_R) e a aurora da Santa, a lava (PKMagma_R) da Arena, BosBBb_R do Kalima
 const TEXTURA_R := [25, 63, 65]
-const LUZ_COR := {65: {34: [Color(0.9, 0.2, 0.1) * 0.6, 3]},
+const LUZ_COR := {42: {3: [Color(0.45, 0.27, 0.09), 3]}, 43: {3: [Color(0.45, 0.27, 0.09), 3]}, 65: {34: [Color(0.9, 0.2, 0.1) * 0.6, 3]},
 	47: {76: [Color(0.7, 0.28, 0.21), 3], 77: [Color(0.21, 0.28, 0.7), 3]}}
 # fogo no objeto (Arena 36: CreateParticle BITMAP_FIRE junto do brilho)
-const FOGO_TIPO := {65: [36], 47: [76, 77]}
+# Balgass (CGM3rdChangeUp, quartel 42 e refugio 43): o 3 e fogo com luz
+const FOGO_TIPO := {65: [36], 47: [76, 77], 42: [3], 43: [3]}
 # cachoeira do Kalima (RenderHellasVisual 37 a 40): [textura, por segundo, sobe (a nevoa do pe)]
 const CASCATA := {25: {37: ["waterfall5", 25.0, false], 38: ["waterfall2", 12.0, false], 39: ["waterfall3", 25.0, true],
 	40: ["waterfall2", 6.0, false]}}
 # Tarkan: fumaca dos pontos escondidos: tipo -> [por segundo, segundos ligada a cada ciclo, ciclo]
 # (70 solta 1 a cada 5 quadros; 76 meio segundo a cada 5; 83 o geiser, meio segundo a cada 10)
-const FUMACA_TIPO := {9: {70: [5.0, 0.0, 0.0], 76: [25.0, 0.5, 5.0], 83: [25.0, 0.5, 10.0]}, 65: {35: [8.0, 0.0, 0.0]}}
+const FUMACA_TIPO := {9: {70: [5.0, 0.0, 0.0], 76: [25.0, 0.5, 5.0], 83: [25.0, 0.5, 10.0]}, 65: {35: [8.0, 0.0, 0.0]},
+	42: {2: [8.0, 0.0, 0.0], 5: [12.0, 0.0, 0.0]}, 43: {2: [8.0, 0.0, 0.0], 5: [12.0, 0.0, 0.0]}}
 # Lost Tower: luz girando em cima do bloco de fogo (19 vermelha, 20 azul; Magic_Ground2 e lightning2)
 const GIRA := {5: {19: ["magic_ground2", Color(1, 0.2, 0)], 20: ["lightning2", Color(0.4, 0.8, 1)]}}
 # tipo -> [malha, rolagem] da textura que corre sem somar (StreamMesh: a agua da Noria)
@@ -154,6 +163,7 @@ const CORRE := {4: {42: [0, Vector2(-2, 0)], 43: [0, Vector2(2, 0)]}, 5: {3: [1,
 	38: {96: [0, Vector2(0.0, -0.05)]},
 	39: {13: [1, Vector2(0.0, -1.0)], 14: [1, Vector2(0.0, -1.0)], 15: [3, Vector2(0.0, -1.0)], 16: [3, Vector2(0.0, -1.0)]},
 	64: {15: [0, Vector2(0.0, -0.1)]},
+	42: {57: [0, Vector2(0.0, -0.2)]}, 43: {57: [0, Vector2(0.0, -0.2)]},
 }
 # portal (MODEL_WARP do MapManager.cpp): posicao em unidades do MU e altura das pecas
 const PORTAL := {3: [Vector2(53 * 100 + 50, 92 * 100 + 20), 360.0], 4: [Vector2(223 * 100, 30 * 100), 350.0]}

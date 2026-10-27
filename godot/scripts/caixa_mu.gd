@@ -2,7 +2,8 @@ class_name CaixaMU
 extends Control
 # Caixa de mensagem do cliente S6 (CNewUICommonMessageBox): 230 de largura, topo de 67, um meio de 15 por
 # linha a mais e o pe de 50, centrada a 100 do alto na tela de 640x480. OK e Cancel (54x30) no meio de cada
-# metade. Com senha=true ganha um campo secreto (o CNewUIGuildPasswordMsgBox, ate 20).
+# metade. Com senha=true ganha um campo secreto (o CNewUIGuildPasswordMsgBox, ate 20). Linha pode ser [texto, cor]
+# (AddMsg com cor); ok_travado e o LockOkButton (OK cinza que nao responde); topo e o SetPos de y.
 
 signal respondeu(ok: bool, texto: String)
 signal escolheu(i: int)                     # caixa com escolhas (cargo da guilda): -1 cancelou
@@ -14,6 +15,9 @@ var linhas: Array = []
 var com_cancelar := true
 var senha := false
 var escolhas: Array = []     # textos de botoes de 108x29, um embaixo do outro, e o Cancel no pe
+var ok_travado := false
+var topo := 100.0
+var cores: Array = []        # cor de cada linha depois de quebrar
 var _tex := {}
 var _esc := 1.0
 var _mouse := Vector2(-100, -100)
@@ -48,16 +52,20 @@ func _ready() -> void:
 func _quebrar_linhas(textos: Array) -> Array:
 	var f := get_theme_default_font()
 	var r := []
+	cores.clear()
 	for t in textos:
+		var cor: Color = t[1] if t is Array else Color.WHITE
 		var atual := ""
-		for p in str(t).split(" ", false):
+		for p in str(t[0] if t is Array else t).split(" ", false):
 			var tenta: String = p if atual == "" else atual + " " + p
 			if atual != "" and f.get_string_size(tenta, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x > L - 20:
 				r.append(atual)
+				cores.append(cor)
 				atual = p
 			else:
 				atual = tenta
 		r.append(atual)
+		cores.append(cor)
 	return r
 
 
@@ -80,7 +88,7 @@ func _ajustar() -> void:
 	_esc = v.x / 640.0
 	scale = Vector2(_esc, _esc)
 	size = Vector2(L, altura())
-	position = Vector2((v.x - L * _esc) / 2.0, 100.0 * _esc)
+	position = Vector2((v.x - L * _esc) / 2.0, topo * _esc)
 	_campo.position = Vector2(40, 35 + linhas.size() * 15 + 2)
 	_campo.size = Vector2(L - 80, 18)
 	queue_redraw()
@@ -94,6 +102,8 @@ func _botao(i: int) -> Rect2:
 
 
 func responder(ok: bool) -> void:
+	if ok and ok_travado:
+		return
 	if not is_queued_for_deletion():
 		respondeu.emit(ok, _campo.text)
 		queue_free()
@@ -116,7 +126,7 @@ func _draw() -> void:
 	for i in linhas.size():
 		var p := Vector2(0, 35 + i * 15 + 10)
 		draw_string_outline(f, p, str(linhas[i]), HORIZONTAL_ALIGNMENT_CENTER, L, 10, 2, Color(0, 0, 0, 0.9))
-		draw_string(f, p, str(linhas[i]), HORIZONTAL_ALIGNMENT_CENTER, L, 10, Color.WHITE)
+		draw_string(f, p, str(linhas[i]), HORIZONTAL_ALIGNMENT_CENTER, L, 10, cores[i] if i < cores.size() else Color.WHITE)
 	for i in escolhas.size():
 		var r := _escolha(i)
 		draw_texture_rect_region(_tex.btn_vazio, r, Rect2(0, 29 * (1 if r.has_point(_mouse) else 0), 108, 29))
@@ -129,7 +139,9 @@ func _draw() -> void:
 	for i in (2 if com_cancelar else 1):
 		var b := _botao(i)
 		var t: Texture2D = _tex.msg_ok if i == 0 else _tex.msg_cancelar
-		draw_texture_rect_region(t, b, Rect2(0, 30 * (1 if b.has_point(_mouse) else 0), 54, 30))
+		var cinza := i == 0 and ok_travado
+		draw_texture_rect_region(t, b, Rect2(0, 30 * (1 if b.has_point(_mouse) and not cinza else 0), 54, 30),
+			Color(0.4, 0.4, 0.4) if cinza else Color.WHITE)
 
 
 func _gui_input(ev: InputEvent) -> void:

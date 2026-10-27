@@ -2,8 +2,8 @@ class_name Som
 extends Node
 # Musica e som de fundo do mapa, no jeito do cliente S6 (SceneManager.cpp):
 # na zona segura toca a musica da cidade: Lorencia main_theme.mp3 (Pub.mp3 em cima do
-# chao da taverna, HeroTile 4), Devias Devias.mp3 (Church.mp3 dentro da igreja,
-# x 205..214, y 13..31), Noria Noria.mp3. Fora da zona segura a musica que tocava vai
+# chao da taverna, HeroTile 4), Devias Devias.mp3 (em dados/mundo3, Church.mp3 dentro da igreja,
+# x 205..214, y 13..31), Noria Noria.mp3 (dados/mundo4). Fora da zona segura a musica que tocava vai
 # ate o fim e nao volta; trocou de mapa, para.
 # Vento (aWind.wav): Lorencia menos na taverna, Devias menos no chao 3 e do 10 pra cima
 # (dentro das casas), Noria sempre, com a floresta (aForest.wav) de vez em quando.
@@ -26,6 +26,9 @@ var _mapa := -1
 var doppel := false  # Doppelganger com a moldura ligada (CGMDoppelGanger::PlayBGM: sem ela, silencio)
 var imperial := -1   # Imperial Fortress: clima do F7 02 (1 chuva, 2 neblina, 3 tempestade; 4 = mapa 72, dentro)
 var _fundo_imp := ""
+var kanturu := 0     # estado do evento do Kanturu (C1 D1 03): 1 espera, 2 Maya, 3 Nightmare, 4 torre
+var crywolf := 0     # estado do Crywolf (C1 BD 00): 2 aviso, 3 pronto, 4 luta, 5 fim
+var raklion_chefe := false   # CGM_Raklion::m_bMusicBossMap: liga no READY, desliga no END
 var templo := 0      # estado do Illusion Temple (C1 BF 09 + 1): 0 nada, 1 espera, 2 pronto, 3 partida, 4 fim
 
 
@@ -66,6 +69,45 @@ func atualizar(mapa: int, seguro: bool, tile: int, x := 0, y := 0) -> void:
 			fundo.stream = w
 			fundo.play()
 			print("TESTE fundo %d" % mapa)
+	# Crywolf (M34CryWolf1st::ChangeBackGroundMusic): o 2o aviso, o pronto e a luta tem musica propria, o fim
+	# fica em silencio (o som da vitoria ou da derrota sai pelo evento), o resto com a do mapa
+	if mapa == 34:
+		var nomes := {2: "musica_antes.ogg", 3: "musica_pronto.ogg", 4: "musica_luta.ogg", 5: ""}
+		var cw: String = nomes.get(crywolf, "musica.mp3")
+		if cw == "":
+			if _faixa != "":
+				musica.stop()
+				_faixa = ""
+		elif ("res://dados/mundo35/" + cw != _faixa or not musica.playing) and ResourceLoader.exists("res://dados/mundo35/" + cw):
+			_faixa = "res://dados/mundo35/" + cw
+			musica.stream = load(_faixa)
+			musica.play()
+			print("TESTE musica crywolf %s" % cw)
+		return
+	# ninho do Selupan (CGM_Raklion::PlayBGM): Raklion_Hatchery so com a luta marcada, senao nada
+	if mapa == 58:
+		var rk := "res://dados/mundo59/musica_chefe.mp3" if raklion_chefe else ""
+		if rk == "":
+			if _faixa != "":
+				musica.stop()
+				_faixa = ""
+		elif rk != _faixa or not musica.playing:
+			_faixa = rk
+			musica.stream = load(rk)
+			musica.play()
+			print("TESTE musica raklion chefe")
+		return
+	# Kanturu 3 (M39Kanturu3rd::ChangeBackGroundMusic): espera e Maya com a da Maya, Nightmare com a dele,
+	# o resto (torre aberta, nada) com a da torre
+	if mapa == 39:
+		var nome := "musica_maya.mp3" if kanturu in [1, 2] else ("musica_nightmare.mp3" if kanturu == 3 else "musica.mp3")
+		var kt := "res://dados/mundo40/" + nome
+		if (kt != _faixa or not musica.playing) and ResourceLoader.exists(kt):
+			_faixa = kt
+			musica.stream = load(kt)
+			musica.play()
+			print("TESTE musica kanturu %s" % nome)
+		return
 	# Illusion Temple (CursedTemple::PlayBGM): sem estado nao toca nada, na espera cursedtemplewait e do
 	# pronto em diante cursedtempleplay (musica_jogo.mp3)
 	if mapa >= 45 and mapa <= 50:
@@ -129,9 +171,11 @@ func atualizar(mapa: int, seguro: bool, tile: int, x := 0, y := 0) -> void:
 			0: quer = "pub" if tile == 4 else "main_theme"
 			2: quer = "igreja" if x >= 205 and x <= 214 and y >= 13 and y <= 31 else "devias"
 			3: quer = "noria"
-	if quer != "" and (quer != _faixa or not musica.playing) and ResourceLoader.exists(PASTA + quer + ".mp3"):
+	# Devias e Noria baixam em pacote: a musica da cidade mora no mundo do mapa (fora do index.pck)
+	var pasta := PASTA if mapa == 0 else "res://dados/mundo%d/" % PacoteMapa.mundo_do_mapa(mapa)
+	if quer != "" and (quer != _faixa or not musica.playing) and ResourceLoader.exists(pasta + quer + ".mp3"):
 		_faixa = quer
-		musica.stream = load(PASTA + quer + ".mp3")
+		musica.stream = load(pasta + quer + ".mp3")
 		musica.play()
 		print("TESTE musica %s" % quer)
 	# o cliente sorteia 1 em 512 por quadro (25 por segundo): uns 20 s em media

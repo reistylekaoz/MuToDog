@@ -243,5 +243,35 @@
  "47": [
   "templo_aliado",
   "templo_ilusao"
+ ],
+ "40": [
+  "monster111",
+  "monster112",
+  "monster113",
+  "monster114",
+  "monster115",
+  "monster116",
+  "monster117",
+  "monster119",
+  "monster120",
+  "monster122"
+ ],
+ "42": [
+  "monster92",
+  "monster94",
+  "monster95",
+  "npc_cry2doorhead"
+ ],
+ "43": [
+  "monster94",
+  "monster95",
+  "monster127"
+ ],
+ "59": [
+  "monster149",
+  "monster151",
+  "monster152",
+  "monster153",
+  "monster154"
  ]
 }

@@ -65,6 +65,18 @@ using (var l = new Image<Rgb24>(N, N))
     m.SaveAsPng(Path.Combine(saida, "mapa.png"));
     l.SaveAsPng(Path.Combine(saida, "luz.png"));
 }
+// Kanturu 3 (World40): o EncTerrain401.att e a grade com a barreira da torre aberta (CheckSuccessBattle)
+var attSucesso = Achar(pasta, $"EncTerrain{mundo * 10 + 1}.att");
+if (attSucesso != null)
+{
+    var att2 = await new ATTReader().Load(attSucesso);
+    using var a2 = new Image<L8>(N, N);
+    for (int y = 0; y < N; y++)
+    for (int x = 0; x < N; x++)
+        a2[x, y] = new L8((byte)((ushort)att2.TerrainWall[y * N + x] & 0xFF));
+    a2.SaveAsPng(Path.Combine(saida, "atributos_sucesso.png"));
+    Console.WriteLine("atributos_sucesso.png");
+}
 
 var nomesTile = new Dictionary<int, string>
 {

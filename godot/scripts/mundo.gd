@@ -36,6 +36,7 @@ var materiais := {}
 var brilho := 2.0
 signal brilho_mudou(v: float)
 var _luz_tex: Texture2D
+var arquivo_luz := "luz.png"   # TerrainLight do mapa; o Crywolf troca pela 1 ou 2
 
 
 func _ready() -> void:
@@ -232,7 +233,7 @@ func tile_na_tela(tela: Vector2) -> Vector2i:
 func _terreno() -> void:
 	var mapa := (load(pasta + "mapa.png") as Texture2D).get_image()
 	mapa_img = mapa
-	var luz := (load(pasta + "luz.png") as Texture2D).get_image()
+	var luz := (load(pasta + arquivo_luz) as Texture2D).get_image()
 	var lista: Array = JSON.parse_string(FileAccess.get_file_as_string(pasta + "tiles.json"))
 	var imgs: Array[Image] = []
 	var repete := PackedFloat32Array()
@@ -330,7 +331,7 @@ func _objetos() -> int:
 # troca o material de cada face pelo da luz do MU (objeto.gdshader)
 func _luz_do_mu(n: Node) -> void:
 	if _luz_tex == null:
-		_luz_tex = load(pasta + "luz.png") as Texture2D
+		_luz_tex = load(pasta + arquivo_luz) as Texture2D
 	for mi: MeshInstance3D in n.find_children("*", "MeshInstance3D", true, false):
 		if mi.mesh == null:
 			continue
@@ -352,6 +353,23 @@ func _luz_do_mu(n: Node) -> void:
 
 # o brilho escolhido (2,0 na Lorencia) vezes o acerto do mapa: Devias e neve quase branca
 # e a luz pintada dela ja e clara, entao com 2,0 estoura (Ambiente.BRILHO_MAPA)
+# OpenTerrainLight no meio do jogo (Crywolf pela ocupacao): refaz o chao e troca a luz dos objetos
+func trocar_luz(nome: String) -> void:
+	if nome == arquivo_luz or not tem_dados or not ResourceLoader.exists(pasta + nome):
+		return
+	arquivo_luz = nome
+	var velho := mu.get_node_or_null("Terreno")
+	var visivel: bool = velho == null or velho.visible
+	if velho:
+		mu.remove_child(velho)
+		velho.queue_free()
+	_terreno()
+	mu.get_node("Terreno").visible = visivel
+	_luz_tex = load(pasta + nome) as Texture2D
+	for m: ShaderMaterial in materiais.values():
+		m.set_shader_parameter("luz_mapa", _luz_tex)
+
+
 func brilho_mapa() -> float:
 	return brilho * float(Ambiente.BRILHO_MAPA.get(numero, 1.0))
 

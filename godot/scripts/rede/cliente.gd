@@ -188,6 +188,24 @@ signal doppel_meta(maximo: int, passaram: int)    # BF 14
 signal imperial_entrada(resultado: int, dia: int, zona: int, clima: int, ms: int)  # F7 02: 0 entrou (ou zona nova)
 signal imperial_tempo(tipo: int, ms: int, monstros: int)  # F7 04: 0 saque, 1 espera, 2 corrida contra o tempo
 signal imperial_resultado(resultado: int, exp: int)       # F7 06: 0 falhou, 1 zona limpa, 2 venceu
+signal kanturu_info(estado: int, detalhe: int, pode: bool, gente: int, segundos: int)  # D1 00: pro dialogo do Gateway
+signal kanturu_entrada(resultado: int)     # D1 01: 0 falhou ... (o OpenMU so manda 0 ou 1)
+signal kanturu_estado(estado: int, detalhe: int)   # D1 02 e D1 03: estado do evento (1 espera, 2 Maya, 3 Nightmare, 4 torre)
+signal kanturu_resultado(resultado: int)   # D1 04: 0 falhou, 1 venceu
+signal kanturu_tempo(ms: int)              # D1 05: tempo da fase
+signal kanturu_maya(tipo: int)             # D1 06: ataque em area da Maya (0 tempestade, 1 chuva de pedras)
+signal kanturu_contagem(monstros: int, gente: int)  # D1 07
+signal raklion_estado(estado: int, detalhe: int)    # D1 10 a 12: estado do evento do Raklion (Selupan)
+signal raklion_resultado(resultado: int)   # D1 13
+signal crywolf_info(ocupacao: int, estado: int)          # BD 00
+signal crywolf_altares(estatua: int, altares: Array)     # BD 02: vida da estatua e os 5 altares
+signal crywolf_contrato(resultado: int, altar: int, chave: int)   # BD 03
+signal crywolf_tempo(hora: int, minuto: int)             # BD 04
+signal crywolf_chefe(vida: int, dark_elves: int)         # BD 05
+signal crywolf_rank(rank: int, exp: int)                 # BD 07
+signal crywolf_heroi(pos: int, nome: String, classe: int, pontos: int)   # BD 08, um por heroi
+signal crywolf_caos(bonus: int)                          # BD 09
+signal crywolf_balista(sx: int, sy: int, px: int, py: int)   # BD 0C
 signal evento_entrada(evento: String, resultado: int)   # C1 90 (Devil Square) e C1 9A (Blood Castle): 0 entrou, 1 sem convite...
 signal evento_abre(tipo: int, minutos: int, gente: int, minutos_baixo: int)   # C1 91: falta pra abrir (1 DS, 2 BC, 4 CC, 5 IT)
 signal evento_contagem(estado: int)                    # C1 92: a contagem de 30 s (0 a 2 DS, 3 a 7 BC, 10 a 13 CC)
@@ -519,6 +537,38 @@ func templo_premio() -> void:
 # C1 BF 0E: entrar no Doppelganger (o cliente manda sempre a casa 0xFF; o servidor acha o espelho)
 func doppel_entrar() -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0xBF, 0x0E, 0xFF]))
+
+
+# C1 D1 00 e 01: estado do Kanturu (o dialogo do Gateway pede de tempos em tempos) e entrar na torre
+func kanturu_pedir_info() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xD1, 0x00]))
+
+
+func kanturu_entrar() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xD1, 0x01]))
+
+
+# C1 D1 10: estado do Raklion (o cliente pede ao entrar no mapa)
+func raklion_pedir_info() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xD1, 0x10]))
+
+
+# Crywolf: BD 00 ao entrar no mapa 34; BD 03 com a chave do altar (big endian)
+func crywolf_pedir_info() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xBD, 0x00]))
+
+
+func crywolf_contratar(chave: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xBD, 0x03, (chave >> 8) & 0xFF, chave & 0xFF]))
+
+
+# quest 5 e 6 da 3a classe: o Werewolf Guardsman (D0 07) leva pro quartel, o Gatekeeper (D0 08) pro refugio
+func entrar_quartel() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xD0, 0x07]))
+
+
+func entrar_refugio() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xD0, 0x08]))
 
 
 # C1 F7 01: entrar no Imperial Fortress pelo Jerint (o servidor acha o Gaion's Order na mochila)
@@ -1663,6 +1713,12 @@ func _tratar(p: PackedByteArray) -> void:
 		0xF7:
 			if p[0] == 0xC1:
 				_ler_imperial(p, sub)
+		0xD1:
+			if p[0] == 0xC1:
+				_ler_kanturu(p, sub)
+		0xBD:
+			if p[0] == 0xC1:
+				_ler_crywolf(p, sub)
 		0xAE:
 			if p[0] == 0xC2 and p.size() >= 4:
 				helper_dados.emit(p.slice(4, 4 + 257))
@@ -1766,6 +1822,75 @@ func _ler_imperial(p: PackedByteArray, sub: int) -> void:
 		0x06:
 			if p.size() >= 12:
 				imperial_resultado.emit(p[4], _ler_le(p, 8))
+
+
+# D1: Kanturu (00 a 07) e Raklion (10 a 13), ReceiveKanturu3rd* e ReceiveRaklion* do cliente
+func _ler_kanturu(p: PackedByteArray, sub: int) -> void:
+	match sub:
+		0x00:
+			if p.size() >= 12:
+				kanturu_info.emit(p[4], p[5], p[6] != 0, p[7], _ler_le(p, 8))
+		0x01:
+			if p.size() >= 5:
+				kanturu_entrada.emit(p[4])
+		0x02, 0x03:
+			if p.size() >= 6:
+				kanturu_estado.emit(p[4], p[5])
+		0x04:
+			if p.size() >= 5:
+				kanturu_resultado.emit(p[4])
+		0x05:
+			if p.size() >= 8:
+				kanturu_tempo.emit(_ler_le(p, 4))
+		0x06:
+			if p.size() >= 7:
+				kanturu_maya.emit(p[6])
+		0x07:
+			if p.size() >= 6:
+				kanturu_contagem.emit(p[4], p[5])
+		0x10, 0x11, 0x12:
+			if p.size() >= 6:
+				raklion_estado.emit(p[4], p[5])
+		0x13:
+			if p.size() >= 5:
+				raklion_resultado.emit(p[4])
+
+
+# BD: Crywolf (ReceiveCrywolf* do WSclient.cpp; inteiros little endian, a chave do altar big endian)
+func _ler_crywolf(p: PackedByteArray, sub: int) -> void:
+	match sub:
+		0x00:
+			if p.size() >= 6:
+				crywolf_info.emit(p[4], p[5])
+		0x02:
+			if p.size() >= 13:
+				crywolf_altares.emit(_ler_le(p, 4), [p[8], p[9], p[10], p[11], p[12]])
+		0x03:
+			if p.size() >= 8:
+				crywolf_contrato.emit(p[4], p[5], (p[6] << 8) | p[7])
+		0x04:
+			if p.size() >= 6:
+				crywolf_tempo.emit(p[4], p[5])
+		0x05:
+			if p.size() >= 9:
+				# int com sinal: -1 enquanto o Balgass nao apareceu
+				crywolf_chefe.emit(p.decode_s32(4), p[8])
+		0x07:
+			if p.size() >= 12:
+				crywolf_rank.emit(p[4], _ler_le(p, 8))
+		0x08:
+			if p.size() >= 5:
+				for i in p[4]:
+					var o := 5 + i * 20
+					if p.size() < o + 17:
+						break
+					crywolf_heroi.emit(p[o], _ler_texto(p, o + 1, 10), p[o + 16], _ler_le(p, o + 12))
+		0x09:
+			if p.size() >= 5:
+				crywolf_caos.emit(p[4])
+		0x0C:
+			if p.size() >= 10:
+				crywolf_balista.emit(p[6], p[7], p[8], p[9])
 
 
 # 3F: loja pessoal (o S6 manda as listas em C2, as respostas em C1 e o preco em C3)
