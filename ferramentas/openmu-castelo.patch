@@ -1,0 +1,269 @@
+diff --git a/docs/Packets/C3-30-NpcWindowResponse_by-server.md b/docs/Packets/C3-30-NpcWindowResponse_by-server.md
+index d29d5ad..149a6a5 100644
+--- a/docs/Packets/C3-30-NpcWindowResponse_by-server.md
++++ b/docs/Packets/C3-30-NpcWindowResponse_by-server.md
+@@ -32,6 +32,7 @@ Defines the kind of npc window which should be shown on the client.
+ | 7 | PetTrainer | The pet trainer window. |
+ | 9 | Lahap | The lahap window. |
+ | 12 | CastleSeniorNPC | The castle senior window. |
++| 13 | CastleGuardsmanNPC | The castle siege guardsman window, the client asks the status (C1 B2 00). |
+ | 17 | ElphisRefinery | The elphis refinery window. |
+ | 18 | RefineStoneMaking | The refine stone making window. |
+ | 19 | RemoveJohOption | The jewel of harmony option removal window. |
+diff --git a/src/DataModel/Configuration/MonsterDefinition.cs b/src/DataModel/Configuration/MonsterDefinition.cs
+index 6263e55..be02e55 100644
+--- a/src/DataModel/Configuration/MonsterDefinition.cs
++++ b/src/DataModel/Configuration/MonsterDefinition.cs
+@@ -175,6 +175,11 @@ public enum NpcWindow
+     /// The castle siege lever NPC interaction window.
+     /// </summary>
+     CastleSiegeLeverNpc,
++
++    /// <summary>
++    /// The castle siege guardsman window (registration of the siege and of the signs).
++    /// </summary>
++    CastleGuardsmanNPC,
+ }
+ 
+ /// <summary>
+diff --git a/src/GameLogic/CastleSiege/CastleSiegeContext.cs b/src/GameLogic/CastleSiege/CastleSiegeContext.cs
+index 941ae7b..d54bd82 100644
+--- a/src/GameLogic/CastleSiege/CastleSiegeContext.cs
++++ b/src/GameLogic/CastleSiege/CastleSiegeContext.cs
+@@ -170,7 +170,7 @@ public class CastleSiegeContext : IEventStateProvider
+     /// <summary>
+     /// Gets the configured weekly schedule.
+     /// </summary>
+-    internal CastleSiegeSchedule Schedule { get; }
++    public CastleSiegeSchedule Schedule { get; }
+ 
+     /// <summary>
+     /// Gets the lock which prevents overlapping timer executions for this context.
+diff --git a/src/GameLogic/CastleSiege/CastleSiegeGuardsmanTalkPlugIn.cs b/src/GameLogic/CastleSiege/CastleSiegeGuardsmanTalkPlugIn.cs
+index 2234d2a..4ed78a5 100644
+--- a/src/GameLogic/CastleSiege/CastleSiegeGuardsmanTalkPlugIn.cs
++++ b/src/GameLogic/CastleSiege/CastleSiegeGuardsmanTalkPlugIn.cs
+@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
+ using MUnique.OpenMU.GameLogic.NPC;
+ using MUnique.OpenMU.GameLogic.PlugIns;
+ using MUnique.OpenMU.GameLogic.Views.CastleSiege;
++using MUnique.OpenMU.GameLogic.Views.NPC;
++using MUnique.OpenMU.DataModel.Configuration;
+ using MUnique.OpenMU.PlugIns;
+ 
+ /// <summary>
+@@ -40,6 +42,11 @@ public sealed class CastleSiegeGuardsmanTalkPlugIn : NpcTalkPlugInBase
+ 
+         eventArgs.HasBeenHandled = true;
+         eventArgs.LeavesDialogOpen = true;
++
++        // estudo (rodada 21): o Guardsman do S6 abre a janela 0x0D; o cliente pede o estado (C1 B2 00)
++        await player.InvokeViewPlugInAsync<IOpenNpcWindowPlugIn>(view => view.OpenNpcWindowAsync(NpcWindow.CastleGuardsmanNPC)).ConfigureAwait(false);
++        return;
++#pragma warning disable CS0162
+         var isOwnerMaster = await this._taxProvider.IsOwnerGuildMasterAsync(player, context).ConfigureAwait(false);
+         var isExempt = isOwnerMaster
+                        || await this._taxProvider.IsExemptAsync(player, context).ConfigureAwait(false);
+@@ -63,5 +70,6 @@ public sealed class CastleSiegeGuardsmanTalkPlugIn : NpcTalkPlugInBase
+                     CastleSiegeTaxProvider.MaximumHuntTax,
+                     CastleSiegeTaxProvider.HuntTaxStep))
+             .ConfigureAwait(false);
++#pragma warning restore CS0162
+     }
+ }
+diff --git a/src/GameLogic/CastleSiege/CastleSiegeSchedule.cs b/src/GameLogic/CastleSiege/CastleSiegeSchedule.cs
+index b8b1c4a..e34a63e 100644
+--- a/src/GameLogic/CastleSiege/CastleSiegeSchedule.cs
++++ b/src/GameLogic/CastleSiege/CastleSiegeSchedule.cs
+@@ -9,7 +9,7 @@ using MUnique.OpenMU.DataModel.Configuration;
+ /// <summary>
+ /// Provides calculations for the weekly Castle Siege state schedule.
+ /// </summary>
+-internal sealed class CastleSiegeSchedule
++public sealed class CastleSiegeSchedule
+ {
+     private static readonly TimeSpan WeekDuration = TimeSpan.FromDays(7);
+ 
+diff --git a/src/GameLogic/CastleSiege/CastleSiegeStatePeriod.cs b/src/GameLogic/CastleSiege/CastleSiegeStatePeriod.cs
+index ed50329..1b01197 100644
+--- a/src/GameLogic/CastleSiege/CastleSiegeStatePeriod.cs
++++ b/src/GameLogic/CastleSiege/CastleSiegeStatePeriod.cs
+@@ -12,4 +12,4 @@ using MUnique.OpenMU.DataModel.Configuration;
+ /// <param name="State">The state.</param>
+ /// <param name="StartUtc">The UTC start time.</param>
+ /// <param name="EndUtc">The UTC end time.</param>
+-internal readonly record struct CastleSiegeStatePeriod(CastleSiegeState State, DateTime StartUtc, DateTime EndUtc);
++public readonly record struct CastleSiegeStatePeriod(CastleSiegeState State, DateTime StartUtc, DateTime EndUtc);
+diff --git a/src/GameLogic/PlugIns/ChatCommands/CastleSiegeStateChatCommandPlugIn.cs b/src/GameLogic/PlugIns/ChatCommands/CastleSiegeStateChatCommandPlugIn.cs
+new file mode 100644
+index 0000000..c857c48
+--- /dev/null
++++ b/src/GameLogic/PlugIns/ChatCommands/CastleSiegeStateChatCommandPlugIn.cs
+@@ -0,0 +1,44 @@
++// <copyright file="CastleSiegeStateChatCommandPlugIn.cs" company="MUnique">
++// Licensed under the MIT License. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace MUnique.OpenMU.GameLogic.PlugIns.ChatCommands;
++
++using System.Runtime.InteropServices;
++using MUnique.OpenMU.DataModel.Configuration;
++using MUnique.OpenMU.GameLogic.CastleSiege;
++using MUnique.OpenMU.PlugIns;
++
++/// <summary>
++/// A chat command for game masters of the local test server: "/csestado N" forces the castle siege
++/// into the state N (0 Idle1, 1 RegisterGuild, 2 Idle2, 3 RegisterMark, 4 Idle3, 5 Notify, 6 Ready, 7 Start, 8 End, 9 EndCycle).
++/// </summary>
++[Guid("6C0E2B71-94D3-4A8F-B5E2-1D7A3C9F8E40")]
++[PlugIn]
++[Display(Name = "Castle siege state chat command", Description = "Forces the castle siege state: /csestado N")]
++[ChatCommandHelp(Command, CharacterStatus.GameMaster)]
++public class CastleSiegeStateChatCommandPlugIn : IChatCommandPlugIn
++{
++    private const string Command = "/csestado";
++
++    /// <inheritdoc />
++    public string Key => Command;
++
++    /// <inheritdoc />
++    public CharacterStatus MinCharacterStatusRequirement => CharacterStatus.GameMaster;
++
++    /// <inheritdoc />
++    public async ValueTask HandleCommandAsync(Player player, string command)
++    {
++        var parts = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
++        if (parts.Length < 2 || !byte.TryParse(parts[1], out var value) || !Enum.IsDefined((CastleSiegeState)value)
++            || player.GameContext.PlugInManager.GetActivePlugInsOf<IPeriodicTaskPlugIn>().OfType<CastleSiegePlugIn>().FirstOrDefault() is not { } plugIn)
++        {
++            await player.ShowBlueMessageAsync("/csestado 0..9").ConfigureAwait(false);
++            return;
++        }
++
++        plugIn.ForceState((CastleSiegeState)value);
++        await player.ShowBlueMessageAsync($"Castle siege -> {(CastleSiegeState)value}").ConfigureAwait(false);
++    }
++}
+diff --git a/src/GameServer/MessageHandler/CastleSiege/CastleSiegeStatusHandlerPlugIn.cs b/src/GameServer/MessageHandler/CastleSiege/CastleSiegeStatusHandlerPlugIn.cs
+new file mode 100644
+index 0000000..0172a61
+--- /dev/null
++++ b/src/GameServer/MessageHandler/CastleSiege/CastleSiegeStatusHandlerPlugIn.cs
+@@ -0,0 +1,73 @@
++// <copyright file="CastleSiegeStatusHandlerPlugIn.cs" company="MUnique">
++// Licensed under the MIT License. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace MUnique.OpenMU.GameServer.MessageHandler.CastleSiege;
++
++using System.Runtime.InteropServices;
++using MUnique.OpenMU.DataModel.Configuration;
++using MUnique.OpenMU.GameLogic;
++using MUnique.OpenMU.GameServer.RemoteView;
++using MUnique.OpenMU.Network.Packets.ClientToServer;
++using MUnique.OpenMU.Network.Packets.ServerToClient;
++using MUnique.OpenMU.PlugIns;
++
++/// <summary>
++/// Handles the castle siege status request (C1 B2 00), which the client sends after the guardsman window (0x0D) opened.
++/// </summary>
++[PlugIn]
++[Display(Name = "Castle Siege status handler", Description = "Answers C1 B2 00 with the siege state, the dates and the castle owner.")]
++[Guid("2F4B8C1D-6E3A-4B7F-9D05-8A1C3E6B5F72")]
++[BelongsToGroup(CastleSiegeGroupHandlerPlugIn.GroupKey)]
++internal class CastleSiegeStatusHandlerPlugIn : ISubPacketHandlerPlugIn
++{
++    /// <inheritdoc/>
++    public bool IsEncryptionExpected => false;
++
++    /// <inheritdoc/>
++    public byte Key => CastleSiegeStatusRequest.SubCode;
++
++    /// <inheritdoc/>
++    public async ValueTask HandlePacketAsync(Player player, Memory<byte> packet)
++    {
++        var context = CastleSiegeHandlerContext.Get(player);
++        if (context is not { Configuration.Enabled: true })
++        {
++            await (player as RemotePlayer)!.Connection.SendCastleSiegeStatusResponseAsync(0, default(MUnique.OpenMU.Network.Packets.ServerToClient.CastleSiegeState), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, string.Empty, string.Empty, 0).ConfigureAwait(false);
++            return;
++        }
++
++        // siege start: the start of the Start state of this cycle (walks the schedule from the current state)
++        var siegeStart = context.StateStartTimeUtc;
++        if (context.CurrentState < MUnique.OpenMU.DataModel.Configuration.CastleSiegeState.Start)
++        {
++            siegeStart = context.StateEndTimeUtc;
++            var state = context.Schedule.GetNextState(context.CurrentState);
++            for (var i = 0; i < 10 && state != MUnique.OpenMU.DataModel.Configuration.CastleSiegeState.Start; i++)
++            {
++                siegeStart += context.Schedule.GetDuration(state);
++                state = context.Schedule.GetNextState(state);
++            }
++        }
++
++        var guildName = string.Empty;
++        if (context.SiegeData is { IsOccupied: true, OwnerGuildId: { } ownerGuildId } && player.GameContext is IGameServerContext gameServerContext)
++        {
++            guildName = await gameServerContext.GuildServer.GetPersistentGuildNameAsync(ownerGuildId).ConfigureAwait(false) ?? string.Empty;
++        }
++
++        var start = context.StateStartTimeUtc.ToLocalTime();
++        var end = context.StateEndTimeUtc.ToLocalTime();
++        var siege = siegeStart.ToLocalTime();
++        var remaining = (uint)Math.Max(0, (context.StateEndTimeUtc - DateTime.UtcNow).TotalSeconds);
++        await (player as RemotePlayer)!.Connection.SendCastleSiegeStatusResponseAsync(
++            1,
++            (MUnique.OpenMU.Network.Packets.ServerToClient.CastleSiegeState)(byte)context.CurrentState,
++            (ushort)start.Year, (byte)start.Month, (byte)start.Day, (byte)start.Hour, (byte)start.Minute,
++            (ushort)end.Year, (byte)end.Month, (byte)end.Day, (byte)end.Hour, (byte)end.Minute,
++            (ushort)siege.Year, (byte)siege.Month, (byte)siege.Day, (byte)siege.Hour, (byte)siege.Minute,
++            guildName,
++            string.Empty,
++            remaining).ConfigureAwait(false);
++    }
++}
+diff --git a/src/GameServer/RemoteView/NPC/OpenNpcWindowPlugIn.cs b/src/GameServer/RemoteView/NPC/OpenNpcWindowPlugIn.cs
+index cae0722..1b80473 100644
+--- a/src/GameServer/RemoteView/NPC/OpenNpcWindowPlugIn.cs
++++ b/src/GameServer/RemoteView/NPC/OpenNpcWindowPlugIn.cs
+@@ -62,6 +62,7 @@ public class OpenNpcWindowPlugIn : IOpenNpcWindowPlugIn
+             NpcWindow.PetTrainer => NpcWindowResponse.NpcWindow.PetTrainer,
+             NpcWindow.Lahap => NpcWindowResponse.NpcWindow.Lahap,
+             NpcWindow.CastleSeniorNPC => NpcWindowResponse.NpcWindow.CastleSeniorNPC,
++            NpcWindow.CastleGuardsmanNPC => NpcWindowResponse.NpcWindow.CastleGuardsmanNPC,
+             NpcWindow.ElphisRefinery => NpcWindowResponse.NpcWindow.ElphisRefinery,
+             NpcWindow.RefineStoneMaking => NpcWindowResponse.NpcWindow.RefineStoneMaking,
+             NpcWindow.RemoveJohOption => NpcWindowResponse.NpcWindow.RemoveJohOption,
+diff --git a/src/Network/Packets/ServerToClient/ServerToClientPackets.cs b/src/Network/Packets/ServerToClient/ServerToClientPackets.cs
+index 271ec4b..b0146ba 100644
+--- a/src/Network/Packets/ServerToClient/ServerToClientPackets.cs
++++ b/src/Network/Packets/ServerToClient/ServerToClientPackets.cs
+@@ -10685,6 +10685,11 @@ public readonly struct NpcWindowResponse
+         /// </summary>
+             CastleSeniorNPC = 12,
+ 
++        /// <summary>
++        /// The castle siege guardsman window, the client asks the status (C1 B2 00).
++        /// </summary>
++            CastleGuardsmanNPC = 13,
++
+         /// <summary>
+         /// The elphis refinery window.
+         /// </summary>
+diff --git a/src/Network/Packets/ServerToClient/ServerToClientPackets.xml b/src/Network/Packets/ServerToClient/ServerToClientPackets.xml
+index a49eec4..ed52639 100644
+--- a/src/Network/Packets/ServerToClient/ServerToClientPackets.xml
++++ b/src/Network/Packets/ServerToClient/ServerToClientPackets.xml
+@@ -3923,6 +3923,11 @@
+               <Description>The castle senior window.</Description>
+               <Value>12</Value>
+             </EnumValue>
++            <EnumValue>
++              <Name>CastleGuardsmanNPC</Name>
++              <Description>The castle siege guardsman window, the client asks the status (C1 B2 00).</Description>
++              <Value>13</Value>
++            </EnumValue>
+             <EnumValue>
+               <Name>ElphisRefinery</Name>
+               <Description>The elphis refinery window.</Description>

@@ -83,6 +83,9 @@ var doppel: Doppel               # moldura do Doppelganger (rodada 17)
 var janela_imperial: JanelaImperial   # entrada do Imperial Fortress pelo Jerint (NPC janela 0x24)
 var imperial: Imperial           # tempo e clima do Imperial Fortress (rodada 18)
 var janela_kanturu: JanelaKanturu   # entrada da Torre do Kanturu pelo Gateway (C1 D1 00)
+var janela_castelo: JanelaCastelo   # Guardsman e Senior do Castle Siege (rodada 21)
+var taxa_caos := 0                  # C1 B2 1A: imposto do castelo na maquina do caos e nas lojas
+var taxa_loja := 0
 var kanturu: Kanturu             # evento do Kanturu no mapa 39 (rodada 19)
 var raklion: Raklion             # evento do Raklion, mapas 57 e 58 (rodada 20)
 var crywolf: Crywolf             # evento de Crywolf no mapa 34 (rodada 20)
@@ -477,6 +480,10 @@ func _teste_roteiro(passos: Array) -> void:
 			"Q":
 				# Q:0 Refresh, Q:1 Enter, Q:2 Close na janela do Gateway do Kanturu
 				janela_kanturu.clicar(int(a))
+			"C":
+				# C:95x131 clica nesse ponto da janela do castelo (coordenadas da janela de 190 x 429)
+				var xy := a.split("x")
+				janela_castelo.clicar(Vector2(float(xy[0]), float(xy[1])))
 			"W":
 				# W:3 diz /crywolf ate o Crywolf chegar nesse estado (o servidor guarda o estado da volta anterior)
 				for i in 8:
@@ -915,6 +922,7 @@ func _montar_ui() -> void:
 	_ligar_doppel()
 	_ligar_imperial()
 	_ligar_kanturu()
+	_ligar_castelo()
 	caos = ChaosCastle.new()
 	add_child(caos)
 	eventos.estagio.connect(func(n): caos.encolher(n))
@@ -2573,6 +2581,8 @@ func _fechar_loja() -> void:
 		janela_imperial.visible = false
 	if janela_kanturu:
 		janela_kanturu.visible = false
+	if janela_castelo:
+		janela_castelo.visible = false
 	inv.soltar()
 
 
@@ -2739,6 +2749,160 @@ func _imperial_entrada(r: int, dia: int, zona: int, clima: int, ms: int) -> void
 
 
 # --- Kanturu (rodada 19) ------------------------------------------------------------
+
+func _ligar_castelo() -> void:
+	janela_castelo = JanelaCastelo.new()
+	janela_castelo.fechar.connect(_fechar_loja)
+	janela_castelo.pedir.connect(func(sub, d): cli.cs_pedir(sub, d))
+	janela_castelo.pedir_lista.connect(func(c, sub): cli.cs_lista(c, sub))
+	janela_castelo.pedir_npc.connect(func(sub, n, i, t, v): cli.cs_npc(sub, n, i, t, v))
+	janela_castelo.confirmar.connect(func(linhas, feito):
+		_caixa_mu(linhas, func(ok, _t):
+			if ok:
+				feito.call()))
+	janela_castelo.digitar.connect(func(linhas, feito):
+		var c := _caixa_mu(linhas, func(ok, t):
+			if ok and t.is_valid_int() and int(t) > 0:
+				feito.call(int(t)), true)
+		c._campo.secret = false)
+	hud.add_child(janela_castelo)
+	cli.cs_estado.connect(func(i):
+		print("TESTE castelo estado resultado %d" % i.resultado)
+		if int(i.resultado) == 1 or int(i.resultado) == 2:
+			_abrir_castelo("guarda", i)
+		else:
+			# 0 falhou, 3 castelo sem dados, 4 a guilda do castelo sumiu
+			_msg("[color=#ffcc66]%s[/color]" % DicaItem.t({0: 1500, 3: 1501, 4: 1502}.get(int(i.resultado), 1500)))
+			_fechar_loja())
+	cli.cs_resposta.connect(_castelo_resposta)
+	cli.cs_npcs.connect(func(_r, l): janela_castelo.npcs(l))
+	cli.cs_inscritas.connect(func(_r, l): janela_castelo.lista_inscritas(l))
+	cli.cs_lados.connect(func(_r, l): janela_castelo.lista_lados(l))
+	cli.cs_taxa.connect(func(tipo, t):
+		print("TESTE castelo taxa %d = %d" % [tipo, t])
+		if tipo == 1:
+			taxa_caos = t
+		elif tipo == 2:
+			taxa_loja = t
+			loja.taxa = t)
+	cli.cs_portao.connect(func(aberto, i):
+		print("TESTE castelo portao %d %s" % [i, "aberto" if aberto else "fechado"])
+		_portao_castelo(i, aberto))
+
+
+# abre o Guardsman ou o Senior com o que o jogo sabe da guilda e das marcas na mochila
+func _abrir_castelo(modo: String, info := {}) -> void:
+	var j := janela_castelo
+	j.sou_mestre = meu_cargo_guilda == 128
+	j.minha_guilda = Guildas.nome(minha_guilda) if minha_guilda >= 0 else ""
+	j.minha_alianca = janela_guilda.alianca if janela_guilda else ""
+	_contar_marcas()
+	if modo == "guarda":
+		j.abrir_guarda(info)
+	else:
+		j.abrir_senior()
+	if _parametros().has("aba_castelo"):
+		j._mudar_aba(int(_parametros().aba_castelo))
+
+
+# GetMyMarkCount / GetMyMarkSlotIndex: Sign of Lord (14,21 nivel 3) somado; o slot e o primeiro achado
+func _contar_marcas() -> void:
+	var n := 0
+	var slot := -1
+	for k in inv.itens:
+		var it: Dictionary = inv.itens[k]
+		if int(it.grupo) == 14 and int(it.numero) == 21 and int(it.nivel) == 3 and int(k) >= 12:
+			n += int(it.durabilidade)
+			if slot < 0:
+				slot = int(k)
+	janela_castelo.marcas_na_mochila = n
+	janela_castelo.slot_marca = slot
+
+
+# a marca entregue some da mochila (ou perde 1 da pilha) depois da resposta: a janela aberta reconta
+func _recontar_marcas() -> void:
+	if janela_castelo != null and janela_castelo.visible:
+		_contar_marcas()
+		janela_castelo.queue_redraw()
+
+
+# respostas do C1 B2 (ReceiveBCReg, GiveUp, RegInfo, RegMark, NPCBuy/Repair/Upgrade, TaxInfo, ChangeTaxRate, MoneyDrawOut)
+func _castelo_resposta(sub: int, d: Dictionary) -> void:
+	var r := int(d.resultado)
+	print("TESTE castelo resposta %02X resultado %d" % [sub, r])
+	var t := -1
+	match sub:
+		0x01:
+			t = {0: 1503, 1: 1504, 2: 1505, 3: 1506, 4: 1507, 5: 1508, 6: 1509, 7: 1510, 8: 1511}.get(r, 1503)
+			if r == 1:
+				cli.cs_pedir(0x03)
+		0x02:
+			t = {0: 1512, 1: 1513, 2: 1514, 3: 1515}.get(r, 1512)
+			if r == 1:
+				cli.cs_pedir(0x03)
+				cli.cs_lista(0xB4)
+		0x03:
+			janela_castelo.registro(d)
+		0x04:
+			if r == 1:
+				janela_castelo.inscrita["marcas"] = d.marcas
+				janela_castelo.queue_redraw()
+				print("TESTE castelo marcas registradas %d" % d.marcas)
+			else:
+				t = {0: 1516, 2: 1517, 3: 1518}.get(r, 1516)
+		0x05, 0x06, 0x07:
+			if r == 1:
+				janela_castelo.npc_mudou(sub, d)
+			else:
+				t = {0: 1519, 3: 1520, 4: 1616 if sub == 0x05 else 1521, 5: 1522, 6: 1523, 7: 1524}.get(r, 1519)
+		0x08:
+			if r == 1:
+				janela_castelo.impostos(d)
+			else:
+				t = 1525
+		0x09:
+			if r == 1:
+				if int(d.tipo) == 1:
+					janela_castelo.taxa_caos_real = d.valor
+				elif int(d.tipo) == 2:
+					janela_castelo.taxa_loja_real = d.valor
+				janela_castelo.queue_redraw()
+			else:
+				t = 1526
+		0x10:
+			if r == 1:
+				janela_castelo.tesouro = d.zen
+				janela_castelo.queue_redraw()
+			else:
+				t = 1527
+		0x11:
+			# a alavanca (CNewUIGateSwitchWindow): abre ou fecha o portao da frente
+			if r == 1:
+				_alavanca(int(d.portao))
+		0x12:
+			if r != 1:
+				_msg("[color=#ffcc66]%s[/color]" % DicaItem.t(1478))
+	if t >= 0:
+		_caixa_mu([DicaItem.t(t)], func(_ok, _t): pass, false, false)
+
+
+# CNewUIGateSwitchWindow: textos 1475 a 1478 e o botao Open ou Close pelo estado do portao
+var _portoes_abertos := {}
+
+
+func _alavanca(portao: int) -> void:
+	var aberto: bool = _portoes_abertos.get(portao, false)
+	var linhas := [[DicaItem.t(1475), Color8(255, 200, 80)], DicaItem.t(1476), DicaItem.t(1477), [DicaItem.t(1478), Color8(255, 120, 120)],
+		"(%s)" % (DicaItem.t(1002) if aberto else DicaItem.t(1479))]
+	_caixa_mu(linhas, func(ok, _t):
+		if ok:
+			cli.cs_pedir(0x12, PackedByteArray([0 if aberto else 1, (portao >> 8) & 0xFF, portao & 0xFF])))
+
+
+# C1 B2 13: o portao (NPC 277) abre ou fecha; a animacao do portao e o chao ficam pra batalha (rodada 22)
+func _portao_castelo(indice: int, aberto: bool) -> void:
+	_portoes_abertos[indice] = aberto
+
 
 func _ligar_kanturu() -> void:
 	janela_kanturu = JanelaKanturu.new()
@@ -3041,6 +3205,11 @@ func _ligar_loja_e_amigos() -> void:
 		elif tipo == 0x24:
 			janela_imperial.abrir(0)
 			print("TESTE janela imperial")
+		elif tipo == 0x0C:
+			_abrir_castelo("senior")
+		elif tipo == 0x0D:
+			# CNewUIGuardWindow so abre com a resposta do estado (ReceiveBCStatus)
+			cli.cs_pedir(0x00)
 		elif tipo > 3:
 			var nomes := {0x0C: "o mercador de cash"}
 			_msg("[color=#9a9ab0]A janela de %s ainda nao foi feita neste cliente.[/color]" % nomes.get(tipo, "esse NPC (tipo %d)" % tipo))
@@ -3986,11 +4155,13 @@ func _ligar_inventario_e_skills() -> void:
 		print("TESTE removido %d" % slot)
 		inv.removido(slot)
 		_vestir_eu()
-		_contar_pocoes())
+		_contar_pocoes()
+		_recontar_marcas())
 	cli.durabilidade.connect(func(slot, v):
 		print("TESTE durabilidade %d = %d" % [slot, v])
 		inv.durabilidade(slot, v)
-		_contar_pocoes())
+		_contar_pocoes()
+		_recontar_marcas())
 	cli.largou.connect(func(ok, slot):
 		print("TESTE largou %s %d" % [ok, slot])
 		if ok:

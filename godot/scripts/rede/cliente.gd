@@ -206,6 +206,14 @@ signal crywolf_rank(rank: int, exp: int)                 # BD 07
 signal crywolf_heroi(pos: int, nome: String, classe: int, pontos: int)   # BD 08, um por heroi
 signal crywolf_caos(bonus: int)                          # BD 09
 signal crywolf_balista(sx: int, sy: int, px: int, py: int)   # BD 0C
+# Castle Siege (rodada 21): C1 B2, C2 B3 a B5
+signal cs_estado(info: Dictionary)                        # B2 00: estado, datas, dono e segundos que faltam
+signal cs_resposta(sub: int, info: Dictionary)            # B2 01 a 12 e 1F: resultado de cada pedido
+signal cs_portao(aberto: bool, indice: int)               # B2 13: um portao abriu ou fechou
+signal cs_taxa(tipo: int, taxa: int)                      # B2 1A: 1 maquina do caos, 2 loja, 3 tunel de caca
+signal cs_npcs(resultado: int, lista: Array)              # C2 B3: portoes ou estatuas do Senior
+signal cs_inscritas(resultado: int, lista: Array)         # C2 B4: guildas inscritas (nome, marcas, desistiu, ordem)
+signal cs_lados(resultado: int, lista: Array)             # C2 B5: guildas da batalha (lado, envolvida, nome, pontos)
 signal evento_entrada(evento: String, resultado: int)   # C1 90 (Devil Square) e C1 9A (Blood Castle): 0 entrou, 1 sem convite...
 signal evento_abre(tipo: int, minutos: int, gente: int, minutos_baixo: int)   # C1 91: falta pra abrir (1 DS, 2 BC, 4 CC, 5 IT)
 signal evento_contagem(estado: int)                    # C1 92: a contagem de 30 s (0 a 2 DS, 3 a 7 BC, 10 a 13 CC)
@@ -546,6 +554,41 @@ func kanturu_pedir_info() -> void:
 
 func kanturu_entrar() -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0xD1, 0x01]))
+
+
+# --- Castle Siege (rodada 21) ---
+# C1 B2 00 estado (o Guardsman abre a janela 0x0D e o cliente pede), 01 inscrever, 02 desistir, 03 a minha
+# inscricao, 04 entregar as marcas (o lugar do Sign of Lord na mochila), 08 impostos, 09 mudar imposto,
+# 10 tirar zen do castelo, 05/06/07 comprar, consertar e melhorar portao ou estatua, 12 abrir ou fechar portao
+func cs_pedir(sub: int, dados := PackedByteArray()) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xB2, sub])
+	p.append_array(dados)
+	con.enviar(p)
+
+
+# C1 B3 01 portoes, 02 estatuas (Senior); C1 B4 inscritas; C1 B5 guildas da batalha
+func cs_lista(cod: int, sub := -1) -> void:
+	var p := PackedByteArray([0xC1, 0, cod])
+	if sub >= 0:
+		p.append(sub)
+	con.enviar(p)
+
+
+static func _le4(v: int) -> PackedByteArray:
+	return PackedByteArray([v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >> 24) & 0xFF])
+
+
+static func _be4(v: int) -> PackedByteArray:
+	return PackedByteArray([(v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF])
+
+
+func cs_npc(sub: int, numero: int, indice: int, tipo := -1, valor := 0) -> void:
+	var d := _le4(numero)
+	d.append_array(_le4(indice))
+	if tipo >= 0:
+		d.append_array(_le4(tipo))
+		d.append_array(_le4(valor))
+	cs_pedir(sub, d)
 
 
 # C1 D1 10: estado do Raklion (o cliente pede ao entrar no mapa)
@@ -1719,6 +1762,12 @@ func _tratar(p: PackedByteArray) -> void:
 		0xBD:
 			if p[0] == 0xC1:
 				_ler_crywolf(p, sub)
+		0xB2:
+			if p[0] == 0xC1:
+				_ler_castelo(p, sub)
+		0xB3, 0xB4, 0xB5:
+			if p[0] == 0xC2 and p.size() >= 9:
+				_ler_lista_castelo(p, cod)
 		0xAE:
 			if p[0] == 0xC2 and p.size() >= 4:
 				helper_dados.emit(p.slice(4, 4 + 257))
@@ -2102,3 +2151,101 @@ static func _ler_texto(p: PackedByteArray, ini: int, n: int) -> String:
 
 static func _ler_le(p: PackedByteArray, o: int) -> int:
 	return p[o] | (p[o + 1] << 8) | (p[o + 2] << 16) | (p[o + 3] << 24)
+
+
+static func _be(p: PackedByteArray, o: int, n: int) -> int:
+	var v := 0
+	for i in n:
+		v = (v << 8) | p[o + i]
+	return v
+
+
+# B2: ReceiveBCStatus, ReceiveBCReg, ReceiveBCGiveUp, ReceiveBCRegInfo, ReceiveBCRegMark, ReceiveBCNPC*,
+# ReceiveBCTaxInfo, ReceiveBCChangeTaxRate, ReceiveBCMoneyDrawOut, ReceiveTaxInfo, ReceiveBCGate* (WSclient.cpp)
+func _ler_castelo(p: PackedByteArray, sub: int) -> void:
+	match sub:
+		0x00:
+			if p.size() >= 46:
+				cs_estado.emit({"resultado": p[4], "estado": p[5],
+					"inicio": [_be(p, 6, 2), p[8], p[9], p[10], p[11]], "fim": [_be(p, 12, 2), p[14], p[15], p[16], p[17]],
+					"batalha": [_be(p, 18, 2), p[20], p[21], p[22], p[23]], "guilda": _ler_texto(p, 24, 8),
+					"mestre": _ler_texto(p, 32, 10), "segundos": _be(p, 42, 4)})
+			elif p.size() >= 5:
+				cs_estado.emit({"resultado": p[4]})
+		0x01:
+			if p.size() >= 5:
+				cs_resposta.emit(sub, {"resultado": p[4], "guilda": _ler_texto(p, 5, 8)})
+		0x02:
+			if p.size() >= 6:
+				cs_resposta.emit(sub, {"resultado": p[4], "desistiu": p[5], "guilda": _ler_texto(p, 6, 8)})
+		0x03:
+			if p.size() >= 19:
+				cs_resposta.emit(sub, {"resultado": p[4], "guilda": _ler_texto(p, 5, 8), "marcas": _be(p, 13, 4),
+					"desistiu": p[17], "ordem": p[18]})
+			elif p.size() >= 5:
+				cs_resposta.emit(sub, {"resultado": p[4], "guilda": "", "marcas": 0, "desistiu": 0, "ordem": 0})
+		0x04:
+			if p.size() >= 17:
+				cs_resposta.emit(sub, {"resultado": p[4], "guilda": _ler_texto(p, 5, 8), "marcas": _be(p, 13, 4)})
+			elif p.size() >= 5:
+				cs_resposta.emit(sub, {"resultado": p[4], "guilda": "", "marcas": 0})
+		0x05, 0x06, 0x07:
+			if p.size() >= 13:
+				var d := {"resultado": p[4], "numero": _ler_le(p, 5), "indice": _ler_le(p, 9)}
+				if sub == 0x06 and p.size() >= 21:
+					d.vida = _ler_le(p, 13)
+					d.vida_max = _ler_le(p, 17)
+				elif sub == 0x07 and p.size() >= 21:
+					d.tipo = _ler_le(p, 13)
+					d.valor = _ler_le(p, 17)
+				cs_resposta.emit(sub, d)
+		0x08:
+			if p.size() >= 15:
+				cs_resposta.emit(sub, {"resultado": p[4], "caos": p[5], "loja": p[6], "tesouro": _be(p, 7, 8)})
+		0x09:
+			if p.size() >= 10:
+				cs_resposta.emit(sub, {"resultado": p[4], "tipo": p[5], "valor": _be(p, 6, 4)})
+		0x10:
+			if p.size() >= 13:
+				cs_resposta.emit(sub, {"resultado": p[4], "zen": _be(p, 5, 8)})
+		0x11:
+			if p.size() >= 7:
+				cs_resposta.emit(sub, {"resultado": p[4], "portao": _be(p, 5, 2)})
+		0x12:
+			if p.size() >= 8:
+				cs_resposta.emit(sub, {"resultado": p[4], "aberto": p[5] != 0, "portao": _be(p, 6, 2)})
+		0x13:
+			if p.size() >= 7:
+				cs_portao.emit(p[4] != 0, _be(p, 5, 2))
+		0x1A:
+			if p.size() >= 6:
+				cs_taxa.emit(p[4], p[5])
+		0x1F:
+			if p.size() >= 6:
+				cs_resposta.emit(sub, {"resultado": p[4], "publico": p[5] != 0})
+
+
+func _ler_lista_castelo(p: PackedByteArray, cod: int) -> void:
+	var n := _ler_le(p, 5)
+	var l := []
+	var o := 9
+	var t: int = {0xB3: 27, 0xB4: 14, 0xB5: 14}[cod]
+	for i in n:
+		if o + t > p.size():
+			break
+		match cod:
+			0xB3:
+				l.append({"numero": _ler_le(p, o), "indice": _ler_le(p, o + 4), "defesa": _ler_le(p, o + 8),
+					"regen": _ler_le(p, o + 12), "vida_max": _ler_le(p, o + 16), "vida": _ler_le(p, o + 20),
+					"x": p[o + 24], "y": p[o + 25], "vivo": p[o + 26] != 0})
+			0xB4:
+				l.append({"guilda": _ler_texto(p, o, 8), "marcas": _be(p, o + 8, 4), "desistiu": p[o + 12] != 0,
+					"ordem": p[o + 13]})
+			0xB5:
+				l.append({"lado": p[o], "envolvida": p[o + 1] != 0, "guilda": _ler_texto(p, o + 2, 8),
+					"pontos": _ler_le(p, o + 10)})
+		o += t
+	match cod:
+		0xB3: cs_npcs.emit(p[4], l)
+		0xB4: cs_inscritas.emit(p[4], l)
+		0xB5: cs_lados.emit(p[4], l)

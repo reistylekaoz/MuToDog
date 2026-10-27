@@ -18,6 +18,7 @@ const LINHAS := 15
 
 var itens := {}            # slot da loja -> item (cliente.gd item_de)
 var npc := ""
+var taxa := 0              # imposto do castelo nas lojas (C1 B2 1A), em %
 var inv: Inventario
 var _tex := {}
 var _esc := 1.0
@@ -96,7 +97,12 @@ func _draw() -> void:
 	draw_texture_rect_region(_tex.inv_sair, Rect2(13, 391, 36, 29), Rect2(0, 29 * linha, 36, 29))
 	_texto(f, Vector2(52, 410), "Fechar (Esc)", 120, 9, Color(0.75, 0.75, 0.8), HORIZONTAL_ALIGNMENT_LEFT)
 	if sob >= 0 and not vendendo:
-		var preco := DicaItem._linha(DicaItem.t(62, [DicaItem._milhar(ItensMU.preco(itens[sob]))]), Color8(255, 204, 26))
+		var base := ItensMU.preco(itens[sob])
+		var txt := DicaItem.t(62, [DicaItem._milhar(base)])
+		if taxa > 0:
+			# 1620 Purchasing price: com imposto (sem imposto)
+			txt = DicaItem.t(1620, [DicaItem._milhar(base + base * taxa / 100), DicaItem._milhar(base)])
+		var preco := DicaItem._linha(txt, Color8(255, 204, 26))
 		Pets.onde = [6, sob]
 		DicaItem.mostrar(self, f, DicaItem.linhas(itens[sob], [preco]), _rect(sob))
 	else:
