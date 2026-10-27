@@ -21,6 +21,25 @@ for i in range(n):
     buffs[bid] = {"nome": r[5:55].split(b"\0")[0].decode("latin1"), "debuff": r[55] == 1,
                   "descricao": r[58:158].split(b"\0")[0].decode("latin1").replace("%%", "%"),
                   "item": [grupo, numero] if grupo != 255 else None, "tipo": tipo}
+# Textos mais claros pro jogador: o original mistura taxa final ("EXP 150%") com bonus ("+30"); aqui tudo e o que soma,
+# com os valores do IGCN (IGCN.md). Mudou o valor no servidor (rodada 23)? Mude aqui junto.
+TEXTOS = {
+    29: "EXP +50%", 40: "EXP +50%",
+    30: "EXP +100%/Item drop +50%", 41: "EXP +100%/Item drop +50%",
+    31: "No EXP gain while active", 42: "No EXP gain while active",
+    43: "Free warp from the M menu",
+    44: "Attack speed +15", 45: "Defense +60", 46: "Attack power +30", 47: "Wizardry +30",
+    48: "Max HP +200", 49: "Max mana +300",
+    50: "Strength +50", 51: "Agility +50", 52: "Vitality +50", 53: "Energy +50", 54: "Command +50",
+    87: "EXP +50%/Recovers 5% HP automatically", 88: "Item drop +50%/Recovers 5% mana automatically",
+    89: "Critical damage +20%", 90: "Excellent damage +20%",
+    99: "No EXP or item loss when you die", 100: "Items do not lose durability",
+    101: "Master EXP +50%", 102: "Master EXP +100%/Item drop +50%",
+    104: "Damage +50/Defense +60", 112: "Party EXP bonus/More members, more EXP",
+    119: "Item drop +50%", 121: "Recovers 3% HP automatically/Max HP +100",
+}
+for bid, t in TEXTOS.items():
+    buffs[bid]["descricao"] = t
 json.dump(buffs, open(os.path.join(SAIDA, "buffs.json"), "w"), ensure_ascii=False, indent=0)
 subprocess.run([sys.executable, os.path.join(AQUI, "ferramentas", "interface.py"), os.path.join(DATA, "Interface"),
                 os.path.join(SAIDA, "hud"), "newui_statusicon=buff1", "newui_statusicon2=buff2"], check=True)

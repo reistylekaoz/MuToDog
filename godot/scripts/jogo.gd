@@ -3725,10 +3725,15 @@ func _efeito_teste(lista: Array) -> void:
 func _buff_teste(lista: Array) -> void:
 	Engine.time_scale = float(_parametros().get("lento", "1"))
 	await get_tree().create_timer(4.0).timeout
-	for b in [28, 4, 1, 55]:
-		janela_buffs.por(b)
-	janela_buffs.por(35, 1920)
-	janela_buffs.por(78, 1800)
+	if _parametros().has("buff_janela"):
+		# ?buff_janela=29,44,...: so esses na janela, todos com 30 min
+		for b: String in str(_parametros().buff_janela).split(",", false):
+			janela_buffs.por(int(b), 1800)
+	else:
+		for b in [28, 4, 1, 55]:
+			janela_buffs.por(b)
+		janela_buffs.por(35, 1920)
+		janela_buffs.por(78, 1800)
 	print("TESTE buff_teste janela %s" % [janela_buffs.lista()])
 	for x: String in lista:
 		if eu == null:

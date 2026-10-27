@@ -31,13 +31,13 @@ crítico %, 56 dano excelente %, 60 XP % (só normal), 62 morrer sem perder, 63 
 ```
 item     buff  nome                          efeito                        tempo
 13,43    29    Seal of Ascension             XP +50%                       loja
-13,44    30    Seal of Wealth                XP +100%, drop +150%          loja
+13,44    30    Seal of Wealth                XP +100%, drop +50%           loja
 13,45    31    Seal of Sustenance            sem XP                        loja
 13,59    43    Seal of Mobility              warp do M livre               loja
 13,62    87    Seal of Healing               XP +50%, HP 5%                30 min
-13,63    88    Seal of Divinity              drop +150%, mana 5%           30 min
+13,63    88    Seal of Divinity              drop +50%, mana 5%            30 min
 13,93    101   Master Seal of Ascension      XP +50%                       30 min
-13,94    102   Master Seal of Wealth         XP +100%, drop +150%          30 min
+13,94    102   Master Seal of Wealth         XP +100%, drop +50%           30 min
 13,96    104   Seal of Strength              dano +50, defesa +60          30 min
 13,103   112   Party EXP Scroll              XP do grupo, valor 10 (buff: até 170%) 30 min
 14,72    44    Scroll of Quickness           velocidade +15                loja
@@ -55,8 +55,10 @@ item     buff  nome                          efeito                        tempo
 ```
 
 Na loja: Seal of Ascension e Wealth em 1, 3, 7 e 30 dias; scrolls em 1 e 7 dias.
-Os textos do buff (BuffEffect) dizem "150%" onde a opção soma 50%: o IGCN conta
-a taxa final (1 + 0,5).
+Leitura dos valores: no XP (opção 6) o valor soma (50 = +50%, o texto original diz "150%", a
+taxa final); no drop (opção 7) o valor já é a taxa final (150 = 1,5 vezes = +50%), igual ao
+texto do Seal of Divinity. Os textos que o jogador vê foram trocados pra mostrar sempre o
+que soma ("EXP +50%", "Item drop +50%"): ferramentas/dados_buff.py, TEXTOS.
 
 ## VIP
 
