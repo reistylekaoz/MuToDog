@@ -16,6 +16,7 @@ signal pedir_npc(sub: int, numero: int, indice: int, tipo: int, valor: int)
 signal confirmar(linhas: Array, feito: Callable)    # caixa de OK/Cancel do jogo
 signal digitar(linhas: Array, feito: Callable)      # caixa com campo de numero
 signal fechar
+signal atirar(npc: int, area: int)                 # catapulta: C1 B7 01
 
 const PASTA := "res://dados/hud/"
 const L := 190.0
@@ -36,7 +37,10 @@ const DP_ESTATUA := [80, 180, 340, 550]
 const LUGAR_PORTAO := [Vector2(82, 35), Vector2(64, 83), Vector2(100, 83), Vector2(48, 135), Vector2(82, 135), Vector2(116, 135)]
 const LUGAR_ESTATUA := [Vector2(82, 20), Vector2(82, 65), Vector2(64, 110), Vector2(100, 110)]
 
-var modo := "guarda"        # "guarda" ou "senior"
+var modo := "guarda"        # "guarda", "senior" ou "catapulta"
+var catapulta_npc := -1     # C1 B7 00: o NPC da maquina e o tipo (1 ataque, 2 defesa)
+var catapulta_tipo := 1
+var area := -1              # botao escolhido na catapulta
 var aba := 0
 var estado := -1            # do C1 B2 00
 var info := {}              # o C1 B2 00 inteiro
@@ -66,7 +70,8 @@ func _ready() -> void:
 	for n in ["inv_fundo", "inv_topo01", "inv_esq", "inv_dir", "inv_baixo", "inv_sair"]:
 		_tex[n] = load(PASTA + n + ".png")
 	for n in ["aba", "botao", "mapa", "portao", "portao_sel", "estatua", "estatua_sel", "zen", "linha", "tabela_c",
-			"tabela_b", "tabela_e", "tabela_d", "tabela_ce", "tabela_cd", "tabela_be", "tabela_bd"]:
+			"tabela_b", "tabela_e", "tabela_d", "tabela_ce", "tabela_cd", "tabela_be", "tabela_bd", "cat_portao",
+			"cat_area", "botao_grande"]:
 		_tex[n] = load(PASTA + "castelo/" + n + ".png")
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	get_viewport().size_changed.connect(_ajustar)
@@ -193,6 +198,17 @@ func _sou_do_castelo() -> bool:
 	return dono != "" and (dono == minha_guilda or dono == minha_alianca)
 
 
+# CNewUICatapultWindow: abre com o C1 B7 00 resultado 1, sem abas
+func abrir_catapulta(npc: int, tipo: int) -> void:
+	modo = "catapulta"
+	catapulta_npc = npc
+	catapulta_tipo = tipo
+	area = -1
+	visible = true
+	print("TESTE castelo catapulta npc %d tipo %d" % [npc, tipo])
+	queue_redraw()
+
+
 # --- desenho ----------------------------------------------------------------------
 
 func _sair() -> Rect2:
@@ -219,6 +235,8 @@ func _draw() -> void:
 	draw_texture_rect_region(_tex.inv_sair, s, Rect2(0, 29 * (1 if s.has_point(_mouse) else 0), 36, 29))
 	if modo == "guarda":
 		_desenhar_guarda()
+	elif modo == "catapulta":
+		_desenhar_catapulta()
 	else:
 		_desenhar_senior()
 
@@ -505,6 +523,15 @@ func _texto(p: Vector2, t: String, largura: float, cor: Color, negrito := false,
 	var tam := 10
 	while largura > 0 and tam > 7 and f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, tam).x > largura:
 		tam -= 1
+	var larg := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, tam).x
+	if largura > 0 and larg > largura:
+		# nem com 7 coube: aperta so na horizontal, como a fonte estreita do original
+		var k := largura / larg
+		draw_set_transform(Vector2(p.x * (1.0 - k), 0), 0.0, Vector2(k, 1))
+		draw_string_outline(f, p, t, alinha, w / k, tam, 3 if negrito else 2, Color(0, 0, 0, 0.9))
+		draw_string(f, p, t, alinha, w / k, tam, cor)
+		draw_set_transform(Vector2.ZERO)
+		return
 	draw_string_outline(f, p, t, alinha, w, tam, 3 if negrito else 2, Color(0, 0, 0, 0.9))
 	draw_string(f, p, t, alinha, w, tam, cor)
 
@@ -535,6 +562,9 @@ func _process(d: float) -> void:
 func clicar(p: Vector2) -> void:
 	if _sair().has_point(p):
 		fechar.emit()
+		return
+	if modo == "catapulta":
+		_clicar_catapulta(p)
 		return
 	var n_abas := 3
 	for i in n_abas:
@@ -636,3 +666,58 @@ func _clicar_senior(p: Vector2) -> void:
 
 static func _be4_local(v: int) -> PackedByteArray:
 	return PackedByteArray([(v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF])
+
+
+# --- catapulta (rodada 22) ------------------------------------------------------
+
+# botoes do original: ataque = 3 portoes (46x36) e o patio (77x47); defesa = 2 patios e a ponte
+func _areas() -> Array:
+	if catapulta_tipo == 1:
+		return [[Rect2(22, 135, 46, 36), 1402, "cat_portao"], [Rect2(74, 135, 46, 36), 1403, "cat_portao"],
+			[Rect2(126, 135, 46, 36), 1404, "cat_portao"], [Rect2(59, 182, 77, 47), 1405, "cat_area"]]
+	return [[Rect2(18, 125, 77, 47), 1406, "cat_area"], [Rect2(97, 125, 77, 47), 1407, "cat_area"],
+		[Rect2(56, 179, 77, 47), 1408, "cat_area"]]
+
+
+func _atirar_r() -> Rect2:
+	return Rect2(41, 250, 108, 29)
+
+
+func _desenhar_catapulta() -> void:
+	_texto(Vector2(0, 13 + 8), DicaItem.t(1400 if catapulta_tipo == 1 else 1401), L, Color8(220, 220, 220), true)
+	_linha(50, DicaItem.t(1409))
+	_linha(65, DicaItem.t(1410))
+	_linha(80, DicaItem.t(1411))
+	_caixa_tabela(14, 120, 162, 125)
+	var lista := _areas()
+	for i in lista.size():
+		var r: Rect2 = lista[i][0]
+		var tex: Texture2D = _tex[lista[i][2]]
+		var h := r.size.y
+		var linha := 0
+		if i == area:
+			linha = 2
+		elif r.has_point(_mouse):
+			linha = 1
+		var cor := Color(0.4, 0.4, 0.4) if i == area else Color.WHITE
+		draw_texture_rect_region(tex, r, Rect2(0, h * linha, r.size.x, h), cor)
+		_texto(Vector2(r.position.x, r.position.y + h / 2 + 4), DicaItem.t(lista[i][1]), r.size.x, cor)
+	var a := _atirar_r()
+	var pode := area >= 0
+	var la := 1 if pode and a.has_point(_mouse) else 0
+	draw_texture_rect_region(_tex.botao_grande, a, Rect2(0, 29 * la, 108, 29), Color.WHITE if pode else Color(0.4, 0.4, 0.4))
+	_texto(Vector2(a.position.x, a.position.y + 19), DicaItem.t(1499), a.size.x, Color.WHITE if pode else Color(0.4, 0.4, 0.4), true)
+
+
+func _clicar_catapulta(p: Vector2) -> void:
+	var lista := _areas()
+	for i in lista.size():
+		if (lista[i][0] as Rect2).has_point(p):
+			area = i
+			print("TESTE castelo catapulta area %d" % (i + 1))
+			queue_redraw()
+			return
+	if area >= 0 and _atirar_r().has_point(p):
+		print("TESTE castelo catapulta atira npc %d area %d" % [catapulta_npc, area + 1])
+		atirar.emit(catapulta_npc, area + 1)
+		fechar.emit()

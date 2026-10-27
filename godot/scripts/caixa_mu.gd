@@ -16,6 +16,7 @@ var com_cancelar := true
 var senha := false
 var escolhas: Array = []     # textos de botoes de 108x29, um embaixo do outro, e o Cancel no pe
 var ok_travado := false
+var sem_botao := false       # caixa que fecha sozinha (CProgressMsgBox da batalha do castelo): sem OK
 var topo := 100.0
 var cores: Array = []        # cor de cada linha depois de quebrar
 var _tex := {}
@@ -132,6 +133,8 @@ func _draw() -> void:
 		draw_texture_rect_region(_tex.btn_vazio, r, Rect2(0, 29 * (1 if r.has_point(_mouse) else 0), 108, 29))
 		draw_string(f, Vector2(r.position.x, r.position.y + 18), str(escolhas[i]), HORIZONTAL_ALIGNMENT_CENTER, r.size.x, 10,
 			Color.WHITE)
+	if sem_botao:
+		return
 	if not escolhas.is_empty():
 		var b := _botao(0)
 		draw_texture_rect_region(_tex.msg_cancelar, b, Rect2(0, 30 * (1 if b.has_point(_mouse) else 0), 54, 30))

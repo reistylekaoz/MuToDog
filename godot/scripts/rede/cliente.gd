@@ -214,6 +214,9 @@ signal cs_taxa(tipo: int, taxa: int)                      # B2 1A: 1 maquina do 
 signal cs_npcs(resultado: int, lista: Array)              # C2 B3: portoes ou estatuas do Senior
 signal cs_inscritas(resultado: int, lista: Array)         # C2 B4: guildas inscritas (nome, marcas, desistiu, ordem)
 signal cs_lados(resultado: int, lista: Array)             # C2 B5: guildas da batalha (lado, envolvida, nome, pontos)
+signal cs_guerra(sub: int, info: Dictionary)              # B2 14 a 20: interruptor, coroa, inicio e fim, lado, comando, relogio
+signal cs_mapa_guerra(cod: int, lista: Array)             # C2 B6 (gente da guilda) e BB (portoes e estatuas) no minimapa
+signal cs_catapulta(sub: int, info: Dictionary)           # B7 00 janela, 01 tiro, 02 pedra caindo em mim
 signal evento_entrada(evento: String, resultado: int)   # C1 90 (Devil Square) e C1 9A (Blood Castle): 0 entrou, 1 sem convite...
 signal evento_abre(tipo: int, minutos: int, gente: int, minutos_baixo: int)   # C1 91: falta pra abrir (1 DS, 2 BC, 4 CC, 5 IT)
 signal evento_contagem(estado: int)                    # C1 92: a contagem de 30 s (0 a 2 DS, 3 a 7 BC, 10 a 13 CC)
@@ -572,6 +575,20 @@ func cs_lista(cod: int, sub := -1) -> void:
 	if sub >= 0:
 		p.append(sub)
 	con.enviar(p)
+
+
+# C1 B2 1D: o comandante marca no minimapa (time 0 a 6, x e y do mapa, 0 ataque, 1 defesa, 2 espera)
+func cs_comando(time: int, x: int, y: int, cmd: int) -> void:
+	cs_pedir(0x1D, PackedByteArray([time, x, y, cmd]))
+
+
+# C1 B7 01 atira a catapulta na area (1 a 4); B7 04 a pedra caiu (so quem atirou manda)
+func catapulta_atirar(npc: int, area: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xB7, 0x01, npc >> 8, npc & 0xFF, area]))
+
+
+func catapulta_caiu(npc: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xB7, 0x04, npc >> 8, npc & 0xFF]))
 
 
 static func _le4(v: int) -> PackedByteArray:
@@ -1768,6 +1785,36 @@ func _tratar(p: PackedByteArray) -> void:
 		0xB3, 0xB4, 0xB5:
 			if p[0] == 0xC2 and p.size() >= 9:
 				_ler_lista_castelo(p, cod)
+		0xB6:
+			# C2 B6: quantos (LE32 no 4) e x, y de cada um
+			if p[0] == 0xC2 and p.size() >= 8:
+				var l := []
+				for i in _ler_le(p, 4):
+					if 8 + i * 2 + 2 > p.size():
+						break
+					l.append([0, p[8 + i * 2], p[9 + i * 2]])
+				cs_mapa_guerra.emit(cod, l)
+		0xBB:
+			# C2 BB: quantos (byte no 4) e tipo (0 portao, 1 estatua), x, y
+			if p[0] == 0xC2 and p.size() >= 5:
+				var l := []
+				for i in p[4]:
+					if 5 + i * 3 + 3 > p.size():
+						break
+					l.append([p[5 + i * 3] + 1, p[6 + i * 3], p[7 + i * 3]])
+				cs_mapa_guerra.emit(cod, l)
+		0xB7:
+			if p[0] == 0xC1 and p.size() >= 5:
+				match sub:
+					0x00:
+						if p.size() >= 8:
+							cs_catapulta.emit(sub, {"resultado": p[4], "tipo": p[5], "npc": _be(p, 6, 2)})
+					0x01:
+						if p.size() >= 10:
+							cs_catapulta.emit(sub, {"resultado": p[4], "npc": _be(p, 5, 2), "tipo": p[7], "x": p[8], "y": p[9]})
+					0x02:
+						if p.size() >= 7:
+							cs_catapulta.emit(sub, {"tipo": p[4], "x": p[5], "y": p[6]})
 		0xAE:
 			if p[0] == 0xC2 and p.size() >= 4:
 				helper_dados.emit(p.slice(4, 4 + 257))
@@ -2220,6 +2267,33 @@ func _ler_castelo(p: PackedByteArray, sub: int) -> void:
 		0x1A:
 			if p.size() >= 6:
 				cs_taxa.emit(p[4], p[5])
+		0x14:
+			# interruptor da coroa: 0 soltou, 1 eu apertei, 2 outro ja aperta (quem)
+			if p.size() >= 9:
+				cs_guerra.emit(sub, {"interruptor": _be(p, 4, 2), "quem": _be(p, 6, 2), "estado": p[8]})
+		0x15:
+			# coroa: 0 comecou, 1 deu certo, 2 falhou, 3 outro aperta, 4 outro lado aperta; ms acumulados (LE)
+			if p.size() >= 9:
+				cs_guerra.emit(sub, {"estado": p[4], "ms": _ler_le(p, 5)})
+		0x16, 0x17, 0x19:
+			# 16 escudo da coroa (0 tirado, 1 posto, 2 selo registrado); 17 a batalha comecou (1) ou acabou (0);
+			# 19 o meu lado (0 nenhum, 1 defesa, 2 a 4 ataque)
+			if p.size() >= 5:
+				cs_guerra.emit(sub, {"estado": p[4]})
+		0x18:
+			# aviso pra todos: 0 a alianca tenta registrar o selo, 1 a guilda registrou
+			if p.size() >= 13:
+				cs_guerra.emit(sub, {"estado": p[4], "guilda": _ler_texto(p, 5, 8)})
+		0x1D:
+			if p.size() >= 8:
+				cs_guerra.emit(sub, {"time": p[4], "x": p[5], "y": p[6], "cmd": p[7]})
+		0x1E:
+			if p.size() >= 6:
+				cs_guerra.emit(sub, {"hora": p[4], "minuto": p[5]})
+		0x20:
+			if p.size() >= 27:
+				cs_guerra.emit(sub, {"interruptor": _be(p, 4, 2), "ocupado": p[6] != 0, "lado": p[7],
+					"guilda": _ler_texto(p, 8, 8), "nome": _ler_texto(p, 16, 11)})
 		0x1F:
 			if p.size() >= 6:
 				cs_resposta.emit(sub, {"resultado": p[4], "publico": p[5] != 0})

@@ -84,6 +84,7 @@ var janela_imperial: JanelaImperial   # entrada do Imperial Fortress pelo Jerint
 var imperial: Imperial           # tempo e clima do Imperial Fortress (rodada 18)
 var janela_kanturu: JanelaKanturu   # entrada da Torre do Kanturu pelo Gateway (C1 D1 00)
 var janela_castelo: JanelaCastelo   # Guardsman e Senior do Castle Siege (rodada 21)
+var cerco: GuerraCastelo            # minimapa, relogio e comandos da batalha do castelo (rodada 22)
 var taxa_caos := 0                  # C1 B2 1A: imposto do castelo na maquina do caos e nas lojas
 var taxa_loja := 0
 var kanturu: Kanturu             # evento do Kanturu no mapa 39 (rodada 19)
@@ -480,6 +481,36 @@ func _teste_roteiro(passos: Array) -> void:
 			"Q":
 				# Q:0 Refresh, Q:1 Enter, Q:2 Close na janela do Gateway do Kanturu
 				janela_kanturu.clicar(int(a))
+			"P":
+				# P:C1,B214000102... monta o pacote (C1 ou C2, o tamanho e daqui) com o resto em hex e entrega como se
+				# viesse do servidor: o que o OpenMU nao manda da batalha do castelo (rodada 22). EU (meu id, big endian) e NOME
+				if Conexao.tocando():
+					continue
+				var pp := a.split(",")
+				var nb2 := meu_nome.to_utf8_buffer()
+				nb2.resize(10)
+				var corpo := pp[1].replace("EU", "%02x%02x" % [cli.meu_id >> 8, cli.meu_id & 0xFF]).replace("NOME", nb2.hex_encode()).hex_decode()
+				var pk := PackedByteArray([0xC1, 0]) if pp[0] == "C1" else PackedByteArray([0xC2, 0, 0])
+				pk.append_array(corpo)
+				if pp[0] == "C1":
+					pk[1] = pk.size()
+				else:
+					pk[1] = pk.size() >> 8
+					pk[2] = pk.size() & 0xFF
+				print("TESTE roteiro injeta %s (%d bytes)" % [pk.slice(0, mini(pk.size(), 6)).hex_encode(), pk.size()])
+				Conexao.anotar(pk)
+				cli._tratar(pk)
+			"G":
+				# G:g2 grupo 3, G:c0 comando ataque, G:m64x40 ponto do minimapa (0 a 128), G:a transparencia, G:e escala
+				var gp := a.substr(1)
+				match a.substr(0, 1):
+					"g": cerco.clicar(cerco._grupo_r(int(gp)).get_center())
+					"c": cerco.clicar(cerco._cmd_r(int(gp)).get_center())
+					"m":
+						var gxy := gp.split("x")
+						cerco.clicar(cerco._mapa_pos() + Vector2(float(gxy[0]), float(gxy[1])))
+					"a": cerco.clicar(cerco.moldura() + Vector2(60, 8))
+					"e": cerco.clicar(cerco.moldura() + Vector2(138, 10))
 			"C":
 				# C:95x131 clica nesse ponto da janela do castelo (coordenadas da janela de 190 x 429)
 				var xy := a.split("x")
@@ -1910,6 +1941,7 @@ func _process(dt: float) -> void:
 	_seguir(dt)
 	_skills(dt)
 	_templo_quadro(dt)
+	_guerra_quadro(dt)
 	_cursor_mu()
 	if not _restante.is_empty() and eu.tile == _fim_enviado:
 		_mandar_trecho()
@@ -2788,6 +2820,7 @@ func _ligar_castelo() -> void:
 	cli.cs_portao.connect(func(aberto, i):
 		print("TESTE castelo portao %d %s" % [i, "aberto" if aberto else "fechado"])
 		_portao_castelo(i, aberto))
+	_ligar_guerra()
 
 
 # abre o Guardsman ou o Senior com o que o jogo sabe da guilda e das marcas na mochila
@@ -2899,9 +2932,216 @@ func _alavanca(portao: int) -> void:
 			cli.cs_pedir(0x12, PackedByteArray([0 if aberto else 1, (portao >> 8) & 0xFF, portao & 0xFF])))
 
 
-# C1 B2 13: o portao (NPC 277) abre ou fecha; a animacao do portao e o chao ficam pra batalha (rodada 22)
+# C1 B2 13: o portao (NPC 277) abre ou fecha (npcGateSwitch GateOpen e GateClose): a acao 1 fica parada aberta,
+# a 0 fechada, o som do portao e a linha de 4 tiles na frente (x - 1 a x + 2, y + 1) deixa de ser parede
 func _portao_castelo(indice: int, aberto: bool) -> void:
 	_portoes_abertos[indice] = aberto
+	var e: Entidade = entidades.get(indice)
+	if e == null or not is_instance_valid(e):
+		return
+	if e.boneco:
+		var a := "parado2" if aberto else "parado"
+		e.boneco.tocar(a, a)
+	if mundo:
+		mundo.mudar_atributo(0x04, aberto, e.tile.x - 1, e.tile.y + 1, e.tile.x + 2, e.tile.y + 1)
+	_som("cs_oCDoorMove")
+	print("TESTE guerra portao %d %s em %d,%d (chao %s)" % [indice, "abre" if aberto else "fecha", e.tile.x, e.tile.y,
+		"livre" if mundo and mundo.anda(e.tile.x, e.tile.y + 1) else "parede"])
+
+
+# --- batalha do castelo (rodada 22) ---------------------------------------------------
+
+var _membros_guilda: Array = []   # C2 B6
+var _membros_npc: Array = []      # C2 BB
+var _pontos_t := 0.0
+var _caixas_guerra: Array = []
+
+
+func _ligar_guerra() -> void:
+	cerco = GuerraCastelo.new()
+	cerco.visible = false
+	hud.add_child(cerco)
+	hud.move_child(cerco, janela_castelo.get_index())
+	cerco.comando.connect(func(t, x, y, c): cli.cs_comando(t, x, y, c))
+	janela_castelo.atirar.connect(func(npc, area): cli.catapulta_atirar(npc, area))
+	cli.cs_guerra.connect(_guerra_pacote)
+	cli.cs_mapa_guerra.connect(func(cod, l):
+		if cod == 0xB6:
+			_membros_guilda = l
+		else:
+			_membros_npc = l
+		cerco.membros = _membros_guilda + _membros_npc
+		print("TESTE guerra minimapa %02X %d pontos" % [cod, l.size()]))
+	cli.cs_catapulta.connect(_catapulta)
+
+
+# a cada quadro: o minimapa so no mapa 30; os pontos de quem esta em volta 4 vezes por segundo
+func _guerra_quadro(dt: float) -> void:
+	if cerco == null:
+		return
+	cerco.visible = mapa_atual == GuerraCastelo.MAPA
+	if not cerco.visible:
+		return
+	cerco.heroi = eu.tile
+	cerco.sou_mestre = meu_cargo_guilda == 128
+	_pontos_t -= dt
+	if _pontos_t > 0.0:
+		return
+	_pontos_t = 0.25
+	var l := []
+	for e: Entidade in entidades.values():
+		if not is_instance_valid(e) or e == eu or e.morto:
+			continue
+		if e.tipo == "jogador":
+			var meu_lado := minha_guilda >= 0 and (e.guilda == minha_guilda or e.guilda_rel & 5 != 0)
+			l.append([e.tile.x, e.tile.y, 0 if meu_lado else 1])
+		elif e.tipo == "npc":
+			l.append([e.tile.x, e.tile.y, 2])
+	cerco.pontos = l
+
+
+# caixa da batalha que fecha sozinha em 3 s (CProgressMsgBox)
+func _caixa_guerra(linhas: Array, fechar_outras := false) -> void:
+	if fechar_outras:
+		for c in _caixas_guerra:
+			if is_instance_valid(c):
+				c.queue_free()
+		_caixas_guerra.clear()
+	var c := _caixa_mu(linhas, func(_ok, _t): pass, false, false)
+	c.sem_botao = true
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	c.queue_redraw()
+	_caixas_guerra.append(c)
+	get_tree().create_timer(3.0).timeout.connect(func():
+		if is_instance_valid(c):
+			c.queue_free())
+
+
+func _guerra_pacote(sub: int, d: Dictionary) -> void:
+	print("TESTE guerra %02X %s" % [sub, d])
+	match sub:
+		0x14:
+			# ReceiveCrownSwitchState: 0 soltou, 1 apertou, 2 ja tem gente apertando
+			var e := int(d.estado)
+			if e == 0:
+				_caixa_guerra([DicaItem.t(1484)])
+				cerco.interruptores[0 if _primeiro_interruptor(int(d.interruptor)) else 1] = {}
+			elif e == 1:
+				_caixa_guerra([DicaItem.t(1485)])
+			elif e == 2:
+				var quem: Entidade = entidades.get(int(d.quem))
+				var sw: Entidade = entidades.get(int(d.interruptor))
+				_caixa_guerra([DicaItem.t(1486, [quem.nome]) if quem else DicaItem.t(1487),
+					DicaItem.t(1488, [sw.nome if sw else DicaItem.t(1981)])])
+		0x15:
+			# ReceiveCrownState: o selo na coroa
+			var ms := int(d.ms)
+			match int(d.estado):
+				0: _caixa_guerra([DicaItem.t(1980, [DicaItem.t(1489), mini(ms / 1000, 59)])], true)
+				1: _caixa_guerra([DicaItem.t(1490)], true)
+				2: _caixa_guerra([DicaItem.t(1980, [DicaItem.t(1491), mini(ms / 1000, 59)])], true)
+				3: _caixa_guerra([DicaItem.t(1492)], true)
+				4: _caixa_guerra([DicaItem.t(1982)], true)
+		0x16:
+			# ReceiveCrownState (escudo da coroa)
+			match int(d.estado):
+				0: _caixa_guerra([DicaItem.t(1493)])
+				1: _caixa_guerra([DicaItem.t(1494)])
+				2: _caixa_guerra([DicaItem.t(1490)])
+		0x17:
+			cerco.iniciada = int(d.estado) == 1
+			print("TESTE guerra batalha %s" % ("comecou" if cerco.iniciada else "acabou"))
+		0x18:
+			var t := DicaItem.t(1496 if int(d.estado) == 0 else 1497, [d.guilda])
+			_aviso(t)
+		0x19:
+			cerco.lado = int(d.estado)
+			print("TESTE guerra lado %d (%s)" % [cerco.lado, ["observador", "soldado", "comandante"][cerco.tipo()]])
+		0x1D:
+			cerco.receber_comando(d)
+		0x1E:
+			cerco.hora = int(d.hora)
+			cerco.minuto = int(d.minuto)
+		0x20:
+			cerco.receber_interruptor(d, _primeiro_interruptor(int(d.interruptor)))
+
+
+# FIRST_CROWN_SWITCH_NUMBER: o interruptor 217 e o 1, o 218 o 2. O B2 20 chega antes de eles estarem a vista:
+# sem a entidade, o de id menor e o 1 (o servidor cria os dois em ordem)
+var _ids_interruptor: Array = []
+
+
+func _primeiro_interruptor(id: int) -> bool:
+	var e: Entidade = entidades.get(id)
+	if e != null and e.numero in [217, 218]:
+		return e.numero == 217
+	if id not in _ids_interruptor:
+		_ids_interruptor.append(id)
+		_ids_interruptor.sort()
+	return id == _ids_interruptor[0]
+
+
+# C1 B7: 00 abriu a catapulta, 01 resultado do tiro, 02 pedra caindo perto de mim (vinda de longe)
+func _catapulta(sub: int, d: Dictionary) -> void:
+	print("TESTE catapulta %02X %s" % [sub, d])
+	match sub:
+		0x00:
+			if int(d.resultado) == 1:
+				janela_castelo.abrir_catapulta(int(d.npc), int(d.tipo))
+			else:
+				_caixa_mu([DicaItem.t(1458)], func(_ok, _t): pass, false, false)
+				_fechar_loja()
+		0x01:
+			if int(d.resultado) == 0:
+				_caixa_mu([DicaItem.t(1459)], func(_ok, _t): pass, false, false)
+				return
+			var e: Entidade = entidades.get(int(d.npc))
+			if e and e.boneco:
+				e.boneco.tocar("parado2")
+			var de: Vector3 = (e.global_position if e else mundo.no_tile(int(d.x), int(d.y))) + Vector3.UP * 5.0
+			_pedra_catapulta(int(d.tipo), de, int(d.x), int(d.y), int(d.npc) if int(d.resultado) == 1 else -1)
+		0x02:
+			# DoFireFixStartPosition: a pedra sai de um ponto fixo do mapa (ataque 92,30; defesa 94,190)
+			var ini := Vector2i(92, 30) if int(d.tipo) == 1 else Vector2i(94, 190)
+			_pedra_catapulta(int(d.tipo), mundo.no_tile(ini.x, ini.y) + Vector3.UP * 5.0, int(d.x), int(d.y), -1)
+
+
+# a pedra (flybigstone1 do ataque, flybigstone2 da defesa) faz o arco ate o alvo; no chao: explosao, pedrinhas,
+# o som do impacto e, quando o tiro foi meu, o C1 B7 04 pro servidor
+func _pedra_catapulta(tipo: int, de: Vector3, x: int, y: int, npc_meu: int) -> void:
+	if mundo == null:
+		return
+	_som("cs_oSWFire")
+	var para: Vector3 = mundo.no_tile(x, y)
+	var tempo := 1.5
+	var acel := Vector3(0, -12, 0)
+	var vel: Vector3 = (para - de - acel * 0.5 * tempo * tempo) / tempo
+	var e := EfeitoMU.criar(mundo)
+	var nome := "flybigstone%d" % (1 if tipo == 1 else 2)
+	var cena: PackedScene = load(EfeitoMU.PASTA + nome + ".glb")
+	var m := cena.instantiate() as Node3D
+	m.rotation_degrees = Vector3(-90, 180, 0)
+	m.scale = Vector3.ONE * 0.01
+	if tipo == 1:
+		# o glb do flybigstone1 aponta pra hugerock02.jpg (fora do arquivo): a textura vem do lado
+		var mat := StandardMaterial3D.new()
+		mat.albedo_texture = load(EfeitoMU.PASTA + "hugerock02.png")
+		for mi: MeshInstance3D in m.find_children("*", "MeshInstance3D", true, false):
+			for k in mi.mesh.get_surface_count():
+				mi.set_surface_override_material(k, mat)
+	e.no_pronto(m, de, 1.0, Color.WHITE, tempo, {"vel": vel, "acel": acel, "vgiro": 3.0, "some": 0.0, "solido": true})
+	print("TESTE catapulta pedra %d voa ate %d,%d" % [tipo, x, y])
+	get_tree().create_timer(tempo).timeout.connect(func():
+		if mundo == null:
+			return
+		var ef := EfeitoMU.criar(mundo)
+		EfeitoSkill.explosao(ef, para + Vector3.UP * 0.5, 4.0)
+		EfeitoSkill.pedras(ef, para, 12)
+		EfeitoSkill.fumaca(ef, para + Vector3.UP * 0.3, Color(0.6, 0.55, 0.5), 3.0, 1.6)
+		_som("cs_oSWHitG")
+		print("TESTE catapulta pedra caiu em %d,%d" % [x, y])
+		if npc_meu >= 0:
+			cli.catapulta_caiu(npc_meu))
 
 
 func _ligar_kanturu() -> void:
