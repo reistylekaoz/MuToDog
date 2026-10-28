@@ -51,8 +51,9 @@ static func tamanho(it: Dictionary) -> Vector2i:
 	return Vector2i(int(i[0]), int(i[1]))
 
 
+# o JSON traz 10.0: em int (11 in [10.0, 11.0] da falso e o item arrastado nao entrava no slot)
 static func slots(it: Dictionary) -> Array:
-	return info(it)[2]
+	return info(it)[2].map(func(e): return int(e))
 
 
 static func consome(it: Dictionary) -> bool:

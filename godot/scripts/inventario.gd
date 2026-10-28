@@ -25,7 +25,7 @@ const EQUIP := {
 	8: [15, 44, 46, 46, "inv_pet"], 2: [75, 44, 46, 46, "inv_elmo"], 7: [120, 44, 61, 46, "inv_asa"],
 	1: [135, 87, 46, 66, "inv_arma_esq"], 3: [75, 87, 46, 66, "inv_armadura"], 0: [15, 87, 46, 66, "inv_arma_dir"],
 	5: [15, 150, 46, 46, "inv_luvas"], 4: [75, 150, 46, 46, "inv_calca"], 6: [135, 150, 46, 46, "inv_botas"],
-	10: [114, 150, 28, 28, "inv_anel"], 9: [54, 87, 28, 28, "inv_colar"], 11: [54, 150, 28, 28, "inv_anel"],
+	11: [114, 150, 28, 28, "inv_anel"], 9: [54, 87, 28, 28, "inv_colar"], 10: [54, 150, 28, 28, "inv_anel"],
 }
 const NOMES_SLOT := {0: "mao direita", 1: "mao esquerda", 2: "elmo", 3: "armadura", 4: "calca", 5: "luvas",
 	6: "botas", 7: "asa", 8: "ajudante", 9: "colar", 10: "anel", 11: "anel"}
@@ -180,10 +180,12 @@ func _rect_slot(s: int) -> Rect2:
 	return Rect2(GRADE + Vector2(c) * CASA, Vector2(t) * CASA)
 
 
+# CNewUIMyInventory::Update: do slot 0 ao 11, o primeiro em (x + 1, y, largura - 4, altura - 4); os aneis encostam
+# nas luvas e na calca, e com o retangulo inteiro (na ordem do dicionario) as luvas e a calca pegavam 8 pontos do anel
 func _equip_em(p: Vector2) -> int:
-	for s in EQUIP:
+	for s in range(MOCHILA):
 		var e: Array = EQUIP[s]
-		if Rect2(e[0], e[1], e[2], e[3]).has_point(p):
+		if Rect2(e[0] + 1, e[1], e[2] - 4, e[3] - 4).has_point(p):
 			return s
 	return -1
 
