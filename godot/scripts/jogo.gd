@@ -484,13 +484,13 @@ func _teste_roteiro(passos: Array) -> void:
 				janela_kanturu.clicar(int(a))
 			"P":
 				# P:C1,B214000102... monta o pacote (C1 ou C2, o tamanho e daqui) com o resto em hex e entrega como se
-				# viesse do servidor: o que o OpenMU nao manda da batalha do castelo (rodada 22). EU (meu id, big endian) e NOME
+				# viesse do servidor: o que o OpenMU nao manda da batalha do castelo (rodada 22). EU (meu id, big endian), MEU (little endian) e NOME
 				if Conexao.tocando():
 					continue
 				var pp := a.split(",")
 				var nb2 := meu_nome.to_utf8_buffer()
 				nb2.resize(10)
-				var corpo := pp[1].replace("EU", "%02x%02x" % [cli.meu_id >> 8, cli.meu_id & 0xFF]).replace("NOME", nb2.hex_encode()).hex_decode()
+				var corpo := pp[1].replace("MEU", "%02x%02x" % [cli.meu_id & 0xFF, cli.meu_id >> 8]).replace("EU", "%02x%02x" % [cli.meu_id >> 8, cli.meu_id & 0xFF]).replace("NOME", nb2.hex_encode()).hex_decode()
 				var pk := PackedByteArray([0xC1, 0]) if pp[0] == "C1" else PackedByteArray([0xC2, 0, 0])
 				pk.append_array(corpo)
 				if pp[0] == "C1":
@@ -553,6 +553,36 @@ func _teste_roteiro(passos: Array) -> void:
 				# C:95x131 clica nesse ponto da janela do castelo (coordenadas da janela de 190 x 429)
 				var xy := a.split("x")
 				janela_castelo.clicar(Vector2(float(xy[0]), float(xy[1])))
+			"Z":
+				# rodada 25: Z:gate,95x110 e Z:arqueiro,90x295 clicam nessas janelas (190 x 429), Z:gate,x fecha; Z:j abre a janela J,
+				# Z:j,/help escolhe esse comando, Z:jx aperta Execute; Z:teclas guarda a configuracao (F3 30); Z:foco manda o F3 15
+				var z := a.split(",")
+				print("TESTE roteiro %s" % a)
+				match z[0]:
+					"gate", "arqueiro":
+						var zj: PainelLateral = janela_gatekeeper if z[0] == "gate" else janela_arqueiro
+						if z[1] == "x":
+							zj.fechar()
+						else:
+							var zxy := z[1].split("x")
+							zj._clique(Vector2(float(zxy[0]), float(zxy[1])))
+							zj.queue_redraw()
+					"j":
+						if z.size() > 1:
+							# Z:j,/help escolhe pelo nome
+							for zl in chat_comandos.ordem.size():
+								if chat_comandos._cmd(zl).comando == z[1]:
+									chat_comandos._escolher(zl)
+									chat_comandos.queue_redraw()
+						else:
+							chat_comandos.abrir()
+					"jx":
+						chat_comandos._executar()
+						chat_comandos.queue_redraw()
+					"teclas":
+						_guardar_teclas()
+					"foco":
+						cli.foco_personagem(meu_nome)
 			"W":
 				# W:3 diz /crywolf ate o Crywolf chegar nesse estado (o servidor guarda o estado da volta anterior)
 				for i in 8:
@@ -975,6 +1005,7 @@ func _montar_ui() -> void:
 	_ligar_imperial()
 	_ligar_kanturu()
 	_ligar_castelo()
+	_ligar_rodada25()
 	_ligar_loja_cash()
 	caos = ChaosCastle.new()
 	add_child(caos)
@@ -1285,6 +1316,8 @@ func _personagens(l: Array) -> void:
 		_classe_de[p.nome] = [p.classe, p.nivel]
 	for p in l:
 		if meu_nome != "" and p.nome == meu_nome:
+			# como o clique na selecao: o F3 15 antes de entrar (o servidor so responde ainda na selecao)
+			cli.foco_personagem(p.nome)
 			_escolher(p.nome)
 			return
 	# testes: --auto conta,senha,Novo --criar 0 (0 DW, 4 DK, 8 Elf, 12 MG, 16 DL, 20 Sum, 24 RF) cria e entra
@@ -1366,6 +1399,9 @@ func _entrou(info: Dictionary) -> void:
 	inv.zen = info.zen
 	_hud_nivel()
 	cli.pedir_quests()
+	if not _pediu_comandos:
+		_pediu_comandos = true
+		cli.pedir_comandos_chat()
 	Conexao.segurar(true)   # gravacao: a fita espera o mapa carregar, pro roteiro andar junto com ela
 	await _abrir_mapa(info.mapa, info.x, info.y)
 	Conexao.segurar(false)
@@ -1504,6 +1540,12 @@ func _abrir_mapa(mapa: int, x: int, y: int) -> void:
 		# o cliente pede o estado ao entrar no mapa (ReceiveJoinMapServer e ReceiveTeleport)
 		if mapa == Crywolf.MAPA and cli:
 			cli.crywolf_pedir_info()
+	# GMBattleCastle Init: no Valley of Loren o cliente pede a marca da guilda dona pras bandeiras (C1 B9 02)
+	if mapa == MAPA_CASTELO and cli:
+		cli.pedir_marca_castelo()
+		if not _marca_castelo.is_empty():
+			mundo.marca_castelo(_marca_castelo)
+	Bichos.som = som
 	mundo.brilho_mudou.connect(func(v: float) -> void:
 		brilho = v
 		_msg("Brilho %s (o padrao e 2,0)" % str(snappedf(v, 0.1)).replace(".", ",")))
@@ -1555,6 +1597,9 @@ func _objeto_entrou(o: Dictionary) -> void:
 		var m: Array = monstros.get(str(o.numero), ["#%d" % o.numero, 0])
 		nome = m[0]
 		tipo = ["monstro", "npc", "guarda"][m[1]] if int(m[1]) < 3 else "outro"
+		# o MuMain (DetermineMonsterObjectKind) faz de 201 a 259 KIND_NPC: o Gatekeeper (220) e os guardas de Lorencia falam
+		if tipo == "guarda" and o.numero > 200 and o.numero < 260:
+			tipo = "npc"
 		if str(o.get("dono", "")) != "":
 			tipo = "invocado"   # bicho de alguem (elfa, Dark Lord): nao e alvo
 	# monstro de evento no navegador: entra de boneco provisorio e e refeito quando o pacote chega
@@ -1695,6 +1740,11 @@ func _caos_abre(minutos: int, gente: int) -> void:
 
 func _mapa_mudou(mapa: int, x: int, y: int) -> void:
 	print("TESTE mapa mudou %d (%d, %d)" % [mapa, x, y])
+	# ReceiveTeleport chama o HideAll: as janelas da rodada 25 nao ficam abertas do outro lado
+	for jn: Control in [janela_gatekeeper, janela_arqueiro]:
+		if jn and jn.visible:
+			jn.visible = false
+			npc_falando = -1
 	if mapa != mapa_atual:
 		Conexao.segurar(true)
 		await _abrir_mapa(mapa, x, y)
@@ -2638,6 +2688,10 @@ func _fechar_loja(avisar := true) -> void:
 		janela_kanturu.visible = false
 	if janela_castelo:
 		janela_castelo.visible = false
+	if janela_gatekeeper:
+		janela_gatekeeper.visible = false
+	if janela_arqueiro:
+		janela_arqueiro.visible = false
 	inv.soltar()
 
 
@@ -4848,6 +4902,13 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k == KEY_F:
 		amigos.alternar()
 		return true
+	if k == KEY_J:
+		if chat_comandos.visible:
+			chat_comandos.fechar()
+		else:
+			hud.move_child(chat_comandos, -1)
+			chat_comandos.abrir()
+		return true
 	if k in [KEY_ENTER, KEY_KP_ENTER]:
 		correio.caixa.abrir()
 		return true
@@ -4895,6 +4956,12 @@ func _teclas(ev: InputEventKey) -> bool:
 				janela_master.alternar()
 		elif minimapa.visible:
 			minimapa.visible = false
+		elif chat_comandos.visible:
+			chat_comandos.esc()
+		elif janela_gatekeeper.visible:
+			janela_gatekeeper.fechar()
+		elif janela_arqueiro.visible:
+			janela_arqueiro.fechar()
 		elif menu.visible:
 			menu.visible = false
 		elif mover_janela.visible:
@@ -4972,6 +5039,8 @@ func _atualizar_skills() -> void:
 	barra_mu.skills = l
 	print("TESTE barra skills %s" % [l])
 	_carregar_atalhos()
+	if not _teclas_servidor.is_empty():
+		_aplicar_teclas(_teclas_servidor)
 	if barra_mu.skill_atual not in l and not Pets.e_comando(barra_mu.skill_atual):
 		barra_mu.skill_atual = l[0] if not l.is_empty() else -1
 	barra_mu.queue_redraw()
@@ -5007,6 +5076,7 @@ func _salvar_atalhos() -> void:
 	for i in 4:
 		c.set_value("pocoes", "q%d" % i, pocao_escolhida[i])
 	c.save(_arquivo_atalhos())
+	_guardar_teclas()
 
 
 func _escolher_skill(n: int) -> void:
@@ -6141,3 +6211,250 @@ func inimigo_gens(e: Entidade) -> bool:
 		return false
 	var amigo := (e.guilda >= 0 and e.guilda == minha_guilda) or (janela_grupo and janela_grupo.passo_de(e.nome) >= 0)
 	return not amigo
+
+
+# --- rodada 25: os 14 que faltavam ---------------------------------------------------
+
+const MAPA_CASTELO := 30          # Valley of Loren
+var janela_gatekeeper: JanelaGatekeeper
+var janela_arqueiro: JanelaArqueiro
+var chat_comandos: JanelaChatComandos
+var relogio_futebol: Label
+var quests_de_evento: Array = []  # C1 F6 03: [grupo, numero] (SetQuestIndexByEtcList)
+var _marca_castelo := PackedByteArray()
+var _teclas_servidor := PackedByteArray()
+var _pediu_comandos := false
+var _aplicando_teclas := false
+
+
+func _ligar_rodada25() -> void:
+	# Gatekeeper do Valley of Loren (NPC 220): C1 B9 03 abre, B9 05, B2 1F e B2 09 tipo 3 respondem
+	janela_gatekeeper = JanelaGatekeeper.new()
+	janela_gatekeeper.fechou.connect(func(): _fechar_loja())
+	janela_gatekeeper.entrar.connect(func(p):
+		print("TESTE gatekeeper entrar %d" % p)
+		cli.cacada_entrar_pedir(p))
+	janela_gatekeeper.publico.connect(func(sim):
+		print("TESTE gatekeeper publico %s" % sim)
+		cli.cacada_publico(sim))
+	janela_gatekeeper.mudar_preco.connect(func(p):
+		print("TESTE gatekeeper preco %d" % p)
+		cli.cacada_preco(p))
+	janela_gatekeeper.sem_zen.connect(func(): _caixa_mu([DicaItem.t(1628)], func(_o, _t): pass, false, false))
+	hud.add_child(janela_gatekeeper)
+	cli.cacada_info.connect(func(r, pub, preco, mx, passo):
+		if r == 0:
+			# CGatemanFailMsgBoxLayout
+			print("TESTE gatekeeper falhou")
+			_caixa_mu(["Request has failed."], func(_o, _t): pass, false, false)
+			return
+		janela_gatekeeper.meu_zen = meu_zen
+		hud.move_child(janela_gatekeeper, -1)
+		janela_gatekeeper.abrir(r, pub, preco, mx, passo))
+	cli.cacada_entrar.connect(func(r):
+		print("TESTE gatekeeper entrar resultado %d" % r)
+		if r == 0:
+			_caixa_mu(["Request has failed."], func(_o, _t): pass, false, false))
+	cli.cs_resposta.connect(func(sub, info):
+		# C1 B2 1F (ReceiveHuntZoneEnter): 1 = a entrada mudou, 2 = sem autorizacao
+		if sub == 0x1F:
+			if int(info.get("resultado", 0)) == 1:
+				janela_gatekeeper.mudou_publico(bool(info.get("publico", false)))
+			elif int(info.get("resultado", 0)) == 2:
+				_caixa_mu([DicaItem.t(1386)], func(_o, _t): pass, false, false))
+	# Golden Archer (NPC 236): C1 94 resultado 0 abre ou atualiza; outro resultado e o HideAll do cliente
+	janela_arqueiro = JanelaArqueiro.new()
+	janela_arqueiro.itens = inv.itens
+	janela_arqueiro.nome = monstros.get("236", ["Golden Archer"])[0]
+	janela_arqueiro.registrar.connect(func(casa):
+		print("TESTE arqueiro registrar casa %d" % casa)
+		cli.registrar_ficha(0, casa))
+	janela_arqueiro.fechou.connect(func():
+		cli.fechar_fichas()
+		npc_falando = -1)
+	hud.add_child(janela_arqueiro)
+	cli.fichas.connect(func(r, reg, mochila):
+		print("TESTE fichas resultado %d registradas %d mochila %d" % [r, reg, mochila])
+		janela_arqueiro.itens = inv.itens
+		if r == 0:
+			hud.move_child(janela_arqueiro, -1)
+			janela_arqueiro.abrir(reg)
+		else:
+			janela_arqueiro.visible = false)
+	# comandos de chat (J): a lista chega um por pacote; executar manda a linha como chat publico
+	chat_comandos = JanelaChatComandos.new()
+	chat_comandos.executar.connect(func(linha):
+		cli.dizer(meu_nome, linha))
+	hud.add_child(chat_comandos)
+	cli.comando_chat.connect(func(i, total, cmd):
+		chat_comandos.receber(i, total, cmd)
+		if i == total - 1:
+			print("TESTE comandos chat %d: %s" % [total, ", ".join(chat_comandos.comandos.map(func(c): return c.comando))]))
+	# relogio do Battle Soccer (C1 F3 22, RenderMatchTimes): so com 10 minutos ou menos, grande no 350 de 480,
+	# vermelho e amarelo no ultimo minuto; 1390 com os segundos de um digito, 1391 com dois
+	relogio_futebol = Label.new()
+	relogio_futebol.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	relogio_futebol.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	relogio_futebol.add_theme_constant_override("outline_size", 4)
+	relogio_futebol.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	relogio_futebol.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	relogio_futebol.visible = false
+	hud.add_child(relogio_futebol)
+	cli.futebol_tempo.connect(_tempo_futebol)
+	# o resto: teclas guardadas, foco na selecao, invasao, skill de monstro, Nova, Chain Lightning, quests de evento,
+	# Life Stone e a marca do castelo
+	cli.teclas.connect(func(cfg):
+		print("TESTE teclas do servidor %s" % cfg.hex_encode())
+		_teclas_servidor = cfg
+		_aplicar_teclas(cfg))
+	cli.personagem_foco.connect(func(nome):
+		print("TESTE foco confirmado %s" % nome)
+		if selecao and is_instance_valid(selecao):
+			selecao.foco_confirmado(nome))
+	cli.evento_mapa.connect(func(ligado, ev):
+		print("TESTE invasao %s evento %d" % [ligado, ev])
+		Bichos.evento = ev if ligado and ev in [1, 3] else 0)
+	cli.skill_monstro.connect(_skill_monstro)
+	cli.estagio_skill.connect(func(id, skill, estagio):
+		print("TESTE nova estagio %d skill %d de %d" % [estagio, skill, id])
+		if entidades.has(id):
+			entidades[id].set_meta("nova_estagio", estagio))
+	cli.corrente.connect(_corrente)
+	cli.quests_evento.connect(func(l):
+		quests_de_evento = l
+		print("TESTE quests de evento %s" % [l]))
+	cli.pedra_vida.connect(_pedra_vida)
+	cli.marca_castelo.connect(func(marca):
+		_marca_castelo = marca
+		var n := 0
+		if mundo and mapa_atual == MAPA_CASTELO:
+			n = mundo.marca_castelo(marca)
+		print("TESTE marca castelo %s bandeiras %d" % [marca.hex_encode().left(16), n]))
+
+
+func _tempo_futebol(seg: int) -> void:
+	var m := seg / 60
+	var s := seg % 60
+	print("TESTE futebol tempo %d" % seg)
+	if seg <= 0 or m > 10:
+		relogio_futebol.visible = false
+		return
+	var k := hud.size.y / 480.0
+	relogio_futebol.text = (DicaItem.t(1390) if s < 10 else DicaItem.t(1391)) % [m, s]
+	relogio_futebol.add_theme_font_size_override("font_size", int(20 * k))
+	relogio_futebol.add_theme_color_override("font_color", Color8(255, 255, 10) if seg < 60 else Color8(255, 10, 10))
+	relogio_futebol.position.y = 350 * k - relogio_futebol.get_combined_minimum_size().y / 2.0
+	relogio_futebol.visible = true
+
+
+# C1 69 (ReceiveMonsterSkill + CheckMonsterSkill): o monstro vira pro alvo e toca o ataque da posicao da skill
+# na lista dele (MonsterSkill.bmd: 0 ATTACK1 ... 4 a 9 ATTACK5); a Maya (364) passa pro MayaSceneMayaAction
+var _skills_monstro := {}
+
+
+func _skill_monstro(skill: int, id: int, alvo: int, ok: bool) -> void:
+	print("TESTE skill monstro %d de %d em %d %s" % [skill, id, alvo, "acertou" if ok else "errou"])
+	if not entidades.has(id):
+		return
+	var e: Entidade = entidades[id]
+	if e.numero == 364 and kanturu:
+		kanturu.ataque_maya(skill & 0xFF)
+		return
+	if _skills_monstro.is_empty():
+		_skills_monstro = _json("res://dados/monstro_skills.json")
+	var l: Array = _skills_monstro.get(str(e.numero), [])
+	var i := l.find(skill)
+	var acao: String = ["ataque", "ataque2", "ataque3", "ataque4"][i] if i >= 0 and i < 4 else ("ataque5" if i >= 4 else "ataque")
+	var a: Entidade = entidades.get(alvo, e)
+	e.tocar_skill(acao, a.position)
+
+
+# C1 BF 0A (ReceiveChainMagic): quem lanca toca a acao da Chain Lightning e o raio pula de alvo em alvo
+func _corrente(skill: int, id: int, alvos: Array) -> void:
+	print("TESTE corrente skill %d de %d em %s" % [skill, id, alvos])
+	if mundo == null or not entidades.has(id):
+		return
+	var e: Entidade = entidades[id]
+	var l: Array = []
+	for a in alvos:
+		if entidades.has(a):
+			l.append(entidades[a])
+	if l.is_empty():
+		return
+	e.tocar_skill(_acao_skill(skill), (l[0] as Entidade).position)
+	if som:
+		som.tocar("chain_lightning")
+	EfeitoSkill.corrente(mundo, e, l)
+
+
+# C1 B9 01 (ReceiveLifeStoneState): a Life Stone do Castle Siege sobe de 0 a 5. RenderBattleCastleCharacter:
+# a malha 0 a partir do 2, a 2 do 3, a 1 do 4, a 3 e a 4 (somadas, correndo) no 5; a barra de obra (TextosMU)
+# ate o 4 e a luz que pulsa no 5
+func _pedra_vida(npc: int, estagio: int) -> void:
+	print("TESTE pedra vida %d estagio %d" % [npc, estagio])
+	if not entidades.has(npc):
+		return
+	var e: Entidade = entidades[npc]
+	e.set_meta("pedra_estagio", estagio)
+	var b := e.boneco
+	if b == null:
+		return
+	var desde := {0: 2, 2: 3, 1: 4, 3: 5, 4: 5}
+	for n in desde:
+		var a: Array = b._superficie(n)
+		if a.is_empty():
+			continue
+		if estagio >= desde[n]:
+			(a[0] as MeshInstance3D).set_surface_override_material(a[1], null)
+			if n >= 3:
+				b.somar_malha(n)
+		else:
+			b.apagar_malha(n)
+	if estagio >= 5 and not e.has_meta("pedra_aurora"):
+		e.set_meta("pedra_aurora", true)
+		var ef := EfeitoMU.criar(mundo)
+		ef.tarefa(0.04, 3600.0, func(f, _i):
+			if not is_instance_valid(e) or e.morto:
+				return
+			if _i % 25 == 0:
+				EfeitoSkill.luz_chao(f, e.global_position, Color(0.3, 0.2, 0.0) * 3.0, 4.5, 1.1))
+
+
+# F3 30 (ReceiveOption / SaveOptions): [0..19] as 10 skills em BE (FFFF vazio), [20] opcoes, [21..23] Q W E
+# (indice da pocao no grupo 14), [24] chat, [25] R, [26..29] niveis R E W Q (LE32 do QWERLevel)
+func _aplicar_teclas(cfg: PackedByteArray) -> void:
+	if cfg.size() < 30 or cfg.count(0) == 30:
+		return
+	_aplicando_teclas = true
+	var l: Array = barra_mu.atalhos.duplicate()
+	l.resize(10)
+	for i in 10:
+		var n := (cfg[i * 2] << 8) | cfg[i * 2 + 1]
+		l[i] = n if n != 0xFFFF and n in barra_mu.skills else -1
+	barra_mu.atalhos = l
+	for i in 4:
+		var idx: int = cfg[[21, 22, 23, 25][i]]
+		pocao_escolhida[i] = "" if idx == 0xFF else "14,%d" % idx
+	barra_mu.queue_redraw()
+	_contar_pocoes()
+	_aplicando_teclas = false
+	print("TESTE teclas aplicadas %s pocoes %s" % [l, pocao_escolhida])
+
+
+func _guardar_teclas() -> void:
+	if _aplicando_teclas or cli == null or barra_mu == null:
+		return
+	var c := PackedByteArray()
+	c.resize(30)
+	for i in 10:
+		var n: int = barra_mu.atalhos[i] if i < barra_mu.atalhos.size() and barra_mu.atalhos[i] != null and barra_mu.atalhos[i] >= 0 else 0xFFFF
+		c[i * 2] = (n >> 8) & 0xFF
+		c[i * 2 + 1] = n & 0xFF
+	if _teclas_servidor.size() >= 30:
+		c[20] = _teclas_servidor[20]
+		c[24] = _teclas_servidor[24]
+	for i in 4:
+		var p: String = pocao_escolhida[i]
+		c[[21, 22, 23, 25][i]] = int(p.split(",")[1]) & 0xFF if p.begins_with("14,") else 0xFF
+	_teclas_servidor = c
+	cli.guardar_teclas(c)

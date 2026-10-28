@@ -1680,3 +1680,47 @@ static func _caotico(e: EfeitoMU, quem, b: Boneco, frente: Vector3, alvo) -> voi
 		var p := _pos(alvo) + Vector3.UP * 0.8
 		explosao(e, p, 1.6)
 		_faiscas(e, p, 20, BRANCO)
+
+
+# --- Chain Lightning (rodada 25) ----------------------------------------------------
+
+# C1 BF 0A (ReceiveChainMagic): um MODEL_CHAIN_LIGHTNING por alvo, na ordem. O primeiro (SubType 0) sai das
+# duas maos (ossos 37 e 28) com 4 fitas de BITMAP_JOINT_THUNDER cada (largura 50 e 10, luz 0,4 0,4 1); os
+# outros saem do alvo anterior, 80 acima, pro proximo. Vive 20 ticks; no tick 15 de vida, BITMAP_LIGHT
+# (0,2 0,2 0,8) em cada osso do alvo. Alvo morto ou sumido corta a fita.
+static func corrente(pai: Node3D, quem: Node3D, alvos: Array) -> void:
+	if pai == null or quem == null or alvos.is_empty():
+		return
+	var e := EfeitoMU.criar(pai)
+	var b: Boneco = (quem as Entidade).boneco if quem is Entidade else null
+	var cor := Color(0.4, 0.4, 1.0)
+	var antes: Node3D = quem
+	for i in alvos.size():
+		var alvo: Node3D = alvos[i]
+		if alvo == null or not is_instance_valid(alvo) or alvo == antes:
+			antes = alvo
+			continue
+		var de: Node3D = antes
+		var primeiro := i == 0
+		e.tarefa(T, 20 * T, func(ef, k):
+			if not is_instance_valid(alvo) or not is_instance_valid(de):
+				return
+			var fim := _pos(alvo)
+			if primeiro:
+				for osso in [37, 28]:
+					var mao := _osso(b, osso) if b else _peito(de)
+					for j in 2:
+						ef.fita("jointthunder01", mao, fim, 0.5, cor, T * 2, {raio = 0.3, pedacos = 10, some = 0.0})
+						ef.fita("jointthunder01", mao, fim, 0.1, cor, T * 2, {raio = 0.5, pedacos = 10, some = 0.0})
+			else:
+				var ini := _pos(de) + Vector3.UP * 0.8
+				ef.fita("jointthunder01", ini, fim, 0.5, cor, T * 2, {raio = 0.3, pedacos = 10, some = 0.0})
+				ef.fita("jointthunder01", ini, fim, 0.1, cor, T * 2, {raio = 0.5, pedacos = 10, some = 0.0})
+			if k == 5:
+				var bo: Boneco = (alvo as Entidade).boneco if alvo is Entidade else null
+				var ossos := _ossos(bo)
+				for o in ossos:
+					ef.sprite("flare01", _pos_osso(bo, o), 0.64 * _rnd(2.0, 4.0) * 0.5, Color(0.2, 0.2, 0.8), 10 * T, {some = 0.8})
+				if ossos.is_empty():
+					ef.sprite("flare01", _peito(alvo), 1.5, Color(0.2, 0.2, 0.8), 10 * T, {some = 0.8}))
+		antes = alvo

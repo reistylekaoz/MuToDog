@@ -229,6 +229,21 @@ signal bc_resultado(ok: bool, nome: String, pontos: int, exp: int, zen: int)   #
 signal bc_estado(estado: int, segundos: int, maximo: int, mortos: int, dono: int, item: int)   # C1 9B
 signal terreno(atributo: int, tirar: bool, areas: Array)   # C1 46: [[x1, y1, x2, y2]] (portao e ponte do Blood Castle)
 signal texto_servidor(numero: int)                     # C1 F3 40 com 1, 3 ou 4: caixa com o texto numero (falas do Charon e do Archangel)
+# rodada 25: os 14 que faltavam
+signal teclas(cfg: PackedByteArray)                    # C1 F3 30: a configuracao de teclas guardada (30 bytes do ReceiveOption)
+signal comando_chat(indice: int, total: int, cmd: Dictionary)   # C2 F5 01: um comando de chat por pacote (janela J)
+signal personagem_foco(nome: String)                   # C1 F3 15: o servidor confirmou o personagem escolhido na selecao
+signal futebol_tempo(segundos: int)                    # C1 F3 22: relogio da partida de Battle Soccer
+signal evento_mapa(ligado: bool, evento: int)          # C1 0B: invasao do dragao vermelho (1) ou dourado (3)
+signal skill_monstro(skill: int, id: int, alvo: int, ok: bool)   # C1 69: skill de monstro (Selupan, Crywolf, Imperial)
+signal fichas(resultado: int, registradas: int, na_mochila: int)   # C1 94: janela do Golden Archer (Rena)
+signal estagio_skill(id: int, skill: int, estagio: int)          # C1 BA: carga da Nova
+signal corrente(skill: int, id: int, alvos: Array)     # C1 BF 0A: Chain Lightning, de quem e os alvos em ordem
+signal quests_evento(lista: Array)                     # C1 F6 03: quests de evento (grupo, numero)
+signal pedra_vida(npc: int, estagio: int)              # C1 B9 01: Life Stone subindo (0 a 5)
+signal marca_castelo(marca: PackedByteArray)           # C1 B9 02: marca da guilda dona do castelo (32 bytes)
+signal cacada_info(resultado: int, publico: bool, preco: int, maximo: int, passo: int)   # C1 B9 03: Gatekeeper
+signal cacada_entrar(resultado: int)                   # C1 B9 05
 
 const VERSAO := [0x31, 0x30, 0x34, 0x30, 0x34]
 const SERIAL := "k1Pk2jcET48mxL3b"
@@ -571,6 +586,60 @@ func cs_pedir(sub: int, dados := PackedByteArray()) -> void:
 	var p := PackedByteArray([0xC1, 0, 0xB2, sub])
 	p.append_array(dados)
 	con.enviar(p)
+
+
+# --- rodada 25 ---
+# C1 B9 02: a marca da guilda dona (GMBattleCastle, ao entrar no Valley of Loren)
+func pedir_marca_castelo() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xB9, 0x02]))
+
+
+# C1 B2 1F: o mestre abre (1) ou fecha (0) a Land of Trials pra quem nao e da guilda (CUIGateKeeper::SendPublicSetting
+# -> SendCastleSiegeHuntingZoneEntranceSetting); a resposta e o C1 B2 1F (ReceiveHuntZoneEnter)
+func cacada_publico(sim: bool) -> void:
+	cs_pedir(0x1F, PackedByteArray([1 if sim else 0]))
+
+
+# C1 B9 05: entrar na Land of Trials pagando o preco (zen em LE32, CUIGateKeeper::SendEnter)
+func cacada_entrar_pedir(preco: int) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xB9, 0x05])
+	p.append_array(_le4(preco))
+	con.enviar(p)
+
+
+# C1 B2 09 tipo 3: o preco da Land of Trials (CUIGateKeeper::SendEnteranceFee; o valor vai em BE32 como os outros impostos)
+func cacada_preco(preco: int) -> void:
+	cs_pedir(0x09, PackedByteArray([3, (preco >> 24) & 0xFF, (preco >> 16) & 0xFF, (preco >> 8) & 0xFF, preco & 0xFF]))
+
+
+# C1 F5 00: a lista dos comandos de chat (uma vez depois de entrar)
+func pedir_comandos_chat() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xF5, 0x00]))
+
+
+# C1 F3 30: guarda a configuracao de teclas (os 30 bytes do ReceiveOption) no servidor
+func guardar_teclas(cfg: PackedByteArray) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xF3, 0x30])
+	var c := cfg.duplicate()
+	c.resize(30)
+	p.append_array(c)
+	con.enviar(p)
+
+
+# C1 F3 15: o personagem escolhido na selecao (o servidor responde com o mesmo nome)
+func foco_personagem(nome: String) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xF3, 0x15])
+	p.append_array(_texto(nome, 10))
+	con.enviar(p)
+
+
+# C1 95: registra uma ficha no Golden Archer (tipo 0 = Rena, a casa dela na mochila); C1 97 fecha a janela
+func registrar_ficha(tipo: int, casa: int) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x95, tipo, casa]))
+
+
+func fechar_fichas() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0x97]))
 
 
 # C1 B3 01 portoes, 02 estatuas (Senior); C1 B4 inscritas; C1 B5 guildas da batalha
@@ -1416,7 +1485,73 @@ func _tratar(p: PackedByteArray) -> void:
 			if p.size() >= 22:
 				futebol_placar.emit(_ler_texto(p, 4, 8), p[12], _ler_texto(p, 13, 8), p[21])
 				return
+		[0xF3, 0x22]:
+			if p.size() >= 6:
+				futebol_tempo.emit(p[4] | (p[5] << 8))
+				return
+		[0xF3, 0x30]:
+			if p.size() >= 34:
+				teclas.emit(p.slice(4, 34))
+				return
+		[0xF3, 0x15]:
+			if p.size() >= 5:
+				personagem_foco.emit(_ler_texto(p, 4, 10))
+				return
+		[0xF5, 0x01]:
+			if p[0] == 0xC2 and p.size() >= 345:
+				_ler_comando_chat(p)
+				return
+		[0xF6, 0x03]:
+			# QuestEventResponse: ate 2 quests (grupo e numero em LE16, o mesmo QuestIdentification do F6 0A)
+			var l := []
+			for i in 2:
+				var o := 4 + i * 4
+				if o + 4 <= p.size() and (p[o] | p[o + 1] | p[o + 2] | p[o + 3]) != 0:
+					l.append([p[o] | (p[o + 1] << 8), p[o + 2] | (p[o + 3] << 8)])
+			quests_evento.emit(l)
+			return
+		[0xBF, 0x0A]:
+			# ChainLightningHitInfo: skill em BE no 4, quem lancou no 6, quantos no 8 e os alvos de 2 bytes a partir do 10
+			if p.size() >= 10:
+				var l := []
+				for i in p[8]:
+					var o := 10 + i * 2
+					if o + 2 > p.size():
+						break
+					l.append((p[o] | (p[o + 1] << 8)) & 0x7FFF)
+				corrente.emit((p[4] << 8) | p[5], (p[6] | (p[7] << 8)) & 0x7FFF, l)
+				return
+		[0xB9, 0x01]:
+			if p.size() >= 7:
+				pedra_vida.emit(((p[4] << 8) | p[5]) & 0x7FFF, p[6])
+				return
+		[0xB9, 0x02]:
+			if p.size() >= 36:
+				marca_castelo.emit(p.slice(4, 36))
+				return
+		[0xB9, 0x03]:
+			if p.size() >= 18:
+				cacada_info.emit(p[4], p[5] != 0, _ler_le(p, 6), _ler_le(p, 10), _ler_le(p, 14))
+				return
+		[0xB9, 0x05]:
+			if p.size() >= 5:
+				cacada_entrar.emit(p[4])
+				return
 	match cod:
+		0x0B:
+			if p[0] == 0xC1 and p.size() >= 5:
+				evento_mapa.emit(p[3] != 0, p[4])
+		0x69:
+			# MonsterSkillAnimation: skill em BE no 3, monstro no 6 e alvo no 8 (LE; o bit de cima do alvo = acertou)
+			if p[0] == 0xC1 and p.size() >= 10:
+				var alvo := p[8] | (p[9] << 8)
+				skill_monstro.emit((p[3] << 8) | p[4], (p[6] | (p[7] << 8)) & 0x7FFF, alvo & 0x7FFF, (alvo & 0x8000) != 0)
+		0x94:
+			if p[0] == 0xC1 and p.size() >= 10:
+				fichas.emit(p[3], _ler_le(p, 4), p[8] | (p[9] << 8))
+		0xBA:
+			if p[0] == 0xC1 and p.size() >= 7:
+				estagio_skill.emit((p[3] | (p[4] << 8)) & 0x7FFF, p[5], p[6])
 		0x12:
 			_ler_personagens(p)
 		0x45:
@@ -2287,6 +2422,21 @@ static func _ler_texto(p: PackedByteArray, ini: int, n: int) -> String:
 	if z >= 0:
 		b = b.slice(0, z)
 	return b.get_string_from_utf8()
+
+
+# C2 F5 01 (AvailableChatCommand): indice 5, total 6, estado 7, parametros 8, comando 9 (32), nome 41 (48),
+# descricao 89 (256) e os parametros de 102 bytes a partir do 345 (obrigatorio, tipo, nome 32, curto 20, valores 48 com |)
+func _ler_comando_chat(p: PackedByteArray) -> void:
+	var cmd := {"comando": _ler_texto(p, 9, 32), "nome": _ler_texto(p, 41, 48), "descricao": _ler_texto(p, 89, 256),
+		"estado": p[7], "parametros": []}
+	for i in p[8]:
+		var o := 345 + i * 102
+		if o + 102 > p.size():
+			break
+		var v := _ler_texto(p, o + 54, 48)
+		cmd.parametros.append({"obrigatorio": p[o] != 0, "tipo": p[o + 1], "nome": _ler_texto(p, o + 2, 32),
+			"curto": _ler_texto(p, o + 34, 20), "valores": v.split("|", false) if v != "" else PackedStringArray()})
+	comando_chat.emit(p[5], p[6], cmd)
 
 
 static func _ler_le(p: PackedByteArray, o: int) -> int:

@@ -8,7 +8,8 @@ extends Node3D
 const PASTA := "res://dados/personagens/"
 # PlaySpeed padrao do cliente S6 (ZzzOpenData.cpp)
 const VELOCIDADE := {
-	"monstro": {"parado": 0.25, "parado2": 0.2, "anda": 0.34, "ataque": 0.33, "ataque2": 0.33, "golpe": 0.5, "morre": 0.55},
+	"monstro": {"parado": 0.25, "parado2": 0.2, "anda": 0.34, "ataque": 0.33, "ataque2": 0.33, "golpe": 0.5, "morre": 0.55,
+		"ataque3": 0.33, "ataque4": 0.33, "ataque5": 0.33},
 	"jogador": {"parado": 0.28, "parado_f": 0.28, "voa": 0.28, "nada": 0.35, "nada_corre": 0.35, "anda": 0.3, "anda_f": 0.3, "corre": 0.3,
 		"soco": 0.35, "espada": 0.35, "golpe": 0.4, "morre": 0.45,
 		"espada_s1": 0.3, "espada_s2": 0.3, "espada_s3": 0.3, "espada_s4": 0.3, "espada_s5": 0.3,
@@ -31,8 +32,9 @@ const VELOCIDADE := {
 # acao pedida -> a que existe no modelo (o jogador nao tem "ataque", tem "soco")
 const TROCA := {"ataque": ["ataque", "soco", "parado"], "ataque2": ["ataque2", "ataque", "soco"],
 	"golpe": ["golpe", "parado"], "morre": ["morre", "golpe", "parado"], "anda": ["anda", "parado"],
-	"corre": ["corre", "anda"], "parado2": ["parado2", "parado"]}
-const NAO_REPETE := ["morre", "golpe", "ataque", "ataque2", "soco", "espada", "espada_s1", "espada_s2",
+	"corre": ["corre", "anda"], "parado2": ["parado2", "parado"], "ataque3": ["ataque3", "ataque"],
+	"ataque4": ["ataque4", "ataque"], "ataque5": ["ataque5", "ataque"]}
+const NAO_REPETE := ["morre", "golpe", "ataque", "ataque2", "ataque3", "ataque4", "ataque5", "soco", "espada", "espada_s1", "espada_s2",
 	"espada_s3", "espada_s4", "espada_s5", "giro", "furia", "estocada", "arco", "magia", "magia2", "magia_arma",
 	"cura", "raio", "inferno", "fogo_inferno", "monta_ataque", "cavalo_ataque", "fenrir_ataque", "fenrir_ataque_a",
 	"espada2", "espada_e1", "espada_e2", "golpe_2maos1", "golpe_2maos2", "golpe_2maos3", "golpe_2maos2b", "golpe_lanca",

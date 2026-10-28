@@ -10,6 +10,9 @@ uniform sampler2DArray tiles : filter_linear_mipmap, repeat_enable;
 uniform sampler2D luz_extra : filter_nearest, hint_default_black;
 uniform float repete[32];
 uniform float brilho = 1.0;
+// invasao do dragao (MoveBoids com EnableEvent): AddTerrainLight (-0,3 -0,3 -0,2) em 16 tiles do heroi
+uniform vec3 sombra = vec3(0.0);       // x e y do heroi em tiles, raio (0 = desligada)
+uniform vec3 sombra_cor = vec3(-0.3, -0.3, -0.2);
 uniform int agua = 5;
 // Atlans: onde a camada 2 e agua, a camada 1 fica inteira e a agua (wt00..31 do Object8,
 // 25 quadros por segundo, 4 tiles por textura) vai somada na forca da mistura (RenderFaceBlend)
@@ -26,6 +29,12 @@ void vertex() {
 	// a luminosidade do fogo varia 0,6..1,1 a cada quadro do cliente (12,5 por segundo aqui)
 	float pisca = 0.7 + 0.6 * sorteio(vec2(floor(TIME * 12.5)) + floor(vec2(v) / 4.0));
 	COLOR.rgb = min(COLOR.rgb + texelFetch(luz_extra, v, 0).rgb * pisca, vec3(1.0));
+	if (sombra.z > 0.0) {
+		float lf = (sombra.z - distance(vec2(v), sombra.xy)) / sombra.z;
+		if (lf > 0.0) {
+			COLOR.rgb = max(COLOR.rgb + sombra_cor * lf, vec3(0.0));
+		}
+	}
 }
 
 vec3 amostra(int i, vec2 uv) {

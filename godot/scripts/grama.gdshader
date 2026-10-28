@@ -5,11 +5,12 @@ render_mode unshaded, cull_disabled;
 
 uniform sampler2D textura : filter_nearest, repeat_enable;
 uniform float brilho = 1.0;
+uniform float vento = 2.0;   // invasao do dragao: 5 vezes mais rapido (WindSpeed 0,01 em vez de 0,002)
 
 void vertex() {
 	if (UV.y < 0.5) {
 		float x = (VERTEX.x + 50.0) / 100.0;
-		VERTEX.y += sin(TIME * 2.0 + x * 5.0) * 10.0;
+		VERTEX.y += sin(TIME * vento + x * 5.0) * 10.0;
 	}
 }
 

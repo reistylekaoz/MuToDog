@@ -79,9 +79,29 @@ func _draw() -> void:
 	for e: Entidade in jogo.entidades.values():
 		if is_instance_valid(e) and not e.morto and e.nome_visivel():
 			_nome(cam, f, tam, e)
+	for e: Entidade in jogo.entidades.values():
+		if is_instance_valid(e) and not e.morto and e.has_meta("pedra_estagio") and int(e.get_meta("pedra_estagio")) < 5:
+			_barra_obra(cam, e, int(e.get_meta("pedra_estagio")))
 	for p in _pontos:
 		_numero(cam, p)
 	_foco(f, tam)
+
+
+# RenderBuildTimes (GMBattleCastle): a Life Stone subindo (C1 B9 01, estagio 0 a 4) tem a barra de 50x2 em cima,
+# 100 acima da caixa do modelo, cheia em estagio / 5 (RenderBar: sombra 80000000, moldura 003333, trilho 003232, verde 00C832)
+func _barra_obra(cam: Camera3D, e: Entidade, estagio: int) -> void:
+	var alto: float = (e.boneco.altura if e.boneco else 1.5) + 1.0
+	var p := e.global_position + Vector3.UP * alto
+	if cam.is_position_behind(p):
+		return
+	var k := get_viewport_rect().size.y / 480.0
+	var s := cam.unproject_position(p)
+	var x := s.x - 25 * k
+	var y := s.y + 12 * k
+	draw_rect(Rect2(x + k, y + k, 54 * k, 6 * k), Color(0, 0, 0, 0.5))
+	draw_rect(Rect2(x, y, 54 * k, 6 * k), Color8(0, 0x33, 0x33))
+	draw_rect(Rect2(x + 2 * k, y + 2 * k, 50 * k, 2 * k), Color8(0, 0x32, 0x32))
+	draw_rect(Rect2(x + 2 * k, y + 2 * k, 50 * k * estagio / 5.0, 2 * k), Color8(0, 0xC8, 0x32))
 
 
 # foco: o monstro do mouse (ou o alvo) com o nome no alto da tela, como o cliente faz com o mouse em cima

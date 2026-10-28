@@ -1591,7 +1591,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "marlon": {
@@ -2671,7 +2674,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster95": {
@@ -4194,7 +4200,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster119": {
@@ -4270,7 +4279,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   },
   "texturas": "Skill"
  },
@@ -4331,7 +4343,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster167": {
@@ -4343,7 +4358,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster168": {
@@ -4355,7 +4373,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster169": {
@@ -4367,7 +4388,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster170": {
@@ -4379,7 +4403,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster171": {
@@ -4391,7 +4418,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster172": {
@@ -4403,7 +4433,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster173": {
@@ -4415,7 +4448,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster174": {
@@ -4427,7 +4463,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster175": {
@@ -4439,7 +4478,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster176": {
@@ -4451,7 +4493,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster177": {
@@ -4463,7 +4508,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster178": {
@@ -4475,7 +4523,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster179": {
@@ -4487,7 +4538,10 @@
    "ataque": 3,
    "ataque2": 4,
    "golpe": 5,
-   "morre": 6
+   "morre": 6,
+   "ataque3": 8,
+   "ataque4": 9,
+   "ataque5": 11
   }
  },
  "monster180": {

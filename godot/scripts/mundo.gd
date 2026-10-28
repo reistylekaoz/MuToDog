@@ -447,3 +447,54 @@ func _process(dt: float) -> void:
 	var passo := (f * m.y + d * m.x) * 15.0 * dt
 	alvo += Vector2(passo.x, -passo.y)
 	_mirar()
+
+
+# CreateCastleMark: o C1 B9 02 traz a marca 8x8 da guilda dona; o cliente pinta o Flag.tga (64x64, a malha 1 do
+# objeto 12 do Valley of Loren, GMBattleCastle RenderBattleCastleObjectMesh) com a marca 32x32 no meio, a borda
+# azul degrade e o resto em cinza pela linha. Devolve a imagem pra quem testa.
+const COR_MARCA := [Color8(0, 0, 0, 0), Color8(0, 0, 0), Color8(128, 128, 128), Color8(255, 255, 255),
+	Color8(255, 0, 0), Color8(255, 128, 0), Color8(255, 255, 0), Color8(128, 255, 0), Color8(0, 255, 0),
+	Color8(0, 255, 128), Color8(0, 255, 255), Color8(0, 128, 255), Color8(0, 0, 255), Color8(128, 0, 255),
+	Color8(255, 0, 255), Color8(255, 0, 128)]
+
+
+static func imagem_marca_castelo(marca: PackedByteArray) -> Image:
+	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for i in 64:
+		for j in 64:
+			var c: Color
+			if j >= 16 and j < 48 and i >= 16 and i < 48:
+				var k := (j - 16) / 4 + ((i - 16) / 4) * 8
+				c = COR_MARCA[marca[k] & 15] if k < marca.size() else COR_MARCA[0]
+			elif j < 3 or j > 60 or i < 10 or i > 54:
+				c = Color8(int(50 + i / 100.0 * 255) & 255, int(50 + i / 100.0 * 160) & 255, 0)
+			else:
+				c = Color8(i, i, i)
+			img.set_pixel(j, i, c)
+	return img
+
+
+func marca_castelo(marca: PackedByteArray) -> int:
+	var tex := ImageTexture.create_from_image(imagem_marca_castelo(marca))
+	var feitas := 0
+	for par in nos_objetos:
+		if par[1].m != "object13" or not is_instance_valid(par[0]):
+			continue
+		for mi: MeshInstance3D in (par[0] as Node).find_children("*", "MeshInstance3D", true, false):
+			if mi.mesh == null or mi.mesh.get_surface_count() < 2:
+				continue
+			var m := mi.get_surface_override_material(1) as ShaderMaterial
+			if m:
+				m.set_shader_parameter("textura", tex)
+				feitas += 1
+	return feitas
+
+
+# invasao do dragao: o chao escurece em volta do heroi e o vento da grama corre (Bichos._mexer_invasao)
+func sombra_dragao(c: Vector2, ligado: bool) -> void:
+	var t := mu.get_node_or_null("Terreno") as MeshInstance3D
+	if t:
+		t.material_override.set_shader_parameter("sombra", Vector3(c.x, c.y, 16.0 if ligado else 0.0))
+	for g in mu.get_children():
+		if g.name.begins_with("Grama"):
+			(g as MeshInstance3D).material_override.set_shader_parameter("vento", 10.0 if ligado else 2.0)

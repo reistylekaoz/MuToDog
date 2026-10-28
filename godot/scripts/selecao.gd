@@ -257,6 +257,22 @@ static func _somado(t: Texture2D, particula: bool) -> StandardMaterial3D:
 	return m
 
 
+# C1 F3 15 (FocusCharacter, rodada 25): o personagem clicado vai pro servidor, que devolve o nome; o MuMain so tem a
+# funcao de mandar e nao usa a resposta, entao aqui ela fica guardada em "focado"
+var focado := ""
+
+
+func _focar() -> void:
+	for p in lista:
+		if p.slot == escolhido and cli:
+			cli.foco_personagem(p.nome)
+
+
+func foco_confirmado(nome: String) -> void:
+	focado = nome
+	print("TESTE selecao foco %s" % nome)
+
+
 func _atualizar_escolhido() -> void:
 	var b: Boneco = _bonecos.get(escolhido)
 	for a in _auroras:
@@ -539,6 +555,7 @@ func _gui_input(ev: InputEvent) -> void:
 				elif s != escolhido:
 					escolhido = s
 					_atualizar_escolhido()
+					_focar()
 		else:
 			var b := _botao_em(ev.position)
 			if b != "" and b == _apertou:

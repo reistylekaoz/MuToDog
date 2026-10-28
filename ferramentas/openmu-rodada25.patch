@@ -1,0 +1,228 @@
+diff --git a/src/GameLogic/CastleSiege/Actions/CastleSiegeHuntZoneEnterAction.cs b/src/GameLogic/CastleSiege/Actions/CastleSiegeHuntZoneEnterAction.cs
+index 62f250d..0364aea 100644
+--- a/src/GameLogic/CastleSiege/Actions/CastleSiegeHuntZoneEnterAction.cs
++++ b/src/GameLogic/CastleSiege/Actions/CastleSiegeHuntZoneEnterAction.cs
+@@ -23,7 +23,7 @@ public sealed class CastleSiegeHuntZoneEnterAction
+     public async ValueTask<bool> EnterAsync(Player player, CastleSiegeContext? context)
+     {
+         if (context is not { Configuration.Enabled: true }
+-            || !player.OpenedNpc.IsNpcOf<CastleSiegeGuardsmanTalkPlugIn>(player.GameContext)
++            || player.OpenedNpc?.Definition.Number != CastleSiegeGatekeeperTalkPlugIn.GatekeeperNumber
+             || player.CurrentMap?.Definition.Number != context.Configuration.CastleSiegeMapDefinition?.Number
+             || context.Configuration.LandOfTrialsMapDefinition is not { } targetMap
+             || targetMap.ExitGates.FirstOrDefault() is not { } targetGate)
+diff --git a/src/GameServer/MessageHandler/CastleSiege/CastleSiegeHuntZoneToggleHandlerPlugIn.cs b/src/GameServer/MessageHandler/CastleSiege/CastleSiegeHuntZoneToggleHandlerPlugIn.cs
+index e218f09..bfad156 100644
+--- a/src/GameServer/MessageHandler/CastleSiege/CastleSiegeHuntZoneToggleHandlerPlugIn.cs
++++ b/src/GameServer/MessageHandler/CastleSiege/CastleSiegeHuntZoneToggleHandlerPlugIn.cs
+@@ -32,8 +32,10 @@ internal sealed class CastleSiegeHuntZoneToggleHandlerPlugIn : ISubPacketHandler
+     public async ValueTask HandlePacketAsync(Player player, Memory<byte> packet)
+     {
+         if (packet.Length < CastleSiegeHuntingZoneEntranceSetting.Length
+-            || player.OpenedNpc?.Definition.Number != SeniorNumber)
++            || (player.OpenedNpc?.Definition.Number != SeniorNumber
++                && player.OpenedNpc?.Definition.Number != GameLogic.CastleSiege.CastleSiegeGatekeeperTalkPlugIn.GatekeeperNumber))
+         {
++            // estudo (rodada 25): o mestre tambem abre a entrada pelo Gatekeeper (CUIGateKeeper::SendPublicSetting)
+             return;
+         }
+ 
+diff --git a/src/GameServer/MessageHandler/CastleSiege/CastleSiegeTaxChangeHandlerPlugIn.cs b/src/GameServer/MessageHandler/CastleSiege/CastleSiegeTaxChangeHandlerPlugIn.cs
+index 6d3eebd..4df58fd 100644
+--- a/src/GameServer/MessageHandler/CastleSiege/CastleSiegeTaxChangeHandlerPlugIn.cs
++++ b/src/GameServer/MessageHandler/CastleSiege/CastleSiegeTaxChangeHandlerPlugIn.cs
+@@ -32,13 +32,20 @@ internal sealed class CastleSiegeTaxChangeHandlerPlugIn : ISubPacketHandlerPlugI
+     /// <inheritdoc />
+     public async ValueTask HandlePacketAsync(Player player, Memory<byte> packet)
+     {
+-        if (packet.Length < CastleSiegeTaxChangeRequest.Length
+-            || player.OpenedNpc?.Definition.Number != SeniorNumber)
++        if (packet.Length < CastleSiegeTaxChangeRequest.Length)
+         {
+             return;
+         }
+ 
+         var request = new CastleSiegeTaxChangeRequest(packet);
++
++        // estudo (rodada 25): o preco da Land of Trials (tipo 3) o mestre muda pelo Gatekeeper (CUIGateKeeper::SendEnteranceFee)
++        var npc = player.OpenedNpc?.Definition.Number;
++        if (npc != SeniorNumber
++            && !(npc == GameLogic.CastleSiege.CastleSiegeGatekeeperTalkPlugIn.GatekeeperNumber && (byte)request.TaxType == (byte)TaxType.HuntZone))
++        {
++            return;
++        }
+         _ = await this._action.ChangeAsync(
+                 player,
+                 CastleSiegeHandlerContext.Get(player),
+diff --git a/src/GameServer/MessageHandler/ChatCommandGroupHandlerPlugIn.cs b/src/GameServer/MessageHandler/ChatCommandGroupHandlerPlugIn.cs
+index 7082014..20b8643 100644
+--- a/src/GameServer/MessageHandler/ChatCommandGroupHandlerPlugIn.cs
++++ b/src/GameServer/MessageHandler/ChatCommandGroupHandlerPlugIn.cs
+@@ -16,7 +16,8 @@ using MUnique.OpenMU.PlugIns;
+ [PlugIn]
+ [Display(Name = nameof(PlugInResources.ChatCommandGroupHandlerPlugIn_Name), Description = nameof(PlugInResources.ChatCommandGroupHandlerPlugIn_Description), ResourceType = typeof(PlugInResources))]
+ [Guid("2F1B5B26-2E22-4E7D-9C8B-1C6E5B7A9D40")]
+-[MinimumClient(106, 3, ClientLanguage.Invariant)]
++// estudo (rodada 25): o cliente S6 daqui tambem tem a janela de comandos (tecla J)
++[MinimumClient(6, 0, ClientLanguage.Invariant)]
+ internal class ChatCommandGroupHandlerPlugIn : GroupPacketHandlerPlugIn
+ {
+     /// <summary>
+diff --git a/src/GameServer/MessageHandler/ChatCommandListRequestHandlerPlugIn.cs b/src/GameServer/MessageHandler/ChatCommandListRequestHandlerPlugIn.cs
+index bbdcda8..11d0d6a 100644
+--- a/src/GameServer/MessageHandler/ChatCommandListRequestHandlerPlugIn.cs
++++ b/src/GameServer/MessageHandler/ChatCommandListRequestHandlerPlugIn.cs
+@@ -18,7 +18,8 @@ using MUnique.OpenMU.PlugIns;
+ [PlugIn]
+ [Display(Name = nameof(PlugInResources.ChatCommandListRequestHandlerPlugIn_Name), Description = nameof(PlugInResources.ChatCommandListRequestHandlerPlugIn_Description), ResourceType = typeof(PlugInResources))]
+ [Guid("B1E3C0F5-5D6A-4E52-9A73-8C0F1D2B4A66")]
+-[MinimumClient(106, 3, ClientLanguage.Invariant)]
++// estudo (rodada 25): o cliente S6 daqui tambem tem a janela de comandos (tecla J)
++[MinimumClient(6, 0, ClientLanguage.Invariant)]
+ [BelongsToGroup(ChatCommandGroupHandlerPlugIn.GroupKey)]
+ internal class ChatCommandListRequestHandlerPlugIn : ISubPacketHandlerPlugIn
+ {
+diff --git a/src/GameServer/RemoteView/ChatCommandListViewPlugIn.cs b/src/GameServer/RemoteView/ChatCommandListViewPlugIn.cs
+index b444137..21cdc9c 100644
+--- a/src/GameServer/RemoteView/ChatCommandListViewPlugIn.cs
++++ b/src/GameServer/RemoteView/ChatCommandListViewPlugIn.cs
+@@ -20,7 +20,8 @@ using MUnique.OpenMU.PlugIns;
+ [PlugIn]
+ [Display(Name = nameof(PlugInResources.ChatCommandListViewPlugIn_Name), Description = nameof(PlugInResources.ChatCommandListViewPlugIn_Description), ResourceType = typeof(PlugInResources))]
+ [Guid("6E9E4C1E-9C2A-4C7E-9F5B-0B0A2E2E51D7")]
+-[MinimumClient(106, 3, ClientLanguage.Invariant)]
++// estudo (rodada 25): o cliente S6 daqui tambem tem a janela de comandos (tecla J)
++[MinimumClient(6, 0, ClientLanguage.Invariant)]
+ public class ChatCommandListViewPlugIn : IChatCommandListViewPlugIn
+ {
+     private readonly RemotePlayer _player;
+diff --git a/src/GameLogic/CastleSiege/CastleSiegeGatekeeperTalkPlugIn.cs b/src/GameLogic/CastleSiege/CastleSiegeGatekeeperTalkPlugIn.cs
+new file mode 100644
+index 0000000..7df65fa
+--- /dev/null
++++ b/src/GameLogic/CastleSiege/CastleSiegeGatekeeperTalkPlugIn.cs
+@@ -0,0 +1,69 @@
++// <copyright file="CastleSiegeGatekeeperTalkPlugIn.cs" company="MUnique">
++// Licensed under the MIT License. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace MUnique.OpenMU.GameLogic.CastleSiege;
++
++using System.Runtime.InteropServices;
++using MUnique.OpenMU.GameLogic.NPC;
++using MUnique.OpenMU.GameLogic.PlugIns;
++using MUnique.OpenMU.GameLogic.Views.CastleSiege;
++using MUnique.OpenMU.PlugIns;
++
++/// <summary>
++/// estudo (rodada 25): no S6 quem abre a entrada da Land of Trials e o Gatekeeper (NPC 220, CNewUIGatemanWindow
++/// pelo C1 B9 03); o Guardsman (224) abre a janela de inscricao (rodada 21). Mesma conta do Guardsman original.
++/// </summary>
++[PlugIn]
++[Guid("C5B2D9A4-0F41-4C36-A7E2-91D3E8F06B17")]
++public sealed class CastleSiegeGatekeeperTalkPlugIn : IPlayerTalkToNpcPlugIn
++{
++    /// <summary>
++    /// The number of the gatekeeper NPC.
++    /// </summary>
++    public const short GatekeeperNumber = 220;
++
++    private readonly CastleSiegeTaxProvider _taxProvider = new();
++
++    /// <inheritdoc />
++    public async ValueTask PlayerTalksToNpcAsync(Player player, NonPlayerCharacter npc, NpcTalkEventArgs eventArgs)
++    {
++        if (npc.Definition.Number != GatekeeperNumber)
++        {
++            return;
++        }
++
++        var context = CastleSiegeContextResolver.GetContext(player);
++        if (context is not { Configuration.Enabled: true }
++            || player.CurrentMap?.Definition.Number != context.Configuration.CastleSiegeMapDefinition?.Number)
++        {
++            return;
++        }
++
++        eventArgs.HasBeenHandled = true;
++        eventArgs.LeavesDialogOpen = true;
++        var isOwnerMaster = await this._taxProvider.IsOwnerGuildMasterAsync(player, context).ConfigureAwait(false);
++        var isExempt = isOwnerMaster
++                       || await this._taxProvider.IsExemptAsync(player, context).ConfigureAwait(false);
++        var accessType = !context.SiegeData.IsOccupied
++            ? CastleSiegeHuntZoneAccessType.Failed
++            : isOwnerMaster
++                ? CastleSiegeHuntZoneAccessType.OwnerGuildMaster
++                : isExempt
++                    ? CastleSiegeHuntZoneAccessType.OwnerAllianceMember
++                    : CastleSiegeHuntZoneAccessType.Guest;
++        var configuredFee = Math.Clamp(context.SiegeData.TaxHunt, 0, CastleSiegeTaxProvider.MaximumHuntTax);
++        var fee = accessType is CastleSiegeHuntZoneAccessType.Guest
++            or CastleSiegeHuntZoneAccessType.OwnerGuildMaster
++            ? configuredFee
++            : 0;
++        await player.InvokeViewPlugInAsync<ICastleSiegeHuntZoneGuardInfoPlugIn>(
++                view => view.ShowHuntZoneGuardInfoAsync(
++                    accessType,
++                    context.SiegeData.IsHuntZoneEnabled,
++                    fee,
++                    CastleSiegeTaxProvider.MaximumHuntTax,
++                    CastleSiegeTaxProvider.HuntTaxStep))
++            .ConfigureAwait(false);
++    }
++}
+diff --git a/src/GameServer/MessageHandler/CastleSiege/CastleSiegeOwnerLogoHandlerPlugIn.cs b/src/GameServer/MessageHandler/CastleSiege/CastleSiegeOwnerLogoHandlerPlugIn.cs
+new file mode 100644
+index 0000000..e402253
+--- /dev/null
++++ b/src/GameServer/MessageHandler/CastleSiege/CastleSiegeOwnerLogoHandlerPlugIn.cs
+@@ -0,0 +1,49 @@
++// <copyright file="CastleSiegeOwnerLogoHandlerPlugIn.cs" company="MUnique">
++// Licensed under the MIT License. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace MUnique.OpenMU.GameServer.MessageHandler.CastleSiege;
++
++using System.Runtime.InteropServices;
++using MUnique.OpenMU.GameLogic;
++using MUnique.OpenMU.GameServer.RemoteView;
++using MUnique.OpenMU.Network.Packets.ClientToServer;
++using MUnique.OpenMU.Network.Packets.ServerToClient;
++using MUnique.OpenMU.PlugIns;
++
++/// <summary>
++/// estudo (rodada 25): C1 B9 02, o cliente pede a marca da guilda dona do castelo ao entrar no Valley of Loren
++/// (GMBattleCastle Init) e pinta com ela as bandeiras do castelo (Object31/Flag.tga). Sem dono, nao responde.
++/// </summary>
++[PlugIn]
++[Guid("6B0E6C61-4C1B-4F8E-9E83-2D5A0C7B1F25")]
++[BelongsToGroup(CastleSiegeHuntZoneGroupHandlerPlugIn.GroupKey)]
++internal sealed class CastleSiegeOwnerLogoHandlerPlugIn : ISubPacketHandlerPlugIn
++{
++    /// <inheritdoc/>
++    public bool IsEncryptionExpected => false;
++
++    /// <inheritdoc/>
++    public byte Key => GuildLogoOfCastleOwnerRequest.SubCode;
++
++    /// <inheritdoc/>
++    public async ValueTask HandlePacketAsync(Player player, Memory<byte> packet)
++    {
++        if (CastleSiegeHandlerContext.Get(player) is not { SiegeData: { IsOccupied: true, OwnerGuildId: { } owner } }
++            || player.GameContext is not IGameServerContext server)
++        {
++            return;
++        }
++
++        var id = await server.GuildServer.GetGuildIdAsync(owner).ConfigureAwait(false);
++        if (id == 0 || await server.GuildServer.GetGuildAsync(id).ConfigureAwait(false) is not { } guild)
++        {
++            return;
++        }
++
++        var logo = new byte[32];
++        (guild.Logo ?? []).AsSpan(0, Math.Min(32, guild.Logo?.Length ?? 0)).CopyTo(logo);
++        var connection = (player as RemotePlayer)?.Connection;
++        await connection.SendCastleSiegeOwnerLogoAsync(logo).ConfigureAwait(false);
++    }
++}

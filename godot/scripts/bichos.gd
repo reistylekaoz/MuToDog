@@ -29,7 +29,15 @@ const LONGE := 15.0   # 1500 do cliente: some
 const LONGE_DRAGAO := 40.0
 const PERTO := 5.12   # nasce em ate 512 pra cada lado
 
+# invasao do dragao (C1 0B, EnableEvent): 0 nada, 1 dragao vermelho, 3 dourado; vale em todo mapa ate o servidor
+# mandar 0, como a variavel global do cliente
+static var evento := 0
+static var som: Node
+
 var mundo: Node3D
+var _evento_visto := 0
+var _dragoes: Array = []   # cada um: {b, vida, timer, esc}
+var _ef: EfeitoMU
 var _voam: Array = []    # cada um: {b, ang, vel, timer, giro, alto}
 var _andam: Array = []   # cada um: {b, ang, vel, bate, giro}
 var _t := 0.0
@@ -69,6 +77,11 @@ func _process(dt: float) -> void:
 		return
 	_t += dt
 	var c := _centro()
+	if evento != _evento_visto:
+		_apagar_voam()
+	if evento != 0:
+		_mexer_invasao(c, dt)
+		return
 	_mexer_voam(c, dt)
 	_mexer_andam(c, dt)
 
@@ -223,3 +236,69 @@ func _nasce(cfg: Array, xy: Vector2, c: Vector2) -> void:
 		var r := RastroOlho.no_olho(b, 6)   # besouro de Tarkan: CreateJoint BITMAP_JOINT_ENERGY 4
 		r.largura = 0.15
 	_andam.append({"b": b, "ang": randf() * TAU, "vel": vel, "bate": 0, "giro": randf_range(2.0, 5.0), "acima": acima})
+
+
+# ---------- invasao do dragao ----------
+# ReceiveEvent troca o EnableEvent e chama DeleteBoids: some todo bicho que voa
+func _apagar_voam() -> void:
+	for v in _voam + _dragoes:
+		if is_instance_valid(v.b):
+			v.b.queue_free()
+	_voam.clear()
+	_dragoes.clear()
+	_evento_visto = evento
+	if mundo.has_method("sombra_dragao"):
+		mundo.sombra_dragao(Vector2.ZERO, false)
+
+
+# MoveBoids com EnableEvent: ate 5 dragoes (Monster32, acao 7 a 0,5) nascem com chance 1/300 por tick a -1..5 tiles
+# em x e 2..6 em y do heroi, escala 0,6..0,8, vida 128..256 ticks; voam pro sul (angulo -90) a escala * 40 por tick,
+# 3 tiles acima do chao descendo ate 1 com |sin(timer)|; o dourado (3) com RENDER_METAL e RENDER_CHROME. Fogo no
+# osso 11 (50 abaixo) e o rugido 1/128. Do ceu cai um MODEL_FIRE tipo 3 com o eMeteorite a cada ~40 ticks e o chao
+# escurece (-0,3 -0,3 -0,2) em 16 tiles; o vento da grama corre 5 vezes mais.
+func _mexer_invasao(c: Vector2, dt: float) -> void:
+	if _ef == null or not is_instance_valid(_ef):
+		_ef = EfeitoMU.criar(mundo)
+	var ticks := dt * 25.0
+	if mundo.has_method("sombra_dragao"):
+		mundo.sombra_dragao(c, true)
+	while _dragoes.size() < 5 and randf() < ticks / 300.0:
+		var esc := randf_range(0.6, 0.8)
+		var b := Boneco.novo("bicho_dragao", esc)
+		if b == null:
+			break
+		b.ritmo = {"parado": 0.5}
+		b.tocar("parado")
+		add_child(b)
+		if evento == 3:
+			b.camada(-1, "shiny01", "metal", Color(1, 1, 1), [], Vector2.ZERO)
+			b.camada(-1, "chrome01", "chrome", Color(1, 1, 1), [], Vector2.ZERO)
+		var xy := c + Vector2(randf_range(-1.0, 5.0), randf_range(2.0, 6.0))
+		b.global_position = Vector3(xy.x, _chao(xy) + 3.0, -xy.y)
+		b.rotation.y = PI   # angulo -90 do MU: o rumo e -y (sul)
+		_dragoes.append({"b": b, "vida": randf_range(128, 256), "timer": randf_range(0, 0.9), "esc": esc})
+		print("TESTE invasao dragao %d nasceu (%d)" % [evento, _dragoes.size()])
+	for i in range(_dragoes.size() - 1, -1, -1):
+		var v: Dictionary = _dragoes[i]
+		var b: Boneco = v.b
+		var p := Vector2(b.global_position.x, -b.global_position.z)
+		v.vida -= ticks
+		if v.vida <= 0 or p.distance_to(c) > LONGE_DRAGAO or not is_instance_valid(b):
+			if is_instance_valid(b):
+				b.queue_free()
+			_dragoes.remove_at(i)
+			continue
+		p.y -= v.esc * 40.0 * 0.01 * ticks
+		v.timer += v.esc * 0.05 * ticks
+		b.global_position = Vector3(p.x, _chao(p) + 3.0 - absf(sin(v.timer)) + 1.0, -p.y)
+		var boca := EfeitoSkill._osso(b, 11) + Vector3(0, -0.5, 0)
+		_ef.sprite("flare01", boca, 0.6, Color(1, 0, 0), 2 * EfeitoSkill.T)
+		if randf() < ticks * 0.5:
+			EfeitoSkill.fogo(_ef, boca)
+		if som and randf() < ticks / 128.0:
+			som.tocar("dragao_bull")
+	if randf() < ticks / 40.0:
+		var alvo := c + Vector2(randf_range(-2.0, 4.0), randf_range(2.0, 6.0))
+		EfeitoSkill._meteoro(_ef, Vector3(alvo.x, _chao(alvo), -alvo.y))
+		if som:
+			som.tocar("meteoro")
