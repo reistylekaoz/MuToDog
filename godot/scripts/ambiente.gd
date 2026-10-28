@@ -75,6 +75,7 @@ const ESCONDER := {42: [2, 3, 5, 6, 58, 59, 60, 85, 86, 87, 88, 89, 90, 91, 92, 
 	# Imperial Fortress 1 a 4 (GMEmpireGuardian*::MoveObject: HiddenMesh = -2, os pontos de fogo, fumaca e luz)
 	70: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132], 71: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132],
 	72: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132], 73: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132],
+	74: [79, 80, 82, 83, 84, 85, 86, 129, 130, 131, 132],
 }
 # brilho do mapa sobre o escolhido (a neve de Devias estoura com o 2,0 da Lorencia; a luz
 # pintada da Lost Tower e bem mais escura que a da Lorencia e o chao some; a areia de Tarkan

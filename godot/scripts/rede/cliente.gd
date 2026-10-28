@@ -135,6 +135,8 @@ signal guilda_resposta(resultado: int)               # C1 51: 0 recusou, 1 entro
 signal guilda_lista(info: Dictionary)                # C2 52: em_guilda, pontos, rival, membros [{nome, servidor, online, cargo}]
 signal guilda_saiu(resultado: int)                   # C1 53: 0 senha errada, 1 saiu, 2 so o mestre desfaz, 3 falhou, 4 desfeita, 5 tirou o membro
 signal guilda_criar_janela()                         # C1 54: mostra a janela de criar guilda
+signal guilda_criar_dialogo()                        # C1 55: o servidor aceitou o "sim" e abre a parte do nome e da marca
+signal bau_fechou()                                  # C1 82: o servidor fechou o bau (ShowVaultClosed)
 signal guilda_criada(ok: bool, erro: int)            # C1 56
 signal guilda_jogador_saiu(id: int, mestre: bool)    # C1 5D: tirar a guilda desse jogador
 signal guilda_jogadores(lista: Array)                # C2 65: [{guilda, cargo, tipo, relacao, id, novo}]
@@ -1614,6 +1616,9 @@ func _tratar(p: PackedByteArray) -> void:
 		0x54:
 			if p[0] == 0xC1:
 				guilda_criar_janela.emit()
+		0x55:
+			if p[0] == 0xC1:
+				guilda_criar_dialogo.emit()
 		0x56:
 			if p[0] == 0xC1 and p.size() >= 5:
 				guilda_criada.emit(p[3] != 0, p[4])
@@ -1841,6 +1846,13 @@ func _tratar(p: PackedByteArray) -> void:
 				troca_fim.emit(p[3])
 		0x3F:
 			_ler_loja(p, sub)
+		0x82:
+			if p[0] == 0xC1:
+				bau_fechou.emit()
+		0xDE:
+			# C1 DE 00: classes liberadas mudaram (CharacterClassCreationUnlock, mesmos bits do F3 00)
+			if p[0] == 0xC1 and sub == 0x00 and p.size() >= 5:
+				liberadas = p[4]
 		0xBF:
 			if sub == 0x51 and p.size() >= 13:
 				helper_estado.emit(p[12] != 0, p[4] != 0, _ler_le(p, 8))

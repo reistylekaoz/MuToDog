@@ -23,7 +23,7 @@ var _restante: Array[Vector2i] = []
 var _fim_enviado := Vector2i(-1, -1)
 
 var ui: CanvasLayer
-var painel: PanelContainer
+var painel: LoginCena
 var campo_host: LineEdit
 var campo_porta: LineEdit
 var campo_conta: LineEdit
@@ -275,6 +275,7 @@ func _ready() -> void:
 	_ligar_inventario_e_skills()
 	_ligar_troca_loja_helper()
 	_carregar_config()
+	painel.mudar_volume(menu.vol_musica)
 	# testes: -- --auto conta,senha,personagem --andar x,y --gravacao arquivo
 	# (no navegador: ?auto=...&andar=...&gravacao=1, toca dados/gravacao.txt)
 	var p := _parametros()
@@ -830,42 +831,24 @@ func _montar_ui() -> void:
 	raiz.theme = tema
 	ui.add_child(raiz)
 
-	painel = PanelContainer.new()
-	painel.custom_minimum_size = Vector2(440, 0)
-	painel.set_anchors_preset(Control.PRESET_CENTER)
-	painel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	painel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	# tela de login do S6 (World74 com a camera passeando, logo e a janela da conta)
+	painel = LoginCena.new()
+	painel.palco = self
 	raiz.add_child(painel)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
-	painel.add_child(v)
-	var titulo := Label.new()
-	titulo.text = "openmu"
-	titulo.add_theme_font_size_override("font_size", 28)
-	titulo.add_theme_color_override("font_color", Color(1.0, 0.82, 0.4))
-	v.add_child(titulo)
-	var sub := Label.new()
-	sub.text = "Cliente Godot pro OpenMU (Season 6)"
-	sub.add_theme_color_override("font_color", Color(0.6, 0.6, 0.68))
-	v.add_child(sub)
-	campo_host = _campo(v, "Servidor (IP do OpenMU)", "127.127.127.127")
-	campo_porta = _campo(v, "Porta do connect server", "44405")
-	campo_conta = _campo(v, "Conta", "test0")
-	campo_senha = _campo(v, "Senha", "")
-	campo_senha.secret = true
+	campo_host = painel.campo_host
+	campo_porta = painel.campo_porta
+	campo_host.text = "127.127.127.127"
+	campo_porta.text = "44405"
+	campo_conta = painel.campo_conta
+	campo_conta.text = "test0"
+	campo_senha = painel.campo_senha
+	campo_conta.text_submitted.connect(func(_t): campo_senha.grab_focus())
 	campo_senha.text_submitted.connect(func(_t): _entrar())
-	botao_entrar = Button.new()
-	botao_entrar.text = "Entrar"
-	botao_entrar.pressed.connect(_entrar)
-	v.add_child(botao_entrar)
-	aviso = Label.new()
-	aviso.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	aviso.add_theme_color_override("font_color", Color(0.75, 0.75, 0.82))
+	botao_entrar = painel.botao
+	painel.ok.connect(_entrar)
+	aviso = painel.aviso
 	aviso.text = "No Docker do OpenMU as contas de teste sao test0 a test9 (senha igual ao nome)."
-	v.add_child(aviso)
-	lista = VBoxContainer.new()
-	lista.add_theme_constant_override("separation", 6)
-	v.add_child(lista)
+	lista = painel.lista
 
 	hud = Control.new()
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1283,6 +1266,7 @@ func _voltar(texto: String) -> void:
 func _servidores(l: Array) -> void:
 	_limpar_lista()
 	if l.size() == 1 or _auto:
+		painel.servidor_nome = "[OpenMU-%d Server]" % (l[0].id + 1)
 		cli.pedir_servidor(l[0].id)
 		return
 	aviso.text = "Escolha o servidor:"
@@ -2627,8 +2611,8 @@ func _ir_ao_npc() -> void:
 		_ir_perto(n.tile, perto)
 
 
-func _fechar_loja() -> void:
-	if npc_falando >= 0 and cli:
+func _fechar_loja(avisar := true) -> void:
+	if avisar and npc_falando >= 0 and cli:
 		# o bau e a maquina do caos tem o fechar proprio (C1 82 e C1 87)
 		if _janela_npc == 2:
 			cli.fechar_bau()
@@ -5647,6 +5631,16 @@ func _ligar_guilda() -> void:
 		print("TESTE guilda: janela de criar")
 		_fechar_loja()
 		criar_guilda.abrir())
+	cli.guilda_criar_dialogo.connect(func():
+		print("TESTE guilda: dialogo de criar (C1 55)")
+		if not criar_guilda.visible:
+			criar_guilda.abrir()
+		if criar_guilda.passo == JanelaCriarGuilda.INFO:
+			criar_guilda.ir(JanelaCriarGuilda.MARCA))
+	cli.bau_fechou.connect(func():
+		print("TESTE bau fechado pelo servidor")
+		if _janela_npc == 2:
+			_fechar_loja(false))
 	cli.guilda_criada.connect(func(ok, erro):
 		print("TESTE guilda criada %s erro %d" % [ok, erro])
 		if ok:
