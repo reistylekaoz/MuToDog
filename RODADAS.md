@@ -50,3 +50,12 @@ servidores (server_b2_all, "Valhalla-1(Gold) Connect", com a barra de ocupação
 seta e a caixa da descrição. Servidor com vaga conecta e abre o login com "[Valhalla-1 Server]"; cheio avisa "The
 server is full"; o Cancel do login volta pra escolha (CancelLogin). Fora: o CLoginMainWin (botões Menu e Credit
 no rodapé). Teste: testes/servidor_selecao.gd; fotos: testes/tela_servidor.mjs (fita dados/gravacao_servidor.txt).
+
+## Ajustes 28/10 (tarde)
+
+- Inventário (beb4f43): equipamento arrastado pro slot era recusado (ItensMU.slots em float: 11 in [10.0, 11.0] dá
+  falso), por isso o segundo anel não entrava. Área dos slots do CNewUIMyInventory (x + 1, largura - 4, altura - 4,
+  do 0 ao 11) e anéis no lugar do original (10 em x 54, 11 em x 114). Teste: testes/inventario_aneis.gd.
+- Twisting Slash (debf3e6): a cópia da arma ficava em pé; agora deitada (Angle[1] = 90) girando no cabo no eixo de
+  cima, 30 graus por tick a mais que a volta, saindo da frente do dono, lança a 1,8. Testes: testes/giro_espada.gd
+  (mede a lâmina de 5 armas), fotos testes/tela_giro.mjs.
