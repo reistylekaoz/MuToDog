@@ -5,12 +5,26 @@ extends Control
 # CLoginWin (login_back com Account, Password, OK e Cancel, a 2/3 da altura) e o rodape com a
 # versao e o copyright. Tudo desenhado em 800 x 600 e esticado como no cliente (escala de 1 a 2).
 # O servidor e a porta (o MU le do launcher) ficam no canto de baixo, pro estudo.
+# Antes do login vem a escolha do servidor (CServerSelWin): os grupos do ServerList.bmd nos botoes
+# da esquerda, da direita e do meio, e os servidores do grupo marcado com a barra de ocupacao.
 
 signal ok
+signal servidor(id: int)    # CServerSelWin::ConnectToServer: clicou num servidor com vaga
+signal pedir_lista          # clicou num grupo: o MU marca o botao e pede a lista de novo
+signal cancelou             # CLoginWin::CancelLogin: volta pro connect server e pra escolha
 
 const PASTA := "res://dados/login/"
 const MUNDO := 74   # WD_73NEW_LOGIN_SCENE: o cliente le Data/World74
 const BRANCO := Color.WHITE
+const SERVIDOR := "res://dados/servidor/"
+# ServerSelWin.h: grupo 108 x 26, servidor 193 x 26, folga 28 e 5; a caixa da descricao tem 512 x 52
+const SEL_L := 465          # (108 + 28) * 2 + 193
+const SEL_A := 504          # 26 * 16 + 5 * 2 + 26 + 52
+const CINZA_CLARO := Color8(226, 226, 226)   # CLRDW_BR_GRAY
+# adwServerBtnClr: cor do nome pelo tipo do servidor (0 normal, 1 Non-PVP, 2 Gold PVP, 3 Gold), parado e com o mouse
+const COR_SERVIDOR := [[Color8(226, 226, 226), Color.WHITE], [Color8(255, 255, 121), Color8(255, 238, 193)],
+	[Color8(255, 180, 0), Color8(255, 217, 39)], [Color8(255, 180, 0), Color8(255, 217, 39)]]
+const TIPO_SERVIDOR := ["", "(Non-PVP)", "(Gold PVP)", "(Gold)"]
 const TEXTO_CAMPO := Color8(255, 255, 230)
 const FONTE := 11
 # CameraMove.h (LoginSceneCameraDefaults): o caminho do arquivo e corrigido por este desvio,
@@ -33,7 +47,11 @@ var campo_senha: LineEdit
 var botao: Button           # escondido: o jogo trava (disabled) enquanto conecta
 var aviso: Label
 var lista: VBoxContainer
-var servidor_nome := ""     # [OpenMU-1 Server] quando a lista chega
+var servidor_nome := ""     # [Valhalla-1 Server] depois de escolher o servidor
+var modo := "servidores"    # "servidores" (CServerSelWin) ou "login" (CLoginWin)
+var grupos: Array = []      # montar_grupos: [{nome, botao, descricao, servidores: [{id, n, carga, tipo, nome, login}]}]
+var grupo_sel := -1         # m_iSelectServerBtnIndex: -1 ate clicar num grupo
+var _script_grupos := {}    # ServerList.bmd por indice do grupo
 var pontos: Array = []      # [x, y, demora, aceleracao, nivel] do CWScript
 var _mundo: Node3D
 var _musica: AudioStreamPlayer
@@ -57,6 +75,11 @@ var _demora := 0.0
 func _ready() -> void:
 	for n in ["janela", "caixa", "ok", "cancelar", "logo", "logo_g"]:
 		_tex[n] = load(PASTA + n + ".png")
+	for n in ["grupo", "servidor", "carga", "deco", "ex_borda", "ex_lado", "ex_canto"]:
+		_tex["s_" + n] = load(SERVIDOR + n + ".png")
+	if FileAccess.file_exists("res://dados/servidores.json"):
+		for g in JSON.parse_string(FileAccess.get_file_as_string("res://dados/servidores.json")):
+			_script_grupos[int(g.indice)] = g
 	if FileAccess.file_exists("res://dados/textos_eng.json"):
 		_textos = JSON.parse_string(FileAccess.get_file_as_string("res://dados/textos_eng.json"))
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -134,8 +157,15 @@ func _ajustar() -> void:
 	campo_senha.position = o + Vector2(115, 133)
 	for c in [campo_conta, campo_senha]:
 		c.size = Vector2(140, 20)
-	aviso.position = o + Vector2(0, 250)
-	aviso.size = Vector2(329, 0)
+	if modo == "login":
+		aviso.position = o + Vector2(0, 250)
+		aviso.size = Vector2(329, 0)
+	else:
+		# na escolha o aviso fica em cima da janela (o MU manda pro quadro de mensagens do sistema)
+		aviso.position = Vector2(selecao().x - 40, maxf(selecao().y - 34, 2))
+		aviso.size = Vector2(SEL_L + 80, 0)
+	campo_conta.visible = modo == "login"
+	campo_senha.visible = modo == "login"
 	lista.position = o + Vector2(64, 290)
 	lista.size = Vector2(200, 0)
 	campo_host.position = Vector2(size.x - 238, size.y - 44)
@@ -169,6 +199,7 @@ func _visivel() -> void:
 			_musica = null
 	if visible:
 		_alfa = 0.0
+	if visible and modo == "login":
 		(campo_conta if campo_conta.text == "" else campo_senha).grab_focus.call_deferred()
 
 
@@ -318,6 +349,10 @@ func _desenhar_brilho() -> void:
 func _draw() -> void:
 	var f := get_theme_default_font()
 	draw_texture_rect(_tex.logo, _logo_rect(), false, Color(1, 1, 1, clampf(_alfa, 0.0, 1.0)))
+	if modo == "servidores":
+		_desenhar_selecao(f)
+		_desenhar_rodape(f)
+		return
 	var o := janela()
 	draw_texture(_tex.janela, o)
 	draw_texture(_tex.caixa, o + Vector2(109, 106))
@@ -329,6 +364,10 @@ func _draw() -> void:
 	var b := _botoes()
 	_botao(_tex.ok, b.ok, not botao.disabled, "ok")
 	_botao(_tex.cancelar, b.cancelar, true, "cancelar")
+	_desenhar_rodape(f)
+
+
+func _desenhar_rodape(f: Font) -> void:
 	# canto do servidor (o launcher do MU passa o IP e a porta)
 	_texto(f, campo_host.position + Vector2(-50, 3), "Servidor", 0, Color8(200, 200, 200))
 	_texto(f, campo_porta.position + Vector2(-34, 3), "Porta", 0, Color8(200, 200, 200))
@@ -378,6 +417,9 @@ func _gui_input(ev: InputEvent) -> void:
 			_apertou = _botao_em(ev.position)
 		else:
 			var b := _botao_em(ev.position)
+			if modo == "servidores" and b != "" and b == _apertou:
+				clicar_selecao(b)
+				b = ""
 			if b != "" and b == _apertou:
 				clicar(b)
 			_apertou = ""
@@ -385,6 +427,8 @@ func _gui_input(ev: InputEvent) -> void:
 
 
 func _botao_em(p: Vector2) -> String:
+	if modo == "servidores":
+		return _selecao_em(p)
 	var b := _botoes()
 	for n in b:
 		if b[n].has_point(p):
@@ -396,7 +440,212 @@ func clicar(b: String) -> void:
 	if b == "ok" and not botao.disabled:
 		ok.emit()
 	elif b == "cancelar":
-		# CLoginWin::CancelLogin: limpa os campos
-		campo_conta.text = ""
-		campo_senha.text = ""
-		campo_conta.grab_focus()
+		# CLoginWin::CancelLogin: liga de novo no connect server e esconde o login (volta a escolha)
+		cancelou.emit()
+
+
+# --- escolha do servidor (CServerSelWin) ---------------------------------------------
+
+# a lista do connect server (F4 06) chegou: monta os grupos e mostra a escolha
+func mostrar_servidores(l: Array) -> void:
+	grupos = montar_grupos(l, _script_grupos, _textos)
+	if grupos.filter(func(g): return g.botao == grupo_sel).is_empty():
+		grupo_sel = -1
+	modo = "servidores"
+	_ajustar()
+	queue_redraw()
+
+
+# o servidor do jogo deu ola: aparece o login
+func mostrar_login() -> void:
+	modo = "login"
+	_ajustar()
+	_visivel()
+	queue_redraw()
+
+
+# CServerListManager::InsertServerGroup e InsertServer: grupo = indice / 20, numero = indice % 20 + 1;
+# grupo que nao esta no ServerList.bmd nao aparece. Os grupos vao pela ordem (m_bySequence) e
+# CServerSelWin::UpdateDisplay da o botao: 0 o do meio (so 1), 1 a 10 a esquerda, 11 a 20 a direita.
+static func montar_grupos(l: Array, script: Dictionary, textos: Dictionary) -> Array:
+	var por_grupo := {}
+	for s in l:
+		var gi: int = int(s.id) / 20
+		if not script.has(gi):
+			continue
+		var sc: Dictionary = script[gi]
+		if not por_grupo.has(gi):
+			por_grupo[gi] = {"nome": sc.nome, "ordem": int(sc.ordem), "posicao": int(sc.posicao),
+				"descricao": str(sc.get("descricao", "")), "botao": -1, "servidores": []}
+		var n: int = int(s.id) % 20 + 1
+		var tipo: int = int(sc.nonpvp[n - 1]) if n <= sc.nonpvp.size() else 0
+		var carga: int = int(s.carga)
+		var estado := str(textos.get("560" if carga >= 128 else ("561" if carga >= 100 else "562"), ""))
+		# CLoginWin::RenderText: tipo diferente de 0 usa o SDServer (461), 0 o SDNonPvPServer (460)
+		var login := str(textos.get("461" if tipo != 0 else "460", "[%s-%d Server]"))
+		por_grupo[gi].servidores.append({"id": int(s.id), "n": n, "carga": carga, "tipo": tipo,
+			"nome": "%s-%d%s %s" % [sc.nome, n, TIPO_SERVIDOR[clampi(tipo, 0, 3)], estado],
+			"login": login % [sc.nome, n]})
+	var lista := por_grupo.values()
+	lista.sort_custom(func(a, b): return a.ordem < b.ordem)
+	var meio := false
+	var esq := 0
+	var dir := 0
+	var saida := []
+	for g in lista:
+		if g.posicao == 2:
+			if meio:
+				continue
+			g.botao = 0
+			meio = true
+		elif g.posicao == 0:
+			if esq >= 10:
+				continue
+			esq += 1
+			g.botao = esq
+		elif g.posicao == 1:
+			if dir >= 10:
+				continue
+			dir += 1
+			g.botao = 10 + dir
+		else:
+			continue
+		saida.append(g)
+	return saida
+
+
+# CUIMng::CreateLoginScene: no meio da tela
+func selecao() -> Vector2:
+	return Vector2(floorf((size.x - SEL_L) / 2.0), floorf((size.y - SEL_A) / 2.0))
+
+
+# CServerSelWin::SetPosition
+func rect_grupo(i: int) -> Rect2:
+	var o := selecao()
+	if i == 0:
+		return Rect2(o.x + (SEL_L - 108) / 2, o.y + SEL_A - 26 - 5 - 52, 108, 26)
+	var base := o.y + SEL_A - (26 * 11 + 5 * 2 + 52)
+	if i <= 10:
+		return Rect2(o.x, base + 26 * (i - 1), 108, 26)
+	return Rect2(o.x + 108 + 193 + 28 * 2, base + 26 * (i - 11), 108, 26)
+
+
+# CServerSelWin::SetServerBtnPosition: ao lado dos grupos da esquerda; mais de 10 sobe
+func rect_servidor(i: int, total: int) -> Rect2:
+	var g := rect_grupo(1)
+	var topo := g.position.y if 26 * 10 > 26 * total else g.position.y - (26 * total - 26 * 10)
+	return Rect2(g.position.x + 108 + 28, topo + 26 * i, 193, 26)
+
+
+func grupo_marcado() -> Dictionary:
+	for g in grupos:
+		if g.botao == grupo_sel:
+			return g
+	return {}
+
+
+func _desenhar_selecao(f: Font) -> void:
+	var o := selecao()
+	var g_sel := grupo_marcado()
+	# a caixa da descricao (CWinEx com server_ex01, 02 e 03) so aparece com um grupo marcado
+	if not g_sel.is_empty():
+		var d := Vector2(o.x - (512 - SEL_L) / 2, o.y + SEL_A - 52)
+		draw_texture_rect(_tex.s_ex_canto, Rect2(d + Vector2(3, 3), Vector2(506, 46)), true)
+		draw_texture_rect_region(_tex.s_ex_borda, Rect2(d, Vector2(512, 6)), Rect2(0, 0, 512, 6))
+		draw_texture_rect_region(_tex.s_ex_lado, Rect2(d + Vector2(0, 6), Vector2(3, 40)), Rect2(0, 0, 3, 4))
+		draw_texture_rect_region(_tex.s_ex_lado, Rect2(d + Vector2(509, 6), Vector2(3, 40)), Rect2(3, 0, 3, 4))
+		draw_texture_rect_region(_tex.s_ex_borda, Rect2(d + Vector2(0, 46), Vector2(512, 6)), Rect2(0, 6, 512, 6))
+		var linhas := _partir(str(g_sel.descricao), 83)
+		for k in linhas.size():
+			_texto(f, d + Vector2(0, 12 + 15 * k), linhas[k], 512, BRANCO)
+	# os enfeites ao lado da primeira linha de grupos (ponto de apoio 8,19 e 60,19)
+	if grupos.any(func(g): return g.botao >= 1 and g.botao <= 10):
+		draw_texture_rect_region(_tex.s_deco, Rect2(rect_grupo(1).position - Vector2(8, 19), Vector2(68, 95)), Rect2(0, 0, 68, 95))
+	if grupos.any(func(g): return g.botao >= 11):
+		var r := rect_grupo(11)
+		draw_texture_rect_region(_tex.s_deco, Rect2(r.position + Vector2(108 - 60, -19), Vector2(68, 95)), Rect2(68, 0, 68, 95))
+	# cha_bt: 4 quadros (parado, em cima, apertado, marcado); o texto clareia com o mouse em cima
+	for g in grupos:
+		var r := rect_grupo(g.botao)
+		var nome := "g%d" % g.botao
+		var q := _quadro(r, nome)
+		if g.botao == grupo_sel:
+			q = 3
+		draw_texture_rect_region(_tex.s_grupo, r, Rect2(0, q * 26, 108, 26))
+		_texto_botao(f, r, g.nome, BRANCO if _quadro(r, nome) == 1 else CINZA_CLARO)
+	if g_sel.is_empty():
+		return
+	# a seta do grupo marcado aponta pros servidores
+	var rs := rect_grupo(grupo_sel)
+	if grupo_sel <= 10:
+		draw_texture_rect_region(_tex.s_deco, Rect2(rs.position + Vector2(108 - 1, -2), Vector2(23, 29)), Rect2(136, 0, 23, 29))
+	else:
+		draw_texture_rect_region(_tex.s_deco, Rect2(rs.position + Vector2(-23, -2), Vector2(23, 29)), Rect2(136, 30, 23, 29))
+	var total: int = g_sel.servidores.size()
+	for i in total:
+		var s: Dictionary = g_sel.servidores[i]
+		var r := rect_servidor(i, total)
+		var q := _quadro(r, "s%d" % i)
+		draw_texture_rect_region(_tex.s_servidor, r, Rect2(0, q * 26, 193, 26))
+		# CGaugeBar 160 x 4 em +16,+19: a ocupacao de 0 a 100
+		var w := floorf(160.0 * clampi(s.carga, 0, 100) / 100.0)
+		if w > 0:
+			draw_texture_rect_region(_tex.s_carga, Rect2(r.position + Vector2(16, 19), Vector2(w, 4)), Rect2(0, 0, w, 4))
+		_texto_botao(f, r, s.nome, COR_SERVIDOR[clampi(s.tipo, 0, 3)][1 if q == 1 else 0])
+
+
+# CButton: 0 parado, 1 com o mouse em cima, 2 apertado
+func _quadro(r: Rect2, nome: String) -> int:
+	if not r.has_point(_mouse):
+		return 0
+	return 2 if _apertou == nome and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) else 1
+
+
+# CButton::Render: o texto no meio do botao (um pouco acima, no meio da altura da fonte)
+func _texto_botao(f: Font, r: Rect2, t: String, cor: Color) -> void:
+	var alto := f.get_height(FONTE)
+	_texto(f, Vector2(r.position.x, r.position.y + floorf((r.size.y - alto) / 2.0)), t, r.size.x, cor)
+
+
+# SeparateTextIntoLines: ate 2 linhas de 83 letras
+static func _partir(t: String, n: int) -> Array:
+	var linhas := []
+	t = t.strip_edges()
+	while t != "" and linhas.size() < 2:
+		linhas.append(t.substr(0, n))
+		t = t.substr(n)
+	return linhas
+
+
+func _selecao_em(p: Vector2) -> String:
+	for g in grupos:
+		if rect_grupo(g.botao).has_point(p):
+			return "g%d" % g.botao
+	var g_sel := grupo_marcado()
+	if not g_sel.is_empty():
+		for i in g_sel.servidores.size():
+			if rect_servidor(i, g_sel.servidores.size()).has_point(p):
+				return "s%d" % i
+	return ""
+
+
+# CServerSelWin::UpdateWhileActive: grupo marca e pede a lista; servidor abaixo de 100% conecta
+# (a janela some); de 100 a 127 o MU avisa que esta cheio
+func clicar_selecao(b: String) -> void:
+	if b.begins_with("g"):
+		grupo_sel = int(b.substr(1))
+		print("TESTE servidor grupo %d" % grupo_sel)
+		pedir_lista.emit()
+		queue_redraw()
+		return
+	var g_sel := grupo_marcado()
+	var i := int(b.substr(1))
+	if g_sel.is_empty() or i >= g_sel.servidores.size():
+		return
+	var s: Dictionary = g_sel.servidores[i]
+	if s.carga < 100:
+		servidor_nome = s.login
+		print("TESTE servidor escolhido %d %s" % [s.id, s.nome])
+		servidor.emit(s.id)
+	elif s.carga < 128:
+		aviso.text = _t(416, "The server is full")   # MESSAGE_SERVER_BUSY

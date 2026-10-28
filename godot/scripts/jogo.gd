@@ -360,6 +360,9 @@ func _ready() -> void:
 		meu_nome = c[2]
 		_auto = true
 		_entrar()
+	else:
+		# como o MU: abre ligado no connect server e mostra a escolha do servidor
+		_conectar_lista()
 
 
 var _andar_depois := Vector2i(-1, -1)
@@ -876,6 +879,11 @@ func _montar_ui() -> void:
 	campo_senha.text_submitted.connect(func(_t): _entrar())
 	botao_entrar = painel.botao
 	painel.ok.connect(_entrar)
+	painel.servidor.connect(func(id: int):
+		aviso.text = ""
+		cli.pedir_servidor(id))
+	painel.pedir_lista.connect(func(): cli.pedir_lista_servidores())
+	painel.cancelou.connect(func(): _voltar(""))
 	aviso = painel.aviso
 	aviso.text = "No Docker do OpenMU as contas de teste sao test0 a test9 (senha igual ao nome)."
 	lista = painel.lista
@@ -1256,6 +1264,17 @@ func _entrar() -> void:
 	_limpar_lista()
 	botao_entrar.disabled = true
 	cli.entrar(campo_conta.text.strip_edges(), campo_senha.text)
+	if _auto:
+		cli.conectar(campo_host.text.strip_edges(), int(campo_porta.text))
+
+
+# CLoginWin::ConnectConnectionServer: liga (de novo) no connect server; a lista traz a escolha
+func _conectar_lista() -> void:
+	cli.usuario = ""
+	cli.senha = ""
+	painel.modo = "servidores"
+	painel.grupos = []
+	painel._ajustar()
 	cli.conectar(campo_host.text.strip_edges(), int(campo_porta.text))
 
 
@@ -1279,7 +1298,14 @@ func _estado(e: String, t: String) -> void:
 	if e == "erro":
 		_voltar("Nao deu: %s. Confira se o OpenMU esta ligado e o IP e a porta." % t)
 	elif e == "erro_login":
-		_voltar("Login recusado: %s." % t)
+		# o MU avisa e deixa tentar de novo na mesma conexao
+		aviso.text = "Login recusado: %s." % t
+		botao_entrar.disabled = false
+		cli.usuario = ""
+		cli.estado = "esperando_login"
+	elif e == "esperando_login" and not _auto:
+		painel.mostrar_login()
+		aviso.text = ""
 	elif textos.has(e):
 		aviso.text = textos[e]
 
@@ -1292,22 +1318,27 @@ func _voltar(texto: String) -> void:
 	botao_entrar.disabled = false
 	_limpar_lista()
 	aviso.text = texto
+	if _auto:
+		return
+	# volta pra escolha do servidor; sem o OpenMU no ar tenta de novo a cada 5 s
+	if cli.estado == "erro":
+		await get_tree().create_timer(5.0).timeout
+		if not painel.visible or cli.estado != "erro":
+			return
+	_conectar_lista()
 
 
 func _servidores(l: Array) -> void:
 	_limpar_lista()
-	if l.size() == 1 or _auto:
-		painel.servidor_nome = "[OpenMU-%d Server]" % (l[0].id + 1)
+	if _auto:
+		var g := LoginCena.montar_grupos(l, painel._script_grupos, painel._textos)
+		painel.servidor_nome = g[0].servidores[0].login if g.size() > 0 else "[OpenMU-%d Server]" % (l[0].id + 1)
 		cli.pedir_servidor(l[0].id)
 		return
-	aviso.text = "Escolha o servidor:"
-	for s in l:
-		var b := Button.new()
-		b.text = "Servidor %d  ·  %d%% ocupado" % [s.id + 1, s.carga]
-		b.pressed.connect(func():
-			_limpar_lista()
-			cli.pedir_servidor(s.id))
-		lista.add_child(b)
+	print("TESTE servidores %s" % [l])
+	if aviso.text == "Pedindo a lista de servidores...":
+		aviso.text = ""
+	painel.mostrar_servidores(l)
 
 
 func _personagens(l: Array) -> void:

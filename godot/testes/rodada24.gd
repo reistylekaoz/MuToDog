@@ -83,8 +83,11 @@ func _initialize() -> void:
 	confere("OK desligado enquanto conecta", mandou[0] == 1)
 	tela.campo_conta.text = "test0"
 	tela.campo_senha.text = "x"
+	var cancelou := [0]
+	tela.cancelou.connect(func(): cancelou[0] += 1)
 	tela.clicar("cancelar")
-	confere("Cancel limpa conta e senha", tela.campo_conta.text == "" and tela.campo_senha.text == "")
+	# CLoginWin::CancelLogin: liga de novo no connect server e esconde o login (os campos ficam)
+	confere("Cancel volta pra escolha do servidor", cancelou[0] == 1 and tela.campo_conta.text == "test0")
 	var b: Dictionary = tela._botoes()
 	confere("OK e Cancel lado a lado embaixo das caixas", b.ok.position == o + Vector2(150, 172) and b.cancelar.position.x - b.ok.position.x == 61)
 	tela.free()

@@ -282,6 +282,12 @@ func conectar(h: String, porta: int) -> void:
 	_mudar("conectando", "%s:%d" % [h, porta])
 
 
+# C1 F4 06: a lista de novo (CServerSelWin pede a cada clique num grupo)
+func pedir_lista_servidores() -> void:
+	if con and estado == "lista":
+		con.enviar(PackedByteArray([0xC1, 0, 0xF4, 0x06]))
+
+
 func pedir_servidor(id: int) -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0xF4, 0x03, id & 0xFF, (id >> 8) & 0xFF]))
 	_mudar("pedindo_endereco", str(id))
