@@ -4,12 +4,14 @@ extends Control
 # colada na direita (ou do lado do inventario, se ele estiver aberto). Nome e classe no topo,
 # quadro com nivel, pontos e experiencia, e uma caixa por atributo (STR, AGI, STA, ENG e, no
 # Dark Lord, Command) com os numeros que o cliente calcula embaixo. Com ponto sobrando, cada
-# caixa ganha o botao + que pede ao servidor 1 ponto naquele atributo (C1 F3 06).
+# caixa ganha o botao +, que abre a caixa de quantos pontos (jogo.gd: 1 vai no C1 F3 06 do
+# original, mais de 1 no /add do OpenMU).
 
 signal abrir_quests                # o botao de quest abre a janela T
 signal abrir_master                # o botao master abre a janela A
 signal abrir_pet                   # o botao pet abre a janela do pet (Dark Horse e Dark Raven)
 signal adicionar(atributo: int)   # 0 forca, 1 agilidade, 2 vitalidade, 3 energia, 4 comando
+signal quantos(atributo: int)     # o + foi clicado: o jogo pergunta quantos pontos
 
 const PASTA := "res://dados/hud/"
 const L := 190.0
@@ -285,9 +287,7 @@ func _clique(p: Vector2) -> void:
 	for i in (5 if classe_base() == 4 else 4):
 		if Rect2(160, ALTURAS[i] + 2, 16, 15).has_point(p):
 			_apertado = i
-			esperando = true
-			adicionar.emit(i)
-			_desistir()
+			quantos.emit(i)
 			return
 
 

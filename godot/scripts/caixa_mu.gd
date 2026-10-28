@@ -47,6 +47,7 @@ func _ready() -> void:
 	_ajustar()
 	if senha:
 		_campo.grab_focus()
+		_campo.select_all()
 
 
 # frase maior que a caixa quebra em mais linhas (SeparateTextIntoLines do cliente)
@@ -68,6 +69,30 @@ func _quebrar_linhas(textos: Array) -> Array:
 		r.append(atual)
 		cores.append(cor)
 	return r
+
+
+# campo de numero no lugar do de senha (a quantidade de pontos do + da janela C): so digito, ate 5,
+# ja vem com o valor inicial selecionado, entao digitar troca e Enter direto confirma ele
+func campo_numero(inicial: String) -> void:
+	senha = true
+	_campo.secret = false
+	_campo.max_length = 5
+	_campo.visible = true
+	_campo.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_campo.text = inicial
+	_campo.text_changed.connect(func(t: String):
+		var so := ""
+		for ch in t:
+			if ch >= "0" and ch <= "9":
+				so += ch
+		if so != t:
+			_campo.text = so
+			_campo.caret_column = so.length())
+	_campo.select_all_on_focus = true
+	if is_inside_tree():   # a caixa ja esta na tela (o _ready passou com o campo escondido)
+		_ajustar()
+		_campo.grab_focus.call_deferred()
+		_campo.select_all.call_deferred()
 
 
 func altura() -> float:

@@ -59,3 +59,10 @@ no rodapé). Teste: testes/servidor_selecao.gd; fotos: testes/tela_servidor.mjs 
 - Twisting Slash (debf3e6): a cópia da arma ficava em pé; agora deitada (Angle[1] = 90) girando no cabo no eixo de
   cima, 30 graus por tick a mais que a volta, saindo da frente do dono, lança a 1,8. Testes: testes/giro_espada.gd
   (mede a lâmina de 5 armas), fotos testes/tela_giro.mjs.
+- Pontos em massa: o + da janela C abre a caixa do MU (CaixaMU.campo_numero) com "quantos pontos", que já vem com 1
+  selecionado (Enter direto segue sendo 1 ponto, no C1 F3 06 do original). Mais de 1 vai no /add str|agi|vit|ene|cmd N
+  do OpenMU (AddStatChatCommandPlugIn, até 65535 por vez): pro cliente S6 o servidor manda a ficha de novo (F3 03) e
+  recarrega o mapa no mesmo lugar, e a janela fica aberta com os números novos. Testes: testes/pontos_massa.gd,
+  testes/rodada_pontos_vivo.sh (socketDl: 250 em força, 1 em agilidade, 40 em vitalidade) e as fotos de
+  testes/tela_pontos.mjs (dados/gravacao_pontos.txt). Fora disto: testes/buffs.gd já falhava antes (buffs.json com
+  mais de 158 depois dos selos da rodada 23).

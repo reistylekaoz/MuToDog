@@ -515,6 +515,16 @@ func _teste_roteiro(passos: Array) -> void:
 						cerco.clicar(cerco._mapa_pos() + Vector2(float(gxy[0]), float(gxy[1])))
 					"a": cerco.clicar(cerco.moldura() + Vector2(60, 8))
 					"e": cerco.clicar(cerco.moldura() + Vector2(138, 10))
+			"U":
+				# U:0,500 clica no + da forca (0 forca ... 4 comando) e responde 500 na caixa de quantos
+				var ua := a.split(",")
+				if not janela_personagem.visible:
+					_botao_barra("personagem")
+				janela_personagem._clique(Vector2(168, JanelaPersonagem.ALTURAS[int(ua[0])] + 9))
+				print("TESTE roteiro + do atributo %s, caixa %s" % [ua[0], is_instance_valid(_caixa_pontos)])
+				if is_instance_valid(_caixa_pontos):
+					_caixa_pontos._campo.text = ua[1] if ua.size() > 1 else "1"
+					_caixa_pontos.responder(true)
 			"H":
 				# loja de cash: H:x e a tecla X, H:330x139 clica nesse ponto da loja (640 x 429),
 				# H:n,nome,mensagem preenche os campos do presente, H:s mostra o que a loja tem agora
@@ -1148,6 +1158,7 @@ func _montar_ui() -> void:
 	janela_personagem = JanelaPersonagem.new()
 	janela_personagem.inventario = inv
 	janela_personagem.adicionar.connect(func(a): cli.adicionar_ponto(a))
+	janela_personagem.quantos.connect(_pontos_quantos)
 	janela_personagem.abrir_quests.connect(func(): if not janela_minhas_quests.visible: janela_minhas_quests.alternar())
 	janela_personagem.abrir_master.connect(_alternar_master)
 	janela_personagem.abrir_pet.connect(_alternar_pet)
@@ -2629,6 +2640,45 @@ func _ponto(ok: bool, atributo: int, maximo_dep: int, sd_max: int, ag_max: int) 
 		barra_mu.ag_max = ag_max
 	janela_personagem.esperando = false
 	_hud_nivel()
+
+
+# + da janela C: caixa com quantos pontos (vem 1, selecionado). 1 vai no C1 F3 06 do original; mais de 1
+# vai no /add do OpenMU (AddStatChatCommandPlugIn, ate 65535 por vez), que pro cliente S6 manda a ficha
+# de novo (F3 03) e recarrega o mapa no mesmo lugar: _entrou ja poe os numeros novos na janela.
+const COMANDO_ATRIBUTO := ["str", "agi", "vit", "ene", "cmd"]
+var _caixa_pontos: CaixaMU
+
+
+func _pontos_quantos(a: int) -> void:
+	if is_instance_valid(_caixa_pontos) or janela_personagem.esperando or meus_pontos <= 0:
+		return
+	var nome: String = [DicaItem.t(166), DicaItem.t(167), DicaItem.t(169), DicaItem.t(168), DicaItem.t(1900)][clampi(a, 0, 4)]
+	_caixa_pontos = _caixa_mu([[nome, Color8(230, 230, 0)], "Quantos pontos? (1 a %d)" % meus_pontos], func(ok, t):
+		if ok:
+			distribuir_pontos(a, int(t) if str(t).is_valid_int() else 0))
+	if is_instance_valid(_caixa_pontos):
+		_caixa_pontos.campo_numero("1")
+
+
+func distribuir_pontos(a: int, n: int) -> void:
+	n = mini(n, meus_pontos)
+	print("TESTE pontos %d no atributo %d (tem %d)" % [n, a, meus_pontos])
+	if n <= 0:
+		return
+	var j := janela_personagem
+	j.esperando = true
+	j.queue_redraw()
+	if n == 1:
+		cli.adicionar_ponto(a)
+		j._desistir()
+		return
+	while n > 0:
+		var vez := mini(n, 65535)
+		cli.dizer(meu_nome, "/add %s %d" % [COMANDO_ATRIBUTO[clampi(a, 0, 4)], vez])
+		n -= vez
+		if n > 0:
+			await get_tree().create_timer(1.5).timeout
+	j._desistir()
 
 
 func _botao_barra(qual: String) -> void:
@@ -5508,6 +5558,8 @@ func _teste_ponto(a: int) -> void:
 	print("TESTE linhas %s" % [j._linhas(j.classe_base())])
 	for n in 3:
 		j._clique(Vector2(168, JanelaPersonagem.ALTURAS[a] + 9))
+		if is_instance_valid(_caixa_pontos):
+			_caixa_pontos.responder(true)   # a caixa de quantos ja vem com 1
 		await get_tree().create_timer(1.0).timeout
 	print("TESTE janela depois: pontos %d %s vida_max %d mana_max %d" % [j.eu.pontos, [j.eu.forca, j.eu.agilidade, j.eu.vitalidade, j.eu.energia, j.eu.comando], barra_mu.vida_max, barra_mu.mana_max])
 
