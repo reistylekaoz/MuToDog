@@ -2,7 +2,7 @@
 Grava godot/dados/itens_info.json ("grupo,numero" -> [largura, altura, slots, durabilidade, consome, skill,
 valor, nivel de drop, duas maos], valor e nivel de drop pro preco da loja; duas maos vem do Item.bmd do cliente S6
 (TwoHand, o byte 30 de cada registro de 84 bytes, cifra BuxConvert): o cliente troca a pose de parado e de andar),
-godot/dados/skills.json (numero -> [nome, alcance, tipo, alvo, mana, ag, move_ate_alvo])
+godot/dados/itens.json ("grupo,numero" -> nome), godot/dados/skills.json (numero -> [nome, alcance, tipo, alvo, mana, ag, move_ate_alvo])
 e godot/dados/movimento.json: "lista" = a janela Move (M) [indice, nome, zen, nivel, mapa],
 "portais" = mapa -> [[numero, x1, y1, x2, y2, nivel, mapa de destino]] (EnterGate: pisou, entra),
 "reducao" = classe -> % a menos no nivel pedido (o Magic Gladiator e o Dark Lord pedem 2/3).
@@ -62,4 +62,8 @@ json.dump({"lista": lista, "portais": portais, "reducao": reducao}, open(os.path
           separators=(",", ":"), ensure_ascii=False)
 json.dump(itens, open(os.path.join(dados, "itens_info.json"), "w"), separators=(",", ":"), sort_keys=True)
 json.dump(skills, open(os.path.join(dados, "skills.json"), "w"), separators=(",", ":"), sort_keys=True)
+# nomes dos itens (o nome em ingles, antes das traducoes "||de=...")
+nomes = {"%d,%d" % (i["g"], i["n"]): i["nome"].split("||")[0]
+         for i in consulta('select "Group" g, "Number" n, "Name" nome from config."ItemDefinition"')}
+json.dump(nomes, open(os.path.join(dados, "itens.json"), "w"), ensure_ascii=False, separators=(",", ":"), sort_keys=True)
 print(f"{len(itens)} itens, {len(skills)} skills, {len(lista)} destinos no Move, {sum(len(v) for v in portais.values())} portais")

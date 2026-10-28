@@ -40,6 +40,10 @@ TEXTOS = {
 }
 for bid, t in TEXTOS.items():
     buffs[bid]["descricao"] = t
+# VIP do Gold Channel Ticket (13,124): o cliente S6 nao tem buff de VIP; o 180 vem do servidor daqui
+# (ferramentas/selos_openmu.py, VIP_XP e VIP_DROP) e usa o icone do Seal of Wealth com "VIP" por cima (janela_buffs.gd).
+buffs[180] = {"nome": "VIP (Gold Channel)", "debuff": False, "descricao": "EXP +50%/Master EXP +50%/Item drop +20%",
+              "item": [13, 124], "tipo": 180}
 json.dump(buffs, open(os.path.join(SAIDA, "buffs.json"), "w"), ensure_ascii=False, indent=0)
 subprocess.run([sys.executable, os.path.join(AQUI, "ferramentas", "interface.py"), os.path.join(DATA, "Interface"),
                 os.path.join(SAIDA, "hud"), "newui_statusicon=buff1", "newui_statusicon2=buff2"], check=True)

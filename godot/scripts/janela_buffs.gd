@@ -9,9 +9,10 @@ extends Control
 const PASTA := "res://dados/hud/"
 # o cliente nao desenha 83, 84, 85 e 120; os outros sao celulas vazias da folha de icones (so o numero escrito)
 const ESCONDIDOS := [83, 84, 85, 120, 7, 12, 13, 19, 20, 27, 28, 32, 33, 59, 60, 62, 63, 64, 66, 67, 68, 69, 70]
-const BASE := {135: 8, 136: 8, 138: 82, 139: 82, 148: 5, 149: 5, 140: 4, 143: 6}   # o mais forte usa o icone do base
+const BASE := {135: 8, 136: 8, 138: 82, 139: 82, 148: 5, 149: 5, 140: 4, 143: 6, 180: 30}   # o mais forte usa o icone do base
+const VIP := 180   # buff do Gold Channel Ticket (so no servidor daqui): icone do Seal of Wealth com "VIP" escrito
 # so os buffs de item mostram o tempo (IsBuffTimeVisible do cliente)
-const COM_TEMPO := [[29, 31], [35, 54], [78, 80], [82, 82], [87, 97], [99, 103], [112, 114], [119, 119], [121, 121]]
+const COM_TEMPO := [[29, 31], [35, 54], [78, 80], [82, 82], [87, 97], [99, 103], [112, 114], [119, 119], [121, 121], [180, 180]]
 
 static var dados := {}
 
@@ -159,6 +160,11 @@ func _draw() -> void:
 		var folha: Texture2D = _tex.buff1 if e < 81 else _tex.buff2
 		var k := (e - 1) if e < 81 else (e - 81)
 		draw_texture_rect_region(folha, r, Rect2((k % 10) * 20, (k / 10) * 28, 20, 28))
+		if l[i] == VIP:
+			var f := get_theme_default_font()
+			var fs := maxi(int(7 * r.size.x / 20.0), 6)
+			draw_string_outline(f, Vector2(r.position.x, r.end.y - 2), "VIP", HORIZONTAL_ALIGNMENT_CENTER, r.size.x, fs, 3, Color.BLACK)
+			draw_string(f, Vector2(r.position.x, r.end.y - 2), "VIP", HORIZONTAL_ALIGNMENT_CENTER, r.size.x, fs, Color(1, 0.85, 0.3))
 		if r.has_point(_mouse):
 			sob = i
 	if sob >= 0:

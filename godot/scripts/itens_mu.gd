@@ -62,6 +62,9 @@ static func consome(it: Dictionary) -> bool:
 static func nome(it: Dictionary) -> String:
 	_carregar()
 	var n: String = _nomes.get(chave(it), "Item %s" % chave(it))
+	# Box of Luck (14,11) nivel 8 a 12 e o Box of Kundun +1 a +5 (texto 115), como no cliente e na loja de cash
+	if chave(it) == "14,11" and int(it.get("nivel", 0)) in range(8, 13):
+		return "%s +%d" % [DicaItem.t(115), int(it.nivel) - 7]
 	# um numero com nome por nivel (14,7: Potion of Bless +0, Potion of Soul +1)
 	if ";" in n:
 		var v := n.split(";")
@@ -71,9 +74,16 @@ static func nome(it: Dictionary) -> String:
 	return n
 
 
+# selos, scrolls, elixires e o Gold Channel Ticket do servidor daqui (ferramentas/selos_openmu.py): a durabilidade e
+# quantas vezes o tempo do buff (dias comprados na loja de cash); o valor e quantos dias vale cada unidade
+const COM_DIAS := {"13,43": 1, "13,44": 1, "13,45": 1, "13,62": 1, "13,63": 1, "13,93": 1, "13,94": 1, "13,124": 1,
+	"14,72": 1, "14,73": 1, "14,74": 1, "14,75": 1, "14,76": 1, "14,77": 1, "14,97": 1, "14,98": 1,
+	"14,78": 10, "14,79": 10, "14,80": 10, "14,81": 10, "14,82": 10}
+
+
 # poções e joias empilham: a "durabilidade" e a quantidade
 static func empilha(it: Dictionary) -> bool:
-	return it.grupo == 14 and int(info(it)[3]) <= 3 and consome(it)
+	return it.grupo == 14 and int(info(it)[3]) <= 3 and consome(it) and not COM_DIAS.has(chave(it))
 
 
 

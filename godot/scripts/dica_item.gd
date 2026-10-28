@@ -69,6 +69,25 @@ static func _carregar() -> void:
 
 
 # texto do cliente, com os argumentos no jeito do printf ("%d", "%s", "%%")
+const ITENS_CASH := ["13,43", "13,44", "13,45", "13,59", "13,62", "13,63", "13,81", "13,82", "13,93", "13,94", "13,96",
+	"13,103", "14,72", "14,73", "14,74", "14,75", "14,76", "14,77", "14,78", "14,79", "14,80", "14,81", "14,82", "14,97",
+	"14,98", "14,140"]
+static var _buff_do_item := {}
+
+
+# linhas do efeito do buff que o item liga ("EXP +100%", "Item drop +50%")
+static func efeito_buff(k: String) -> Array:
+	if _buff_do_item.is_empty():
+		var b: Dictionary = ItensMU._json("res://dados/buffs.json")
+		for id in b:
+			var it = b[id].get("item")
+			var ki := "%d,%d" % [int(it[0]), int(it[1])] if it is Array else ""
+			if ki != "" and not _buff_do_item.has(ki):
+				_buff_do_item[ki] = str(b[id].descricao)
+	var d: String = _buff_do_item.get(k, "")
+	return [] if d.is_empty() else Array(d.split("/", false))
+
+
 static func t(i: int, args := []) -> String:
 	_carregar()
 	var s: String = _txt.get(str(i), "?%d" % i)
@@ -146,6 +165,13 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 	var n_set := _set_do_item(it)
 	var prefixo: String = (_extra.sets[str(n_set)].nome + " ") if n_set > 0 else ""
 	l.append(_linha((t(620) + " " if exc > 0 else "") + prefixo + ItensMU.nome(it), cor, true))
+	# selos, scrolls, elixires e talismas da loja de cash: o que o buff soma (dados/buffs.json, o mesmo texto da
+	# janela de buffs e o mesmo valor do servidor; ferramentas/dados_buff.py) no lugar do 2253 / 2254 do original
+	if k in ITENS_CASH:
+		for frase in efeito_buff(k):
+			l.append(_linha(frase, AZUL))
+	if ItensMU.COM_DIAS.has(k):
+		l.append(_linha("Duration: %s" % LojaCash.duracao(int(ItensMU.COM_DIAS[k]) * maxi(1, int(it.get("durabilidade", 1))) * 86400)))
 
 	# o que a joia faz
 	var desc := {"14,13": 572, "14,14": 573, "14,16": 621, "12,15": 574}

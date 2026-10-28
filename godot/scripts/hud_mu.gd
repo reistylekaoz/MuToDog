@@ -14,7 +14,7 @@ signal usar_atalho(i: int)
 const PASTA := "res://dados/hud/"
 const TOPO := 429.0            # onde a moldura comeca na tela de 480
 const BOTOES := ["loja", "personagem", "inventario", "amigos", "menu"]
-const DICAS := {"loja": "Loja (X)", "personagem": "Personagem (C)", "inventario": "Inventario (I, V)",
+const DICAS := {"loja": "MU Item Shop (X)", "personagem": "Personagem (C)", "inventario": "Inventario (I, V)",
 	"amigos": "Amigos (F)", "menu": "Menu (U)"}
 
 var vida := 0

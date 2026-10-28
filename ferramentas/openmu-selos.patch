@@ -1,0 +1,326 @@
+diff --git a/src/GameLogic/Attributes/Stats.cs b/src/GameLogic/Attributes/Stats.cs
+index f575c14..6da0ead 100644
+--- a/src/GameLogic/Attributes/Stats.cs
++++ b/src/GameLogic/Attributes/Stats.cs
+@@ -127,6 +127,12 @@ public class Stats
+     /// <remarks>So far includes skeleton xfm ring, pet panda, pet skeleton bonus.</remarks>
+     public static AttributeDefinition BonusExperienceRate { get; } = new(new Guid("D48A9D05-533A-4556-9FC3-F71C8BEC4B8E"), "Bonus Experience Rate", "The bonus experience rate which is added to the base experience rate multiplier.");
+ 
++    /// <summary>
++    /// Gets the item drop rate attribute definition, which is added to the base drop chance of 1.0 (0.5 = +50 %).
++    /// </summary>
++    /// <remarks>So far includes the seals of wealth and divinity and the gold channel ticket (VIP).</remarks>
++    public static AttributeDefinition ItemDropRate { get; } = new(new Guid("6E3B1F0A-4C2D-4E8B-9A51-2F7C8D9E0B13"), "Item Drop Rate", "The bonus item drop rate which is added to the base drop chance multiplier of 1.0.");
++
+     /// <summary>
+     /// Gets the master level definition.
+     /// </summary>
+diff --git a/src/GameLogic/CashShop/CashShopProductExtensions.cs b/src/GameLogic/CashShop/CashShopProductExtensions.cs
+index fb2b264..75dbabb 100644
+--- a/src/GameLogic/CashShop/CashShopProductExtensions.cs
++++ b/src/GameLogic/CashShop/CashShopProductExtensions.cs
+@@ -23,6 +23,7 @@ public static class CashShopProductExtensions
+     /// <returns><c>true</c>, if the product can be delivered; otherwise, <c>false</c>.</returns>
+     public static bool CanBeDelivered(this CashShopProduct product)
+     {
+-        return product.ItemDefinition is not null && product.Duration == TimeSpan.Zero;
++        return product.ItemDefinition is { } definition
++            && (product.Duration == TimeSpan.Zero || definition.ConsumeEffect is { } effect && TimedEffectStore.IsTimed(effect));
+     }
+ }
+diff --git a/src/GameLogic/CashShop/InventoryProductDelivery.cs b/src/GameLogic/CashShop/InventoryProductDelivery.cs
+index bcb45d7..f87e2f5 100644
+--- a/src/GameLogic/CashShop/InventoryProductDelivery.cs
++++ b/src/GameLogic/CashShop/InventoryProductDelivery.cs
+@@ -34,7 +34,7 @@ internal sealed class InventoryProductDelivery : ICashShopProductDeliveryPlugIn
+             return CashShopUseResult.CannotUse;
+         }
+ 
+-        foreach (var item in CreateItems(player, definition, product.ItemLevel, product.Quantity))
++        foreach (var item in CreateItems(player, definition, product.ItemLevel, product.Quantity, product.Duration))
+         {
+             if (!await inventory.AddItemAsync(item).ConfigureAwait(false))
+             {
+@@ -68,7 +68,7 @@ internal sealed class InventoryProductDelivery : ICashShopProductDeliveryPlugIn
+     /// Creates the items of a product. The quantity of a stackable item is its durability,
+     /// so it's split into stacks of the maximum durability.
+     /// </summary>
+-    private static IEnumerable<Item> CreateItems(Player player, ItemDefinition definition, byte level, int quantity)
++    private static IEnumerable<Item> CreateItems(Player player, ItemDefinition definition, byte level, int quantity, TimeSpan duration)
+     {
+         var remaining = Math.Max(quantity, 1);
+         while (remaining > 0)
+@@ -78,6 +78,12 @@ internal sealed class InventoryProductDelivery : ICashShopProductDeliveryPlugIn
+             item.Level = level;
+             var count = item.IsStackable() ? Math.Min(remaining, (int)definition.Durability) : 1;
+             item.Durability = item.IsStackable() ? count : definition.Durability;
++            if (duration > TimeSpan.Zero)
++            {
++                // Seals and scrolls: the durability holds the bought days (see TimedEffectStore).
++                item.Durability = Math.Max(1, (int)duration.TotalDays);
++            }
++
+             remaining -= count;
+             yield return item;
+         }
+diff --git a/src/GameLogic/DefaultDropGenerator.cs b/src/GameLogic/DefaultDropGenerator.cs
+index 13ee594..9a90e3a 100644
+--- a/src/GameLogic/DefaultDropGenerator.cs
++++ b/src/GameLogic/DefaultDropGenerator.cs
+@@ -20,6 +20,8 @@ public class DefaultDropGenerator : IDropGenerator
+     private const int DropLevelMaxGap = 12;
+     private const int SkillDropChancePercent = 50;
+ 
++    private double _dropRate = 1.0;
++
+     private const byte DefaultMaxItemOptionLevelDrop = 3;
+     private const byte MinItemOptionLevelDrop = 1;
+     private const byte MaxItemOptionLevelDrop = 4;
+@@ -87,7 +89,9 @@ public class DefaultDropGenerator : IDropGenerator
+         }
+ 
+         uint money = 0;
++        this._dropRate = 1.0 + Math.Max(0, player.Attributes?[Stats.ItemDropRate] ?? 0);
+         var (droppedItems, moneyResult) = this.GenerateDrops(monster, gainedExperience);
++        this._dropRate = 1.0;
+         if (moneyResult > 0)
+         {
+             money = moneyResult;
+@@ -310,7 +314,7 @@ public class DefaultDropGenerator : IDropGenerator
+ 
+             for (int i = 0; i < remainingDrops; i++)
+             {
+-                var group = this.SelectRandomGroup(this._chanceDropGroups, totalChance);
++                var group = this.SelectRandomGroup(this._chanceDropGroups, totalChance, this._dropRate);
+                 if (group is null)
+                 {
+                     continue;
+@@ -552,9 +556,9 @@ public class DefaultDropGenerator : IDropGenerator
+         };
+     }
+ 
+-    private DropItemGroup? SelectRandomGroup(IEnumerable<DropItemGroup> groups, double totalChance)
++    private DropItemGroup? SelectRandomGroup(IEnumerable<DropItemGroup> groups, double totalChance, double dropRate = 1.0)
+     {
+-        var remainingThreshold = this._randomizer.NextDouble();
++        var remainingThreshold = this._randomizer.NextDouble() / dropRate;
+         if (totalChance > 1.0)
+         {
+             remainingThreshold *= totalChance;
+diff --git a/src/GameLogic/Player.cs b/src/GameLogic/Player.cs
+index d0f1b6e..97657f8 100644
+--- a/src/GameLogic/Player.cs
++++ b/src/GameLogic/Player.cs
+@@ -738,6 +738,7 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
+             this._selectedCharacter = character;
+             await this.OnPlayerEnteredWorldAsync().ConfigureAwait(false);
+             await this.PlayerEnteredWorld.SafeInvokeAsync(this).ConfigureAwait(false);
++            await TimedEffectStore.RestoreAsync(this).ConfigureAwait(false);
+ 
+             this._appearanceData.RaiseAppearanceChanged();
+         }
+diff --git a/src/GameLogic/PlayerActions/ItemConsumeActions/ApplyMagicEffectConsumeHandlerPlugIn.cs b/src/GameLogic/PlayerActions/ItemConsumeActions/ApplyMagicEffectConsumeHandlerPlugIn.cs
+index c5650c3..b569457 100644
+--- a/src/GameLogic/PlayerActions/ItemConsumeActions/ApplyMagicEffectConsumeHandlerPlugIn.cs
++++ b/src/GameLogic/PlayerActions/ItemConsumeActions/ApplyMagicEffectConsumeHandlerPlugIn.cs
+@@ -47,6 +47,20 @@ public class ApplyMagicEffectConsumeHandlerPlugIn : BaseConsumeHandlerPlugIn
+             return false;
+         }
+ 
++        if (TimedEffectStore.IsTimed(effectDefinition))
++        {
++            // Seals and scrolls of the cash shop: the durability holds the bought days, the whole item is used up.
++            var units = Math.Max(1, (int)item.Durability);
++            item.Durability = 1;
++            if (!await base.ConsumeItemAsync(player, item, targetItem, fruitUsage).ConfigureAwait(false))
++            {
++                item.Durability = units;
++                return false;
++            }
++
++            return await TimedEffectStore.ApplyAsync(player, effectDefinition, TimeSpan.FromSeconds(durationInSeconds * units)).ConfigureAwait(false);
++        }
++
+         if (player.MagicEffectList.TryGetActiveEffectOfSubType(effectDefinition.SubType) is { } existingEffect)
+         {
+             await existingEffect.DisposeAsync().ConfigureAwait(false);
+diff --git a/src/GameServer/RemoteView/World/DeActivateMagicEffectPlugIn.cs b/src/GameServer/RemoteView/World/DeActivateMagicEffectPlugIn.cs
+index 735ab77..4932f87 100644
+--- a/src/GameServer/RemoteView/World/DeActivateMagicEffectPlugIn.cs
++++ b/src/GameServer/RemoteView/World/DeActivateMagicEffectPlugIn.cs
+@@ -77,6 +77,16 @@ public class DeActivateMagicEffectPlugIn : IActivateMagicEffectPlugIn, IDeactiva
+                     effectWasSent = true;
+                 }
+             }
++
++            if (!effectWasSent && TimedEffectStore.IsTimed(effect.Definition))
++            {
++                // Seals, scrolls and the VIP of the cash shop: the client shows the remaining time of the buff.
++                var effectType = effect.Definition.PowerUpDefinitions.Any(p => p.TargetAttribute == Stats.ItemDropRate)
++                    ? EffectItemConsumption.EffectType.DropRate
++                    : EffectItemConsumption.EffectType.ExperienceRate;
++                await this._player.Connection.SendEffectItemConsumptionAsync(EffectItemConsumption.EffectOrigin.CashShopItem, effectType, EffectItemConsumption.EffectAction.Add, (uint)duration.TotalSeconds, (byte)effect.Definition.Number).ConfigureAwait(false);
++                effectWasSent = true;
++            }
+         }
+ 
+         if (!effectWasSent)
+diff --git a/src/GameLogic/TimedEffectStore.cs b/src/GameLogic/TimedEffectStore.cs
+new file mode 100644
+index 0000000..c76025b
+--- /dev/null
++++ b/src/GameLogic/TimedEffectStore.cs
+@@ -0,0 +1,153 @@
++// <copyright file="TimedEffectStore.cs" company="MUnique">
++// Licensed under the MIT License. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace MUnique.OpenMU.GameLogic;
++
++using System.Text.Json;
++using MUnique.OpenMU.DataModel.Configuration;
++using MUnique.OpenMU.GameLogic.Attributes;
++
++/// <summary>
++/// Effects of seals, scrolls and the gold channel ticket which last for days (like the periodic items of the original).
++/// Their end time is kept in a json file next to the server, so they survive leaving the game, and they are
++/// applied again when the character enters the world.
++/// An effect definition with a <see cref="MagicEffectDefinition.SubType"/> from <see cref="MinimumSubType"/> to <see cref="MaximumSubType"/> is such an effect:
++/// its duration is multiplied by the durability of the consumed item (the days bought in the cash shop).
++/// </summary>
++public static class TimedEffectStore
++{
++    /// <summary>
++    /// The minimum sub type of an effect definition which is kept over logout.
++    /// </summary>
++    public const byte MinimumSubType = 100;
++
++    /// <summary>
++    /// The maximum sub type of an effect definition which is kept over logout (200 and up are used by other effects).
++    /// </summary>
++    public const byte MaximumSubType = 199;
++
++    private static readonly object FileLock = new();
++
++    private static string FilePath => Environment.GetEnvironmentVariable("MU_EFEITOS_TEMPO")
++        ?? System.IO.Path.Combine(AppContext.BaseDirectory, "efeitos_tempo.json");
++
++    /// <summary>
++    /// Determines whether the effect definition is kept over logout.
++    /// </summary>
++    /// <param name="definition">The definition.</param>
++    /// <returns><c>true</c>, if the effect lasts for days.</returns>
++    public static bool IsTimed(MagicEffectDefinition definition) => definition.SubType is >= MinimumSubType and <= MaximumSubType;
++
++    /// <summary>
++    /// Applies the effect to the player for the given duration and remembers its end.
++    /// An active effect of the same sub type is replaced.
++    /// </summary>
++    /// <param name="player">The player.</param>
++    /// <param name="definition">The effect definition.</param>
++    /// <param name="duration">The duration.</param>
++    /// <param name="save">If set to <c>true</c>, the end time is written to the file.</param>
++    /// <returns><c>true</c>, if the effect got applied.</returns>
++    public static async ValueTask<bool> ApplyAsync(Player player, MagicEffectDefinition definition, TimeSpan duration, bool save = true)
++    {
++        if (player.Attributes is not { } attributes || duration <= TimeSpan.Zero)
++        {
++            return false;
++        }
++
++        var boosts = definition.PowerUpDefinitions
++            .Where(def => def.Boost is not null && def.TargetAttribute is not null)
++            .Select(def => new MagicEffect.ElementWithTarget(attributes.CreateElement(def), def.TargetAttribute!))
++            .ToArray();
++        if (boosts.Length == 0)
++        {
++            return false;
++        }
++
++        if (player.MagicEffectList.TryGetActiveEffectOfSubType(definition.SubType) is { } existingEffect)
++        {
++            await existingEffect.DisposeAsync().ConfigureAwait(false);
++        }
++
++        await player.MagicEffectList.AddEffectAsync(new MagicEffect(duration, definition, boosts)).ConfigureAwait(false);
++        if (save && player.SelectedCharacter is { } character)
++        {
++            Change(entries =>
++            {
++                var key = character.Id.ToString();
++                if (!entries.TryGetValue(key, out var list))
++                {
++                    list = [];
++                    entries[key] = list;
++                }
++
++                list.RemoveAll(e => e.SubType == definition.SubType || e.Until <= DateTime.UtcNow);
++                list.Add(new Entry(definition.Number, definition.SubType, DateTime.UtcNow + duration));
++            });
++        }
++
++        return true;
++    }
++
++    /// <summary>
++    /// Applies the remembered effects of the selected character again, with their remaining time.
++    /// </summary>
++    /// <param name="player">The player who entered the world.</param>
++    /// <returns>The task.</returns>
++    public static async ValueTask RestoreAsync(Player player)
++    {
++        if (player.SelectedCharacter is not { } character)
++        {
++            return;
++        }
++
++        List<Entry>? active = null;
++        Change(entries =>
++        {
++            if (entries.TryGetValue(character.Id.ToString(), out var list))
++            {
++                list.RemoveAll(e => e.Until <= DateTime.UtcNow);
++                active = [.. list];
++            }
++        });
++
++        foreach (var entry in active ?? [])
++        {
++            var definition = player.GameContext.Configuration.MagicEffects.FirstOrDefault(d => d.Number == entry.Number && d.SubType == entry.SubType);
++            if (definition is not null)
++            {
++                await ApplyAsync(player, definition, entry.Until - DateTime.UtcNow, false).ConfigureAwait(false);
++            }
++        }
++    }
++
++    private static void Change(Action<Dictionary<string, List<Entry>>> change)
++    {
++        lock (FileLock)
++        {
++            Dictionary<string, List<Entry>> entries;
++            try
++            {
++                entries = System.IO.File.Exists(FilePath)
++                    ? JsonSerializer.Deserialize<Dictionary<string, List<Entry>>>(System.IO.File.ReadAllText(FilePath)) ?? []
++                    : [];
++            }
++            catch (JsonException)
++            {
++                entries = [];
++            }
++
++            change(entries);
++            foreach (var key in entries.Where(e => e.Value.Count == 0).Select(e => e.Key).ToList())
++            {
++                entries.Remove(key);
++            }
++
++            var temporary = FilePath + ".novo";
++            System.IO.File.WriteAllText(temporary, JsonSerializer.Serialize(entries));
++            System.IO.File.Move(temporary, FilePath, true);
++        }
++    }
++
++    private sealed record Entry(short Number, byte SubType, DateTime Until);
++}

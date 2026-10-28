@@ -511,6 +511,43 @@ func _teste_roteiro(passos: Array) -> void:
 						cerco.clicar(cerco._mapa_pos() + Vector2(float(gxy[0]), float(gxy[1])))
 					"a": cerco.clicar(cerco.moldura() + Vector2(60, 8))
 					"e": cerco.clicar(cerco.moldura() + Vector2(138, 10))
+			"H":
+				# loja de cash: H:x e a tecla X, H:330x139 clica nesse ponto da loja (640 x 429),
+				# H:n,nome,mensagem preenche os campos do presente, H:s mostra o que a loja tem agora
+				if a == "x":
+					print("TESTE roteiro tecla X")
+					_alternar_loja_cash()
+				elif a.begins_with("n,"):
+					var hn := a.split(",")
+					loja_cash._nome.text = hn[1]
+					loja_cash._msg.text = hn[2].replace("_", " ") if hn.size() > 2 else ""
+					print("TESTE roteiro presente para %s" % hn[1])
+				elif a.begins_with("c,"):
+					# H:c,Nome do pacote,N compra o pacote pelo N-esimo preco (0 = o primeiro), sem clicar
+					var hc := a.split(",")
+					for pk: Dictionary in LojaCash.carregar().pacotes:
+						if pk.nome == hc[1].replace("_", " ") and pk.venda:
+							var ps := int(pk.precos[int(hc[2]) if hc.size() > 2 else 0])
+							print("TESTE roteiro compra %s preco %d" % [pk.nome, ps])
+							loja_cash.comprar.emit(int(pk.seq), int(pk.cat), ps, int(pk.item), int(pk.moeda))
+							break
+				elif a.begins_with("u,"):
+					# H:u,N usa o N-esimo item do deposito (0 = o primeiro), sem clicar
+					var hu := int(a.split(",")[1])
+					if hu >= loja_cash.deposito.size():
+						print("TESTE roteiro usa do deposito: nada no %d" % hu)
+					else:
+						var it: Dictionary = loja_cash.deposito[hu]
+						print("TESTE roteiro usa do deposito %s" % it.nome)
+						loja_cash.usar.emit(int(it.indice), int(it.preco_seq), maxi(0, int(it.item)), int(it.tipo))
+				elif a == "s":
+					print("TESTE loja estado aberta %s caixa %s saldo %s deposito %s" % [loja_cash.visible, loja_cash.caixa.get("tipo", "-"),
+						loja_cash.saldo, loja_cash.deposito.map(func(i): return "%d %s %s" % [i.indice, i.nome, i.duracao])])
+					print("TESTE loja mochila %s" % [inv.itens.values().map(func(it): return "%s +%d" % [ItensMU.nome(it), it.nivel])])
+				else:
+					var hxy := a.split("x")
+					print("TESTE roteiro clica na loja %s" % a)
+					loja_cash.clicar(Vector2(float(hxy[0]), float(hxy[1])))
 			"C":
 				# C:95x131 clica nesse ponto da janela do castelo (coordenadas da janela de 190 x 429)
 				var xy := a.split("x")
@@ -689,7 +726,8 @@ func _teste_roteiro(passos: Array) -> void:
 				_mortos = 0
 				print("TESTE roteiro caca %d" % _cacar)
 			"b":
-				print("TESTE roteiro buffs na janela: %s" % [janela_buffs.lista().map(func(x): return "%d %s" % [x, JanelaBuffs.nome(x)])])
+				print("TESTE roteiro buffs na janela: %s" % [janela_buffs.lista().map(func(x): return "%d %s %s" % [x, JanelaBuffs.nome(x),
+					JanelaBuffs.tempo(maxi((janela_buffs.buffs.get(x, 0) - Time.get_ticks_msec()) / 1000, 0)) if janela_buffs.buffs.get(x, 0) > 0 else "-"])])
 				print("TESTE roteiro buffs no meu boneco: %s" % [eu.buffs.keys()])
 
 
@@ -954,6 +992,7 @@ func _montar_ui() -> void:
 	_ligar_imperial()
 	_ligar_kanturu()
 	_ligar_castelo()
+	_ligar_loja_cash()
 	caos = ChaosCastle.new()
 	add_child(caos)
 	eventos.estagio.connect(func(n): caos.encolher(n))
@@ -2545,7 +2584,7 @@ func _botao_barra(qual: String) -> void:
 	elif qual == "menu":
 		menu.alternar(brilho)
 	else:
-		_msg("[color=#9a9ab0]A loja de cash (X) nao existe no OpenMU. Pra comprar, clique num NPC vendedor (Hanzo, Pasi, Lumen, Amy...).[/color]")
+		_alternar_loja_cash()
 
 
 # --- loja do NPC, amigos e menu ---------------------------------------------------
@@ -2953,8 +2992,85 @@ func _portao_castelo(indice: int, aberto: bool) -> void:
 
 var _membros_guilda: Array = []   # C2 B6
 var _membros_npc: Array = []      # C2 BB
+var loja_cash: LojaCash
+var _igs_versao := ""             # D2 0C no login: sem ele a loja nao abre (3035)
+var _igs_pedindo := false         # mandou D2 02 [0] e espera a resposta
 var _pontos_t := 0.0
 var _caixas_guerra: Array = []
+
+
+# --- loja de cash (In-Game Shop, rodada 23) ------------------------------------------
+
+func _ligar_loja_cash() -> void:
+	loja_cash = LojaCash.new()
+	loja_cash.z_index = 5   # por cima do chat e das outras janelas, como a camada 10.08 do original
+	hud.add_child(loja_cash)
+	loja_cash.fechar.connect(_fechar_loja_cash)
+	loja_cash.pedir_saldo.connect(func(): cli.igs_saldo())
+	loja_cash.pedir_deposito.connect(func(pg, g): cli.igs_deposito(pg, g))
+	loja_cash.comprar.connect(func(pk, c, ps, it, m):
+		print("TESTE loja compra pacote %d categoria %d preco %d item %d moeda %d" % [pk, c, ps, it, m])
+		cli.igs_comprar(pk, c, ps, it, m))
+	loja_cash.presentear.connect(func(pk, c, ps, it, m, para, txt):
+		print("TESTE loja presente pacote %d preco %d para %s" % [pk, ps, para])
+		cli.igs_presentear(pk, c, ps, it, m, para, txt))
+	loja_cash.usar.connect(func(i, ps, it, t):
+		print("TESTE loja usa indice %d preco %d" % [i, ps])
+		cli.igs_usar(i, ps, it, t)
+		cli.igs_saldo())
+	cli.igs.connect(_igs_pacote)
+
+
+# X ou o botao da barra: pede pra abrir (D2 02 0); aberta, fecha (D2 02 1)
+func _alternar_loja_cash() -> void:
+	if loja_cash.visible:
+		_fechar_loja_cash()
+		return
+	if _igs_versao.is_empty():
+		_caixa_mu(DicaItem.t(3035).split("#"), func(_ok, _t): pass, false, false)
+		return
+	if _igs_pedindo:
+		return
+	_igs_pedindo = true
+	cli.igs_abrir(false)
+
+
+func _fechar_loja_cash() -> void:
+	if not loja_cash.visible:
+		return
+	loja_cash.esc()
+	loja_cash.visible = false
+	cli.igs_abrir(true)
+
+
+func _igs_pacote(sub: int, d: Dictionary) -> void:
+	print("TESTE loja %02X %s" % [sub, d])
+	match sub:
+		0x0C:
+			_igs_versao = d.versao
+		0x02:
+			_igs_pedindo = false
+			if int(d.resultado) == 0:
+				# o original nao diz nada; o OpenMU recusa fora da zona segura, morto ou fora do mundo
+				_msg("[color=#ffcc66]%s[/color]" % DicaItem.t(3051))
+				return
+			# Show da loja faz HideAll
+			_fechar_loja()
+			for j in [inv, janela_personagem, comandos]:
+				if j.visible:
+					j.alternar()
+			loja_cash.abrir(meu_nome)
+			cli.igs_saldo()
+			cli.igs_deposito(1, false)
+		0x01:
+			loja_cash.receber_saldo(d)
+		0x06:
+			loja_cash.receber_cabecalho(d)
+		0x0D, 0x0E:
+			loja_cash.receber_item(d)
+		0x03, 0x04, 0x0B:
+			loja_cash.resultado(sub, int(d.resultado))
+			print("TESTE loja caixa %s / %s" % [loja_cash.caixa.get("titulo", ""), " ".join(loja_cash.caixa.get("linhas", []))])
 
 
 func _ligar_guerra() -> void:
@@ -4043,7 +4159,7 @@ func _pegou(slot: int, item: Dictionary) -> void:
 	inv.entrou(slot, item)
 	_contar_pocoes()
 	var n: String = itens_nomes.get("%d,%d" % [item.grupo, item.numero], "item")
-	_msg("[color=#9fe0a0]Pegou %s%s.[/color]" % [n, " +%d" % item.nivel if item.nivel > 0 else ""])
+	_msg("[color=#9fe0a0]Pegou %s.[/color]" % ItensMU.nome(item))
 	print("TESTE pegou %s" % n)
 
 
@@ -4736,6 +4852,9 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k in [KEY_I, KEY_V]:
 		inv.alternar()
 		return true
+	if k == KEY_X:
+		_alternar_loja_cash()
+		return true
 	if k == KEY_T:
 		janela_minhas_quests.alternar()
 		return true
@@ -4778,7 +4897,10 @@ func _teclas(ev: InputEventKey) -> bool:
 		helper.alternar()
 		return true
 	if k == KEY_ESCAPE:
-		if correio.fechar_topo():
+		if loja_cash.visible:
+			if not loja_cash.esc():
+				_fechar_loja_cash()
+		elif correio.fechar_topo():
 			pass
 		elif criar_guilda.visible:
 			criar_guilda.fechar()

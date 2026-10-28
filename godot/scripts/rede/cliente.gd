@@ -217,6 +217,8 @@ signal cs_lados(resultado: int, lista: Array)             # C2 B5: guildas da ba
 signal cs_guerra(sub: int, info: Dictionary)              # B2 14 a 20: interruptor, coroa, inicio e fim, lado, comando, relogio
 signal cs_mapa_guerra(cod: int, lista: Array)             # C2 B6 (gente da guilda) e BB (portoes e estatuas) no minimapa
 signal cs_catapulta(sub: int, info: Dictionary)           # B7 00 janela, 01 tiro, 02 pedra caindo em mim
+signal igs(sub: int, info: Dictionary)                    # D2: loja de cash (01 saldo, 02 abriu, 03 04 0B resultados,
+														  # 06 cabecalho do deposito, 0C 15 versoes, 0D 0E itens)
 signal evento_entrada(evento: String, resultado: int)   # C1 90 (Devil Square) e C1 9A (Blood Castle): 0 entrou, 1 sem convite...
 signal evento_abre(tipo: int, minutos: int, gente: int, minutos_baixo: int)   # C1 91: falta pra abrir (1 DS, 2 BC, 4 CC, 5 IT)
 signal evento_contagem(estado: int)                    # C1 92: a contagem de 30 s (0 a 2 DS, 3 a 7 BC, 10 a 13 CC)
@@ -589,6 +591,82 @@ func catapulta_atirar(npc: int, area: int) -> void:
 
 func catapulta_caiu(npc: int) -> void:
 	con.enviar(PackedByteArray([0xC1, 0, 0xB7, 0x04, npc >> 8, npc & 0xFF]))
+
+
+# C1 D2 (In-Game Shop, campos em little endian): 01 saldo, 02 abre (0) ou fecha (1), 03 compra, 04 presente,
+# 05 pagina do deposito ('S' compras, 'G' presentes), 0B usa um item do deposito
+func igs_saldo() -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xD2, 0x01]))
+
+
+func igs_abrir(fechar: bool) -> void:
+	con.enviar(PackedByteArray([0xC1, 0, 0xD2, 0x02, 1 if fechar else 0]))
+
+
+static func _igs_compra(sub: int, pacote: int, categoria: int, preco_seq: int, item: int, moeda: int) -> PackedByteArray:
+	var p := PackedByteArray([0xC1, 0, 0xD2, sub])
+	p.append_array(_le4(pacote))
+	p.append_array(_le4(categoria))
+	p.append_array(_le4(preco_seq))
+	p.append_array(PackedByteArray([item & 0xFF, (item >> 8) & 0xFF]))
+	p.append_array(_le4(moeda))
+	p.append(0)
+	return p
+
+
+func igs_comprar(pacote: int, categoria: int, preco_seq: int, item: int, moeda: int) -> void:
+	con.enviar(_igs_compra(0x03, pacote, categoria, preco_seq, item, moeda))
+
+
+func igs_presentear(pacote: int, categoria: int, preco_seq: int, item: int, moeda: int, para: String, texto: String) -> void:
+	var p := _igs_compra(0x04, pacote, categoria, preco_seq, item, moeda)
+	p.append_array(_texto(para, 11))
+	p.append_array(_texto(texto, 200))
+	con.enviar(p)
+
+
+func igs_deposito(pagina: int, presentes: bool) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xD2, 0x05])
+	p.append_array(_le4(pagina))
+	p.append_array(PackedByteArray([0x47 if presentes else 0x53, 0]))
+	con.enviar(p)
+
+
+func igs_usar(indice: int, preco_seq: int, item: int, tipo: int) -> void:
+	var p := PackedByteArray([0xC1, 0, 0xD2, 0x0B])
+	p.append_array(_le4(indice))
+	p.append_array(_le4(preco_seq))
+	p.append_array(PackedByteArray([item & 0xFF, (item >> 8) & 0xFF, tipo]))
+	con.enviar(p)
+
+
+func _ler_igs(p: PackedByteArray, sub: int) -> void:
+	var n := p.size()
+	match sub:
+		0x01:
+			if n >= 45:
+				igs.emit(sub, {"total": p.decode_double(5), "c": p.decode_double(13), "p": p.decode_double(21),
+					"pontos": p.decode_double(29), "goblin": p.decode_double(37)})
+		0x02, 0x0B:
+			if n >= 5:
+				igs.emit(sub, {"resultado": p[4]})
+		0x03, 0x04:
+			if n >= 9:
+				igs.emit(sub, {"resultado": p[4], "sobra": _ler_le(p, 5)})
+		0x06:
+			if n >= 12:
+				igs.emit(sub, {"total": _le(p, 4), "na_pagina": _le(p, 6), "pagina": _le(p, 8), "paginas": _le(p, 10)})
+		0x0C, 0x15:
+			if n >= 10:
+				igs.emit(sub, {"versao": "%d.%d.%d" % [_le(p, 4), _le(p, 6), _le(p, 8)]})
+		0x0D, 0x0E:
+			if n >= 33:
+				var i := {"indice": _ler_le(p, 4), "seq_item": _ler_le(p, 8), "grupo": _ler_le(p, 12), "produto": _ler_le(p, 16),
+					"preco_seq": _ler_le(p, 20), "cash": p.decode_double(24), "tipo": p[32], "presente": sub == 0x0E}
+				if sub == 0x0E and n >= 244:
+					i.de = _ler_texto(p, 33, 11)
+					i.mensagem = _ler_texto(p, 44, 200)
+				igs.emit(sub, i)
 
 
 static func _le4(v: int) -> PackedByteArray:
@@ -1782,6 +1860,9 @@ func _tratar(p: PackedByteArray) -> void:
 		0xB2:
 			if p[0] == 0xC1:
 				_ler_castelo(p, sub)
+		0xD2:
+			if p[0] == 0xC1 and p.size() >= 4:
+				_ler_igs(p, sub)
 		0xB3, 0xB4, 0xB5:
 			if p[0] == 0xC2 and p.size() >= 9:
 				_ler_lista_castelo(p, cod)
