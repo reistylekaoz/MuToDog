@@ -19,8 +19,10 @@ func montar(mundo: Node3D, d: Dictionary, nomes: Dictionary) -> void:
 		nome = "Zen %s" % _milhar(d.zen)
 	else:
 		# nome do chao no jeito do cliente: "Nome +N" com +Skill, +Option e +Luck colados (textos 176 a 178)
-		nome = nomes.get("%d,%d" % [d.grupo, d.numero], "Item %d/%d" % [d.grupo, d.numero])
-		if d.nivel > 0:
+		nome = ItensMU.tier(d) + nomes.get("%d,%d" % [d.grupo, d.numero], "Item %d/%d" % [d.grupo, d.numero])
+		if d.grupo == 14 and d.numero == 11 and d.nivel in range(8, 13):
+			nome = ItensMU.nome(d)   # Box of Kundun +1 a +5 (nivel 8 a 12), como no chao do original
+		elif d.nivel > 0:
 			nome += " +%d" % d.nivel
 		if d.get("skill", false):
 			nome += DicaItem.t(176)
@@ -66,6 +68,8 @@ func _por_modelo(d: Dictionary, marca: Node3D, tw: Tween) -> void:
 	if ModelosMU.eu == null:
 		return
 	var chave := "14,15" if d.has("zen") else "%d,%d" % [d.grupo, d.numero]
+	if not d.has("zen") and not ModelosMU.eu.info("%s+%d" % [chave, d.nivel]).is_empty():
+		chave = "%s+%d" % [chave, d.nivel]   # modelo por nivel (ItensMU.chave_nivel)
 	var i := ModelosMU.eu.info(chave)
 	if i.is_empty():
 		return
@@ -97,7 +101,7 @@ func _por_modelo(d: Dictionary, marca: Node3D, tw: Tween) -> void:
 		pe.add_child(m)
 		base.add_child(pe)
 	if not d.has("zen"):
-		BrilhoMU.aplicar(base, chave, d.nivel)
+		BrilhoMU.aplicar(base, chave.get_slice("+", 0), d.nivel)
 	tw.kill()
 	marca.queue_free()
 	if d.get("novo", false):

@@ -4,6 +4,7 @@
 import { createRequire } from 'module';
 import fs from 'fs';
 import path from 'path';
+import { servir } from './rota_web.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require('/usr/local/lib/node_modules/playwright');
 
@@ -15,11 +16,8 @@ const page = await nav.newPage({ viewport: { width: 640, height: 480 } });
 let pronto = false;
 page.on('console', m => { const t = m.text(); if (/ICONES PRONTO/.test(t)) pronto = true; if (/ICONES|error|erro/i.test(t)) console.log(t.slice(0, 300)); });
 page.on('pageerror', e => console.log('[pageerror]', e.message));
-await page.route('https://mu.local/**', async rota => {
-  const arq = path.join(web, new URL(rota.request().url()).pathname.replace(/^\//, '') || 'index.html');
-  if (!fs.existsSync(arq)) return rota.fulfill({ status: 404, body: '' });
-  await rota.fulfill({ status: 200, body: fs.readFileSync(arq), headers: { 'content-type': tipos[path.extname(arq)] || 'application/octet-stream' } });
-});
+// o pck do export Icones passou de 100 MB: vai em pedacos (rota_web.mjs), senao o navegador fecha
+await servir(page, web);
 await page.goto('https://mu.local/index.html?icones=1');
 for (let i = 0; i < 1200 && !pronto; i++) await page.waitForTimeout(500);
 if (!pronto) { console.log('nao terminou'); process.exit(1); }

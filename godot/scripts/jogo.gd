@@ -3960,9 +3960,14 @@ func _teste_troca(nome: String) -> void:
 	if e == null:
 		return
 	print("TESTE pedindo troca a %s; zen %d, %d itens" % [nome, meu_zen, inv.itens.size()])
+	# como o jogador: abre o D e pede a troca por ele
+	if not comandos.visible:
+		_botao_barra("comandos")
 	_comando(JanelaComandos.TROCA, e.id)
 	await cli.troca_resposta
 	await get_tree().create_timer(1.0).timeout
+	print("TESTE troca aberta: inventario %s, janela do D %s" % ["aberto" if inv.visible else "FECHADO",
+		"ABERTA" if comandos.visible else "fechada"])
 	var s := _primeiro_da_mochila()
 	if s >= 0:
 		var it: Dictionary = inv.itens[s]
@@ -4136,8 +4141,10 @@ func _chao_teste(x: int, y: int) -> void:
 		# niveis e opcoes variados, pra ver as cores do nome no chao
 		l.append({"id": 60000 + k, "x": x - 3 + k % 4 * 2, "y": y + 2 + k / 4 * 2, "grupo": int(chaves[k].get_slice(",", 0)),
 			"numero": int(chaves[k].get_slice(",", 1)), "nivel": [0, 1, 3, 5, 7, 9, 0, 0, 0, 0, 0, 2][k],
-			"exc": 0x21 if k == 7 else 0, "sorte": k == 6, "skill": k == 6, "opcao": 1 if k == 6 else 0})
+			"exc": 0x21 if k == 7 else 0, "tier": 2 if k == 7 else 0, "sorte": k == 6, "skill": k == 6, "opcao": 1 if k == 6 else 0})
 	l.append({"id": 60100, "x": x + 5, "y": y + 4, "zen": 5000})
+	# Box of Kundun +3 (nivel 10): o bau dourado do MagicBox08
+	l.append({"id": 60101, "x": x + 5, "y": y + 2, "grupo": 14, "numero": 11, "nivel": 10})
 	_itens_cairam(l)
 	# onde ficam na tela o item excelente e o NPC mais perto (o roteiro de foto passa o mouse neles)
 	await get_tree().create_timer(1.0).timeout
@@ -4703,6 +4710,9 @@ func _ligar_troca_loja_helper() -> void:
 		_fechar_loja()
 		loja_pessoal.visible = false
 		janela_helper.visible = false
+		# a janela do D (comandos) mora no mesmo canto do inventario e ficava por cima dele
+		if comandos.visible:
+			comandos.alternar()
 		troca.abrir_troca(n, nivel)
 		if not inv.visible:
 			inv.alternar())

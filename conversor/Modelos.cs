@@ -74,5 +74,6 @@ static class Modelos
         }
         File.WriteAllText(Path.Combine(saida, "modelos.json"), JsonSerializer.Serialize(mapa));
         Console.WriteLine($"modelos: {mapa.Count} itens, {feitos.Count} modelos, {erros} erros");
+        await Variantes.Rodar(data, null, saida);
     }
 }

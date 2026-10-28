@@ -69,3 +69,18 @@ no rodapé). Teste: testes/servidor_selecao.gd; fotos: testes/tela_servidor.mjs 
 - Banco do OpenMU daqui (28/10): MG, DL e RF liberados na criação em todas as 20 contas (data.AccountCharacterClass,
   57 linhas; o F3 00 da conta socket passou a mandar 14). Conta nova criada depois não ganha sozinha.
   ferramentas/dar_item.sh põe item direto na mochila quando a conta sai do jogo (Box of Kundun +1 = 14,11 nível 8).
+- Box of Kundun +1 a +5 (28/10): 14,11 nível 8 a 12 usa o MagicBox08.bmd do original (baú dourado, textura
+  Eldobox.jpg; ZzzObject.cpp e ItemDisplay.cpp), com brilho (nível - 8) * 2 + 1 e o nome "Box of Kundun +N" no
+  chão. O conversor gera as variantes por nível (conversor/Variantes.cs, chave "14,11+8" a "+12" nos dois
+  modelos.json e no atlas de ícones; `conversor variantes <Data> dados/itens dados/modelos`). testes/icones.mjs
+  passou a servir o pck em pedaços (rota_web.mjs): o pck do Icones tem 191 MB e derrubava o Playwright.
+- Tier e só excelente na Box of Kundun (ferramentas/openmu-kundun.patch): o excelente que sai da caixa +N guarda N
+  no PetExperience (sem uso em item que não é pet; sobrevive ao pegar e ao sair) e o ItemSerializer manda 0xE0 | N
+  no byte 11 de item sem socket. O cliente lê ("tier" no item_de) e põe "(Tier N) " na frente do nome (dica e
+  chão). No banco: grupo excelente (ItemType 2) da 14,11 nível 8 a 12 com Chance 1, e o grupo de zen (ItemType 5)
+  movido pro SourceItemLevel 108 a 112 (pra voltar: - 100). Testes: testes/caixa_kundun.gd; ao vivo test2Dl largou
+  as 5 caixas e pegou Tier 1 a 5, todos excelentes, sem zen; fotos testes/tela_kundun.mjs
+  (dados/gravacao_kundun.txt). Os 31 itens 1x1 da mochila do test2Dl foram pro baú da conta test2 (slots 80 a 110).
+- Troca pelo D: quando a troca abre, a janela do D (comandos) fecha, porque ela fica no mesmo canto do inventário e
+  ficava por cima dele. Teste: testes/dois.sh test300Dl pede com o D aberto ("inventario aberto, janela do D
+  fechada"); foto testes/tela_troca_d.mjs (dados/gravacao_troca_d.txt).

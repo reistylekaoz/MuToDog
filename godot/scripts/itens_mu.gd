@@ -232,10 +232,22 @@ static func _bits(v: int) -> int:
 	return n
 
 
+# item que troca de modelo pelo nivel (conversor/Variantes.cs: Box of Kundun +1 a +5 e o MagicBox08 do
+# 14,11 nivel 8 a 12): o icone e o modelo do chao procuram "grupo,numero+nivel" antes de "grupo,numero"
+static func chave_nivel(it: Dictionary) -> String:
+	return "%s+%d" % [chave(it), int(it.get("nivel", 0))]
+
+
+# "(Tier N) " na frente do nome do excelente que saiu da Box of Kundun +N (o servidor manda o tier no item)
+static func tier(it: Dictionary) -> String:
+	var n := int(it.get("tier", 0))
+	return "(Tier %d) " % n if n > 0 and int(it.get("exc", 0)) > 0 else ""
+
+
 # desenha o icone do item dentro do retangulo (centrado, sem esticar)
 static func desenhar(ci: CanvasItem, it: Dictionary, r: Rect2, cor := Color.WHITE) -> void:
 	_carregar()
-	var a: Array = _icones.get(chave(it), [])
+	var a: Array = _icones.get(chave_nivel(it), _icones.get(chave(it), []))
 	if a.is_empty() or _atlas == null:
 		ci.draw_rect(r.grow(-2), Color(0.5, 0.5, 0.6, 0.5 * cor.a))
 		return

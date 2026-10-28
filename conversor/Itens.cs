@@ -66,6 +66,7 @@ static class Itens
         }
         File.WriteAllText(Path.Combine(saida, "modelos.json"), JsonSerializer.Serialize(mapa));
         Console.WriteLine($"itens: {mapa.Count} itens, {feitos.Count} modelos, {erros} erros");
+        await Variantes.Rodar(data, saida, null);
     }
 
     internal static byte[] PretoTransparente(byte[] png)
@@ -113,7 +114,7 @@ static class Itens
     }
 
     // corpo: pose do esqueleto do jogador (pecas de armadura); null = ossos do proprio item
-    static async Task Glb(string arquivo, Matrix4x4[]? corpo, Vector3 rot, List<string> pastas, string destino)
+    internal static async Task Glb(string arquivo, Matrix4x4[]? corpo, Vector3 rot, List<string> pastas, string destino)
     {
         var bmd = await new BMDReader().Load(arquivo);
         var dir = Path.GetDirectoryName(arquivo)!;

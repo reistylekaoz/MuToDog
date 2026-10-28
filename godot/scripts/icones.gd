@@ -58,7 +58,7 @@ func _ready() -> void:
 
 
 func _tam(info: Dictionary, k: String) -> Vector2i:
-	var i: Array = info.get(k, [1, 1])
+	var i: Array = info.get(k.get_slice("+", 0), [1, 1])   # variante por nivel (14,11+8) tem o tamanho do item
 	return Vector2i(int(i[0]), int(i[1]))
 
 

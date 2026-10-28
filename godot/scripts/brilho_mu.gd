@@ -24,6 +24,9 @@ static func _carregar() -> void:
 # o nivel que o item mostra (asa brilha como +0, joia como +8...)
 static func nivel_visivel(chave: String, nivel: int) -> int:
 	_carregar()
+	# Box of Kundun +1 a +5 (14,11 nivel 8 a 12, MODEL_EVENT + 10): ItemGlow.cpp (nivel - 8) * 2 + 1
+	if chave == "14,11" and nivel >= 8 and nivel <= 12:
+		return (nivel - 8) * 2 + 1
 	var c: Array = _cores.get(chave, [])
 	if c.size() > 2 and c[2] is Array:   # flecha, chave e olho do Devil Square: tabela por nivel
 		return int(c[2][clampi(nivel, 0, c[2].size() - 1)])

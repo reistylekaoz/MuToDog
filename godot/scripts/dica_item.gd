@@ -164,7 +164,7 @@ static func linhas(it: Dictionary, topo := []) -> Array:
 		cor = AZUL
 	var n_set := _set_do_item(it)
 	var prefixo: String = (_extra.sets[str(n_set)].nome + " ") if n_set > 0 else ""
-	l.append(_linha((t(620) + " " if exc > 0 else "") + prefixo + ItensMU.nome(it), cor, true))
+	l.append(_linha(ItensMU.tier(it) + (t(620) + " " if exc > 0 else "") + prefixo + ItensMU.nome(it), cor, true))
 	# selos, scrolls, elixires e talismas da loja de cash: o que o buff soma (dados/buffs.json, o mesmo texto da
 	# janela de buffs e o mesmo valor do servidor; ferramentas/dados_buff.py) no lugar do 2253 / 2254 do original
 	if k in ITENS_CASH:

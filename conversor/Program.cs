@@ -28,6 +28,7 @@ if (args[0] == "acoes") { await Personagens.Acoes(args[1]); return; }
 if (args[0] == "personagens") { await Personagens.Rodar(args[1], args[2], args.Length > 3 ? args[3] : null); return; }
 if (args[0] == "itens") { await Itens.Rodar(args[1], args[2], args[3]); return; }
 if (args[0] == "modelos") { await Modelos.Rodar(args[1], args[2], args[3]); return; }
+if (args[0] == "variantes") { await Variantes.Rodar(args[1], args[2], args[3]); return; }
 if (args[0] == "extras") { await Extras.Rodar(args[1], int.Parse(args[2]), args[3]); return; }
 if (args[0] == "efeitos") { await Efeitos.Rodar(args[1], args[2]); return; }
 // conversor textura <arquivo .OZJ/.OZT> <destino.png>: uma textura avulsa (as capas, de Player e Item)

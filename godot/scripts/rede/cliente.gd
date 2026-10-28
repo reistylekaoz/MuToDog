@@ -2378,7 +2378,9 @@ static func item_de(p: PackedByteArray, o: int) -> Dictionary:
 	return {"numero": p[o] | ((p[o + 3] & 0x80) << 1), "grupo": p[o + 5] >> 4, "nivel": (p[o + 1] >> 3) & 0x0F,
 		"sorte": (p[o + 1] & 0x04) != 0, "skill": (p[o + 1] & 0x80) != 0, "exc": p[o + 3] & 0x3F,
 		"durabilidade": p[o + 2], "opcao": (p[o + 1] & 0x03) | ((p[o + 3] & 0x40) >> 4), "anc": p[o + 4],
-		"bytes": p.slice(o, o + 12)}
+		"bytes": p.slice(o, o + 12),
+		# tier do excelente da Box of Kundun (patch do servidor): sem socket (byte 7 = 0xFF) e 0xE0 | tier no ultimo byte
+		"tier": (p[o + 11] & 0x0F) if o + 12 <= p.size() and p[o + 7] == 0xFF and (p[o + 11] & 0xF0) == 0xE0 else 0}
 
 
 static func _le(p: PackedByteArray, o: int) -> int:

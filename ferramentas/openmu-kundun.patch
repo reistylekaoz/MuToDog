@@ -1,0 +1,45 @@
+diff --git a/src/GameLogic/PlayerActions/Items/ItemBoxDroppedPlugIn.cs b/src/GameLogic/PlayerActions/Items/ItemBoxDroppedPlugIn.cs
+index b79d3b4..e7c7291 100644
+--- a/src/GameLogic/PlayerActions/Items/ItemBoxDroppedPlugIn.cs
++++ b/src/GameLogic/PlayerActions/Items/ItemBoxDroppedPlugIn.cs
+@@ -5,6 +5,7 @@
+ namespace MUnique.OpenMU.GameLogic.PlayerActions.Items;
+ 
+ using System.Runtime.InteropServices;
++using MUnique.OpenMU.DataModel.Configuration.Items;
+ using MUnique.OpenMU.GameLogic.PlugIns;
+ using MUnique.OpenMU.GameLogic.Views.Character;
+ using MUnique.OpenMU.Pathfinding;
+@@ -45,6 +46,14 @@ public sealed class ItemBoxDroppedPlugIn : IItemDropPlugIn
+ 
+         if (item is not null)
+         {
++            // Box of Kundun +1..+5 (nivel 8 a 12): o item excelente guarda o tier (nivel da caixa) no PetExperience, que fica sem uso em item que nao e pet.
++            if (sourceItem.Definition.Group == 14 && sourceItem.Definition.Number == 11 && sourceItem.Level is >= 8 and <= 12
++                && item.Definition?.PetExperienceFormula is null
++                && item.ItemOptions.Any(o => o.ItemOption?.OptionType == ItemOptionTypes.Excellent))
++            {
++                item.PetExperience = sourceItem.Level - 7;
++            }
++
+             var droppedItem = new DroppedItem(item, player.Position, player.CurrentMap!, player);
+             await player.CurrentMap!.AddAsync(droppedItem).ConfigureAwait(false);
+         }
+diff --git a/src/GameServer/RemoteView/ItemSerializer.cs b/src/GameServer/RemoteView/ItemSerializer.cs
+index eb9747d..967899a 100644
+--- a/src/GameServer/RemoteView/ItemSerializer.cs
++++ b/src/GameServer/RemoteView/ItemSerializer.cs
+@@ -114,6 +114,13 @@ public class ItemSerializer : IItemSerializer
+         target[6] = (byte)(GetHarmonyByte(item) | GetSocketBonusByte(item));
+         SetSocketBytes(target.Slice(7, MaximumSockets), item);
+ 
++        // Tier do item excelente da Box of Kundun: item sem socket leva 0xE0 | tier no ultimo byte (o cliente Godot le).
++        if (item.SocketCount == 0 && item.Definition.MaximumSockets == 0 && item.Definition.PetExperienceFormula is null
++            && item.PetExperience is >= 1 and <= 15)
++        {
++            target[7 + MaximumSockets - 1] = (byte)(0xE0 | item.PetExperience);
++        }
++
+         return this.NeededSpace;
+     }
+ 
