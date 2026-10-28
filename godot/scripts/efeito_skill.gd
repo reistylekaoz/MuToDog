@@ -73,7 +73,7 @@ static func criar(pai: Node3D, n: int, quem, alvo, area := false) -> void:
 		17: _bola_de_energia(e, de, alvo)
 		38: _decadencia(e, para)
 		39: _tempestade_de_gelo(e, para)
-		41: _giro(e, quem, b)
+		41: _giro(e, quem, b, frente)
 		42: _furia(e, de, frente)
 		43: _estocada(e, quem, b, frente, alvo)
 		47: _empalar(e, de, b, frente)
@@ -415,37 +415,41 @@ static func _tempestade_de_gelo(e: EfeitoMU, para: Vector3) -> void:
 
 # --- cavaleiro e gladiador ---------------------------------------------------------
 
-# Twisting Slash: 5 copias da arma deitada girando em volta, 1,5 tile de raio
-static func _giro(e: EfeitoMU, quem, b: Boneco) -> void:
+# Twisting Slash (MODEL_SKILL_WHEEL1 e 2): 5 copias da arma, uma por tick, saindo da frente do dono (0,-150
+# girado pelo angulo dele; lanca a 180) e dando a volta a 18 graus por tick, 1 m acima. RenderWheelWeapon deita a
+# arma (Angle[1] = 90) e gira ela no proprio cabo, no eixo de cima: Angle[2] + Direction[2], com o Direction
+# descendo 30 por tick (48 graus por tick no total, no mesmo sentido da volta)
+static func _giro(e: EfeitoMU, quem, b: Boneco, frente: Vector3) -> void:
 	await e.get_tree().create_timer(0.2).timeout
 	if not is_instance_valid(e) or typeof(quem) != TYPE_OBJECT or not is_instance_valid(quem):
 		return
+	var a0 := atan2(frente.x, frente.z)
+	var raio := 1.8 if b and str(b._equip.get(0, "")).begins_with("3,") else 1.5
 	for i in 5:
 		var arma: Node3D = b.arma_copia() if b else null
-		var alfa: float = [0.6, 0.6, 0.5, 0.4, 0.3][i]
+		var alfa: float = [1.0, 0.6, 0.5, 0.4, 0.3][i]
 		var p: Dictionary
 		if arma:
 			var suporte := Node3D.new()
 			suporte.add_child(arma)
-			suporte.rotation_degrees = Vector3(-90, 180, 0)
+			suporte.rotation_degrees = Vector3(-90, 0, 0)   # coordenadas do MU (z pra cima) pro Godot
 			suporte.scale = Vector3.ONE * 0.01
-			p = e.no_pronto(suporte, _pos(quem), 1.0, Color(alfa, alfa, alfa), 25 * T, {some = 0.4})
+			p = e.no_pronto(suporte, _pos(quem), 1.0, Color(alfa, alfa, alfa), 25 * T,
+				{some = 0.4, base = Basis(Vector3.BACK, -PI / 2)})   # Angle[1] = 90 do MU
 		else:
 			p = e.sprite("flare01", _pos(quem), 1.0, Color(1, 0.8, 0.6, alfa), 25 * T)
 		var atraso := i * T
 		p.anda = func(pp, _k):
-			var t: float = maxf(pp.t - atraso, 0.0)
-			var ang := -deg_to_rad(18.0) * t / T
+			var n: float = maxf(pp.t - atraso, 0.0) / T
+			var ang := a0 - deg_to_rad(18.0) * n
 			var centro: Vector3 = _pos(quem) if is_instance_valid(quem) else pp.no.global_position
-			pp.no.global_position = centro + Vector3(sin(ang), 1.0, cos(ang)) * Vector3(1.5, 1.0, 1.5)
-			pp.giro = ang + deg_to_rad(15.0) * (t / T) * (t / T)
-			if pp.has("mats"):
-				pp.base = Basis(Vector3.RIGHT, PI / 2)
+			pp.no.global_position = centro + Vector3(sin(ang) * raio, 1.0, cos(ang) * raio)
+			pp.giro = ang - deg_to_rad(30.0) * (n + 1.0)
 	e.tarefa(T, 25 * T, func(ef, i):
 		if not is_instance_valid(quem):
 			return
-		var ang: float = -deg_to_rad(18.0) * i
-		var q := _pos(quem) + Vector3(sin(ang) * 1.5, 1.0, cos(ang) * 1.5)
+		var ang: float = a0 - deg_to_rad(18.0) * i
+		var q := _pos(quem) + Vector3(sin(ang) * raio, 1.0, cos(ang) * raio)
 		ef.sprite("flare01", q, 0.64 * 2, Color(1, 0.8, 0.6), T * 3)
 		if i % 2 == 0:
 			fumaca(ef, q, Color(0.35, 0.35, 0.4), 0.7, 0.6)
