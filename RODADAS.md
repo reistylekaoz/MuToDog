@@ -66,3 +66,6 @@ no rodapé). Teste: testes/servidor_selecao.gd; fotos: testes/tela_servidor.mjs 
   testes/rodada_pontos_vivo.sh (socketDl: 250 em força, 1 em agilidade, 40 em vitalidade) e as fotos de
   testes/tela_pontos.mjs (dados/gravacao_pontos.txt). Fora disto: testes/buffs.gd já falhava antes (buffs.json com
   mais de 158 depois dos selos da rodada 23).
+- Banco do OpenMU daqui (28/10): MG, DL e RF liberados na criação em todas as 20 contas (data.AccountCharacterClass,
+  57 linhas; o F3 00 da conta socket passou a mandar 14). Conta nova criada depois não ganha sozinha.
+  ferramentas/dar_item.sh põe item direto na mochila quando a conta sai do jogo (Box of Kundun +1 = 14,11 nível 8).
