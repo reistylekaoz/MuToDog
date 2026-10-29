@@ -84,3 +84,28 @@ no rodapé). Teste: testes/servidor_selecao.gd; fotos: testes/tela_servidor.mjs 
 - Troca pelo D: quando a troca abre, a janela do D (comandos) fecha, porque ela fica no mesmo canto do inventário e
   ficava por cima dele. Teste: testes/dois.sh test300Dl pede com o D aberto ("inventario aberto, janela do D
   fechada"); foto testes/tela_troca_d.mjs (dados/gravacao_troca_d.txt).
+- Item 3D no inventário (29/10, pedido do Murilo: "ao colocar o mouse em cima de um item, alguns rodam no seu
+  próprio eixo [...] sem falar nos efeitos dos itens no inventário"). scripts/vitrine_3d.gd (Vitrine3D), chamada
+  pelo ItensMU.desenhar: vai em 3D o item embaixo do mouse e o da mão (gira 0,45 grau por ms no Angle[1], o
+  SelectedItemTurnSpeed do ZzzInventory.cpp RenderObjectScreen), o que gira sozinho (renderStyle gambleItem,
+  13,71 a 13,75, 0,2 grau por ms) e o que tem brilho de nível (BrilhoMU, joia conta +8). O resto segue no ícone do
+  atlas. Rotação do inventário: dados/modelos/inventario.json (ferramentas/inventario_giro.py, do
+  ref/Items/Models). Um SubViewport do tamanho da janela pros parados e outro 1,8x a casa pro foco (sai da casa
+  ao girar, como no original). Vale pra toda janela que usa ItensMU.desenhar (baú, loja, troca, barra).
+  Foto: testes/tela_inv3d.mjs (?inv_teste=1 enche a mochila de mentira). Falta: os renderStyle do MuMain
+  (luckyItem, socketSeed, chromeMesh...) e os itemEffect, que nem o chão nem o boneco têm ainda.
+- Baú da conta test0 (29/10): 10 Box of Kundun +1 (14,11 nível 8) nos slots 40 a 49, direto no banco; ids em
+  backup/kundun-test0-*.txt.
+- Telhado some ao entrar (29/10, pedido do Murilo: "no original o telhado fica invisivel ao entrar nos locais").
+  Como o MoveObject do MuMain: Lorencia tipos 125 e 126 somem com o herói no tile de atributo 4; Devias tipos 81,
+  82, 96, 98 e 99 com tile 3 ou 10 em diante. Mundo.TELHADOS, dentro_de_casa e atualizar_telhados (chamado no
+  _process do jogo), alfa vai a 0,05 por quadro (1,25 por segundo), material com alfa feito do objeto.gdshader.
+  Teste ao vivo: "TESTE telhado some em 128,131 (12 pecas)" e "volta em 129,132"; foto testes/tela_telhado.mjs
+  (dados/gravacao_telhado.txt).
+- Botão e campo no jeito do MU (29/10, pedido do Murilo: "alguns imputs e botões estão seguindo o modelo padrão
+  do Godot, como o menu dentro do jogo e o imput de distribuir pontos"). menu_sistema.gd refeito com as texturas
+  do cliente: caixa do Esc (CSystemMenuMsgBox, 5 botões vazios: Exit Game, Select Server, Switch Character,
+  Option, Cancel) e janela Option (CNewUIOptionWindow: volume, música e brilho em barras de 10 passos, Close).
+  JanelaMU.campo_preto (campo preto de letra creme, como o da caixa de mensagem), botao_mu (botão de 3 estados),
+  painel_mu (fundo de pedra) e tema_mu (tema global do jogo, no lugar do roxo). Caixa de pontos, senha, Mover,
+  loja pessoal, botão Sair e perguntas passaram a usar isso. Foto: testes/tela_ui.mjs (?ui_teste=1).

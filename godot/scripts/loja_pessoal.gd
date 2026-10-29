@@ -222,12 +222,7 @@ func _draw() -> void:
 func _perguntar(texto: String, com_campo: bool, valor: int, ok: Callable) -> void:
 	_fechar_pergunta()
 	_caixa = PanelContainer.new()
-	var e := StyleBoxFlat.new()
-	e.bg_color = Color(0.05, 0.04, 0.03, 0.96)
-	e.border_color = Color(0.6, 0.5, 0.3)
-	e.set_border_width_all(1)
-	e.set_content_margin_all(6)
-	_caixa.add_theme_stylebox_override("panel", e)
+	JanelaMU.painel_mu(_caixa, 8)
 	var v := VBoxContainer.new()
 	_caixa.add_child(v)
 	var l := Label.new()
@@ -257,7 +252,7 @@ func _perguntar(texto: String, com_campo: bool, valor: int, ok: Callable) -> voi
 	for sim in [true, false]:
 		var b := Button.new()
 		b.text = ("Comprar" if not com_campo else "OK") if sim else "Cancelar"
-		b.add_theme_font_size_override("font_size", 9)
+		JanelaMU.botao_mu(b, "btn_pequeno")
 		b.pressed.connect(feito if sim else _fechar_pergunta)
 		h.add_child(b)
 	if campo:

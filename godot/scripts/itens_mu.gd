@@ -244,9 +244,19 @@ static func tier(it: Dictionary) -> String:
 	return "(Tier %d) " % n if n > 0 and int(it.get("exc", 0)) > 0 else ""
 
 
-# desenha o icone do item dentro do retangulo (centrado, sem esticar)
-static func desenhar(ci: CanvasItem, it: Dictionary, r: Rect2, cor := Color.WHITE) -> void:
+# a janela do inventario esta com um item no mouse (nenhum outro gira embaixo do mouse)
+static var segurando := false
+
+
+# desenha o item dentro do retangulo (centrado, sem esticar): em 3D pela Vitrine3D quando ele brilha,
+# gira sozinho ou esta embaixo do mouse (mao = o item que o mouse carrega, sempre gira); senao o icone
+static func desenhar(ci: CanvasItem, it: Dictionary, r: Rect2, cor := Color.WHITE, mao := false) -> void:
 	_carregar()
+	var foco := mao or (not segurando and r.has_point(ci.get_local_mouse_position()))
+	if foco or Vitrine3D.vivo(it):
+		var v := Vitrine3D.de(ci)
+		if v and v.desenhar(it, r, cor, foco):
+			return
 	var a: Array = _icones.get(chave_nivel(it), _icones.get(chave(it), []))
 	if a.is_empty() or _atlas == null:
 		ci.draw_rect(r.grow(-2), Color(0.5, 0.5, 0.6, 0.5 * cor.a))

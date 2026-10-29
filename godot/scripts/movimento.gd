@@ -22,13 +22,7 @@ func _ready() -> void:
 		lista = d.lista
 		portais = d.portais
 		reducao = d.reducao
-	var e := StyleBoxFlat.new()
-	e.bg_color = Color(0.05, 0.04, 0.03, 0.94)
-	e.border_color = Color(0.55, 0.45, 0.25)
-	e.set_border_width_all(1)
-	e.set_corner_radius_all(4)
-	e.set_content_margin_all(12)
-	add_theme_stylebox_override("panel", e)
+	JanelaMU.painel_mu(self)
 	custom_minimum_size = Vector2(360, 0)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
@@ -40,6 +34,7 @@ func _ready() -> void:
 	topo.add_child(t)
 	var x := Button.new()
 	x.text = "Fechar (M)"
+	JanelaMU.botao_mu(x)
 	x.pressed.connect(func(): visible = false)
 	topo.add_child(x)
 	var cab := HBoxContainer.new()

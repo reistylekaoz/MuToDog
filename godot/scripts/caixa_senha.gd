@@ -30,6 +30,7 @@ func _init() -> void:
 	_conta.position = Vector2(30, 70)
 	_conta.size = Vector2(L - 60, 18)
 	_conta.add_theme_font_size_override("font_size", 10)
+	JanelaMU.campo_preto(_conta)
 	_conta.visible = false
 	_conta.text_submitted.connect(func(_t): _ok())
 	add_child(_conta)

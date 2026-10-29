@@ -34,6 +34,7 @@ func _init(textos: Array = [], cancelar := true, com_senha := false) -> void:
 	_campo.max_length = 20
 	_campo.add_theme_font_size_override("font_size", 10)
 	_campo.visible = senha
+	JanelaMU.campo_preto(_campo)
 	_campo.text_submitted.connect(func(_t): responder(true))
 	add_child(_campo)
 

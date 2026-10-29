@@ -386,6 +386,82 @@ func definir_brilho(v: float) -> void:
 		m.set_shader_parameter("brilho", brilho_mapa())
 
 
+# Telhado que some quando o heroi entra na casa (ZzzObject.cpp MoveObject): na Lorencia as pecas
+# MODEL_HOUSE_WALL01 + 4 e + 5 (125 e 126) com o heroi no chao de textura 4 (dentro da taverna e das
+# casas); em Devias os objetos 81, 82, 96, 98 e 99 no chao 3 ou de 10 em diante. O Alpha do ZzzAI.cpp anda
+# 0,05 por quadro do cliente (25 por segundo): 1,25 por segundo. Inteiro, o telhado volta pro material de
+# sempre; so no meio do caminho ele usa a copia com alfa (objeto.gdshader + ALPHA).
+const TELHADOS := {1: [125, 126], 3: [81, 82, 96, 98, 99]}
+var _telhado: Array = []    # [MeshInstance3D, superficie, material de sempre, material com alfa]
+var _telhado_nos: Array = []
+var _telhado_pronto := false
+var _telhado_alfa := 1.0
+var _telhado_alvo := 1.0
+static var _sh_telhado: Shader
+
+
+func dentro_de_casa(x: int, y: int) -> bool:
+	var c := camada1(x, y)
+	if numero == 1:
+		return c == 4
+	if numero == 3:
+		return c == 3 or c >= 10
+	return false
+
+
+func atualizar_telhados(x: int, y: int, dt: float) -> void:
+	if not TELHADOS.has(numero):
+		return
+	if not _telhado_pronto:
+		_preparar_telhados()
+	if _telhado.is_empty():
+		return
+	var alvo := 0.0 if dentro_de_casa(x, y) else 1.0
+	if alvo != _telhado_alvo:
+		_telhado_alvo = alvo
+		print("TESTE telhado %s em %d,%d (%d pecas)" % ["some" if alvo == 0.0 else "volta", x, y, _telhado_nos.size()])
+	if is_equal_approx(_telhado_alfa, alvo):
+		return
+	_telhado_alfa = move_toward(_telhado_alfa, alvo, 1.25 * dt)
+	var inteiro := _telhado_alfa >= 1.0
+	for e in _telhado:
+		var mi: MeshInstance3D = e[0]
+		mi.set_surface_override_material(e[1], e[2] if inteiro else e[3])
+		if not inteiro:
+			(e[3] as ShaderMaterial).set_shader_parameter("alfa", _telhado_alfa)
+	for n: Node3D in _telhado_nos:
+		n.visible = _telhado_alfa >= 0.01
+
+
+func _preparar_telhados() -> void:
+	_telhado_pronto = true
+	if _sh_telhado == null:
+		var codigo := (preload("res://scripts/objeto.gdshader") as Shader).code
+		codigo = codigo.replace("render_mode unshaded, cull_disabled;", "render_mode unshaded, cull_disabled, depth_draw_always;\nuniform float alfa = 1.0;")
+		codigo = codigo.replace("ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2));", "ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2));\n\tALPHA = alfa;")
+		_sh_telhado = Shader.new()
+		_sh_telhado.code = codigo
+	var tipos: Array = TELHADOS[numero]
+	var copias := {}
+	for par in nos_objetos:
+		if not is_instance_valid(par[0]) or int(par[1].t) not in tipos:
+			continue
+		_telhado_nos.append(par[0])
+		for mi: MeshInstance3D in (par[0] as Node).find_children("*", "MeshInstance3D", true, false):
+			if mi.mesh == null:
+				continue
+			for i in mi.mesh.get_surface_count():
+				var m := mi.get_surface_override_material(i) as ShaderMaterial
+				if m == null:
+					continue
+				if not copias.has(m):
+					var c := m.duplicate() as ShaderMaterial
+					c.shader = _sh_telhado
+					copias[m] = c
+					materiais[RefCounted.new()] = c   # segue o brilho e a luz do mapa (teclas - e =)
+				_telhado.append([mi, i, m, copias[m]])
+
+
 func mundo_invisivel(m: String) -> bool:
 	return numero == 1 and (m.begins_with("light0") or m == "posebox01")
 

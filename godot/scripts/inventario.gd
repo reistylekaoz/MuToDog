@@ -215,6 +215,7 @@ func slot_sob_mouse() -> int:
 # --- desenho ---------------------------------------------------------------------
 
 func _draw() -> void:
+	ItensMU.segurando = na_mao >= 0 and itens.has(na_mao)
 	draw_texture_rect(_tex.inv_fundo, Rect2(0, 0, L, A), false)
 	draw_texture_rect(_tex.inv_topo, Rect2(0, 0, 190, 64), false)
 	draw_texture_rect(_tex.inv_esq, Rect2(0, 64, 21, 320), false)
@@ -270,7 +271,7 @@ func _draw() -> void:
 	# item na mao segue o mouse; dica do item embaixo do mouse
 	if na_mao >= 0 and itens.has(na_mao):
 		var t := Vector2(ItensMU.tamanho(itens[na_mao])) * CASA
-		ItensMU.desenhar(self, itens[na_mao], Rect2(_mouse - t / 2.0, t))
+		ItensMU.desenhar(self, itens[na_mao], Rect2(_mouse - t / 2.0, t), Color.WHITE, true)
 		DicaItem.esconder(self)
 	else:
 		var s := slot_sob_mouse()

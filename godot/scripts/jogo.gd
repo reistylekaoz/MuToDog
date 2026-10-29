@@ -860,13 +860,8 @@ func _montar_ui() -> void:
 	add_child(ui)
 	var tema := Theme.new()
 	tema.default_font_size = 17
-	tema.set_stylebox("panel", "PanelContainer", _estilo(Color(0.08, 0.08, 0.11, 0.96), Color(0.25, 0.22, 0.4)))
-	tema.set_stylebox("normal", "LineEdit", _estilo(Color(0.13, 0.13, 0.17), Color(0.3, 0.3, 0.38)))
-	tema.set_stylebox("focus", "LineEdit", _estilo(Color(0.13, 0.13, 0.17), ROXO))
-	tema.set_stylebox("normal", "Button", _estilo(Color(0.2, 0.17, 0.36)))
-	tema.set_stylebox("hover", "Button", _estilo(Color(0.28, 0.23, 0.5)))
-	tema.set_stylebox("pressed", "Button", _estilo(Color(0.35, 0.29, 0.62)))
-	tema.set_stylebox("disabled", "Button", _estilo(Color(0.14, 0.14, 0.17)))
+	# o que nao e desenhado a mao sai com as texturas do cliente (botao vazio, campo preto, pedra das caixas)
+	JanelaMU.tema_mu(tema)
 	tema.set_color("font_color", "Label", Color(0.88, 0.88, 0.92))
 	var raiz := Control.new()
 	raiz.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1148,6 +1143,7 @@ func _montar_ui() -> void:
 			brilho = mundo.brilho)
 	menu.trocar_personagem.connect(func(): cli.sair_para(1))
 	menu.sair_jogo.connect(func(): cli.sair_para(0))
+	menu.trocar_servidor.connect(func(): cli.sair_para(2))
 	menu.mover.connect(func(): mover_janela.abrir(meu_nivel, meu_zen, minha_classe))
 	hud.add_child(menu)
 	mover_janela = Movimento.new()
@@ -1173,6 +1169,7 @@ func _montar_ui() -> void:
 	hud.add_child(comandos)
 	var sair := Button.new()
 	sair.text = "Sair"
+	JanelaMU.botao_mu(sair, "btn_pequeno")
 	sair.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	sair.position = Vector2(-90, 12)
 	sair.pressed.connect(_sair)
@@ -1451,6 +1448,10 @@ func _entrou(info: Dictionary) -> void:
 	print("TESTE entrou %s" % info)
 	if _parametros().has("chao_teste"):
 		_chao_teste(info.x, info.y)
+	if _parametros().has("inv_teste"):
+		_inv_teste()
+	if _parametros().has("ui_teste"):
+		_ui_teste()
 	if _parametros().has("uma_skill"):
 		_teste_uma_skill(int(_parametros().uma_skill))
 	if _parametros().has("roteiro"):
@@ -2094,6 +2095,7 @@ func _process(dt: float) -> void:
 	if npc_falando >= 0 and (not entidades.has(npc_falando) or _distancia(eu.tile, entidades[npc_falando].tile) > 5):
 		_fechar_loja()
 	som.atualizar(mapa_atual, seg, mundo.camada1(eu.tile.x, eu.tile.y), eu.tile.x, eu.tile.y)
+	mundo.atualizar_telhados(eu.tile.x, eu.tile.y, dt)
 	_conferir_portal()
 	hud_texto.text = "%s  ·  %s  (%d, %d)%s" % [meu_nome, mapas.get(str(mapa_atual), "?"), eu.tile.x, eu.tile.y, "  ·  zona segura" if seg else ""]
 
@@ -2593,31 +2595,9 @@ func comando_local(t: String) -> bool:
 
 
 # caixa de sim ou nao no meio da tela (convite de grupo, duelo)
+# (a caixa de mensagem do cliente, OK e Cancel, como o convite de grupo e de troca do S6)
 func _perguntar(texto: String, resposta: Callable) -> void:
-	var caixa := PanelContainer.new()
-	caixa.add_theme_stylebox_override("panel", _estilo(Color(0.05, 0.04, 0.03, 0.92), Color(0.6, 0.5, 0.3)))
-	caixa.set_anchors_preset(Control.PRESET_CENTER)
-	var v := VBoxContainer.new()
-	caixa.add_child(v)
-	var l := Label.new()
-	l.text = texto
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(l)
-	var h := HBoxContainer.new()
-	h.alignment = BoxContainer.ALIGNMENT_CENTER
-	v.add_child(h)
-	for ok in [true, false]:
-		var b := Button.new()
-		b.text = "Aceitar" if ok else "Recusar"
-		b.pressed.connect(func():
-			resposta.call(ok)
-			caixa.queue_free())
-		h.add_child(b)
-	hud.add_child(caixa)
-	caixa.position = (get_viewport().get_visible_rect().size - caixa.get_combined_minimum_size()) / 2.0
-	if _parametros().has("aceitar"):
-		resposta.call(true)
-		caixa.queue_free()
+	_caixa_mu([texto], func(ok, _t): resposta.call(ok))
 
 
 # resposta do ponto distribuido (F3 06): o servidor manda o maximo novo que dependia dele
@@ -4133,6 +4113,53 @@ func _itens_cairam(lista_itens: Array) -> void:
 		itens[d.id] = it
 
 
+# testes (?ui_teste=1): o que era do tema do Godot, pra foto (testes/tela_ui.mjs): a caixa do Esc, a janela
+# Option, a caixa de quantos pontos, o convite (caixa OK e Cancel), a janela Move e a de amigos
+func _ui_teste() -> void:
+	await get_tree().create_timer(1.5).timeout
+	menu.alternar(brilho)
+	print("TESTE ui menu")
+	await get_tree().create_timer(2.5).timeout
+	menu._clicou("opcao")
+	print("TESTE ui opcao")
+	await get_tree().create_timer(2.5).timeout
+	menu.visible = false
+	meus_pontos = maxi(meus_pontos, 50)
+	_pontos_quantos(0)
+	print("TESTE ui pontos")
+	await get_tree().create_timer(2.5).timeout
+	if is_instance_valid(_caixa_pontos):
+		_caixa_pontos.queue_free()
+	_perguntar("Fulano te chamou pro grupo.", func(_ok): pass)
+	print("TESTE ui convite")
+	await get_tree().create_timer(2.5).timeout
+	for c in hud.get_children():
+		if c is CaixaMU:
+			c.queue_free()
+	mover_janela.abrir(meu_nivel, meu_zen, minha_classe)
+	amigos.alternar()
+	print("TESTE ui mover")
+
+
+# testes (?inv_teste=1): mochila de mentira com o que vai em 3D (joias, +7 a +15, Box of Kundun, itens que
+# giram sozinhos) e o que fica no icone, pra foto (testes/tela_inv3d.mjs passa o mouse nas casas)
+func _inv_teste() -> void:
+	await get_tree().create_timer(1.0).timeout
+	var l := {}
+	var lista := [[14, 13, 0, 12], [14, 14, 0, 13], [14, 16, 0, 14], [14, 22, 0, 15], [14, 11, 8, 16], [14, 11, 12, 17],
+		[13, 71, 0, 18], [14, 1, 0, 19], [0, 1, 7, 20], [0, 1, 9, 21], [0, 1, 11, 22], [0, 1, 13, 23],
+		[0, 1, 15, 24], [6, 2, 0, 25], [8, 5, 9, 44], [12, 36, 13, 46], [5, 0, 0, 51]]
+	for e in lista:
+		l[e[3]] = {"grupo": e[0], "numero": e[1], "nivel": e[2], "sorte": false, "skill": false, "exc": 0,
+			"durabilidade": 1 if e[0] == 14 else 50, "opcao": 0, "anc": 0, "tier": 0, "bytes": PackedByteArray()}
+	l[3] = {"grupo": 8, "numero": 5, "nivel": 11, "sorte": false, "skill": false, "exc": 0, "durabilidade": 50,
+		"opcao": 0, "anc": 0, "tier": 0, "bytes": PackedByteArray()}
+	inv.definir(l)
+	if not inv.visible:
+		inv.alternar()
+	print("TESTE inv pronto")
+
+
 # testes (?chao_teste=1): uma fileira de itens de mentira no chao em volta de mim, pra foto
 func _chao_teste(x: int, y: int) -> void:
 	var l := []
@@ -4541,9 +4568,12 @@ func _teste_falar(quem: String) -> void:
 func _teste_foco_tab() -> void:
 	await get_tree().create_timer(2.0).timeout
 	menu.alternar(brilho)
-	var b: Button = menu.find_children("*", "Button", true, false)[0]
-	b.grab_focus()
-	print("TESTE foco_tab: foco em '%s'" % b.text)
+	menu.visible = false
+	# o menu nao tem mais Button (e desenhado como o do cliente): o foco vai num botao qualquer do hud
+	var bs := hud.find_children("*", "BaseButton", true, false)
+	if not bs.is_empty():
+		bs[0].grab_focus()
+	print("TESTE foco_tab: foco em '%s'" % (bs[0].name if not bs.is_empty() else "nenhum"))
 	for i in 2:
 		var t := InputEventKey.new()
 		t.keycode = KEY_TAB

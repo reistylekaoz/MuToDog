@@ -286,3 +286,86 @@ static func campo(limite: int, cor := Color8(230, 220, 200)) -> LineEdit:
 	e.custom_minimum_size = Vector2(0, 14)
 	e.context_menu_enabled = false
 	return e
+
+
+# campo da caixa de mensagem (CNewUITextInputMsgBox: SetBackColor(255, 0, 0, 0) e SetTextColor(255, 255, 230, 210),
+# alfa primeiro): fundo preto cheio, letra creme, sem a moldura branca do Godot
+static func campo_preto(e: LineEdit) -> void:
+	var preto := StyleBoxFlat.new()
+	preto.bg_color = Color(0, 0, 0, 1)
+	preto.content_margin_left = 3
+	preto.content_margin_right = 3
+	preto.content_margin_top = 1
+	preto.content_margin_bottom = 1
+	for s in ["normal", "focus", "read_only"]:
+		e.add_theme_stylebox_override(s, preto)
+	var cor := Color8(255, 230, 210)
+	e.add_theme_color_override("font_color", cor)
+	e.add_theme_color_override("caret_color", cor)
+	e.add_theme_color_override("font_selected_color", Color.BLACK)
+	e.add_theme_color_override("selection_color", Color8(255, 230, 210, 200))
+	e.context_menu_enabled = false
+
+
+# botao com a textura do cliente (newui_btn_empty: btn_pequeno 64, btn_vazio 108, btn_grande 180; tres
+# quadros de 29 empilhados: normal, mouse em cima, apertado), letra branca de 10 como nas caixas
+static func botao_mu(b: Button, nome := "btn_vazio") -> void:
+	var tex: Texture2D = load("res://dados/hud/%s.png" % nome)
+	var w := float(tex.get_width())
+	for par in [["normal", 0], ["hover", 1], ["pressed", 2], ["focus", 0], ["disabled", 0]]:
+		var s := StyleBoxTexture.new()
+		s.texture = tex
+		s.region_rect = Rect2(0, 29 * par[1], w, 29)
+		s.texture_margin_left = 6
+		s.texture_margin_right = 6
+		s.texture_margin_top = 6
+		s.texture_margin_bottom = 6
+		s.content_margin_left = 8
+		s.content_margin_right = 8
+		s.content_margin_top = 4
+		s.content_margin_bottom = 4
+		if par[0] == "disabled":
+			s.modulate_color = Color(0.5, 0.5, 0.5)
+		b.add_theme_stylebox_override(par[0], s)
+	b.add_theme_font_size_override("font_size", 10)
+	for c in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color"]:
+		b.add_theme_color_override(c, Color.WHITE)
+	b.add_theme_color_override("font_disabled_color", Color(0.55, 0.55, 0.55))
+	b.custom_minimum_size = Vector2(maxf(b.custom_minimum_size.x, w), 29)
+	b.focus_mode = Control.FOCUS_NONE
+
+
+# fundo das janelas que ainda sao montadas com containers: a pedra escura das caixas do cliente
+# (newui_msgbox_back) com uma borda dourada fina, no lugar do painel do Godot
+static func painel_mu(c: Control, margem := 12) -> void:
+	var s := StyleBoxTexture.new()
+	s.texture = load("res://dados/hud/msg_fundo.png")
+	s.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+	s.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+	s.set_content_margin_all(margem)
+	c.add_theme_stylebox_override("panel", s)
+
+
+# o tema do hud inteiro (jogo.gd): Button com o newui_btn_empty, LineEdit e TextEdit pretos com letra creme,
+# PanelContainer na pedra das caixas; quem precisa de outro visual sobrescreve no proprio controle
+static func tema_mu(t: Theme) -> void:
+	var modelo := Button.new()
+	botao_mu(modelo)
+	for k in ["normal", "hover", "pressed", "focus", "disabled"]:
+		t.set_stylebox(k, "Button", modelo.get_theme_stylebox(k))
+	for c in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color", "font_disabled_color"]:
+		t.set_color(c, "Button", modelo.get_theme_color(c))
+	modelo.free()
+	var campo := LineEdit.new()
+	campo_preto(campo)
+	for k in ["normal", "focus", "read_only"]:
+		t.set_stylebox(k, "LineEdit", campo.get_theme_stylebox(k))
+		t.set_stylebox(k, "TextEdit", campo.get_theme_stylebox(k))
+	for c in ["font_color", "caret_color", "font_selected_color", "selection_color"]:
+		t.set_color(c, "LineEdit", campo.get_theme_color(c))
+		t.set_color(c, "TextEdit", campo.get_theme_color(c))
+	campo.free()
+	var painel := PanelContainer.new()
+	painel_mu(painel)
+	t.set_stylebox("panel", "PanelContainer", painel.get_theme_stylebox("panel"))
+	painel.free()

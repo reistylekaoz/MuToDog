@@ -20,13 +20,7 @@ var _aviso: Label
 
 
 func _ready() -> void:
-	var e := StyleBoxFlat.new()
-	e.bg_color = Color(0.05, 0.04, 0.03, 0.92)
-	e.border_color = Color(0.55, 0.45, 0.25)
-	e.set_border_width_all(1)
-	e.set_corner_radius_all(4)
-	e.set_content_margin_all(12)
-	add_theme_stylebox_override("panel", e)
+	JanelaMU.painel_mu(self)
 	set_anchors_preset(Control.PRESET_TOP_LEFT)
 	position = Vector2(16, 70)
 	custom_minimum_size = Vector2(340, 0)
@@ -40,6 +34,7 @@ func _ready() -> void:
 	topo.add_child(t)
 	var x := Button.new()
 	x.text = "Fechar (F)"
+	JanelaMU.botao_mu(x)
 	x.pressed.connect(func(): visible = false)
 	topo.add_child(x)
 	_caixa = VBoxContainer.new()
@@ -49,6 +44,7 @@ func _ready() -> void:
 	v.add_child(linha)
 	_campo = LineEdit.new()
 	_campo.placeholder_text = "Nome do amigo"
+	JanelaMU.campo_preto(_campo)
 	_campo.max_length = 10
 	_campo.custom_minimum_size = Vector2(190, 0)
 	_campo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -56,6 +52,7 @@ func _ready() -> void:
 	linha.add_child(_campo)
 	var b := Button.new()
 	b.text = "Adicionar"
+	JanelaMU.botao_mu(b, "btn_pequeno")
 	b.pressed.connect(_adicionar)
 	linha.add_child(b)
 	_aviso = _rotulo("O amigo precisa aceitar o pedido. Ele aparece aqui quando o servidor confirmar.", 12, Color(0.7, 0.7, 0.75))
@@ -129,6 +126,7 @@ func _montar() -> void:
 		for aceita in [true, false]:
 			var b := Button.new()
 			b.text = "Aceitar" if aceita else "Recusar"
+			JanelaMU.botao_mu(b, "btn_pequeno")
 			b.pressed.connect(func():
 				pedidos.erase(n)
 				responder.emit(aceita, n)
@@ -148,6 +146,7 @@ func _montar() -> void:
 		h.add_child(_rotulo("Servidor %d" % (lista[n] + 1) if on else "fora", 12, Color(0.75, 0.75, 0.8)))
 		var b := Button.new()
 		b.text = "Apagar"
+		JanelaMU.botao_mu(b, "btn_pequeno")
 		b.pressed.connect(func(): apagar.emit(n))
 		h.add_child(b)
 		_caixa.add_child(h)
