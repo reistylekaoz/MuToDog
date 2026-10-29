@@ -120,3 +120,13 @@ no rodapé). Teste: testes/servidor_selecao.gd; fotos: testes/tela_servidor.mjs 
   classe como no RegisterBtnCharacter (Combo no DK, Party no DW e Elf, corvo no DL, Auto Heal no Elf, Drain
   Life no Summoner, sem skill 2 no DL). Fora da janela responde pelo _has_point. Foto: testes/tela_helper.mjs
   (?helper_teste=1, só DK). "Basic Attack Fallback" não tem texto no Text.bmd (veio do MuMain).
+- Avisos no meio, janela Move, placa do canto e ajuda (29/10, pedido do Murilo: "Avisos globais precisam
+  aparecer no centro da tela, a tela de move do M também está com layout do godot, no topo do lado esquedo
+  também com letras do Godot e tem instruções no topo, crie um botão de ajuda"). avisos_mu.gd faz o UI::Notices
+  (HUD/Notices.cpp): até 6 linhas centradas a partir de y 300, faixa preta pela metade, global (C1 0D tipo 0) em
+  dourado piscando, guilda (tipo 2) em verde água com o texto 483; a cada 12 s sobe uma linha. cliente.gd tem o
+  sinal aviso(tipo, texto). movimento.gd virou o CNewUIMoveCommandWindow desenhado (Warp Command Window, Map,
+  Min. Level e Cost, vermelho no que falta, rolagem do chat, faixa Close). placa_posicao.gd é o
+  CNewUIHeroPositionInfo (Minimap_positionA, B esticada em 96 e C do MacroUI; "Mapa (x , y)"; Setup e Start do
+  MU Helper em 137 e 155). A linha de instruções saiu: botão "?" depois da placa e F1 abrem janela_ajuda.gd
+  (JanelaMU com todos os atalhos). Foto: testes/tela_avisos.mjs (?avisos_teste=1).

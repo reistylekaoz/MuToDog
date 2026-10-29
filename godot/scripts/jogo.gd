@@ -32,7 +32,8 @@ var botao_entrar: Button
 var aviso: Label
 var lista: VBoxContainer
 var hud: Control
-var hud_texto: Label
+var hud_texto: PlacaPosicao
+var janela_ajuda: JanelaAjuda
 var barra_mu: HudMu
 var janela_personagem: JanelaPersonagem
 var comandos: JanelaComandos
@@ -129,6 +130,7 @@ var troca: Troca            # troca com outro jogador (D > Troca)
 var loja_pessoal: LojaPessoal   # a minha loja (S) e a de quem vende (clique no titulo)
 var helper: MuHelper        # MU Helper (Z configura, Home liga)
 var janela_helper: JanelaHelper
+var avisos: AvisosMU          # avisos do meio da tela (UI::Notices)
 var botao_helper: TextureButton
 var titulos_lojas := {}     # id -> titulo da loja aberta (em cima do nome)
 var _preco_pendente := {}   # slot 204+ -> preco que mandei pro servidor
@@ -898,34 +900,21 @@ func _montar_ui() -> void:
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud.visible = false
 	raiz.add_child(hud)
-	# canto de cima: onde estou (o MU mostra o mapa e a posicao) e a ajuda
-	var hv := VBoxContainer.new()
-	hv.position = Vector2(12, 8)
-	hv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud.add_child(hv)
-	hud_texto = Label.new()
-	hud_texto.add_theme_font_size_override("font_size", 15)
-	hud_texto.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45))
-	hud_texto.add_theme_constant_override("outline_size", 4)
-	hud_texto.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	var linha_topo := HBoxContainer.new()
-	linha_topo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hv.add_child(linha_topo)
-	linha_topo.add_child(hud_texto)
+	# canto de cima: a placa do mapa e da posicao do cliente, com os botoes do MU Helper e a ajuda
+	hud_texto = PlacaPosicao.new()
+	hud.add_child(hud_texto)
 	# MU Helper: configurar (Z) e ligar ou desligar (Home), como no quadro da posicao do MuMain
 	var bt_config := _botao_quadros("helper_config", "Configurar o MU Helper (Z)")
 	bt_config.pressed.connect(func(): _alternar_janela_helper())
-	linha_topo.add_child(bt_config)
+	hud_texto.botao(bt_config, 41)
 	botao_helper = _botao_quadros("helper_play", "Ligar o MU Helper (Home)")
 	botao_helper.pressed.connect(func(): helper.alternar())
-	linha_topo.add_child(botao_helper)
-	var ajuda := Label.new()
-	ajuda.text = "Clique: anda, ataca, pega, fala com NPC · botao direito: skill · 1 a 5 troca a skill · Q W E R pocoes · I inventario · C personagem · F amigos · G guilda · U menu · setas giram · roda aproxima · M mover de mapa · S loja pessoal · Z MU Helper (Home liga) · - = brilho"
-	ajuda.add_theme_font_size_override("font_size", 12)
-	ajuda.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
-	ajuda.add_theme_constant_override("outline_size", 3)
-	ajuda.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	hv.add_child(ajuda)
+	hud_texto.botao(botao_helper, 59)
+	janela_ajuda = JanelaAjuda.new()
+	janela_ajuda.visible = false
+	hud_texto.ajuda.connect(func():
+		hud.move_child(janela_ajuda, -1)
+		janela_ajuda.alternar())
 	# a barra do MU embaixo
 	barra_mu = HudMu.new()
 	barra_mu.botao.connect(_botao_barra)
@@ -1094,6 +1083,9 @@ func _montar_ui() -> void:
 	loja_pessoal = LojaPessoal.new()
 	loja_pessoal.inv = inv
 	hud.add_child(loja_pessoal)
+	avisos = AvisosMU.new()
+	hud.add_child(avisos)
+	hud.add_child(janela_ajuda)
 	helper = MuHelper.new()
 	helper.jogo = self
 	add_child(helper)
@@ -1456,6 +1448,8 @@ func _entrou(info: Dictionary) -> void:
 		_ui_teste()
 	if _parametros().has("helper_teste"):
 		_helper_teste()
+	if _parametros().has("avisos_teste"):
+		_avisos_teste()
 	if _parametros().has("uma_skill"):
 		_teste_uma_skill(int(_parametros().uma_skill))
 	if _parametros().has("roteiro"):
@@ -2101,7 +2095,7 @@ func _process(dt: float) -> void:
 	som.atualizar(mapa_atual, seg, mundo.camada1(eu.tile.x, eu.tile.y), eu.tile.x, eu.tile.y)
 	mundo.atualizar_telhados(eu.tile.x, eu.tile.y, dt)
 	_conferir_portal()
-	hud_texto.text = "%s  ·  %s  (%d, %d)%s" % [meu_nome, mapas.get(str(mapa_atual), "?"), eu.tile.x, eu.tile.y, "  ·  zona segura" if seg else ""]
+	hud_texto.texto = "%s (%d , %d)" % [mapas.get(str(mapa_atual), "?"), eu.tile.x, eu.tile.y]
 
 
 func _notification(what: int) -> void:
@@ -4145,6 +4139,22 @@ func _ui_teste() -> void:
 	print("TESTE ui mover")
 
 
+# testes (?avisos_teste=1): aviso global e da guilda no meio da tela, a janela Move e a ajuda (testes/tela_avisos.mjs)
+func _avisos_teste() -> void:
+	await get_tree().create_timer(1.5).timeout
+	avisos.criar("[Lorencia] O evento Blood Castle abre em 5 minutos. Fale com o Messenger of Archangel.", 0)
+	avisos.criar(DicaItem.t(483) % "Todos no Devias as 21h", 1)
+	print("TESTE avisos centro")
+	await get_tree().create_timer(2.5).timeout
+	mover_janela.abrir(meu_nivel, meu_zen, minha_classe)
+	print("TESTE avisos move")
+	await get_tree().create_timer(2.5).timeout
+	mover_janela.visible = false
+	hud.move_child(janela_ajuda, -1)
+	janela_ajuda.abrir()
+	print("TESTE avisos ajuda")
+
+
 # testes (?helper_teste=1): a janela do MU Helper como a do cliente, pra foto (testes/tela_helper.mjs): aba
 # Hunting com skills, a coluna de skills, o Setting da skill 2 e o da pocao, Obtaining e Other Settings
 func _helper_teste() -> void:
@@ -4966,6 +4976,14 @@ func _ligar_troca_loja_helper() -> void:
 	cli.mensagem.connect(func(t):
 		if helper.pedindo and t.to_lower().contains("helper"):
 			helper.pedindo = false)
+	cli.aviso.connect(func(tipo, t):
+		if helper.pedindo and t.to_lower().contains("helper"):
+			helper.pedindo = false
+		if tipo == 2:
+			avisos.criar(DicaItem.t(483) % t, 1)
+			_msg("[color=#64ffc8]%s[/color]" % t)
+		else:
+			avisos.criar(t, 0))
 
 
 func _alternar_minha_loja() -> void:
@@ -5103,8 +5121,14 @@ func _teclas(ev: InputEventKey) -> bool:
 	if k == KEY_HOME:
 		helper.alternar()
 		return true
+	if k == KEY_F1:
+		hud.move_child(janela_ajuda, -1)
+		janela_ajuda.alternar()
+		return true
 	if k == KEY_ESCAPE:
-		if loja_cash.visible:
+		if janela_ajuda.visible:
+			janela_ajuda.fechar()
+		elif loja_cash.visible:
 			if not loja_cash.esc():
 				_fechar_loja_cash()
 		elif correio.fechar_topo():
@@ -6165,7 +6189,7 @@ func _ligar_guilda2() -> void:
 # aviso no meio da tela (o CreateNotice do original) e no registro
 func _aviso(t: String) -> void:
 	_msg("[color=#ffd060]%s[/color]" % t)
-	_mostrar_aviso(t)
+	avisos.criar(t, 0)
 
 
 func _placar() -> void:
@@ -6229,31 +6253,6 @@ func _sair_da_alianca() -> void:
 		return
 	print("TESTE guilda: saindo da alianca")
 	cli.pedir_relacao(1, 2, cli.meu_id)
-
-
-# aviso grande no alto da tela por 5 s (guerra comecou e acabou)
-var _rotulo_aviso: Label
-
-
-func _mostrar_aviso(t: String) -> void:
-	if _rotulo_aviso == null:
-		_rotulo_aviso = Label.new()
-		_rotulo_aviso.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_rotulo_aviso.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_rotulo_aviso.add_theme_color_override("font_color", Color8(255, 220, 90))
-		_rotulo_aviso.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-		_rotulo_aviso.add_theme_constant_override("outline_size", 4)
-		hud.add_child(_rotulo_aviso)
-	var v := get_viewport().get_visible_rect().size
-	_rotulo_aviso.add_theme_font_size_override("font_size", int(13 * v.x / 640.0))
-	_rotulo_aviso.text = t
-	_rotulo_aviso.position = Vector2(0, 110 * v.y / 480.0)
-	_rotulo_aviso.size = Vector2(v.x, 30)
-	_rotulo_aviso.modulate.a = 1.0
-	_rotulo_aviso.visible = true
-	var tw := create_tween()
-	tw.tween_interval(4.0)
-	tw.tween_property(_rotulo_aviso, "modulate:a", 0.0, 1.0)
 
 
 # a bola do Battle Soccer (Arena): nao morre, anda 2 tiles (3 com skill) pro lado oposto de quem bate

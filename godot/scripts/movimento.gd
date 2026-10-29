@@ -1,19 +1,30 @@
 class_name Movimento
-extends PanelContainer
-# Janela Move (M), como o CNewUIMoveCommandWindow do S6: cada destino da lista do
-# servidor (WarpInfo do OpenMU, em dados/movimento.json) com o nivel pedido e o zen.
-# Clique leva (o servidor confere de novo e cobra). Cinza: falta nivel; laranja: falta zen.
-# Os portais do mapa (EnterGate: pisou, entra) ficam em portal_em().
+extends Control
+# Janela Move (M) como o CNewUIMoveCommandWindow do S6 (NewUIMoveCommandWindow.cpp): quadro preto (CC) de 230
+# no canto de cima a esquerda (1,1 na tela de 640), titulo "Warp Command Window" em negrito 255,204,26, colunas
+# Map, Min. Level e Cost em 127,178,255 centradas em x 62, 119 e 159, uma linha por destino de 14, barra de
+# rolagem do chat (newui_scrollbar e newui_scroll_on) e a faixa vermelha (FF990000) do Close embaixo.
+# Pode ir: branco, e a linha embaixo do mouse acende (99CCCC1A). Nao pode: 164,39,17, com o nivel ou o zen que
+# faltam em 255,51,26. Cada destino vem da lista do servidor (WarpInfo do OpenMU, em dados/movimento.json).
+# Clique leva (o servidor confere de novo e cobra). Os portais do mapa (EnterGate) ficam em portal_em().
 
 signal ir(indice: int, nome: String)
+
+const L := 230.0
+const LINHA := 14.0
+const PASTA := "res://dados/hud/"
 
 var lista: Array = []       # [indice, nome, zen, nivel, mapa]
 var portais := {}           # mapa -> [[numero, x1, y1, x2, y2, nivel, destino]]
 var reducao := {}           # classe -> % a menos no nivel
 var mapas := {}             # numero -> nome
-var _caixa: VBoxContainer
-var _rolagem: ScrollContainer
-var _info: Label
+var _linhas: Array = []     # [indice, nome, nivel pedido, zen, pode, falta_nivel, falta_zen]
+var _rolagem := 0
+var _visiveis := 26
+var _mouse := Vector2(-100, -100)
+var _arrastando := false
+var _pega := 0.0
+var _tex := {}
 
 
 func _ready() -> void:
@@ -22,40 +33,28 @@ func _ready() -> void:
 		lista = d.lista
 		portais = d.portais
 		reducao = d.reducao
-	JanelaMU.painel_mu(self)
-	custom_minimum_size = Vector2(360, 0)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
-	add_child(v)
-	var topo := HBoxContainer.new()
-	v.add_child(topo)
-	var t := Amigos._rotulo("Mover", 17, Color(1, 0.86, 0.45))
-	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	topo.add_child(t)
-	var x := Button.new()
-	x.text = "Fechar (M)"
-	JanelaMU.botao_mu(x)
-	x.pressed.connect(func(): visible = false)
-	topo.add_child(x)
-	var cab := HBoxContainer.new()
-	v.add_child(cab)
-	for c in [["Mapa", 170], ["Nivel", 60], ["Zen", 80]]:
-		var l := Amigos._rotulo(c[0], 12, Color(0.65, 0.6, 0.5))
-		l.custom_minimum_size.x = c[1]
-		cab.add_child(l)
-	_rolagem = ScrollContainer.new()
-	_rolagem.custom_minimum_size = Vector2(340, 380)
-	_rolagem.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	v.add_child(_rolagem)
-	_caixa = VBoxContainer.new()
-	_caixa.add_theme_constant_override("separation", 2)
-	_caixa.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_rolagem.add_child(_caixa)
-	_info = Amigos._rotulo("", 12, Color(0.7, 0.7, 0.75))
-	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_info.custom_minimum_size.x = 330
-	v.add_child(_info)
+	for n in ["rolagem_cima", "rolagem_meio", "rolagem_baixo", "rolagem_on", "rolagem_off"]:
+		_tex[n] = load(PASTA + n + ".png")
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	get_viewport().size_changed.connect(_ajustar)
 	visible = false
+
+
+# CalculateLayout: linhas que cabem ate o alto da barra de baixo (480 - 51), 60 de moldura
+func _ajustar() -> void:
+	var v := get_viewport_rect().size
+	var e := v.x / 640.0
+	scale = Vector2(e, e)
+	position = Vector2(e, e)
+	var fundo := (v.y - 51.0 * e) / e
+	_visiveis = maxi(1, int((fundo - 1.0 - 60.0) / LINHA))
+	size = Vector2(L, 60.0 + _visiveis * LINHA)
+	_rolagem = clampi(_rolagem, 0, _max_rolagem())
+	queue_redraw()
+
+
+func _max_rolagem() -> int:
+	return maxi(0, _linhas.size() - _visiveis)
 
 
 # nivel que o servidor pede pra essa classe (MG, DL e RF pedem 2/3; 400 vale pra todos)
@@ -78,50 +77,133 @@ static func nome_bonito(n: String) -> String:
 
 
 func abrir(nivel: int, zen: int, classe: int) -> void:
-	for c in _caixa.get_children():
-		c.queue_free()
-	var pode := 0
+	_linhas.clear()
 	for w in lista:
 		var precisa := nivel_pedido(int(w[3]), classe)
-		var tem_mapa := PacoteMapa.tem(int(w[4]) + 1)
 		var falta_nivel := nivel < precisa
 		var falta_zen := zen < int(w[2])
-		var b := Button.new()
-		b.flat = true
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.custom_minimum_size = Vector2(320, 24)
-		b.add_theme_font_size_override("font_size", 13)
-		var cor := Color(0.92, 0.92, 0.95)
-		if falta_nivel:
-			cor = Color(0.5, 0.5, 0.52)
-		elif falta_zen:
-			cor = Color(0.95, 0.6, 0.3)
-		else:
-			pode += 1
-		b.add_theme_color_override("font_color", cor)
-		b.add_theme_color_override("font_hover_color", Color(1, 0.86, 0.45) if not falta_nivel else cor)
-		var nome := nome_bonito(str(w[1]))
-		var linha := HBoxContainer.new()
-		linha.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		linha.set_anchors_preset(Control.PRESET_FULL_RECT)
-		b.add_child(linha)
-		for c in [[nome + ("" if tem_mapa else "  *"), 170], [str(precisa), 60], [ItemChao._milhar(int(w[2])), 80]]:
-			var l := Amigos._rotulo(c[0], 13, cor)
-			l.custom_minimum_size.x = c[1]
-			l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			linha.add_child(l)
-		b.tooltip_text = "Precisa do nivel %d e %s zen." % [precisa, ItemChao._milhar(int(w[2]))]
-		b.disabled = falta_nivel
-		var idx := int(w[0])
-		b.pressed.connect(func():
-			visible = false
-			ir.emit(idx, nome))
-		_caixa.add_child(b)
-	_info.text = "Nivel %d · %s zen · %d destinos pra ir agora.\n* mapa ainda sem cenario neste cliente (chao liso, so as posicoes)." % [nivel, ItemChao._milhar(zen), pode]
+		_linhas.append([int(w[0]), nome_bonito(str(w[1])), precisa, int(w[2]), not falta_nivel and not falta_zen,
+			falta_nivel, falta_zen])
+	_rolagem = 0
+	_arrastando = false
 	visible = true
 	move_to_front()
-	await get_tree().process_frame
-	position = Vector2(get_viewport_rect().size.x - size.x - 16, 70)
+	_ajustar()
+
+
+# --- desenho --------------------------------------------------------------------
+
+func _topo_lista() -> float:
+	return 38.0
+
+
+func _rect_fechar() -> Rect2:
+	return Rect2(2, size.y - LINHA - 6, L - 5, LINHA)
+
+
+func _y_polegar() -> float:
+	var m := _max_rolagem()
+	var curso := maxf(0.0, _visiveis * LINHA - 30.0)
+	if m == 0:
+		return _topo_lista() - 3
+	return _topo_lista() - 3 + roundf(_rolagem * curso / m)
+
+
+func _draw() -> void:
+	var f := get_theme_default_font()
+	draw_rect(Rect2(0, 0, L, size.y), Color(0, 0, 0, 0.8))
+	draw_rect(_rect_fechar(), Color8(0x99, 0, 0))
+	# barra de rolagem
+	var xb := L - 14
+	var topo := _topo_lista() - 3
+	var alto := _visiveis * LINHA
+	draw_texture_rect(_tex.rolagem_cima, Rect2(xb, topo, 7, 3), false)
+	var y := topo + 3
+	while y < topo + alto - 3:
+		var h := minf(15.0, topo + alto - 3 - y)
+		draw_texture_rect_region(_tex.rolagem_meio, Rect2(xb, y, 7, h), Rect2(0, 0, 7, h))
+		y += 15
+	draw_texture_rect(_tex.rolagem_baixo, Rect2(xb, topo + alto - 3, 7, 3), false)
+	var pol := Rect2(xb - 4, _y_polegar(), 15, 30)
+	if _max_rolagem() > 0:
+		draw_texture_rect(_tex.rolagem_on, pol, false, Color(0.7, 0.7, 0.7) if _arrastando else Color.WHITE)
+	else:
+		draw_texture_rect(_tex.rolagem_off, pol, false)
+	# titulo e cabecalho
+	_centro(f, L / 2, 4, DicaItem.t(933), Color8(255, 204, 26), true)
+	for c in [[62, 934], [119, 935], [159, 936]]:
+		_centro(f, c[0], 24, DicaItem.t(c[1]), Color8(127, 178, 255))
+	# destinos
+	for k in _visiveis:
+		var i := _rolagem + k
+		if i >= _linhas.size():
+			break
+		var l: Array = _linhas[i]
+		var yl := _topo_lista() + k * LINHA
+		var base := Color.WHITE if l[4] else Color8(164, 39, 17)
+		var vermelho := Color8(255, 51, 26)
+		if l[4] and Rect2(2, yl, L - 22, LINHA).has_point(_mouse) and not _arrastando:
+			draw_rect(Rect2(2, yl - 1, L - 22, LINHA), Color8(0xCC, 0xCC, 0x1A, 0x99))
+		_centro(f, 62, yl, l[1], base)
+		_centro(f, 119, yl, str(l[2]), vermelho if l[5] else base)
+		_centro(f, 159, yl, str(l[3]), vermelho if l[6] else base)
+	_centro(f, L / 2, _rect_fechar().position.y + 1, DicaItem.t(388), Color.WHITE)
+
+
+# RT3_WRITE_CENTER: texto centrado em x, alto da letra em y (g_hFont, 12 na tela de 640)
+func _centro(f: Font, x: float, y: float, t: String, cor: Color, negrito := false) -> void:
+	var w := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
+	var p := Vector2(x - w / 2.0, y + 10)
+	draw_string(f, p, t, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, cor)
+	if negrito:
+		draw_string(f, p + Vector2(0.5, 0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, cor)
+
+
+# --- mouse ----------------------------------------------------------------------
+
+func _gui_input(ev: InputEvent) -> void:
+	if ev is InputEventMouseMotion:
+		_mouse = ev.position
+		if _arrastando:
+			var curso := maxf(1.0, _visiveis * LINHA - 30.0)
+			var t := clampf(ev.position.y - _pega - (_topo_lista() - 3), 0.0, curso)
+			_rolagem = int(roundf(t * _max_rolagem() / curso))
+		queue_redraw()
+	elif ev is InputEventMouseButton:
+		accept_event()
+		if not ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and _arrastando:
+			_arrastando = false
+			queue_redraw()
+			return
+		if not ev.pressed:
+			if ev.button_index == MOUSE_BUTTON_LEFT:
+				_soltou(ev.position)
+			return
+		match ev.button_index:
+			MOUSE_BUTTON_WHEEL_UP:
+				_rolagem = clampi(_rolagem - 1, 0, _max_rolagem())
+			MOUSE_BUTTON_WHEEL_DOWN:
+				_rolagem = clampi(_rolagem + 1, 0, _max_rolagem())
+			MOUSE_BUTTON_LEFT:
+				var pol := Rect2(L - 18, _y_polegar(), 15, 30)
+				if _max_rolagem() > 0 and pol.has_point(ev.position):
+					_arrastando = true
+					_pega = ev.position.y - _y_polegar()
+		queue_redraw()
+
+
+func _soltou(p: Vector2) -> void:
+	if _rect_fechar().has_point(p):
+		visible = false
+		return
+	for k in _visiveis:
+		var i := _rolagem + k
+		if i >= _linhas.size():
+			break
+		if _linhas[i][4] and Rect2(2, _topo_lista() + k * LINHA, L - 22, LINHA).has_point(p):
+			visible = false
+			ir.emit(_linhas[i][0], _linhas[i][1])
+			return
 
 
 func alternar(nivel: int, zen: int, classe: int) -> void:

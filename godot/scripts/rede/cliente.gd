@@ -21,6 +21,7 @@ signal vida(atual: int)
 signal golpe(id: int, dano: int, tipo: int, escudo: int)
 signal ataque(id: int, alvo: int)
 signal mensagem(texto: String)
+signal aviso(tipo: int, texto: String)   # C1 0D tipo 0 (global) e 2 (guilda): meio da tela
 signal mana(atual: int)
 signal sd(atual: int)
 signal ag(atual: int)
@@ -1684,8 +1685,13 @@ func _tratar(p: PackedByteArray) -> void:
 				pegou.emit(p[3], item_de(p, 4))
 		0x0D:
 			# aviso do servidor: tipo e 9 bytes de cabecalho do aviso antes do texto
+			# (ReceiveNotice: 0 aviso global no meio da tela, 1 mensagem do sistema, 2 aviso da guilda, 10 a 15 faixa)
 			var ini := 13 if p.size() > 13 else 4
-			mensagem.emit(_ler_texto(p, ini, p.size() - ini))
+			var t := _ler_texto(p, ini, p.size() - ini)
+			if p.size() > 3 and p[3] in [0, 2]:
+				aviso.emit(p[3], t)
+			else:
+				mensagem.emit(t)
 		0x00:
 			if p[0] == 0xC1 and p.size() > 13:
 				var t := _ler_texto(p, 13, p.size() - 13)
