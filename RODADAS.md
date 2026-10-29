@@ -109,3 +109,14 @@ no rodapé). Teste: testes/servidor_selecao.gd; fotos: testes/tela_servidor.mjs 
   JanelaMU.campo_preto (campo preto de letra creme, como o da caixa de mensagem), botao_mu (botão de 3 estados),
   painel_mu (fundo de pedra) e tema_mu (tema global do jogo, no lugar do roxo). Caixa de pontos, senha, Mover,
   loja pessoal, botão Sair e perguntas passaram a usar isso. Foto: testes/tela_ui.mjs (?ui_teste=1).
+- MU Helper no jeito do cliente (29/10, pedido do Murilo: "o visual do helper, deixe mais proximo do client
+  original"). janela_helper.gd refeita pelo CNewUIMuHelper (NewUIMuHelper.cpp), com as posições dele: abas
+  Hunting, Obtaining e Other Settings (newui_guild_tab04), caixas com a moldura de tabela, Range com o número do
+  icon_Rank e + e -, quadros de skill (newui_skillbox) com o ícone da barra (HudMu.icone_skill), caixas brancas
+  de digitar com letra preta, botões Setting (newui_Bt_clearness_illusion, hud/helper_ajuste) e Save Setting e
+  Initialization (Ingame_Bt03, hud/helper_bt), textos 3500 a 3593 do Text.bmd. O Setting abre a janela de lado
+  (CNewUIMuHelperExt: Pre-con e Sub-con da skill, Auto Recovery em barra de 10, Party), o quadro de skill abre a
+  coluna de skills à esquerda (CNewUIMuHelperSkillList) e o botão direito esvazia. O que aparece muda com a
+  classe como no RegisterBtnCharacter (Combo no DK, Party no DW e Elf, corvo no DL, Auto Heal no Elf, Drain
+  Life no Summoner, sem skill 2 no DL). Fora da janela responde pelo _has_point. Foto: testes/tela_helper.mjs
+  (?helper_teste=1, só DK). "Basic Attack Fallback" não tem texto no Text.bmd (veio do MuMain).

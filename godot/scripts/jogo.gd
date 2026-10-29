@@ -1101,6 +1101,8 @@ func _montar_ui() -> void:
 	janela_helper.helper = helper
 	janela_helper.skills_de = func(): return minhas_skills.values()
 	janela_helper.info_de = _info_skill
+	janela_helper.icone_de = func(n): return barra_mu.icone_skill(n)
+	janela_helper.classe_de = func(): return janela_personagem.classe_base()
 	janela_helper.fechar.connect(func(): janela_helper.visible = false)
 	janela_helper.salvar.connect(func(d):
 		cli.salvar_helper(d)
@@ -1452,6 +1454,8 @@ func _entrou(info: Dictionary) -> void:
 		_inv_teste()
 	if _parametros().has("ui_teste"):
 		_ui_teste()
+	if _parametros().has("helper_teste"):
+		_helper_teste()
 	if _parametros().has("uma_skill"):
 		_teste_uma_skill(int(_parametros().uma_skill))
 	if _parametros().has("roteiro"):
@@ -4139,6 +4143,43 @@ func _ui_teste() -> void:
 	mover_janela.abrir(meu_nivel, meu_zen, minha_classe)
 	amigos.alternar()
 	print("TESTE ui mover")
+
+
+# testes (?helper_teste=1): a janela do MU Helper como a do cliente, pra foto (testes/tela_helper.mjs): aba
+# Hunting com skills, a coluna de skills, o Setting da skill 2 e o da pocao, Obtaining e Other Settings
+func _helper_teste() -> void:
+	await get_tree().create_timer(1.5).timeout
+	for i in 8:
+		minhas_skills[i] = [19, 20, 21, 22, 23, 41, 42, 43][i]
+	minhas_skills[8] = 48
+	helper.c.skills = [41, 42, 43]
+	helper.c.buffs = [48, 0, 0]
+	helper.c.por_condicao[1] = true
+	helper.c.extras = ["Jewel of Bless", "Box of Luck"]
+	_alternar_janela_helper()
+	print("TESTE helper caca")
+	await get_tree().create_timer(2.5).timeout
+	janela_helper.lista_slot = 1
+	janela_helper.queue_redraw()
+	print("TESTE helper lista")
+	await get_tree().create_timer(2.5).timeout
+	janela_helper.lista_slot = -1
+	janela_helper.sub = "skill1"
+	janela_helper.queue_redraw()
+	print("TESTE helper condicao")
+	await get_tree().create_timer(2.5).timeout
+	janela_helper.sub = "pocao"
+	janela_helper.queue_redraw()
+	print("TESTE helper pocao")
+	await get_tree().create_timer(2.5).timeout
+	janela_helper.sub = ""
+	janela_helper.aba = 1
+	janela_helper.queue_redraw()
+	print("TESTE helper itens")
+	await get_tree().create_timer(2.5).timeout
+	janela_helper.aba = 2
+	janela_helper.queue_redraw()
+	print("TESTE helper outros")
 
 
 # testes (?inv_teste=1): mochila de mentira com o que vai em 3D (joias, +7 a +15, Box of Kundun, itens que

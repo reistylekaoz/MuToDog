@@ -204,6 +204,12 @@ const ICONE_ESPECIAL := {232: [2, 7, 2], 238: [2, 3, 8], 234: [2, 9, 2], 235: [2
 
 
 func _icone_skill(n: int, r: Rect2) -> void:
+	var ic := icone_skill(n)
+	draw_texture_rect_region(ic[0], r, ic[1])
+
+
+# [textura, regiao] do icone da skill (a janela do MU Helper usa o mesmo)
+func icone_skill(n: int) -> Array:
 	# skill master (300+): folha da arvore (new_Master_Icon) pelo Magic_Icon do skill_eng
 	if n >= JanelaMaster.SKILL_MASTER:
 		if _icones_master.is_empty():
@@ -211,8 +217,7 @@ func _icone_skill(n: int, r: Rect2) -> void:
 			for k in d.get("skills", {}):
 				_icones_master[int(k)] = int(d.skills[k][2])
 		var ic: int = _icones_master.get(n, 0)
-		draw_texture_rect_region(_tex.master_icones, r, Rect2((ic % 25) * 20, (ic / 25) * 28, 20, 28))
-		return
+		return [_tex.master_icones, Rect2((ic % 25) * 20, (ic / 25) * 28, 20, 28)]
 	var c: Array
 	if Pets.e_comando(n):
 		c = [3, n - Pets.COMANDO, 0]   # newui_command, um ao lado do outro
@@ -226,7 +231,7 @@ func _icone_skill(n: int, r: Rect2) -> void:
 		c = [2, (n - 57) % 8, (n - 57) / 8]
 	else:
 		c = [1, (n - 1) % 8, (n - 1) / 8]
-	draw_texture_rect_region(_tex["skill%d" % c[0]], r, Rect2(c[1] * 20, c[2] * 28, 20, 28))
+	return [_tex["skill%d" % c[0]], Rect2(c[1] * 20, c[2] * 28, 20, 28)]
 
 
 func nome_skill(n: int) -> String:
