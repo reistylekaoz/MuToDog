@@ -6,12 +6,15 @@ extends Node
 # do mouse ou na mao (gira 0,45 grau por ms no eixo Y do MU, o Angle[1] da rotacao do inventario).
 # Uma vitrine por janela (filha do CanvasItem): um SubViewport do tamanho da janela pros itens parados
 # e outro, maior que a casa, so pro item em foco (ele sai da casa quando gira, como no original).
+# O dos parados so redesenha quando algo muda ou, se tem brilho que corre (+7 em diante) ou item que gira,
+# 15 vezes por segundo (antes era todo quadro: loja e inventario abertos eram 2 janelas inteiras em 3D por quadro).
 # Rotacao do inventario: dados/modelos/inventario.json (ferramentas/inventario_giro.py).
 
 const GIRO_FOCO := 0.45    # graus por ms (SelectedItemTurnSpeed)
 const GIRO_SOZINHO := 0.2  # graus por ms (GambleItemTurnSpeed)
 const ROT_PADRAO := [270.0, -10.0, 0.0]
 const FOLGA_FOCO := 1.8    # o viewport do foco e 1,8 vez a casa
+const QUADRO_PARADOS := 66 # ms entre um desenho e outro dos parados que andam (15 por segundo)
 
 static var _rot := {}
 static var _giram := {}
@@ -20,10 +23,12 @@ static var _lido := false
 var ci: CanvasItem
 var _vp: SubViewport       # itens parados, em coordenadas da janela
 var _vp_foco: SubViewport  # o item em foco, centrado
-var _itens := {}           # chave da casa -> {no, r, giro, gen}
+var _itens := {}           # chave da casa -> {no, giro, anda, gen}
 var _foco := {}            # {chave, no, r, gen}
 var _gen := 0
 var _carregando := {}      # chave do modelo -> true
+var _sujo := false         # os parados mudaram: desenhar no proximo quadro
+var _ultimo := 0           # ms do ultimo desenho dos parados
 
 
 static func _ler() -> void:
@@ -53,7 +58,8 @@ static func vivo(it: Dictionary) -> bool:
 static func de(c: CanvasItem) -> Vitrine3D:
 	if c.has_meta("vitrine_3d"):
 		var v = c.get_meta("vitrine_3d")
-		return v if is_instance_valid(v) else null
+		# ainda nao entrou na arvore (o add_child do quadro passado nao rodou): icone por enquanto
+		return v if is_instance_valid(v) and v._vp != null else null
 	var v := Vitrine3D.new()
 	v.ci = c
 	c.set_meta("vitrine_3d", v)
@@ -102,6 +108,7 @@ func _limpar(g: int) -> void:
 			if is_instance_valid(_itens[k].no):
 				_itens[k].no.queue_free()
 			_itens.erase(k)
+			_sujo = true
 	if not _foco.is_empty() and _foco.gen != g:
 		if is_instance_valid(_foco.no):
 			_foco.no.queue_free()
@@ -110,12 +117,17 @@ func _limpar(g: int) -> void:
 
 func _process(_d: float) -> void:
 	var ve := ci.is_visible_in_tree()
-	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS if ve and not _itens.is_empty() else SubViewport.UPDATE_DISABLED
 	_vp_foco.render_target_update_mode = SubViewport.UPDATE_ALWAYS if ve and not _foco.is_empty() else SubViewport.UPDATE_DISABLED
 	var t := Time.get_ticks_msec()
-	for e in _itens.values():
-		if e.giro and is_instance_valid(e.no):
-			_girar(e.no, fmod(t * GIRO_SOZINHO, 360.0))
+	if not ve or _itens.is_empty():
+		_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	elif _sujo or (t - _ultimo >= QUADRO_PARADOS and _itens.values().any(func(e): return e.anda)):
+		_sujo = false
+		_ultimo = t
+		for e in _itens.values():
+			if e.giro and is_instance_valid(e.no):
+				_girar(e.no, fmod(t * GIRO_SOZINHO, 360.0))
+		_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	if not _foco.is_empty() and is_instance_valid(_foco.no):
 		_girar(_foco.no, fmod(t * GIRO_FOCO, 360.0))
 		# o mouse saiu da casa e a janela nao redesenhou (nem toda janela redesenha quando o mouse sai)
@@ -155,13 +167,21 @@ func desenhar(it: Dictionary, r: Rect2, cor: Color, foco: bool) -> bool:
 		if no == null:
 			return false
 		_vp.add_child(no)
-		_itens[id] = {"no": no, "giro": gira_sozinho(it)}
+		var gira := gira_sozinho(it)
+		_itens[id] = {"no": no, "giro": gira, "anda": gira or BrilhoMU.nivel_visivel(chave.get_slice("+", 0), nivel) >= 7}
+		_sujo = true
 	var e: Dictionary = _itens[id]
 	e.gen = _gen
 	var c := r.get_center()
 	e.no.position = Vector3(c.x, -c.y, 0)
 	var tam := (ci as Control).size if ci is Control else Vector2(640, 480)
-	_vp.size = Vector2i((tam * px).ceil())
+	var lado_vp := Vector2i((tam * px).ceil())
+	if _vp.size != lado_vp:
+		_vp.size = lado_vp
+		_sujo = true
+	# item novo aparece ja neste quadro (o SubViewport desenha depois do _draw)
+	if _sujo:
+		_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	var cam: Camera3D = _vp.get_child(0)
 	cam.size = tam.y
 	cam.position = Vector3(tam.x / 2.0, -tam.y / 2.0, 2000)
@@ -188,7 +208,8 @@ func _montar(chave: String, it: Dictionary, tam: Vector2) -> Node3D:
 	if not _modelos.has(chave):
 		if not _carregando.has(chave):
 			_carregando[chave] = true
-			_baixar(chave)
+			# fora do _draw: no PC o modelo vem do pacote na hora e o queue_redraw no meio do desenho se perde
+			_baixar.call_deferred(chave)
 		return null
 	var m: Node3D = _modelos[chave]
 	if m == null:
