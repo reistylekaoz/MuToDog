@@ -1,0 +1,83 @@
+diff --git a/src/GameLogic/EventoXp.cs b/src/GameLogic/EventoXp.cs
+new file mode 100644
+index 0000000..1f3dd4c
+--- /dev/null
++++ b/src/GameLogic/EventoXp.cs
+@@ -0,0 +1,60 @@
++// <copyright file="EventoXp.cs" company="MUnique">
++// Licensed under the MIT License. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace MUnique.OpenMU.GameLogic;
++
++using System.IO;
++using System.Text.Json;
++
++/// <summary>
++/// Evento de XP com hora pra acabar, sem religar o servidor: lê taxa_xp.json
++/// (ao lado do executável) no formato {"taxa": 100, "ate": "2026-10-30T15:40:00-03:00"}.
++/// Multiplica a taxa do banco até "ate"; depois disso, ou sem arquivo, vale 1.
++/// </summary>
++public static class EventoXp
++{
++    private static readonly string Arquivo = Environment.GetEnvironmentVariable("OPENMU_TAXA_XP")
++        ?? Path.Combine(AppContext.BaseDirectory, "taxa_xp.json");
++
++    private static DateTime _lidoEm = DateTime.MinValue;
++    private static float _taxa = 1;
++    private static DateTimeOffset _ate = DateTimeOffset.MinValue;
++
++    /// <summary>
++    /// Gets o fator do evento agora (1 sem evento).
++    /// </summary>
++    public static float Fator
++    {
++        get
++        {
++            if (DateTime.UtcNow - _lidoEm > TimeSpan.FromSeconds(5))
++            {
++                Ler();
++            }
++
++            return DateTimeOffset.Now < _ate ? _taxa : 1;
++        }
++    }
++
++    private static void Ler()
++    {
++        _lidoEm = DateTime.UtcNow;
++        try
++        {
++            if (!File.Exists(Arquivo))
++            {
++                _ate = DateTimeOffset.MinValue;
++                return;
++            }
++
++            using var doc = JsonDocument.Parse(File.ReadAllText(Arquivo));
++            _taxa = doc.RootElement.GetProperty("taxa").GetSingle();
++            _ate = DateTimeOffset.Parse(doc.RootElement.GetProperty("ate").GetString()!);
++        }
++        catch
++        {
++            _ate = DateTimeOffset.MinValue;
++        }
++    }
++}
+diff --git a/src/GameLogic/GameContext.cs b/src/GameLogic/GameContext.cs
+index d3e7b6f..bcaff56 100644
+--- a/src/GameLogic/GameContext.cs
++++ b/src/GameLogic/GameContext.cs
+@@ -113,10 +113,10 @@ public class GameContext : AsyncDisposable, IGameContext
+     public event EventHandler<GameMap>? GameMapRemoved;
+ 
+     /// <inheritdoc />
+-    public virtual float ExperienceRate => this.Configuration.ExperienceRate;
++    public virtual float ExperienceRate => this.Configuration.ExperienceRate * EventoXp.Fator;
+ 
+     /// <inheritdoc />
+-    public virtual float MasterExperienceRate => this.Configuration.MasterExperienceRate;
++    public virtual float MasterExperienceRate => this.Configuration.MasterExperienceRate * EventoXp.Fator;
+ 
+     /// <inheritdoc />
+     public virtual bool PvpEnabled { get; }
