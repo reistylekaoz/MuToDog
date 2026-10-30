@@ -145,10 +145,44 @@ func taxa_defesa() -> int:
 	return g / 3
 
 
+# a que a janela mostra: magia pro Wizard e o Summoner (NewUICharacterInfoWindow), ataque pros outros
 func velocidade() -> int:
-	var g: int = eu.get("agilidade", 0)
-	var por: int = [10, 15, 50, 15, 10, 20, 9][classe_base()]
-	return g / por + _arma()[2]
+	return vel_magia() if classe_base() in [0, 5] else vel_ataque()
+
+
+# AttackSpeed e MagicSpeed como o OpenMU (CharacterClasses: agilidade / divisor da classe) mais o
+# AttackSpeedAny dos itens: armas somadas (duas = metade, AttackSpeedByWeapon x 0,5), a da luva e
+# +7 por opcao excelente de velocidade (bit 4) na arma ou no pendente
+const DIV_ATAQUE := [20, 15, 50, 15, 10, 20, 9]
+const DIV_MAGIA := [10, 20, 50, 20, 10, 20, 9]
+
+
+func vel_ataque() -> int:
+	return int(eu.get("agilidade", 0)) / DIV_ATAQUE[classe_base()] + _vel_itens()
+
+
+func vel_magia() -> int:
+	return int(eu.get("agilidade", 0)) / DIV_MAGIA[classe_base()] + _vel_itens()
+
+
+func _vel_itens() -> int:
+	var armas := 0
+	var n := 0
+	var v := 0
+	for s in [0, 1, 5, 9]:
+		if not _equip().has(s):
+			continue
+		var it: Dictionary = _equip()[s]
+		var p: Dictionary = DicaItem._bmd.get(ItensMU.chave(it), {})
+		var vel := int(p.get("velocidade", 0))
+		if s <= 1 and vel > 0:
+			armas += vel
+			n += 1
+		elif s == 5:
+			v += vel
+		if (s <= 1 and int(it.grupo) <= 5 or s == 9) and int(it.get("exc", 0)) & 4:
+			v += 7
+	return v + (armas / 2 if n == 2 else armas)
 
 
 # --- desenho -----------------------------------------------------------------------

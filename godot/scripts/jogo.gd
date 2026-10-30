@@ -44,7 +44,7 @@ var registro: RichTextLabel
 
 # combate e itens
 const ALCANCE := 1          # ataque sem skill: do lado do monstro
-const RECARGA := 0.9        # segundos entre um golpe e outro
+const RECARGA := 0.9        # sem boneco: segundos entre um golpe e outro (com boneco vale o fim da animacao)
 var alvo_id := -1           # monstro que estou atacando
 var item_alvo := -1         # item do chao que vou pegar
 var itens := {}             # id -> ItemChao
@@ -146,7 +146,7 @@ var _skill_recarga := 0.0
 var skill_alvo := -1        # monstro (ou ponto) que a skill atual vai pegar quando chegar perto
 var skill_ponto := Vector2i(-1, -1)
 var skill_numero := -1
-const RECARGA_SKILL := 0.8
+const RECARGA_SKILL := 0.8  # sem boneco; com boneco vale o fim da animacao (_espera_golpe)
 const RAGE := [260, 261, 262, 265, 269]   # golpes do Rage Fighter: C3 4A (animacao pros outros) antes do C3 19
 const EM_VOLTA := [264, 270, 41, 42, 9, 14, 235, 76, 236, 237, 62]   # skills de area em volta de quem solta
 # QWER: categorias de pocao do MU (vida, mana, SD, complexa); a maior primeiro
@@ -2268,12 +2268,30 @@ func _combate(dt: float) -> void:
 		return
 	if _recarga > 0.0:
 		return
-	_recarga = RECARGA
+	_velocidade_ataque()
 	var passo := Vector2i(signi(a.tile.x - eu.tile.x), signi(a.tile.y - eu.tile.y))
 	var dir := maxi(ClienteMU.PASSOS.find(passo), 0)
 	eu.olhar_para(a)
 	EfeitoSkill.golpe_comum(mundo, eu, a)
+	_recarga = _espera_golpe(RECARGA)
 	cli.atacar(a.id, 38, dir)
+
+
+# a velocidade de ataque do meu personagem (janela C) acelera golpe e skill de todo jogador na tela (Boneco)
+func _velocidade_ataque() -> void:
+	if janela_personagem:
+		var v := [janela_personagem.vel_ataque(), janela_personagem.vel_magia()]
+		if v != [Boneco.vel_ataque, Boneco.vel_magia]:
+			print("TESTE velocidade de ataque %d, de magia %d" % v)
+		Boneco.vel_ataque = v[0]
+		Boneco.vel_magia = v[1]
+
+
+# o proximo golpe sai quando a animacao acaba (como no cliente), nunca antes do que o OpenMU aceita
+# (SpeedHackDetect: 450 ms - AttackSpeed x 1,2, no minimo 60 ms; passar disso derruba a conexao)
+func _espera_golpe(sem_boneco: float) -> float:
+	var f := eu.boneco.falta_acao() if eu.boneco else -1.0
+	return maxf(f if f >= 0.0 else sem_boneco, maxf(0.45 - Boneco.vel_ataque * 0.0012, 0.06) + 0.02)
 
 
 func _experiencia(_morto: int, ganho: int) -> void:
@@ -5416,7 +5434,9 @@ func _skills(dt: float) -> void:
 	if alvo and alvo.tipo == "monstro":
 		_skill_ultimo = alvo.id
 	var p: Vector3 = alvo.position if alvo else mundo.no_tile(ponto.x, ponto.y)
+	_velocidade_ataque()
 	eu.tocar_skill(_acao_skill(n), p)
+	_skill_recarga = _espera_golpe(RECARGA_SKILL)
 	if n == 6:
 		cli.teleporte(ponto.x, ponto.y)
 		print("TESTE teleporte pra %s" % ponto)

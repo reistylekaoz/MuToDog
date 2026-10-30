@@ -29,6 +29,60 @@ const VELOCIDADE := {
 		"besta": 0.3, "arco_voa": 0.3, "besta_voa": 0.3, "magia_arma2": 0.3},
 	"npc": {},
 }
+# Golpe e skill do jogador correm com a velocidade de ataque (SetAttackSpeed do ZzzCharacter.cpp): PlaySpeed =
+# base + AttackSpeed1 ("a"), MagicSpeed1 ("m1") ou MagicSpeed2 ("m2"). Como no cliente vale pra todo jogador
+# na tela (o Models[MODEL_PLAYER] e um so) com a velocidade do meu personagem (vel_ataque e vel_magia).
+const PELA_VELOCIDADE := {
+	"soco": [0.6, "a"], "espada": [0.25, "a"], "espada2": [0.25, "a"], "espada_e1": [0.25, "a"], "espada_e2": [0.25, "a"],
+	"golpe_2maos1": [0.25, "a"], "golpe_2maos2": [0.25, "a"], "golpe_2maos3": [0.25, "a"], "golpe_2maos2b": [0.25, "a"],
+	"golpe_lanca": [0.25, "a"], "golpe_foice1": [0.25, "a"], "golpe_foice2": [0.25, "a"], "golpe_foice3": [0.25, "a"],
+	"monta_ataque": [0.25, "a"], "cavalo_ataque": [0.25, "a"],
+	"espada_s1": [0.3, "a"], "espada_s2": [0.3, "a"], "espada_s3": [0.27, "a"], "espada_s4": [0.3, "a"], "espada_s5": [0.24, "a"],
+	"giro": [0.24, "a"], "estocada": [0.25, "a"], "furia": [0.3, "a"],
+	"arco": [0.3, "a"], "besta": [0.3, "a"], "arco_voa": [0.3, "a"], "besta_voa": [0.3, "a"],
+	"fenrir_ataque": [0.25, "a"], "fenrir_ataque_a": [0.25, "a"], "um_corte": [0.4, "a"], "canhao": [0.2, "a"], "golpe_dl": [0.25, "a"],
+	"cura": [0.25, "m1"], "tempestade": [0.55, "m1"],
+	"magia": [0.29, "m2"], "magia2": [0.29, "m2"], "magia_arma": [0.29, "m2"], "magia_arma2": [0.29, "m2"],
+	"teleporte": [0.3, "m2"], "raio": [0.4, "m2"], "inferno": [0.6, "m2"], "fogo_inferno": [0.5, "m2"],
+	"nova_carga": [0.5, "m2"], "golpe_chama": [0.69, "m2"],
+}
+static var vel_ataque := 0
+static var vel_magia := 0
+
+
+# AttackSpeed1, MagicSpeed1 e MagicSpeed2 do SetAttackSpeed (com o RGZ_FIX_ATTACK_SPEED: faixas altas sobem menos)
+static func _faixa(v: int, faixas: Array, padrao: float) -> float:
+	for f in faixas:
+		if v >= f[0] and v <= f[1]:
+			return v * f[2]
+	return v * padrao
+
+
+static func ritmo_por_velocidade(acao: String) -> float:
+	var r: Array = PELA_VELOCIDADE.get(acao, [])
+	if r.is_empty():
+		return -1.0
+	var extra: float
+	match r[1]:
+		"a": extra = _faixa(vel_ataque, [[509, 549, 0.0026], [550, 750, 0.0017]], 0.004)
+		"m1": extra = _faixa(vel_magia, [[509, 549, 0.0026], [550, 750, 0.0017]], 0.004)
+		_: extra = _faixa(vel_magia, [[455, 479, 0.00247], [605, 636, 0.0019], [637, 668, 0.0018], [669, 688, 0.0017],
+			[855, 1040, 0.00163], [1041, 1104, 0.00155], [1301, 1500, 0.00175], [1501, 1524, 0.0015], [1525, 1800, 0.00145],
+			[1801, 1999, 0.0013], [2000, 2167, 0.00125], [2168, 2354, 0.00115], [2855, 3011, 0.0009], [3012, 1000000, 0.00081]], 0.002)
+	return r[0] + extra
+
+
+# segundos que falta pra acao atual acabar (o cliente so solta o proximo golpe quando a animacao termina)
+# (-1 se o que esta tocando nao e golpe: parado e andar repetem)
+func falta_acao() -> float:
+	if anim == null or anim.current_animation == "" or acao.trim_suffix("_f") not in NAO_REPETE:
+		return -1.0
+	var vel := absf(anim.get_playing_speed())
+	if vel <= 0.0:
+		return -1.0
+	return maxf(anim.current_animation_length - anim.current_animation_position, 0.0) / vel
+
+
 # acao pedida -> a que existe no modelo (o jogador nao tem "ataque", tem "soco")
 const TROCA := {"ataque": ["ataque", "soco", "parado"], "ataque2": ["ataque2", "ataque", "soco"],
 	"golpe": ["golpe", "parado"], "morre": ["morre", "golpe", "parado"], "anda": ["anda", "parado"],
@@ -1021,6 +1075,10 @@ func tocar(a: String, depois := "parado") -> void:
 		_golpes += 1
 	_bater_asa(real.begins_with("voando"))
 	var vel: float = ritmo.get(real, VELOCIDADE[familia].get(real.trim_suffix("_f"), 0.25))
+	if familia == "jogador":
+		var pv := ritmo_por_velocidade(real.trim_suffix("_f"))
+		if pv > 0.0:
+			vel = pv
 	anim.play(real, 0.12, vel * 25.0)
 	acao = real
 	# rastro da arma (CreateWeaponBlur): golpe comum em blur01 na cor do nivel, skill de espada no motion_blur_r
