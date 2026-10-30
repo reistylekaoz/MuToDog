@@ -1656,6 +1656,9 @@ func _objeto_entrou(o: Dictionary) -> void:
 	e.montar(mundo, o.id, tipo, nome, o.x, o.y,
 		Boneco.do_npc(o.numero) if o.tipo == "npc" else (Boneco.do_npc(skin) if skin else Boneco.da_classe(o.get("classe", 0))))
 	e.por_heroi(o.get("heroi", 3))
+	# NPC parado nasce de frente pra camera padrao (rotacao 0 deixava todos de costas)
+	if tipo == "npc":
+		e.rotation.y = PI
 	if o.tipo == "npc":
 		e.numero = o.numero
 		if e.boneco == null and not _sem_modelo.has(o.numero):
