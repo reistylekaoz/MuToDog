@@ -107,6 +107,10 @@ static func criar(pai: Node3D, n: int, quem, alvo, area := false) -> void:
 		64: _critico(e, quem, b)
 		65: _lanca_eletrica(e, de, frente)
 		72: _abolir(e, de)
+		67: _atordoar(e, de, frente)
+		68, 71: _raio_que_cai(e, quem, alvo)
+		69: _anel_de_espiritos(e, quem)
+		70: _sumir(e, alvo)
 		74: _rasgo(e, de, frente, alvo)
 		78: _grito_de_fogo(e, de, frente)
 		238: _caotico(e, quem, b, frente, alvo)
@@ -673,6 +677,56 @@ static func _circulo_buff(e: EfeitoMU, alvo, cor: Color, fitas: bool) -> void:
 				var a: float = fase + t * vel
 				return _pos(alvo) + Vector3(sin(a) * 0.8, 1.1 + sin(a * 1.7 + fase) * 0.6, cos(a * 1.3) * 0.8)
 			, {some = 0.3})
+
+# --- skills da batalha do castelo (rodada 26, ZzzCharacter.cpp e ZzzEffectJoint.cpp) ---
+
+# Stun: BITMAP_FLASH 7 abre 3 BITMAP_FLASH 6 (um no meio e um a 100 de cada lado, 50 pra frente), cada um
+# nasce 130 acima e corre 40 por tick pra frente subindo um pouco, 25 ticks, 30 caudas, luz (0,8; 0,8; 1)
+static func _atordoar(e: EfeitoMU, de: Vector3, frente: Vector3) -> void:
+	var lado := frente.cross(Vector3.UP).normalized()
+	for i in 3:
+		var ini := de + lado * (i - 1) * 1.0 + frente * 0.5 + Vector3.UP * 1.3
+		var sobe := sin(deg_to_rad(_rnd(70, 73))) * 0.1
+		cauda(e, "flashing", 0.4, Color(0.8, 0.8, 1.0), 25 * T, 30, func(t):
+			var k: float = t / T
+			return ini + frente * 0.4 * k + Vector3.UP * sobe * k, {some = 0.4})
+
+
+# Cancel Stun e Cancel Invisibility: BITMAP_FLASH 0 e 1, 1200 acima do alvo, cai de 70 por tick somando 20
+# a cada tick ate entrar 150 no chao (so quando o alvo nao e quem usou)
+static func _raio_que_cai(e: EfeitoMU, quem, alvo) -> void:
+	if typeof(alvo) != TYPE_OBJECT or alvo == quem or not _vivo(alvo):
+		return
+	var p := _pos(alvo)
+	var topo := p + Vector3.UP * 12.0
+	cauda(e, "flashing", 1.2, BRANCO, 40 * T, 10, func(t):
+		var k: float = t / T
+		return topo - Vector3.UP * minf(0.7 * k + 0.1 * k * k, 13.5), {some = 0.3})
+	e.chao("magic_ground2", p, 0.5, Color(0.8, 0.8, 1.0), 14 * T, {tam1 = 2.0, some = 0.5, vgiro = 2.0})
+
+
+# Swell Mana: 36 BITMAP_JOINT_SPIRIT 21 a 100 de altura, um a cada 10 graus, inclinados 10 graus pra baixo,
+# e 2 BITMAP_MAGIC+1 10 (o circulo azul no chao) em quem usou
+static func _anel_de_espiritos(e: EfeitoMU, quem) -> void:
+	var p := _pos(quem)
+	var azul := Color(0.3, 0.5, 1.0)
+	for k in 2:
+		e.chao("magic_ground2", p, 0.4, azul, 20 * T, {tam1 = 3.0, some = 0.3, vgiro = 1.5 * (1 - 2 * k), segue = quem if typeof(quem) == TYPE_OBJECT else null})
+	for i in 36:
+		var d := Vector3(sin(deg_to_rad(i * 10.0)), 0, cos(deg_to_rad(i * 10.0)))
+		var ini := p + Vector3.UP * 1.0
+		cauda(e, "jointspirit01", 0.6, azul, 20 * T, 8, func(t):
+			var k: float = t / T
+			return ini + d * 0.25 * k - Vector3.UP * 0.04 * k, {some = 0.5})
+
+
+# Invisibility: BITMAP_MAGIC+1 6 no alvo (o circulo que gira e some)
+static func _sumir(e: EfeitoMU, alvo) -> void:
+	if not _vivo(alvo):
+		return
+	e.chao("magic_ground2", _pos(alvo), 2.0, Color(0.6, 0.6, 1.0), 25 * T, {tam1 = 0.3, some = 0.6, vgiro = 3.0, segue = alvo if typeof(alvo) == TYPE_OBJECT else null})
+	e.sprite("flare01", _pos(alvo) + Vector3.UP * 1.0, 2.5, Color(0.5, 0.5, 1.0), 12 * T, {tam1 = 0.2, some = 0.6})
+
 
 # --- teleporte (CreateTeleportBegin / CreateTeleportEnd) -----------------------------
 

@@ -11,6 +11,11 @@ extends Control
 #   manda o C1 B2 1D. Os comandos que chegam (B2 1D) piscam no minimapa por 100 quadros.
 # - interruptores da coroa (B2 20, RenderSwichState): "Crown switch N / guilda / nome" embaixo, no centro, so
 #   com o heroi perto da coroa (150 a 200 x 180 a 230).
+# - skill da batalha (InitBattleSkill, rodada 26): com a batalha rodando e um lado, o mestre (Invisibility, Cancel
+#   Invisibility e, Dark Lord, Abolish Magic), o assistente (as duas de invisibilidade) e o battle master (Stun,
+#   Cancel Stun, Swell Mana) ganham a moldura em cima do minimapa: icone da skill escolhida (setas ou roda do
+#   mouse em cima trocam), mortes que ela pede (KillCount do skill_eng.bmd) e mortes que a guilda ja tem (C1 B8 01).
+#   Vermelho enquanto nao chega; chegou, Shift + botao direito solta a skill (UseBattleMasterSkill).
 # As cores dos pontos sairam do porte do cliente (os ramos estao vazios): aqui o meu lado e azul, o outro vermelho
 # e NPC verde.
 
@@ -29,7 +34,19 @@ const OBSERVADOR := 0
 const SOLDADO := 1
 const COMANDANTE := 2
 
+const MESTRE := 128
+const ASSISTENTE := 64
+const BATTLE_MASTER := 32
+const FRAME_SKILL := Vector2(128, 53)
+# KillCount do skill_eng.bmd (byte 60 do registro de 88)
+const MORTES_SKILL := {67: 4, 68: 2, 69: 4, 70: 5, 71: 2, 72: 8}
+
 var lado := 0                   # B2 19: 0 nenhum, 1 defesa, 2 a 4 ataque
+var cargo := 255                # meu cargo na guilda (128 mestre, 64 assistente, 32 battle master, 0 membro)
+var mortes := 0                 # C1 B8 01: mortes que a guilda ja tem pra skill da batalha
+var skills: Array = []          # skills da batalha do meu cargo (vazia: sem moldura)
+var skill_i := 0
+var _nomes := {}
 var iniciada := false           # B2 17
 var hora := 0
 var minuto := 0
@@ -53,8 +70,10 @@ var _quadro := 0.0
 
 
 func _ready() -> void:
-	for n in ["mm_moldura", "mm_tempo", "mm_mapa", "mm_grupo", "mm_comando", "mm_alfa", "cmd_ataque", "cmd_defesa", "cmd_espera"]:
+	for n in ["mm_moldura", "mm_tempo", "mm_mapa", "mm_grupo", "mm_comando", "mm_alfa", "cmd_ataque", "cmd_defesa", "cmd_espera",
+			"mm_skill", "skill_cima", "skill_baixo"]:
 		_tex[n] = load(PASTA + n + ".png")
+	_tex.icones = load("res://dados/hud/skill2.png")
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	get_viewport().size_changed.connect(_ajustar)
 	_ajustar()
@@ -117,6 +136,55 @@ func _process(dt: float) -> void:
 
 
 # --- dados do servidor -------------------------------------------------------------
+
+# InitBattleSkill: so com lado e cargo (membro comum nao tem); dark_lord poe o Abolish Magic no mestre
+func iniciar_skills(dark_lord: bool) -> void:
+	skills = []
+	skill_i = 0
+	if lado == 0:
+		return
+	match cargo:
+		MESTRE:
+			skills = [70, 71] + ([72] if dark_lord else [])
+		ASSISTENTE:
+			skills = [70, 71]
+		BATTLE_MASTER:
+			skills = [67, 68, 69]
+	print("TESTE guerra skills da batalha %s" % [skills])
+
+
+# quadro da placa do lado (0 a 7) ou -1: buffs 14 a 17, ou o lado do B2 19 (1 a 4) pro heroi
+static func quadro_placa(iniciada: bool, morto: bool, buffs: Dictionary, lado_b2: int, mestre: bool) -> int:
+	if not iniciada or morto or buffs.has(18):
+		return -1
+	var l := -1
+	for b in [14, 15, 16, 17]:
+		if buffs.has(b):
+			l = b - 14
+	if lado_b2 > 0:
+		l = lado_b2 - 1
+	if l < 0:
+		return -1
+	if l == 0:
+		return 7 if mestre else 6
+	return l - 1 + (3 if mestre else 0)
+
+
+func skill_guilda() -> int:
+	return skills[skill_i] if not skills.is_empty() else -1
+
+
+func skill_pronta() -> bool:
+	var n := skill_guilda()
+	return n >= 0 and mortes >= int(MORTES_SKILL.get(n, 0))
+
+
+func trocar_skill(passo: int) -> void:
+	if skills.is_empty():
+		return
+	skill_i = clampi(skill_i + passo, 0, skills.size() - 1)
+	print("TESTE guerra skill escolhida %d" % skill_guilda())
+
 
 func receber_comando(d: Dictionary) -> void:
 	if int(d.time) > 6 or int(d.cmd) > 2:
@@ -181,6 +249,8 @@ func _draw() -> void:
 		if grupo >= 0 and cmd >= 0 and _dentro(_mouse):
 			draw_string(f, _mouse + Vector2(-13, 4), str(grupo + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
 			draw_texture_rect(_tex[["cmd_ataque", "cmd_defesa", "cmd_espera"][cmd]], Rect2(_mouse - Vector2(8, 8), CMD_TAM[cmd]), false)
+	if not skills.is_empty():
+		_desenhar_skill(f)
 	# botao da transparencia
 	var ra := Rect2(m + Vector2(58, 4), ALFA)
 	draw_texture_rect_region(_tex.mm_alfa, ra, Rect2(0, 23 if ra.has_point(_mouse) else 0, 38, 23), cor)
@@ -191,6 +261,42 @@ func _draw() -> void:
 		var y := _alto - 85 + i * 15
 		draw_string_outline(f, Vector2(0, y), linhas[i], HORIZONTAL_ALIGNMENT_CENTER, 640, 10, 2, Color.BLACK)
 		draw_string(f, Vector2(0, y), linhas[i], HORIZONTAL_ALIGNMENT_CENTER, 640, 10, Color.WHITE)
+
+
+# moldura da skill da batalha (RenderSkillIcon): em cima do minimapa, 26 pra dentro
+func _frame_skill() -> Vector2:
+	return moldura() + Vector2(26, -FRAME_SKILL.y)
+
+
+func _seta_r(i: int) -> Rect2:
+	return Rect2(_frame_skill() + Vector2(48, 21 + i * 15), Vector2(15, 13))
+
+
+func _desenhar_skill(f: Font) -> void:
+	var fr := _frame_skill()
+	var cor := Color(1, 1, 1, alfa)
+	draw_texture(_tex.mm_skill, fr, cor)
+	var n := skill_guilda()
+	var pede := int(MORTES_SKILL.get(n, 0))
+	var ic := Rect2(((n - 57) % 8) * 20, ((n - 57) / 8) * 28, 20, 28)
+	draw_texture_rect_region(_tex.icones, Rect2(fr + Vector2(26, 21), Vector2(20, 28)), ic,
+		Color(1, 0.5, 0.5, alfa) if mortes < pede else cor)
+	for i in 2:
+		var r := _seta_r(i)
+		draw_texture_rect_region(_tex.skill_cima if i == 0 else _tex.skill_baixo, r, Rect2(0, 13 if r.has_point(_mouse) else 0, 15, 13), cor)
+	for par in [[78, pede], [97, mortes]]:
+		var q := fr + Vector2(par[0], 28 + 11)
+		draw_string_outline(f, q, str(par[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 2, Color(0, 0, 0, alfa))
+		draw_string(f, q, str(par[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, cor)
+	# dica: o nome da skill embaixo do centro (STRP_BOTTOMCENTER)
+	if Rect2(fr + Vector2(25, 21), Vector2(20, 28)).has_point(_mouse):
+		if _nomes.is_empty():
+			_nomes = ItensMU._json("res://dados/skills.json")
+		var nome: String = _nomes.get(str(n), ["Skill %d" % n])[0]
+		var w := f.get_string_size(nome, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x + 10
+		var c := fr + Vector2(30, 16)
+		draw_rect(Rect2(c.x - w / 2, c.y - 16, w, 16), Color(0, 0, 0, 0.8))
+		draw_string(f, Vector2(c.x - w / 2 + 5, c.y - 4), nome, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
 
 
 func _desenhar_comandos() -> void:
@@ -245,6 +351,13 @@ func clicar(p: Vector2) -> bool:
 		alfa = 1.0 if alfa <= 0.55 else snappedf(alfa - 0.1, 0.1)
 		print("TESTE guerra transparencia %d" % int(alfa * 100.5))
 		return true
+	if not skills.is_empty():
+		for i in 2:
+			if _seta_r(i).has_point(p):
+				trocar_skill(-1 if i == 0 else 1)
+				return true
+		if Rect2(_frame_skill(), FRAME_SKILL).has_point(p):
+			return true
 	if Rect2(m + Vector2(134, 7), Vector2(13, 12)).has_point(p):
 		escala = 2 if escala == 1 else 1
 		print("TESTE guerra escala %d" % escala)
@@ -285,6 +398,8 @@ func _has_point(p: Vector2) -> bool:
 	var m := moldura()
 	if Rect2(m, MOLDURA).has_point(p) or Rect2(m + Vector2(20, MOLDURA.y - 4), TEMPO).has_point(p):
 		return true
+	if not skills.is_empty() and Rect2(_frame_skill(), FRAME_SKILL).has_point(p):
+		return true
 	return tipo() == COMANDANTE and Rect2(m, Vector2(GRUPO.x + BOTAO_CMD.x, 7 * GRUPO.y + 5)).has_point(p)
 
 
@@ -294,3 +409,7 @@ func _gui_input(ev: InputEvent) -> void:
 	elif ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 		if clicar(ev.position):
 			accept_event()
+	elif ev is InputEventMouseButton and ev.pressed and ev.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN] \
+			and not skills.is_empty():
+		trocar_skill(-1 if ev.button_index == MOUSE_BUTTON_WHEEL_UP else 1)
+		accept_event()

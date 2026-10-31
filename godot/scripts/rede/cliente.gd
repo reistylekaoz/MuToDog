@@ -220,6 +220,7 @@ signal cs_lados(resultado: int, lista: Array)             # C2 B5: guildas da ba
 signal cs_guerra(sub: int, info: Dictionary)              # B2 14 a 20: interruptor, coroa, inicio e fim, lado, comando, relogio
 signal cs_mapa_guerra(cod: int, lista: Array)             # C2 B6 (gente da guilda) e BB (portoes e estatuas) no minimapa
 signal cs_catapulta(sub: int, info: Dictionary)           # B7 00 janela, 01 tiro, 02 pedra caindo em mim
+signal cs_mortes(n: int)                                   # B8 01: mortes da guilda pra skill da batalha (ReceiveKillCount)
 signal igs(sub: int, info: Dictionary)                    # D2: loja de cash (01 saldo, 02 abriu, 03 04 0B resultados,
 														  # 06 cabecalho do deposito, 0C 15 versoes, 0D 0E itens)
 signal evento_entrada(evento: String, resultado: int)   # C1 90 (Devil Square) e C1 9A (Blood Castle): 0 entrou, 1 sem convite...
@@ -2043,6 +2044,10 @@ func _tratar(p: PackedByteArray) -> void:
 						break
 					l.append([p[5 + i * 3] + 1, p[6 + i * 3], p[7 + i * 3]])
 				cs_mapa_guerra.emit(cod, l)
+		0xB8:
+			# ReceiveKillCount (PWHEADER_DEFAULT_WORD): o valor fica no byte 4
+			if sub == 0x01 and p.size() >= 5:
+				cs_mortes.emit(p[4])
 		0xB7:
 			if p[0] == 0xC1 and p.size() >= 5:
 				match sub:

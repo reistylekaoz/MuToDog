@@ -148,7 +148,8 @@ var skill_ponto := Vector2i(-1, -1)
 var skill_numero := -1
 const RECARGA_SKILL := 0.8  # sem boneco; com boneco vale o fim da animacao (_espera_golpe)
 const RAGE := [260, 261, 262, 265, 269]   # golpes do Rage Fighter: C3 4A (animacao pros outros) antes do C3 19
-const EM_VOLTA := [264, 270, 41, 42, 9, 14, 235, 76, 236, 237, 62]   # skills de area em volta de quem solta
+const EM_VOLTA := [264, 270, 41, 42, 9, 14, 235, 76, 236, 237, 62, 67]   # skills de area em volta de quem solta
+const CASTELO_ALVO := [68, 69, 70, 71, 72]   # skills da batalha que vao em alguem (SendRequestMagic, sem andar ate ele)
 # QWER: categorias de pocao do MU (vida, mana, SD, complexa); a maior primeiro
 const POCOES := [["14,3", "14,2", "14,1", "14,0"], ["14,6", "14,5", "14,4"], ["14,37", "14,36", "14,35"], ["14,40", "14,39", "14,38"]]
 var pocao_escolhida: Array = ["", "", "", ""]   # chave do item que a pessoa pos na tecla
@@ -598,6 +599,13 @@ func _teste_roteiro(passos: Array) -> void:
 						_guardar_teclas()
 					"foco":
 						cli.foco_personagem(meu_nome)
+					"cs":
+						# rodada 26: Z:cs solta a skill da batalha em mim como Shift + botao direito; Z:cs,1 troca pela seta de baixo antes
+						if z.size() > 1:
+							cerco.trocar_skill(int(z[1]))
+						print("TESTE guerra skill da vez %d mortes %d pronta %s" % [cerco.skill_guilda(), cerco.mortes, cerco.skill_pronta()])
+						if cerco.skill_pronta():
+							_skill_no_mouse(Vector2(-9999, -9999), false, cerco.skill_guilda())
 			"W":
 				# W:3 diz /crywolf ate o Crywolf chegar nesse estado (o servidor guarda o estado da volta anterior)
 				for i in 8:
@@ -1899,6 +1907,11 @@ func _unhandled_input(ev: InputEvent) -> void:
 		seguindo = -1
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT and ev.shift_pressed and templo.mostrando:
 		_skill_templo(_entidade_na_tela(ev.position))
+		return
+	# UseBattleMasterSkill: Shift troca a skill da vez pela da batalha quando a guilda ja tem as mortes
+	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT and ev.shift_pressed \
+			and cerco and cerco.visible and cerco.skill_pronta():
+		_skill_no_mouse(ev.position, false, cerco.skill_guilda())
 		return
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT:
 		if comandos.selecionado >= 0:
@@ -3207,6 +3220,9 @@ func _ligar_guerra() -> void:
 		cerco.membros = _membros_guilda + _membros_npc
 		print("TESTE guerra minimapa %02X %d pontos" % [cod, l.size()]))
 	cli.cs_catapulta.connect(_catapulta)
+	cli.cs_mortes.connect(func(n):
+		cerco.mortes = n
+		print("TESTE guerra mortes %d (skill %d pede %d)" % [n, cerco.skill_guilda(), cerco.MORTES_SKILL.get(cerco.skill_guilda(), 0)]))
 
 
 # a cada quadro: o minimapa so no mapa 30; os pontos de quem esta em volta 4 vezes por segundo
@@ -3218,13 +3234,21 @@ func _guerra_quadro(dt: float) -> void:
 		return
 	cerco.heroi = eu.tile
 	cerco.sou_mestre = meu_cargo_guilda == 128
+	cerco.cargo = meu_cargo_guilda
 	_pontos_t -= dt
 	if _pontos_t > 0.0:
 		return
 	_pontos_t = 0.25
 	var l := []
 	for e: Entidade in entidades.values():
-		if not is_instance_valid(e) or e == eu or e.morto:
+		if not is_instance_valid(e):
+			continue
+		if e.tipo in ["jogador", "eu"]:
+			var q := _placa_lado(e)
+			if q != e.placa:
+				print("TESTE guerra placa %s %d" % [e.nome, q])
+				e.por_placa(q)
+		if e == eu or e.morto:
 			continue
 		if e.tipo == "jogador":
 			var meu_lado := minha_guilda >= 0 and (e.guilda == minha_guilda or e.guilda_rel & 5 != 0)
@@ -3232,6 +3256,15 @@ func _guerra_quadro(dt: float) -> void:
 		elif e.tipo == "npc":
 			l.append([e.tile.x, e.tile.y, 2])
 	cerco.pontos = l
+
+
+# Placa do lado (SettingBattleFormation + CSParts2D): os buffs 14 (defesa) e 15 a 17 (ataque 1 a 3) que o servidor
+# poe em quem esta na batalha; o meu lado tambem vem no B2 19 (1 defesa, 2 a 4 ataque). So aparece com a batalha
+# rodando (IsBattleCastleStart) e some na invisibilidade (eBuff_Cloaking). Mestre da guilda: a placa com a coroa.
+func _placa_lado(e: Entidade) -> int:
+	var lado := cerco.lado if e == eu else 0
+	var mestre := (meu_cargo_guilda if e == eu else e.guilda_cargo) == 128
+	return GuerraCastelo.quadro_placa(cerco.iniciada, e.morto, e.buffs, lado, mestre)
 
 
 # caixa da batalha que fecha sozinha em 3 s (CProgressMsgBox)
@@ -3246,9 +3279,11 @@ func _caixa_guerra(linhas: Array, fechar_outras := false) -> void:
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	c.queue_redraw()
 	_caixas_guerra.append(c)
+	# weakref: a caixa pode ja ter saido (a proxima B2 15 fecha as outras) e o Godot reclama da captura liberada
+	var w: WeakRef = weakref(c)
 	get_tree().create_timer(3.0).timeout.connect(func():
-		if is_instance_valid(c):
-			c.queue_free())
+		if w.get_ref():
+			w.get_ref().queue_free())
 
 
 func _guerra_pacote(sub: int, d: Dictionary) -> void:
@@ -3285,12 +3320,19 @@ func _guerra_pacote(sub: int, d: Dictionary) -> void:
 		0x17:
 			cerco.iniciada = int(d.estado) == 1
 			print("TESTE guerra batalha %s" % ("comecou" if cerco.iniciada else "acabou"))
+			# ReceiveBattleCastleStart: InitSkillUI / ReleaseSkillUI
+			if cerco.iniciada:
+				cerco.iniciar_skills(janela_personagem.classe_base() == 4)
+			else:
+				cerco.skills = []
 		0x18:
 			var t := DicaItem.t(1496 if int(d.estado) == 0 else 1497, [d.guilda])
 			_aviso(t)
 		0x19:
 			cerco.lado = int(d.estado)
 			print("TESTE guerra lado %d (%s)" % [cerco.lado, ["observador", "soldado", "comandante"][cerco.tipo()]])
+			if cerco.iniciada:
+				cerco.iniciar_skills(janela_personagem.classe_base() == 4)
 		0x1D:
 			cerco.receber_comando(d)
 		0x1E:
@@ -3303,12 +3345,18 @@ func _guerra_pacote(sub: int, d: Dictionary) -> void:
 # FIRST_CROWN_SWITCH_NUMBER: o interruptor 217 e o 1, o 218 o 2. O B2 20 chega antes de eles estarem a vista:
 # sem a entidade, o de id menor e o 1 (o servidor cria os dois em ordem)
 var _ids_interruptor: Array = []
+var _interruptor_visto := {}   # id do interruptor -> e o 1 (217)
 
 
 func _primeiro_interruptor(id: int) -> bool:
-	var e: Entidade = entidades.get(id)
-	if e != null and e.numero in [217, 218]:
-		return e.numero == 217
+	# os interruptores ja vistos (217 e o 1, 218 o 2) ficam guardados: um fora da vista e o oposto do outro
+	for e: Entidade in entidades.values():
+		if e.numero in [217, 218] and e.tipo not in ["jogador", "eu"]:
+			_interruptor_visto[e.id] = e.numero == 217
+	if _interruptor_visto.has(id):
+		return _interruptor_visto[id]
+	for outro: int in _interruptor_visto:
+		return not _interruptor_visto[outro]
 	if id not in _ids_interruptor:
 		_ids_interruptor.append(id)
 		_ids_interruptor.sort()
@@ -5304,7 +5352,8 @@ func _acao_skill(n: int) -> String:
 		30: "cura", 31: "cura", 32: "cura", 33: "cura", 34: "cura", 35: "cura", 36: "cura",
 		57: "um_corte", 73: "canhao", 236: "golpe_chama", 237: "tempestade",
 		60: "golpe_dl", 61: "golpe_dl", 66: "golpe_dl", 74: "golpe_dl", 78: "golpe_dl", 238: "golpe_dl",
-		62: "terremoto_cavalo", 63: "teleporte_dl", 64: "magia", 65: "raio", 72: "vitalidade"}
+		62: "terremoto_cavalo", 63: "teleporte_dl", 64: "magia", 65: "raio", 72: "vitalidade",
+		67: "vitalidade", 68: "vitalidade", 69: "vitalidade", 70: "vitalidade", 71: "vitalidade"}
 	if a.has(n):
 		return a[n]
 	return "magia2" if n in [5, 9, 13, 38, 39] else "magia"
@@ -5313,8 +5362,8 @@ func _acao_skill(n: int) -> String:
 # botao direito: solta a skill atual no monstro do mouse (ou no chao, se for de area).
 # de_novo: o botao segue apertado e a skill anterior ja saiu (_skills): solta outra vez onde o
 # mouse estiver, sem mensagem; sem monstro no mouse, segue no ultimo; teleporte e Nova nao repetem
-func _skill_no_mouse(tela: Vector2, de_novo := false) -> void:
-	var n: int = barra_mu.skill_atual
+func _skill_no_mouse(tela: Vector2, de_novo := false, forcar := -1) -> void:
+	var n: int = forcar if forcar >= 0 else barra_mu.skill_atual
 	if Pets.e_comando(n):
 		# SendPetCommand: uma vez por clique
 		_segura_direito = false
@@ -5344,7 +5393,10 @@ func _skill_no_mouse(tela: Vector2, de_novo := false) -> void:
 	skill_numero = n
 	skill_alvo = -1
 	skill_ponto = Vector2i(-1, -1)
-	if tipo in [10, 11]:
+	if n in CASTELO_ALVO:
+		# SendRequestMagic(skill, quem esta no mouse ou eu); a Invisibility so em jogador
+		skill_alvo = e.id if e and e.tipo in ["jogador", "eu"] else cli.meu_id
+	elif tipo in [10, 11]:
 		# buff e cura: no aliado do mouse, ou em mim
 		skill_alvo = e.id if e and e.tipo == "jogador" else cli.meu_id
 	elif tipo == 0:
@@ -5358,6 +5410,9 @@ func _skill_no_mouse(tela: Vector2, de_novo := false) -> void:
 			skill_alvo = e.id
 		else:
 			skill_ponto = mundo.tile_na_tela(tela)
+			if skill_ponto.x < 0 and n in EM_VOLTA:
+				# em volta de quem solta (o Stun do battle master): o mouse fora do chao nao importa
+				skill_ponto = eu.tile
 			if skill_ponto.x < 0:
 				skill_numero = -1
 				return
@@ -5402,7 +5457,7 @@ func _skills(dt: float) -> void:
 	var n := skill_numero
 	var info := _info_skill(n)
 	var tipo := int(info[2])
-	var alcance := maxi(int(info[1]), 1)
+	var alcance := maxi(int(info[1]), 1) if n not in CASTELO_ALVO else 99
 	var alvo: Entidade = entidades.get(skill_alvo)
 	var ponto := skill_ponto
 	if skill_alvo >= 0:
@@ -5459,7 +5514,7 @@ func _skills(dt: float) -> void:
 	if n == 263:
 		cli.skill_rage_area(n, skill_alvo)
 		print("TESTE skill %d (Dark Side) no alvo %d" % [n, skill_alvo])
-	elif tipo in [0, 10, 11, 30] or n == 63:
+	elif tipo in [0, 10, 11, 30] or n == 63 or n in CASTELO_ALVO:
 		if n in RAGE:
 			cli.skill_rage(n, skill_alvo)
 		cli.skill_alvo(n, skill_alvo)
@@ -5474,6 +5529,7 @@ func _skills(dt: float) -> void:
 		cli.skill_area(n, meio.x, meio.y, giro, skill_alvo if (tipo == 5 or n == 76) and skill_alvo >= 0 else 0)
 		print("TESTE skill %d em area (%d, %d) giro %d" % [n, meio.x, meio.y, giro])
 	EfeitoSkill.criar(mundo, n, eu, alvo if alvo else p, tipo in [3, 4, 5])
+	_som_skill_castelo(n, eu, alvo)
 	# a proxima sai do _skill_no_mouse(de_novo), com o alvo que estiver no mouse
 	if not _cacar_skill:
 		skill_numero = -1
@@ -5539,6 +5595,18 @@ func _skill_de_outro(n: int, quem: int, alvo: int) -> void:
 	var a: Entidade = entidades.get(alvo, e)
 	e.tocar_skill(_acao_skill(n), a.position)
 	EfeitoSkill.criar(mundo, n, e, a)
+	_som_skill_castelo(n, e, a)
+
+
+# sons das skills da batalha (PlayBuffer em ZzzCharacter.cpp): Stun, Swell Mana e a Invisibility no alvo; os Cancel
+# usam o sDStunCancel, que o cliente 1.04d nao traz
+func _som_skill_castelo(n: int, quem: Entidade, alvo: Entidade) -> void:
+	match n:
+		67: _som("cs_sDStun")
+		69: _som("cs_sDSwellMana")
+		70: _som("cs_sDTrans")
+	if n in [67, 68, 69, 70, 71, 72]:
+		print("TESTE guerra skill %d de %s em %s" % [n, quem.nome if quem else "?", alvo.nome if alvo else "chao"])
 
 
 var _skill_teste := -1

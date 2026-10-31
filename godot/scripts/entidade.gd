@@ -43,6 +43,7 @@ var gens := 0                 # F8 05 e F8 07: 1 Duprian, 2 Vanert; titulo 1 (Gr
 var gens_titulo := 0
 var gens_contribuicao := 0
 var _auras := {}       # efeito -> EfeitoMU que fica enquanto o buff durar
+var placa := -1        # quadro da FormationMark que aparece (-1 nenhuma)
 
 
 func montar(m: Node3D, i: int, t: String, n: String, x: int, y: int, b: Boneco = null) -> void:
@@ -321,6 +322,15 @@ func buff(e: int, sim: bool) -> void:
 		var a := aura(self, e)
 		if a:
 			_auras[e] = a
+
+
+# Placa do lado em cima da cabeca na batalha do castelo (CSParts2D com BITMAP_FORMATION_MARK): quadro 0 a 2
+# ataque 1 a 3, 6 defesa; mestre da guilda soma 3 no ataque e 1 na defesa. -1 tira. Quem desenha e o TextosMU.
+
+
+func por_placa(quadro: int) -> void:
+	# desenhada em 2D por cima do 3D (TextosMU._placa): o Sprite3D nao aparecia no navegador
+	placa = quadro
 
 
 func _cor_buffs() -> void:

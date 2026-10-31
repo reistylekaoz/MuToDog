@@ -15,12 +15,14 @@ const AMARELO := Color(1.0, 0.8, 0.1)
 const CORES_HEROI := [Color8(150, 255, 240), Color8(100, 120, 255), Color8(140, 180, 255), Color8(200, 220, 255),
 	Color8(255, 150, 60), Color8(255, 80, 30), Color8(255, 0, 0)]
 const MARCA_GENS := [null, preload("res://dados/hud/gens_marca_d.png"), preload("res://dados/hud/gens_marca_v.png")]
+const PLACA := preload("res://dados/hud/castelo/marca_lado.png")   # FormationMark: 3 x 3 quadros de 84 px
 const JOIAS := ["14,13", "14,14", "14,16", "14,22", "14,31", "14,41", "14,42", "14,43", "14,44", "12,15", "12,30", "12,31"]
 
 static var atual: TextosMU
 var jogo: Node
 var nomes_itens := true      # Alt liga e desliga o nome de todos os itens do chao
 var _pontos: Array[Dictionary] = []
+var _topo_nome := {}         # id -> y do alto da pilha do nome nesta pintura (a placa do castelo vai em cima)
 
 
 func _ready() -> void:
@@ -76,15 +78,36 @@ func _draw() -> void:
 			if it == sob and not nomes_itens:
 				s = get_local_mouse_position() - Vector2(0, 15.0 * get_viewport_rect().size.y / 480.0)
 			_caixa(f, tam, it.nome, s, _cor_item(it.dados), Color.BLACK, _joia(it.dados), true)
+	_topo_nome.clear()
 	for e: Entidade in jogo.entidades.values():
 		if is_instance_valid(e) and not e.morto and e.nome_visivel():
 			_nome(cam, f, tam, e)
+	for e: Entidade in jogo.entidades.values():
+		if is_instance_valid(e) and not e.morto and e.placa >= 0:
+			_placa(cam, e)
 	for e: Entidade in jogo.entidades.values():
 		if is_instance_valid(e) and not e.morto and e.has_meta("pedra_estagio") and int(e.get_meta("pedra_estagio")) < 5:
 			_barra_obra(cam, e, int(e.get_meta("pedra_estagio")))
 	for p in _pontos:
 		_numero(cam, p)
 	_foco(f, tam)
+
+
+# placa do lado na batalha do castelo (CSParts2D + RenderSprite com BITMAP_FORMATION_MARK, rodada 26): um terco da
+# textura em cada lado (u e v de 0,33), 64 x 64 (0,64) na altura do osso 20 + 120, com o tamanho que teria
+# la no 3D (encolhe longe da camera)
+func _placa(cam: Camera3D, e: Entidade) -> void:
+	var p := e.global_position + Vector3.UP * (e.altura() + 1.0)
+	if cam.is_position_behind(p):
+		return
+	var s := cam.unproject_position(p)
+	var lado := s.distance_to(cam.unproject_position(p + cam.global_basis.x * 0.64))
+	# com o nome a mostra, a placa sobe pra cima da caixa do nome (e da guilda) em vez de ficar atras dela
+	if _topo_nome.has(e.id):
+		s.y = minf(s.y, _topo_nome[e.id] - lado / 2.0 - 2.0)
+	var q := e.placa
+	draw_texture_rect_region(PLACA, Rect2(s - Vector2(lado, lado) / 2.0, Vector2(lado, lado)),
+		Rect2((q % 3) * 84.48, (q / 3) * 84.48, 84.48, 84.48))
 
 
 # RenderBuildTimes (GMBattleCastle): a Life Stone subindo (C1 B9 01, estagio 0 a 4) tem a barra de 50x2 em cima,
@@ -218,6 +241,8 @@ func _nome(cam: Camera3D, f: Font, tam: int, e: Entidade) -> void:
 		var em_cima: bool = e == jogo.sobre
 		_caixa(f, tam, titulo, s - Vector2(0, y), Color8(250, 150, 0) if em_cima else Color8(230, 230, 0),
 			Color8(250, 150, 0, 128) if em_cima else Color8(108, 57, 41, 128), false, false)
+		y += f.get_height(tam) + 2
+	_topo_nome[e.id] = s.y - y
 
 
 # caixa justa no texto (3 px a mais de largura no nome), centrada em x; base em s.y
