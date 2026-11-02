@@ -1,6 +1,7 @@
 extends SceneTree
 # Luz nova no jogo (Polido, Option > New lighting): liga sozinha nos mapas a ceu aberto, nunca troca
 # efeito somado nem agua, e desligar volta shader, malha do chao, Environment e sol do jeito do cliente.
+# Com build/hd_pck (testes/exportar_hd.sh): o Option > HD textures decide se o pacote HD monta.
 # Uso: $G --headless --path . --script res://testes/polido.gd   (termina com "falhas: 0")
 # Mexe em user://opcoes.cfg e devolve o que estava la no fim.
 
@@ -89,6 +90,19 @@ func _rodar() -> void:
 	var l := await _mundo(1)
 	confere("opcao desligada: Lorencia abre como o cliente", _terreno(l) == "terreno.gdshader")
 	l.queue_free()
+
+	# pacotes HD do PC (testes/exportar_hd.sh): desligado no Option, nao monta; ligado, a textura vem em 2x
+	var pasta := ProjectSettings.globalize_path("res://build/hd_pck")
+	if FileAccess.file_exists(pasta + "/hd_mundo1.pck"):
+		OS.set_environment("MU_PACOTES", pasta)
+		Polido.guardar_opcao_hd(false)
+		PacoteMapa.montar_pc()
+		confere("HD desligado: chao de Lorencia na original (256)", (load("res://dados/mundo1/tiles/3.png") as Texture2D).get_width() == 256)
+		Polido.guardar_opcao_hd(true)
+		PacoteMapa.montar_pc()
+		confere("HD ligado: chao de Lorencia em 512", (ResourceLoader.load("res://dados/mundo1/tiles/3.png", "", ResourceLoader.CACHE_MODE_IGNORE) as Texture2D).get_width() == 512)
+	else:
+		print("  (sem build/hd_pck/hd_mundo1.pck: pacote HD nao testado)")
 
 	if antes.is_empty():
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(Polido.ARQ))

@@ -6,7 +6,7 @@ extends Control
 #   Server, Switch Character, Option e Cancel (textos 381 a 385 e 384);
 # - a janela Option (CNewUIOptionWindow): moldura de 190 (topo de 64, laterais de 10 em 10, pe de 45),
 #   linhas e pontos do cliente, barras de volume de 124x16 em 10 passos e o Close de 54x30 em x 68.
-#   Aqui ela tem Volume (efeitos), musica, brilho e a luz nova (Polido); o resto das opcoes do cliente nao existe neste jogo.
+#   Aqui ela tem Volume (efeitos), musica, brilho, a luz nova e as texturas HD (Polido, so no PC); o resto das opcoes do cliente nao existe neste jogo.
 # As opcoes ficam guardadas em user://opcoes.cfg.
 
 signal musica(v: float)
@@ -22,7 +22,7 @@ const ARQ := "user://opcoes.cfg"
 const PASTA := "res://dados/hud/"
 const L_CAIXA := 230.0
 const L_OPCAO := 190.0
-const LATERAIS := 17            # pedacos de 10 entre o topo e o pe da janela Option
+const LATERAIS := 19            # pedacos de 10 entre o topo e o pe da janela Option
 const BRILHO_DE := 0.5
 const BRILHO_ATE := 3.0
 
@@ -30,6 +30,8 @@ var vol_musica := 0.8
 var vol_efeitos := 0.8
 var _brilho := 2.0
 var _luz := true
+var _hd := true
+var _hd_aviso := false          # mudou o HD: vale ao abrir o jogo de novo
 var pagina := "menu"            # "menu" (caixa do Esc) ou "opcao"
 var _tex := {}
 var _esc := 1.0
@@ -55,6 +57,7 @@ func alternar(brilho_atual: float) -> void:
 	visible = not visible
 	_brilho = brilho_atual
 	_luz = Polido.opcao()
+	_hd = Polido.opcao_hd()
 	pagina = "menu"
 	_arrastando = ""
 	_apertado = ""
@@ -106,6 +109,10 @@ func _rect_barra(y: float) -> Rect2:
 # caixa de marcar da luz nova, embaixo das barras
 func _rect_luz() -> Rect2:
 	return Rect2(20.0, 204.0, 150.0, 14.0)
+
+
+func _rect_hd() -> Rect2:
+	return Rect2(20.0, 224.0, 150.0, 14.0)
 
 
 func _rect_fechar() -> Rect2:
@@ -172,17 +179,25 @@ func _draw() -> void:
 		if v > 0.0:
 			draw_texture_rect_region(_tex.opc_vol_cor, Rect2(r.position, Vector2(124.0 * v, 16.0)), Rect2(0, 0, 124.0 * v, 16.0))
 		draw_texture_rect(_tex.opc_linha, Rect2(18, b[3] + 22, 154, 2), false)
-	var rl := _rect_luz()
-	var cx := Rect2(rl.position.x + 13, rl.position.y + 1, 12, 12)
-	draw_rect(cx, Color(0.05, 0.05, 0.05, 0.9))
-	draw_rect(cx, Color(0.6, 0.5, 0.35) if rl.has_point(_mouse) else Color(0.4, 0.35, 0.28), false, 1.0)
-	if _luz:
-		draw_rect(cx.grow(-3), Color(1, 0.85, 0.4))
-	draw_string(f, Vector2(rl.position.x + 32, rl.position.y + 11), "New lighting (shadows)", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
-	draw_texture_rect(_tex.opc_linha, Rect2(18, rl.end.y + 8, 154, 2), false)
+	_marcar(f, _rect_luz(), _luz, "New lighting (shadows)")
+	var rh := _rect_hd()
+	if not OS.has_feature("web"):   # no navegador nao tem pacote HD
+		_marcar(f, rh, _hd, "HD textures")
+	if _hd_aviso:
+		draw_string(f, Vector2(rh.position.x + 32, rh.end.y + 10), "Applies when the game restarts", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 0.8, 0.4))
+	draw_texture_rect(_tex.opc_linha, Rect2(18, rh.end.y + 16, 154, 2), false)
 	var fe := _rect_fechar()
 	var lf := 2 if _apertado == "fechar" else (1 if fe.has_point(_mouse) else 0)
 	draw_texture_rect_region(_tex.opc_fechar, fe, Rect2(0, 30 * lf, 54, 30))
+
+
+func _marcar(f: Font, r: Rect2, ligado: bool, texto: String) -> void:
+	var cx := Rect2(r.position.x + 13, r.position.y + 1, 12, 12)
+	draw_rect(cx, Color(0.05, 0.05, 0.05, 0.9))
+	draw_rect(cx, Color(0.6, 0.5, 0.35) if r.has_point(_mouse) else Color(0.4, 0.35, 0.28), false, 1.0)
+	if ligado:
+		draw_rect(cx.grow(-3), Color(1, 0.85, 0.4))
+	draw_string(f, Vector2(r.position.x + 32, r.position.y + 11), texto, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
 
 
 # --- mouse ----------------------------------------------------------------------
@@ -223,6 +238,8 @@ func _sob_mouse(p: Vector2) -> String:
 		return ""
 	if _rect_luz().has_point(p):
 		return "luz"
+	if _rect_hd().has_point(p) and not OS.has_feature("web"):
+		return "hd"
 	return "fechar" if _rect_fechar().has_point(p) else ""
 
 
@@ -243,6 +260,10 @@ func _clicou(nome: String) -> void:
 		"luz":
 			_luz = not _luz
 			luz_nova.emit(_luz)
+		"hd":
+			_hd = not _hd
+			_hd_aviso = true
+			Polido.guardar_opcao_hd(_hd)
 		"cancelar", "fechar":
 			visible = false
 

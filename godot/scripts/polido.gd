@@ -2,7 +2,8 @@ class_name Polido
 # Remasterizacao (01/11/2026). A luz nova vale no jogo desde 02/11 (Option > New lighting, guardado em
 # user://opcoes.cfg; ligada no PC, desligada no navegador). No visualizador (?vista=1) so com ?polido:
 # ?polido=luz  luz do Godot com sombra, ceu, neblina, brilho (glow) e acerto de cor por cima da luz do MU
-# ?polido=hd   texturas ampliadas 4x pela IA (ferramentas/ampliar.py -> dados/hd/) com normal map
+# ?polido=hd   texturas ampliadas pela IA (ferramentas/gerar_hd.sh -> dados/hd/). No jogo do PC o HD vem
+#              dos hd_*.pck (testes/exportar_hd.sh) montados por cima das originais: nao passa por aqui
 # ?polido=tudo os dois
 # ?polido=jogo a luz como no jogo (sem o ceu e a neblina de areia), pras fotos de comparacao
 # ?heroi=0=0,5;2=7,1;...;niveis=0:13,3:11 poe um Dark Knight vestido no alvo da camera (?heroi_giro=graus)
@@ -25,6 +26,21 @@ static func opcao() -> bool:
 	if c.load(ARQ) == OK:
 		return bool(c.get_value("grafico", "luz", not OS.has_feature("web")))
 	return not OS.has_feature("web")
+
+
+# texturas HD no PC (hd_*.pck montados pelo PacoteMapa.montar_pc): ligadas se nada foi guardado
+static func opcao_hd() -> bool:
+	var c := ConfigFile.new()
+	if c.load(ARQ) == OK:
+		return bool(c.get_value("grafico", "hd", true))
+	return true
+
+
+static func guardar_opcao_hd(v: bool) -> void:
+	var c := ConfigFile.new()
+	c.load(ARQ)
+	c.set_value("grafico", "hd", v)
+	c.save(ARQ)
 
 
 static func guardar_opcao(v: bool) -> void:

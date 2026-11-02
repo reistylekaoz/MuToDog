@@ -2,7 +2,7 @@
 # Amplia texturas 4x com Real-ESRGAN no processador (sem placa de video) e gera o normal map.
 # Uso: ~/casa/trabalho/.ferramentas/esrgan/bin/python ferramentas/ampliar.py <entrada.png|pasta> <saida> [--escala 2|4] [--rede geral|forte] [--normal]
 # Textura do MU repete (chao, parede): amplia com 16 px da outra borda em volta e corta, pra nao abrir costura.
-# O alfa vai no bicubico (a rede so ve RGB). --escala 2 amplia 4x e reduz pra 2x (fica mais nitido que 2x direto).
+# O alfa vai no bicubico (a rede so ve RGB). A cor media de cada 4x4 volta a ser a do pixel original. --escala 2 amplia 4x e reduz pra 2x (fica mais nitido que 2x direto).
 import argparse, os, sys, glob
 import numpy as np
 import torch
@@ -101,6 +101,13 @@ def ampliar(r, img: Image.Image, escala: int) -> Image.Image:
         t = torch.from_numpy(rgb).permute(2, 0, 1)[None]
         s = r(t).clamp(0, 1)[0].permute(1, 2, 0).numpy()
     s = s[b * 4:(b + h) * 4, b * 4:(b + w) * 4]
+    # a rede puxa a cor (Lorencia ficava menos laranja): reduzida de volta, a HD tem que dar a original.
+    # Soma a diferenca de cor ampliada suave: o detalhe da IA fica, o tom volta a ser o do MU.
+    st = torch.from_numpy(np.ascontiguousarray(s)).permute(2, 0, 1)[None]
+    baixa = F.avg_pool2d(st, 4)
+    orig = torch.from_numpy(np.ascontiguousarray(a[:, :, :3])).permute(2, 0, 1)[None]
+    st = (st + F.interpolate(orig - baixa, scale_factor=4, mode='bicubic', align_corners=False)).clamp(0, 1)
+    s = st[0].permute(1, 2, 0).numpy()
     out = Image.fromarray((s * 255 + 0.5).astype(np.uint8))
     alfa = rgba.getchannel('A').resize((w * 4, h * 4), Image.BICUBIC)
     out.putalpha(alfa)

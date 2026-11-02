@@ -11,6 +11,8 @@ cd "$(dirname "$0")/.."
 N=build/pc_novo
 P=build/web/pc
 bash testes/exportar_windows.sh $N >/dev/null
+# texturas HD (testes/exportar_hd.sh, so quando o HD muda): vao junto na pasta mapas/
+[ -d build/hd_pck ] && cp build/hd_pck/hd_*.pck $N/mapas/
 G=${GODOT:-$HOME/casa/trabalho/.ferramentas/godot/Godot_v4.7.2-stable_linux.x86_64}
 (cd ../launcher && $G --headless --import >/dev/null 2>&1; $G --headless --export-pack "LauncherPck" ../godot/$N/launcher.pck 2>&1 | grep -i error || true)
 mkdir -p $P/mapas

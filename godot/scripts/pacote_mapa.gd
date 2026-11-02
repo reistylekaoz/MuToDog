@@ -5,7 +5,7 @@ extends RefCounted
 # jogo baixa so quando o personagem entra. No PC exportado (testes/exportar_windows.sh)
 # esses mapas e os modelos dos itens vao em pacotes na pasta mapas/ do lado do openmu.exe
 # (cada zip da entrega cabe nos 50 MB do app arquivos) e montar_pc() monta todos na
-# partida. Nos testes headless os dados estao no projeto e nada e carregado.
+# partida (os hd_*.pck por ultimo, por cima: texturas HD). Nos testes headless os dados estao no projeto e nada e carregado.
 # Uso: await PacoteMapa.carregar(no_qualquer, numero_do_mundo)
 
 const FORA := [2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 19, 25, 31, 32, 34, 35, 38, 39, 40, 42, 43, 47, 52, 57, 58, 59, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 80, 81, 82]
@@ -51,8 +51,16 @@ static func montar_pc() -> void:
 	var arqs := Array(DirAccess.get_files_at(pasta))
 	arqs.sort()
 	for a in arqs:
-		if a.ends_with(".pck"):
+		if a.ends_with(".pck") and not a.begins_with("hd_"):
 			print("TESTE pacote %s %s" % [a, "ok" if ProjectSettings.load_resource_pack(pasta.path_join(a), false) else "falhou"])
+	# texturas HD (testes/exportar_hd.sh): mesmos caminhos das originais, montadas por ultimo e por cima.
+	# Option > HD textures desliga (vale ao abrir o jogo de novo: a textura ja carregada nao troca).
+	if not Polido.opcao_hd():
+		print("TESTE pacote hd desligado")
+		return
+	for a in arqs:
+		if a.ends_with(".pck") and a.begins_with("hd_"):
+			print("TESTE pacote %s %s" % [a, "ok" if ProjectSettings.load_resource_pack(pasta.path_join(a), true) else "falhou"])
 
 
 static func precisa(numero: int) -> bool:
