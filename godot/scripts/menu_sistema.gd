@@ -6,12 +6,13 @@ extends Control
 #   Server, Switch Character, Option e Cancel (textos 381 a 385 e 384);
 # - a janela Option (CNewUIOptionWindow): moldura de 190 (topo de 64, laterais de 10 em 10, pe de 45),
 #   linhas e pontos do cliente, barras de volume de 124x16 em 10 passos e o Close de 54x30 em x 68.
-#   Aqui ela tem Volume (efeitos), musica e brilho; o resto das opcoes do cliente nao existe neste jogo.
+#   Aqui ela tem Volume (efeitos), musica, brilho e a luz nova (Polido); o resto das opcoes do cliente nao existe neste jogo.
 # As opcoes ficam guardadas em user://opcoes.cfg.
 
 signal musica(v: float)
 signal efeitos(v: float)
 signal brilho(v: float)
+signal luz_nova(ligada: bool)
 signal trocar_personagem
 signal trocar_servidor
 signal mover
@@ -21,13 +22,14 @@ const ARQ := "user://opcoes.cfg"
 const PASTA := "res://dados/hud/"
 const L_CAIXA := 230.0
 const L_OPCAO := 190.0
-const LATERAIS := 14            # pedacos de 10 entre o topo e o pe da janela Option
+const LATERAIS := 17            # pedacos de 10 entre o topo e o pe da janela Option
 const BRILHO_DE := 0.5
 const BRILHO_ATE := 3.0
 
 var vol_musica := 0.8
 var vol_efeitos := 0.8
 var _brilho := 2.0
+var _luz := true
 var pagina := "menu"            # "menu" (caixa do Esc) ou "opcao"
 var _tex := {}
 var _esc := 1.0
@@ -52,6 +54,7 @@ func _ready() -> void:
 func alternar(brilho_atual: float) -> void:
 	visible = not visible
 	_brilho = brilho_atual
+	_luz = Polido.opcao()
 	pagina = "menu"
 	_arrastando = ""
 	_apertado = ""
@@ -98,6 +101,11 @@ func _barras() -> Array:
 
 func _rect_barra(y: float) -> Rect2:
 	return Rect2(33.0, y, 124.0, 16.0)
+
+
+# caixa de marcar da luz nova, embaixo das barras
+func _rect_luz() -> Rect2:
+	return Rect2(20.0, 204.0, 150.0, 14.0)
 
 
 func _rect_fechar() -> Rect2:
@@ -164,6 +172,14 @@ func _draw() -> void:
 		if v > 0.0:
 			draw_texture_rect_region(_tex.opc_vol_cor, Rect2(r.position, Vector2(124.0 * v, 16.0)), Rect2(0, 0, 124.0 * v, 16.0))
 		draw_texture_rect(_tex.opc_linha, Rect2(18, b[3] + 22, 154, 2), false)
+	var rl := _rect_luz()
+	var cx := Rect2(rl.position.x + 13, rl.position.y + 1, 12, 12)
+	draw_rect(cx, Color(0.05, 0.05, 0.05, 0.9))
+	draw_rect(cx, Color(0.6, 0.5, 0.35) if rl.has_point(_mouse) else Color(0.4, 0.35, 0.28), false, 1.0)
+	if _luz:
+		draw_rect(cx.grow(-3), Color(1, 0.85, 0.4))
+	draw_string(f, Vector2(rl.position.x + 32, rl.position.y + 11), "New lighting (shadows)", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
+	draw_texture_rect(_tex.opc_linha, Rect2(18, rl.end.y + 8, 154, 2), false)
 	var fe := _rect_fechar()
 	var lf := 2 if _apertado == "fechar" else (1 if fe.has_point(_mouse) else 0)
 	draw_texture_rect_region(_tex.opc_fechar, fe, Rect2(0, 30 * lf, 54, 30))
@@ -205,6 +221,8 @@ func _sob_mouse(p: Vector2) -> String:
 			if _rect_botao(i).has_point(p):
 				return bs[i][0]
 		return ""
+	if _rect_luz().has_point(p):
+		return "luz"
 	return "fechar" if _rect_fechar().has_point(p) else ""
 
 
@@ -222,12 +240,16 @@ func _clicou(nome: String) -> void:
 		"opcao":
 			pagina = "opcao"
 			_ajustar()
+		"luz":
+			_luz = not _luz
+			luz_nova.emit(_luz)
 		"cancelar", "fechar":
 			visible = false
 
 
 func _guardar() -> void:
 	var c := ConfigFile.new()
+	c.load(ARQ)   # a luz nova (Polido) mora no mesmo arquivo
 	c.set_value("som", "musica", vol_musica)
 	c.set_value("som", "efeitos", vol_efeitos)
 	c.save(ARQ)

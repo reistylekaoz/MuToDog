@@ -7,6 +7,7 @@ extends Node
 
 const PASTA := "res://dados/modelos/"
 static var eu: ModelosMU
+static var pasta_web := "modelos"   # o modo polido (Polido) troca por modelos_hd
 
 var mapa := {}          # "grupo,numero" -> [glb, tipo, rotacao no chao, altura no chao, escala no chao]
 var _prontos := {}      # glb -> Node3D modelo (duplicado a cada uso)
@@ -44,14 +45,21 @@ func _carregar(glb: String) -> void:
 		return
 	_pedidos[glb] = true
 	var no: Node3D = null
-	if ResourceLoader.exists(PASTA + glb + ".glb"):
+	# modo polido fora do navegador: os GLB de testes/exportar_polido.sh ficam em build/<pasta_web>/
+	var arq_fora := ProjectSettings.globalize_path("res://build/%s/%s.glb" % [pasta_web, glb])
+	if pasta_web != "modelos" and not OS.has_feature("web") and FileAccess.file_exists(arq_fora):
+		var doc := GLTFDocument.new()
+		var st := GLTFState.new()
+		if doc.append_from_file(arq_fora, st) == OK:
+			no = doc.generate_scene(st)
+	elif ResourceLoader.exists(PASTA + glb + ".glb"):
 		no = load(PASTA + glb + ".glb").instantiate()
 	elif OS.has_feature("web"):
 		var http := HTTPRequest.new()
 		add_child(http)
 		# HTTPRequest quer o endereco inteiro: modelos/ fica do lado do index.html
 		var base := str(JavaScriptBridge.eval("location.href")).get_slice("?", 0).get_base_dir()
-		http.request("%s/modelos/%s.glb" % [base, glb])
+		http.request("%s/%s/%s.glb" % [base, pasta_web, glb])
 		var r: Array = await http.request_completed
 		http.queue_free()
 		if r[0] == HTTPRequest.RESULT_SUCCESS and r[1] == 200:

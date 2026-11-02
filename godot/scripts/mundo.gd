@@ -37,6 +37,8 @@ var brilho := 2.0
 signal brilho_mudou(v: float)
 var _luz_tex: Texture2D
 var arquivo_luz := "luz.png"   # TerrainLight do mapa; o Crywolf troca pela 1 ou 2
+var _heroi := ""
+var _heroi_giro := 0.0
 
 
 func _ready() -> void:
@@ -76,6 +78,10 @@ func _ready() -> void:
 	# neblina so de perto (vista de cima fica limpa)
 	$WorldEnvironment.environment.fog_enabled = distancia < 40.0
 	_mirar()
+	Polido.no_mundo(self)
+	if _heroi != "":
+		Polido.heroi(self, _heroi, _heroi_giro)
+	Polido.agendar_foto(self)
 	print("TESTE mundo %d · objetos %d · fogos %d · grama %d" % [numero, n, ambiente.fogos if ambiente else 0, ambiente.gramas if ambiente else 0])
 
 
@@ -98,6 +104,10 @@ func _ler_parametros() -> void:
 	inclinacao = float(p.get("inclinacao", inclinacao))
 	distancia = float(p.get("dist", distancia))
 	brilho = float(p.get("brilho", brilho))
+	# teste de remasterizacao (Polido): ?polido=luz|hd|tudo e ?heroi=<equipamento>
+	Polido.ler(p)
+	_heroi = str(p.get("heroi", "")).uri_decode()
+	_heroi_giro = float(p.get("heroi_giro", 0))
 
 
 func _ambiente() -> void:

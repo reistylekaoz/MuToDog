@@ -1143,6 +1143,11 @@ func _montar_ui() -> void:
 		if mundo:
 			mundo.definir_brilho(v)
 			brilho = mundo.brilho)
+	menu.luz_nova.connect(func(v):
+		if mundo:
+			Polido.trocar(mundo, v)
+		else:
+			Polido.guardar_opcao(v))
 	menu.trocar_personagem.connect(func(): cli.sair_para(1))
 	menu.sair_jogo.connect(func(): cli.sair_para(0))
 	menu.trocar_servidor.connect(func(): cli.sair_para(2))
