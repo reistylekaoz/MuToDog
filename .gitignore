@@ -128,5 +128,9 @@ docs/reviews/
 in-game-test-results/
 __pycache__/
 
-# MuToDog: a Data/ do jogo nao vai pro repositorio (o cliente pega do pacote do MU Estudo)
-/src/bin/Data/
+# MuToDog: a Data/ do jogo nao vai pro repositorio (o cliente pega do pacote do MU Estudo); so as telas RmlUi
+# do MuMain (texto), que a compilacao confere
+/src/bin/Data/*
+!/src/bin/Data/Interface/
+/src/bin/Data/Interface/*
+!/src/bin/Data/Interface/RmlUi/
