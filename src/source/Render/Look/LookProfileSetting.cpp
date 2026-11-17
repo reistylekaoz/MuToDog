@@ -1,0 +1,387 @@
+#include "stdafx.h"
+
+#include "Render/Look/LookProfileSetting.h"
+
+#include "Core/Utilities/Log/MuLogger.h"
+#include "Render/Lighting/LightMoodSetting.h"
+#include "Render/Look/LookFiles.h"
+#include "Render/Look/LookLayers.h"
+#include "Render/Look/LookTuning.h"
+#include "World/MapInfra/MapManager.h"
+
+#if defined(MU_ENABLE_CONTROL_SOCKET) || defined(_EDITOR)
+#include "Core/Text/Utf8.h"
+#include "Render/Look/LookPresetSetting.h"
+#include "Render/Look/LookTuningCommand.h"
+#endif
+
+#include <utility>
+
+namespace Render::Look
+{
+namespace
+{
+using Data::Maps::LookValue;
+using Data::Maps::LookValues;
+
+struct State
+{
+    // The live documents and everything layered over them (Render/Look/LookLayers.h); a mood change
+    // rebuilds the static map light.
+    LookLayers layers{[](const Data::Maps::LightMoodData& mood) { Lighting::LightMood::SetMoodData(mood); }};
+    std::string source = "shipped";
+    // The saves SaveLive made (SaveCount).
+    int saves = 0;
+};
+
+State s_state;
+
+void LogIssues(const std::vector<Data::Items::ItemDataIssue>& issues)
+{
+    for (const Data::Items::ItemDataIssue& issue : issues)
+    {
+        mu::log::Get("render")->warn("Look profile: {}", issue.ToString());
+    }
+}
+
+void UseFiles(LookFiles files, std::string source)
+{
+    s_state.source = std::move(source);
+    s_state.layers.UseFiles(std::move(files));
+}
+
+LookFilesLoad LoadShipped(LookFileSystem& fileSystem)
+{
+    LookFilesLoad loaded = LoadLookFiles(fileSystem, Data::Maps::LookProfileFile, Data::Maps::LightMoodFile);
+    LogIssues(loaded.issues);
+    if (!loaded.files.lookUsable)
+    {
+        mu::log::Get("render")->warn("Look profile unusable; the built-in values apply");
+    }
+    if (loaded.files.saveBlocked)
+    {
+        mu::log::Get("render")->warn("Light mood unusable; the world keeps its Classic light and the look cannot be "
+                                     "saved: {}",
+                                     *loaded.files.saveBlocked);
+    }
+    return loaded;
+}
+} // namespace
+
+void LoadProfile()
+{
+    DiskLookFileSystem fileSystem;
+    UseFiles(LoadShipped(fileSystem).files, "shipped");
+}
+
+const LookValues& Active()
+{
+    return s_state.layers.Active(gMapManager.WorldActive);
+}
+
+void SetPersonalLookOverrides(const Data::Maps::LookOverrides& overrides)
+{
+    s_state.layers.SetPersonal(overrides);
+}
+
+void SetPersonalTuningGroups(const TuningGroupSet& applying)
+{
+    s_state.layers.SetApplyingGroups(applying);
+}
+
+LookValues InheritedValues()
+{
+    return s_state.layers.Inherited(gMapManager.WorldActive);
+}
+
+float Value(LookValue value)
+{
+    return static_cast<float>(Active()[value]);
+}
+
+std::uint32_t Revision()
+{
+    return s_state.layers.Revision();
+}
+
+LookPreview ActivePreview()
+{
+    return s_state.layers.Preview();
+}
+
+Lighting::LightHistorySettings LightHistorySettings()
+{
+    const LookValues& values = Active();
+    Lighting::LightHistorySettings settings;
+    settings.mapSmoothingSeconds = static_cast<float>(values[LookValue::DynamicMapSmoothing]);
+    settings.effectGain = static_cast<float>(values[LookValue::DynamicEffectGain]);
+    settings.effectRangeScale = static_cast<float>(values[LookValue::DynamicEffectRange]);
+    settings.effectRangeMax = static_cast<float>(values[LookValue::DynamicEffectRangeMax]);
+    settings.effectFadeSeconds = static_cast<float>(values[LookValue::DynamicEffectFade]);
+    settings.effectCap = static_cast<float>(values[LookValue::DynamicEffectCap]);
+    return settings;
+}
+
+#if defined(MU_ENABLE_CONTROL_SOCKET) || defined(_EDITOR)
+namespace
+{
+const char* PreviewName(LookPreview preview)
+{
+    return preview == LookPreview::Authoring ? "authoring" : "player";
+}
+
+// After an edit: says when it switched the Player preview to Authoring.
+void LogPreviewSwitch(LookPreview before)
+{
+    if (before != s_state.layers.Preview())
+    {
+        mu::log::Get("render")->info("Look preview: authoring (the look as edited, without the player's values); "
+                                     "`$look preview player` shows them again");
+    }
+}
+
+// An edit's result: applied, the next frame uses the live values (Render/Look/LookLayers.h has
+// already rebuilt the map light for a mood edit); refused, nothing changed.
+bool Applied(const LookEditResult& result, const char* what, LookPreview before)
+{
+    if (!result.applied)
+    {
+        mu::log::Get("render")->warn("$look {} refused: {}", what, result.error);
+        return false;
+    }
+    LogPreviewSwitch(before);
+    return true;
+}
+
+std::string DescribeMaps(const std::vector<int>& maps)
+{
+    std::string text;
+    for (const int map : maps)
+    {
+        text += (text.empty() ? "" : ", ") + std::to_string(map);
+    }
+    return text;
+}
+
+std::string MapName(int world)
+{
+    const wchar_t* name = gMapManager.GetMapName(world);
+    return name ? Core::Text::ToUtf8(name) : std::string();
+}
+
+void LogValue(const LookValueState& state, int world)
+{
+    mu::log::Get("render")->info(
+        "$look {} = {} ({}{}), range {} to {}", state.name, state.value, ToString(state.source),
+        state.source == LookValueSource::Map ? " " + std::to_string(world) : std::string(), state.min, state.max);
+}
+
+bool Show(std::optional<std::string_view> name)
+{
+    const std::vector<LookValueState> states = DescribeLive(name);
+    if (states.empty())
+    {
+        mu::log::Get("render")->warn("$look show refused: {}: is not a look value", *name);
+        return false;
+    }
+    const int world = gMapManager.WorldActive;
+    mu::log::Get("render")->info("$look values on world {} from {}; preview {}, preset {}, overrides: {}", world,
+                                 s_state.source, PreviewName(s_state.layers.Preview()),
+                                 ActiveLookPreset() == LookPreset::Enhanced ? "Enhanced" : "Classic",
+                                 DescribeFeatureOverrides());
+    for (const LookValueState& state : states)
+    {
+        LogValue(state, world);
+    }
+    mu::log::Get("render")->flush();
+    return true;
+}
+} // namespace
+
+const LookFiles& LiveFiles()
+{
+    return s_state.layers.Live();
+}
+
+const std::string& LiveSource()
+{
+    return s_state.source;
+}
+
+std::vector<LookValueState> DescribeLive(std::optional<std::string_view> name)
+{
+    return s_state.layers.Describe(gMapManager.WorldActive, name);
+}
+
+bool SetLive(std::span<const LookEdit> edits, bool currentMap)
+{
+    const int world = gMapManager.WorldActive;
+    if (currentMap && world < 0)
+    {
+        mu::log::Get("render")->warn("$look set map refused: no map is active");
+        return false;
+    }
+    const std::optional<int> scope = currentMap ? std::optional<int>(world) : std::nullopt;
+    const LookPreview before = s_state.layers.Preview();
+    const LookEditResult result = s_state.layers.Set(edits, scope, currentMap ? MapName(world) : std::string());
+    if (!Applied(result, "set", before))
+    {
+        return false;
+    }
+    for (std::size_t index = 0; index < edits.size(); ++index)
+    {
+        mu::log::Get("render")->info("$look set {}{}: {} -> {}", currentMap ? "map " + std::to_string(world) + " " : "",
+                                     edits[index].name, result.oldValues[index], edits[index].value);
+    }
+    if (result.entryMaps.size() > 1)
+    {
+        mu::log::Get("render")->info("$look set map: the entry is shared, maps {} all get it",
+                                     DescribeMaps(result.entryMaps));
+    }
+    return true;
+}
+
+bool ResetLive(std::optional<std::string_view> name)
+{
+    const LookPreview before = s_state.layers.Preview();
+    const LookEditResult result = s_state.layers.Reset(name, gMapManager.WorldActive);
+    if (!Applied(result, "reset", before))
+    {
+        return false;
+    }
+    mu::log::Get("render")->info(
+        "$look reset {} to the values loaded from {}{}", name ? std::string(*name) : "every value", s_state.source,
+        result.entryMaps.size() > 1 ? ", on maps " + DescribeMaps(result.entryMaps) : std::string());
+    return true;
+}
+
+void SetLivePreview(LookPreview preview)
+{
+    s_state.layers.SetPreview(preview);
+    mu::log::Get("render")->info("Look preview: {}", preview == LookPreview::Authoring
+                                                         ? "authoring (the look as edited, without the player's values)"
+                                                         : "player (the look as players see it)");
+}
+
+LookEditResult ReplaceLive(const Data::Maps::LookProfileData& profile)
+{
+    const LookPreview before = s_state.layers.Preview();
+    LookEditResult result = s_state.layers.Replace(profile);
+    // Not logged when applied: a slider drag replaces the profile every frame.
+    if (result.applied)
+    {
+        LogPreviewSwitch(before);
+    }
+    else
+    {
+        mu::log::Get("render")->warn("Graphics Look: change refused: {}", result.error);
+    }
+    return result;
+}
+
+const LookFiles& LoadedFiles()
+{
+    return s_state.layers.Loaded();
+}
+
+std::uint32_t LiveFilesGeneration()
+{
+    return s_state.layers.FilesGeneration();
+}
+
+bool LoadLive(std::string_view candidate)
+{
+    DiskLookFileSystem fileSystem;
+    if (candidate.empty())
+    {
+        UseFiles(LoadShipped(fileSystem).files, "shipped");
+        mu::log::Get("render")->info("$look load: the shipped files");
+        return true;
+    }
+    const std::filesystem::path folder = std::filesystem::path("Data/Render/Candidates") / std::string(candidate);
+    std::vector<Data::Items::ItemDataIssue> issues;
+    std::optional<LookFiles> files = LoadCandidateFiles(fileSystem, folder / "Look.json", folder / "LightMood.json",
+                                                        Data::Maps::LookProfileFile, Data::Maps::LightMoodFile, issues);
+    LogIssues(issues);
+    if (!files)
+    {
+        mu::log::Get("render")->warn("$look load refused: candidate {} is unusable; nothing changed", candidate);
+        return false;
+    }
+    UseFiles(std::move(*files), std::string(candidate));
+    mu::log::Get("render")->info("$look load: candidate {}", candidate);
+    return true;
+}
+
+bool SaveLive()
+{
+    DiskLookFileSystem fileSystem;
+    const LookSaveResult result = SaveLookFiles(fileSystem, s_state.layers.Live(), Data::Maps::LookProfileFile);
+    if (!result.saved)
+    {
+        mu::log::Get("render")->error("$look save failed: {}", result.message);
+        return false;
+    }
+    // What was saved is now what a reset goes back to, and the shipped file has it (also from a candidate).
+    s_state.layers.MarkSaved();
+    s_state.source = "shipped";
+    ++s_state.saves;
+    mu::log::Get("render")->info("$look save: {}", result.message);
+    return true;
+}
+
+int SaveCount()
+{
+    return s_state.saves;
+}
+
+bool HandleDeveloperCommand(std::wstring_view command)
+{
+    if (const std::optional<LookTuningCommand> alias = ParseLookTuningCommand(command))
+    {
+        std::vector<LookEdit> edits;
+        edits.reserve(alias->count);
+        for (std::size_t index = 0; index < alias->count; ++index)
+        {
+            edits.push_back(
+                {Data::Maps::Info(alias->assignments[index].value).name, alias->assignments[index].newValue});
+        }
+        (void)SetLive(edits, false);
+        return true;
+    }
+    const std::optional<LookCommand> look = ParseLookCommand(command);
+    if (!look)
+    {
+        return false;
+    }
+    const std::optional<std::string_view> name =
+        look->name.empty() ? std::nullopt : std::optional<std::string_view>(look->name);
+    switch (look->verb)
+    {
+    case LookVerb::Show:
+        (void)Show(name);
+        break;
+    case LookVerb::Set:
+    {
+        const LookEdit edit{look->name, look->value};
+        (void)SetLive(std::span<const LookEdit>(&edit, 1), look->map);
+        break;
+    }
+    case LookVerb::Reset:
+        (void)ResetLive(name);
+        break;
+    case LookVerb::Load:
+        (void)LoadLive(look->name);
+        break;
+    case LookVerb::Save:
+        (void)SaveLive();
+        break;
+    case LookVerb::Preview:
+        SetLivePreview(look->name == "authoring" ? LookPreview::Authoring : LookPreview::Player);
+        break;
+    }
+    return true;
+}
+#endif
+
+} // namespace Render::Look

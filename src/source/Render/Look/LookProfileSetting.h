@@ -1,0 +1,43 @@
+#pragma once
+
+#include "Data/GameData/MapData/LookProfile.h"
+#include "Render/Lighting/DynamicLightHistory.h"
+#include "Render/Look/TuningControls.h"
+
+#include <cstdint>
+
+// The effective look profile: the live values of Data/Render/Look.json for the active world (a
+// developer edits them live, Render/Look/LookTuning.h), then the player's own values
+// (Render/Look/TuningSetting.h) unless the Authoring preview leaves them out.
+namespace Render::Look
+{
+
+// Reads Data/Render/Look.json (its problems are logged once; an unusable file keeps the built-in
+// values, a format 1 file without its Data/Maps/LightMood.json the Classic light) and hands the
+// light mood its data. Call once at startup.
+void LoadProfile();
+
+// The values of the active world (gMapManager.WorldActive).
+[[nodiscard]] const Data::Maps::LookValues& Active();
+[[nodiscard]] float Value(Data::Maps::LookValue value);
+
+// Changes whenever the live profile changes (not with the world), so a cache of derived values
+// knows when to recompute.
+[[nodiscard]] std::uint32_t Revision();
+
+// What the effective values preview: Player until a developer edits the look (Render/Look/LookTuning.h).
+[[nodiscard]] LookPreview ActivePreview();
+
+// The light history's settings from the active profile.
+[[nodiscard]] Lighting::LightHistorySettings LightHistorySettings();
+
+// The player's look values ([EnhancedTuning] of config.ini), applied over the map's values from the
+// next frame on. They are never written into the look profile's files.
+void SetPersonalLookOverrides(const Data::Maps::LookOverrides& overrides);
+// Which groups' player values apply (Render::Look::TuningGroupsApplying of the look's features);
+// the others are kept but not shown. Set whenever the features are applied.
+void SetPersonalTuningGroups(const TuningGroupSet& applying);
+// The values of the active world without the player's: what a control that follows the map shows.
+[[nodiscard]] Data::Maps::LookValues InheritedValues();
+
+} // namespace Render::Look

@@ -1,0 +1,442 @@
+#include "Render/Renderer/GLCompatShim.h"
+
+#include "Render/Renderer/MuRenderer.h"
+
+#include <algorithm>
+#include <array>
+#include <cstring>
+#include <vector>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+namespace
+{
+struct ImmediateVertex
+{
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+    float u = 0.0f;
+    float v = 0.0f;
+    std::uint32_t color = 0xFFFFFFFFu;
+};
+
+MUCompatGLenum s_mode = 0;
+std::vector<ImmediateVertex> s_vertices;
+std::vector<mu::Vertex3D> s_renderVertices;
+float s_u = 0.0f;
+float s_v = 0.0f;
+std::uint32_t s_color = 0xFFFFFFFFu;
+std::uint32_t s_boundTexture = 0;
+constexpr MUCompatGLuint kFirstDynamicTextureId = 0x40000000u;
+constexpr MUCompatGLuint kLastDynamicTextureId = 0x7FFFFFFFu;
+MUCompatGLuint s_nextTexture = kFirstDynamicTextureId;
+bool s_depthTest = false;
+bool s_texture2D = true;
+bool s_blend = false;
+bool s_alphaTest = false;
+bool s_cullFace = false;
+bool s_fog = false;
+bool s_stencil = false;
+
+[[nodiscard]] std::uint8_t ByteFromFloat(float value)
+{
+    return static_cast<std::uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f + 0.5f);
+}
+
+[[nodiscard]] std::uint32_t PackColor(std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint8_t a)
+{
+    return (static_cast<std::uint32_t>(a) << 24) | (static_cast<std::uint32_t>(b) << 16) |
+           (static_cast<std::uint32_t>(g) << 8) | static_cast<std::uint32_t>(r);
+}
+
+[[nodiscard]] MUCompatGLuint AllocateDynamicTextureId()
+{
+    const MUCompatGLuint firstCandidate = s_nextTexture;
+    do
+    {
+        const MUCompatGLuint candidate = s_nextTexture;
+        s_nextTexture = candidate == kLastDynamicTextureId ? kFirstDynamicTextureId : candidate + 1u;
+        if (!mu::GetRenderer().IsTextureRegistered(candidate))
+        {
+            return candidate;
+        }
+    } while (s_nextTexture != firstCandidate);
+
+    return 0u;
+}
+
+void PushVertex(float x, float y, float z)
+{
+    s_vertices.push_back({x, y, z, s_u, s_v, s_color});
+}
+
+void SubmitTriangles(const std::vector<ImmediateVertex>& vertices)
+{
+    s_renderVertices.resize(vertices.size());
+    for (std::size_t i = 0; i < vertices.size(); ++i)
+    {
+        const ImmediateVertex& v = vertices[i];
+        s_renderVertices[i] = {v.x, v.y, v.z, 0.0f, 0.0f, 1.0f, v.u, v.v, v.color};
+    }
+    mu::GetRenderer().RenderTriangles(s_renderVertices, s_texture2D ? s_boundTexture : 0u);
+}
+
+void SubmitQuads()
+{
+    s_renderVertices.resize((s_vertices.size() / 4) * 4);
+    std::size_t output = 0;
+    for (std::size_t i = 0; i + 3 < s_vertices.size(); i += 4)
+    {
+        const ImmediateVertex* quad = s_vertices.data() + i;
+        s_renderVertices[output++] = {quad[0].x, quad[0].y, quad[0].z, 0.f, 0.f, 1.f, quad[0].u, quad[0].v, quad[0].color};
+        s_renderVertices[output++] = {quad[1].x, quad[1].y, quad[1].z, 0.f, 0.f, 1.f, quad[1].u, quad[1].v, quad[1].color};
+        s_renderVertices[output++] = {quad[2].x, quad[2].y, quad[2].z, 0.f, 0.f, 1.f, quad[2].u, quad[2].v, quad[2].color};
+        s_renderVertices[output++] = {quad[3].x, quad[3].y, quad[3].z, 0.f, 0.f, 1.f, quad[3].u, quad[3].v, quad[3].color};
+    }
+    mu::GetRenderer().RenderQuad3D(s_renderVertices, s_texture2D ? s_boundTexture : 0u);
+}
+
+void SubmitTriangleFan()
+{
+    std::vector<ImmediateVertex> tris;
+    if (s_vertices.size() < 3)
+    {
+        return;
+    }
+    tris.reserve((s_vertices.size() - 2) * 3);
+    for (std::size_t i = 1; i + 1 < s_vertices.size(); ++i)
+    {
+        tris.push_back(s_vertices[0]);
+        tris.push_back(s_vertices[i]);
+        tris.push_back(s_vertices[i + 1]);
+    }
+    SubmitTriangles(tris);
+}
+
+void ApplyBlend(MUCompatGLenum sfactor, MUCompatGLenum dfactor)
+{
+    if (sfactor == GL_SRC_ALPHA && dfactor == GL_ONE_MINUS_SRC_ALPHA)
+        mu::GetRenderer().SetBlendMode(mu::BlendMode::Alpha);
+    else if (sfactor == GL_SRC_ALPHA && dfactor == GL_ONE)
+        mu::GetRenderer().SetBlendMode(mu::BlendMode::Additive);
+    else if (sfactor == GL_ZERO && dfactor == GL_ONE_MINUS_SRC_COLOR)
+        mu::GetRenderer().SetBlendMode(mu::BlendMode::Subtract);
+    else if (sfactor == GL_ONE_MINUS_DST_COLOR && dfactor == GL_ZERO)
+        mu::GetRenderer().SetBlendMode(mu::BlendMode::InverseColor);
+    else if (sfactor == GL_ONE && dfactor == GL_ONE_MINUS_SRC_ALPHA)
+        mu::GetRenderer().SetBlendMode(mu::BlendMode::Mixed);
+    else if (sfactor == GL_ZERO && dfactor == GL_SRC_COLOR)
+        mu::GetRenderer().SetBlendMode(mu::BlendMode::LightMap);
+    else if (sfactor == GL_ONE && dfactor == GL_ONE)
+        mu::GetRenderer().SetBlendMode(mu::BlendMode::Glow);
+}
+
+[[nodiscard]] const void* PrepareTextureUpload(MUCompatGLenum format, MUCompatGLenum type, const void* pixels,
+                                               MUCompatGLsizei width, MUCompatGLsizei height,
+                                               std::vector<std::uint8_t>& rgbaScratch)
+{
+    if (!pixels || width <= 0 || height <= 0 || type != GL_UNSIGNED_BYTE)
+    {
+        return pixels;
+    }
+
+    if (format == GL_RGBA)
+    {
+        return pixels;
+    }
+
+    if (format != GL_RGB)
+    {
+        return pixels;
+    }
+
+    const auto pixelCount = static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
+    const auto* src = static_cast<const std::uint8_t*>(pixels);
+    rgbaScratch.resize(pixelCount * 4u);
+    for (std::size_t i = 0; i < pixelCount; ++i)
+    {
+        rgbaScratch[i * 4u + 0u] = src[i * 3u + 0u];
+        rgbaScratch[i * 4u + 1u] = src[i * 3u + 1u];
+        rgbaScratch[i * 4u + 2u] = src[i * 3u + 2u];
+        rgbaScratch[i * 4u + 3u] = 255u;
+    }
+    return rgbaScratch.data();
+}
+} // namespace
+
+void mu_glBegin(MUCompatGLenum mode)
+{
+    s_mode = mode;
+    s_vertices.clear();
+}
+
+void mu_glEnd()
+{
+    switch (s_mode)
+    {
+    case GL_QUADS:
+        SubmitQuads();
+        break;
+    case GL_TRIANGLES:
+        SubmitTriangles(s_vertices);
+        break;
+    case GL_LINES:
+    {
+        std::vector<mu::Vertex3D> lines;
+        lines.reserve(s_vertices.size());
+        for (const ImmediateVertex& v : s_vertices)
+            lines.push_back({v.x, v.y, v.z, 0.0f, 0.0f, 1.0f, v.u, v.v, v.color});
+        mu::GetRenderer().RenderLines(lines, s_texture2D ? s_boundTexture : 0u);
+        break;
+    }
+    case GL_TRIANGLE_FAN:
+        SubmitTriangleFan();
+        break;
+    case GL_QUAD_STRIP:
+    {
+        std::vector<mu::Vertex3D> strip;
+        strip.reserve(s_vertices.size());
+        for (const ImmediateVertex& v : s_vertices)
+            strip.push_back({v.x, v.y, v.z, 0.0f, 0.0f, 1.0f, v.u, v.v, v.color});
+        mu::GetRenderer().RenderQuadStrip(strip, s_texture2D ? s_boundTexture : 0u);
+        break;
+    }
+    default:
+        break;
+    }
+    s_mode = 0;
+    s_vertices.clear();
+}
+
+void mu_glVertex2f(MUCompatGLfloat x, MUCompatGLfloat y) { PushVertex(x, y, 0.0f); }
+void mu_glVertex3f(MUCompatGLfloat x, MUCompatGLfloat y, MUCompatGLfloat z) { PushVertex(x, y, z); }
+void mu_glVertex3fv(const MUCompatGLfloat* v) { PushVertex(v[0], v[1], v[2]); }
+void mu_glTexCoord2f(MUCompatGLfloat u, MUCompatGLfloat v) { s_u = u; s_v = v; }
+void mu_glColor3f(MUCompatGLfloat r, MUCompatGLfloat g, MUCompatGLfloat b) { mu_glColor4f(r, g, b, 1.0f); }
+void mu_glColor3fv(const MUCompatGLfloat* c) { mu_glColor4f(c[0], c[1], c[2], 1.0f); }
+void mu_glColor3ub(MUCompatGLubyte r, MUCompatGLubyte g, MUCompatGLubyte b) { mu_glColor4ub(r, g, b, 255); }
+void mu_glColor4f(MUCompatGLfloat r, MUCompatGLfloat g, MUCompatGLfloat b, MUCompatGLfloat a)
+{
+    s_color = PackColor(ByteFromFloat(r), ByteFromFloat(g), ByteFromFloat(b), ByteFromFloat(a));
+}
+void mu_glColor4ub(MUCompatGLubyte r, MUCompatGLubyte g, MUCompatGLubyte b, MUCompatGLubyte a)
+{
+    s_color = PackColor(r, g, b, a);
+}
+
+void mu_glEnable(MUCompatGLenum cap)
+{
+    if (cap == GL_DEPTH_TEST)
+    {
+        s_depthTest = true;
+        mu::GetRenderer().SetDepthTest(true);
+    }
+    else if (cap == GL_TEXTURE_2D)
+    {
+        s_texture2D = true;
+        mu::GetRenderer().SetTexture2D(true);
+    }
+    else if (cap == GL_BLEND)
+    {
+        s_blend = true;
+        mu::GetRenderer().SetBlendMode(mu::BlendMode::Alpha);
+    }
+    else if (cap == GL_ALPHA_TEST)
+    {
+        s_alphaTest = true;
+        mu::GetRenderer().SetAlphaTest(true);
+    }
+    else if (cap == GL_CULL_FACE)
+    {
+        s_cullFace = true;
+        mu::GetRenderer().SetCullFace(true);
+    }
+    else if (cap == GL_FOG)
+    {
+        s_fog = true;
+        mu::GetRenderer().SetFogEnabled(true);
+    }
+    else if (cap == GL_STENCIL_TEST)
+    {
+        s_stencil = true;
+        mu::GetRenderer().SetStencilTest(true);
+    }
+}
+
+void mu_glDisable(MUCompatGLenum cap)
+{
+    if (cap == GL_DEPTH_TEST)
+    {
+        s_depthTest = false;
+        mu::GetRenderer().SetDepthTest(false);
+    }
+    else if (cap == GL_TEXTURE_2D)
+    {
+        s_texture2D = false;
+        mu::GetRenderer().SetTexture2D(false);
+    }
+    else if (cap == GL_BLEND)
+    {
+        s_blend = false;
+        mu::GetRenderer().DisableBlend();
+    }
+    else if (cap == GL_ALPHA_TEST)
+    {
+        s_alphaTest = false;
+        mu::GetRenderer().SetAlphaTest(false);
+    }
+    else if (cap == GL_CULL_FACE)
+    {
+        s_cullFace = false;
+        mu::GetRenderer().SetCullFace(false);
+    }
+    else if (cap == GL_FOG)
+    {
+        s_fog = false;
+        mu::GetRenderer().SetFogEnabled(false);
+    }
+    else if (cap == GL_STENCIL_TEST)
+    {
+        s_stencil = false;
+        mu::GetRenderer().SetStencilTest(false);
+    }
+}
+
+MUCompatGLboolean mu_glIsEnabled(MUCompatGLenum cap)
+{
+    if (cap == GL_DEPTH_TEST)
+        return s_depthTest;
+    if (cap == GL_TEXTURE_2D)
+        return s_texture2D;
+    if (cap == GL_BLEND)
+        return s_blend;
+    if (cap == GL_ALPHA_TEST)
+        return s_alphaTest;
+    if (cap == GL_CULL_FACE)
+        return s_cullFace;
+    if (cap == GL_FOG)
+        return s_fog;
+    if (cap == GL_STENCIL_TEST)
+        return s_stencil;
+    return 0;
+}
+
+void mu_glBlendFunc(MUCompatGLenum sfactor, MUCompatGLenum dfactor) { ApplyBlend(sfactor, dfactor); }
+void mu_glClear(MUCompatGLbitfield mask) { (mask & 0x00000100u) ? mu::GetRenderer().ClearDepthBuffer() : mu::GetRenderer().ClearScreen(); }
+void mu_glClearColor(MUCompatGLfloat r, MUCompatGLfloat g, MUCompatGLfloat b, MUCompatGLfloat a) { mu::GetRenderer().SetClearColor(r, g, b, a); }
+void mu_glDepthFunc(MUCompatGLenum func) { mu::GetRenderer().SetDepthFunc(static_cast<int>(func)); }
+void mu_glDepthMask(MUCompatGLboolean flag) { mu::GetRenderer().SetDepthMask(flag != 0); }
+void mu_glMatrixMode(MUCompatGLenum mode) { mu::GetRenderer().SetMatrixMode(static_cast<int>(mode)); }
+void mu_glPushMatrix() { mu::GetRenderer().PushMatrix(); }
+void mu_glPopMatrix() { mu::GetRenderer().PopMatrix(); }
+void mu_glLoadIdentity() { mu::GetRenderer().LoadIdentity(); }
+void mu_glTranslatef(MUCompatGLfloat x, MUCompatGLfloat y, MUCompatGLfloat z) { mu::GetRenderer().Translate(x, y, z); }
+void mu_glRotatef(MUCompatGLfloat angle, MUCompatGLfloat x, MUCompatGLfloat y, MUCompatGLfloat z) { mu::GetRenderer().Rotate(angle, x, y, z); }
+void mu_glScalef(MUCompatGLfloat x, MUCompatGLfloat y, MUCompatGLfloat z) { mu::GetRenderer().Scale(x, y, z); }
+void mu_glGetFloatv(MUCompatGLenum pname, MUCompatGLfloat* data)
+{
+    if (pname == GL_MODELVIEW_MATRIX || pname == GL_PROJECTION_MATRIX)
+        mu::GetRenderer().GetMatrix(static_cast<int>(pname), data);
+}
+void mu_glGetIntegerv(MUCompatGLenum, MUCompatGLint* data)
+{
+    if (data != nullptr)
+    {
+        data[0] = 0;
+        data[1] = 0;
+    }
+}
+void mu_glViewport(MUCompatGLint x, MUCompatGLint y, MUCompatGLsizei width, MUCompatGLsizei height) { mu::GetRenderer().SetViewport(x, y, width, height); }
+void mu_glLineWidth(MUCompatGLfloat) {}
+void mu_glBindTexture(MUCompatGLenum, MUCompatGLuint texture) { s_boundTexture = texture; mu::GetRenderer().BindTexture(static_cast<int>(texture)); }
+void mu_glGenTextures(MUCompatGLsizei n, MUCompatGLuint* textures)
+{
+    if (n <= 0 || textures == nullptr)
+    {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i)
+    {
+        textures[i] = AllocateDynamicTextureId();
+        if (textures[i] == 0u)
+        {
+            std::fill(textures + i, textures + n, 0u);
+            return;
+        }
+    }
+}
+void mu_glDeleteTextures(MUCompatGLsizei n, const MUCompatGLuint* textures)
+{
+    if (!textures)
+    {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i)
+    {
+        mu::GetRenderer().ReleaseTexture(textures[i]);
+    }
+}
+void mu_glTexImage2D(MUCompatGLenum, MUCompatGLint, MUCompatGLint, MUCompatGLsizei width, MUCompatGLsizei height, MUCompatGLint, MUCompatGLenum format, MUCompatGLenum type, const void* pixels)
+{
+    mu::GetRenderer().EnsureTexture(s_boundTexture, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
+    std::vector<std::uint8_t> rgbaScratch;
+    const void* uploadPixels = PrepareTextureUpload(format, type, pixels, width, height, rgbaScratch);
+    mu::GetRenderer().QueueTextureUpdate(s_boundTexture, uploadPixels, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
+}
+void mu_glTexSubImage2D(MUCompatGLenum, MUCompatGLint, MUCompatGLint, MUCompatGLint, MUCompatGLsizei width, MUCompatGLsizei height, MUCompatGLenum format, MUCompatGLenum type, const void* pixels)
+{
+    std::vector<std::uint8_t> rgbaScratch;
+    const void* uploadPixels = PrepareTextureUpload(format, type, pixels, width, height, rgbaScratch);
+    mu::GetRenderer().QueueTextureUpdate(s_boundTexture, uploadPixels, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
+}
+void mu_glTexParameteri(MUCompatGLenum target, MUCompatGLenum pname, MUCompatGLint param) { mu::GetRenderer().SetTexParameter(static_cast<int>(target), static_cast<int>(pname), param); }
+void mu_glTexEnvi(MUCompatGLenum target, MUCompatGLenum pname, MUCompatGLint param) { mu::GetRenderer().SetTexEnv(static_cast<int>(target), static_cast<int>(pname), param); }
+void mu_glTexEnvf(MUCompatGLenum target, MUCompatGLenum pname, MUCompatGLfloat param) { mu::GetRenderer().SetTexEnv(static_cast<int>(target), static_cast<int>(pname), static_cast<int>(param)); }
+void mu_glAlphaFunc(MUCompatGLenum func, MUCompatGLfloat ref) { mu::GetRenderer().SetAlphaFunc(static_cast<int>(func), ref); }
+void mu_glStencilFunc(MUCompatGLenum func, MUCompatGLint ref, MUCompatGLuint mask) { mu::GetRenderer().SetStencilFunc(static_cast<int>(func), ref, mask); }
+void mu_glStencilOp(MUCompatGLenum sfail, MUCompatGLenum dpfail, MUCompatGLenum dppass) { mu::GetRenderer().SetStencilOp(static_cast<int>(sfail), static_cast<int>(dpfail), static_cast<int>(dppass)); }
+void mu_glColorMask(MUCompatGLboolean r, MUCompatGLboolean g, MUCompatGLboolean b, MUCompatGLboolean a) { mu::GetRenderer().SetColorMask(r, g, b, a); }
+void mu_glPolygonMode(MUCompatGLenum face, MUCompatGLenum mode) { mu::GetRenderer().SetPolygonMode(static_cast<int>(face), static_cast<int>(mode)); }
+void mu_glFrontFace(MUCompatGLenum mode) { mu::GetRenderer().SetFrontFace(static_cast<int>(mode)); }
+void mu_glFogf(MUCompatGLenum, MUCompatGLfloat) {}
+void mu_glFogi(MUCompatGLenum, MUCompatGLint) {}
+void mu_glFogfv(MUCompatGLenum, const MUCompatGLfloat*) {}
+void mu_glReadPixels(MUCompatGLint x, MUCompatGLint y, MUCompatGLsizei width, MUCompatGLsizei height, MUCompatGLenum, MUCompatGLenum, void* pixels) { mu::GetRenderer().ReadPixels(x, y, width, height, pixels); }
+const MUCompatGLubyte* mu_glGetString(MUCompatGLenum)
+{
+    return reinterpret_cast<const MUCompatGLubyte*>(mu::GetRenderer().GetGPUDriverName());
+}
+void mu_gluPerspective(MUCompatGLdouble fovy, MUCompatGLdouble aspect, MUCompatGLdouble zNear, MUCompatGLdouble zFar)
+{
+    const glm::mat4 perspective = glm::perspective(glm::radians(static_cast<float>(fovy)),
+                                                   static_cast<float>(aspect),
+                                                   static_cast<float>(zNear),
+                                                   static_cast<float>(zFar));
+    mu::GetRenderer().MultMatrix(glm::value_ptr(perspective));
+}
+void mu_gluOrtho2D(MUCompatGLdouble left, MUCompatGLdouble right, MUCompatGLdouble bottom, MUCompatGLdouble top)
+{
+    const glm::mat4 ortho = glm::ortho(static_cast<float>(left), static_cast<float>(right),
+                                       static_cast<float>(bottom), static_cast<float>(top));
+    mu::GetRenderer().MultMatrix(glm::value_ptr(ortho));
+}
+void* mu_gluNewQuadric() { return nullptr; }
+void mu_gluSphere(void*, MUCompatGLdouble, MUCompatGLint, MUCompatGLint) {}
+void mu_glEnableClientState(MUCompatGLenum) {}
+void mu_glDisableClientState(MUCompatGLenum) {}
+void mu_glVertexPointer(MUCompatGLint, MUCompatGLenum, MUCompatGLsizei, const void*) {}
+void mu_glTexCoordPointer(MUCompatGLint, MUCompatGLenum, MUCompatGLsizei, const void*) {}
+void mu_glColorPointer(MUCompatGLint, MUCompatGLenum, MUCompatGLsizei, const void*) {}
+void mu_glDrawArrays(MUCompatGLenum, MUCompatGLint, MUCompatGLsizei) {}
+void mu_glReadBuffer(MUCompatGLenum) {}
+void mu_glFlush() {}
+void mu_glPixelStorei(MUCompatGLenum, MUCompatGLint) {}
+void mu_glPushAttrib(MUCompatGLbitfield) {}
+void mu_glPopAttrib() {}
+void mu_glNormal3f(MUCompatGLfloat, MUCompatGLfloat, MUCompatGLfloat) {}
+void mu_glCopyTexImage2D(MUCompatGLenum, MUCompatGLint, MUCompatGLenum, MUCompatGLint, MUCompatGLint, MUCompatGLsizei, MUCompatGLsizei, MUCompatGLint) {}
