@@ -131,6 +131,9 @@ enum INTERFACE_LIST
     // a different button model (arbitrary labeled list vs two fixed OK/Cancel slots). Same
     // reasoning as INTERFACE_CREDITS above.
     INTERFACE_GENERIC_MENU_DIALOG,
+    // MuToDog (MU Estudo): o menu do F10 em grade e o Reset System (UI/Estudo).
+    INTERFACE_MENU_F10,
+    INTERFACE_RESET_SYSTEM,
     INTERFACE_END,
     INTERFACE_COUNT = INTERFACE_END - 2,
 };

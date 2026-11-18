@@ -710,9 +710,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     // editor-open sessions still get the toggle. Bit 30 of lParam = previous
     // key state — skip auto-repeat ticks so a held key only toggles once.
     constexpr LPARAM PREVIOUS_KEY_STATE_MASK = 1 << 30;
+    // MuToDog: F10 sozinho abre o menu em grade (CMenuF10Window); o zoom ficou no Ctrl+F10.
     if (msg == WM_SYSKEYDOWN && wParam == VK_F10 && (lParam & PREVIOUS_KEY_STATE_MASK) == 0)
     {
-        CameraManager::Instance().ToggleZoomLock();
+        if ((GetKeyState(VK_CONTROL) & 0x8000) != 0)
+            CameraManager::Instance().ToggleZoomLock();
         return 0;
     }
 
@@ -1461,14 +1463,15 @@ bool RouteActionInput(SDL_Event& event, bool synthetic, bool& propagates)
         // (and Windows synthetic events below) must handle them here instead.
         if (event.key.scancode == SDL_SCANCODE_RETURN || event.key.scancode == SDL_SCANCODE_KP_ENTER)
             SetEnterPressed(true);
-        if (event.key.scancode == SDL_SCANCODE_F10 && !event.key.repeat)
-            CameraManager::Instance().ToggleZoomLock();
+        if (event.key.scancode == SDL_SCANCODE_F10 && !event.key.repeat && (event.key.mod & SDL_KMOD_CTRL) != 0)
+            CameraManager::Instance().ToggleZoomLock(); // MuToDog: F10 sozinho e o menu em grade
 #else
         // Synthetic SDL events do not generate the Win32 messages that handle
         // these system keys for physical input.
         if (synthetic && event.key.scancode == SDL_SCANCODE_RETURN)
             SetEnterPressed(true);
-        if (synthetic && event.key.scancode == SDL_SCANCODE_F10 && !event.key.repeat)
+        if (synthetic && event.key.scancode == SDL_SCANCODE_F10 && !event.key.repeat &&
+            (event.key.mod & SDL_KMOD_CTRL) != 0)
             CameraManager::Instance().ToggleZoomLock();
 #endif
         return true;

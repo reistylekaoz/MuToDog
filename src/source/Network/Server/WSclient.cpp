@@ -5,6 +5,7 @@
 #include "Audio/SoundPlaces.h"
 #include "Core/Utilities/Log/MuLogger.h"
 #include "UI/Chat/Chat.h"
+#include "UI/Estudo/ResetSystemWindow.h"
 #include "UI/Chat/ChatMessages.h"
 #include "UI/Combat/SiegeUpdates.h"
 #include "UI/Events/DoppelgangerUpdates.h"
@@ -14787,6 +14788,10 @@ static void ProcessPacket(const BYTE* ReceiveBuffer, int32_t Size)
     case 0xAE:
         // Received mu helper config from server
         ReceiveMuHelperConfigurationData(received_span);
+        break;
+    case 0xFB:
+        // MuToDog (MU Estudo): o grupo livre do servidor do estudo; C1 FB 34 e o estado do reset.
+        mu::ui::window::CResetSystemWindow::ReceiveState(ReceiveBuffer, Size);
         break;
     default:
         break;

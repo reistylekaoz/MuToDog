@@ -1,0 +1,7 @@
+/* ---- Obsidiana e prata, rodada 7: Reset System com a moldura, a placa do titulo e os botoes do Meshy (base.rcss) ---- */
+#panel { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
+#title { left: 35px; top: 4px; width: 160px; height: 18px; line-height: 18px; decorator: ninepatch(ob-placa, ob-placa-in, 1); }
+#do, #close, .tab { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 1); border-width: 0; }
+#do:hover, #close:hover, .tab:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 1); }
+.tab.selected { decorator: ninepatch(ob-botao-apertado, ob-botao-apertado-in, 1); border-bottom: 2px #78bfff; }
+#do.disabled, #do.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 1); }

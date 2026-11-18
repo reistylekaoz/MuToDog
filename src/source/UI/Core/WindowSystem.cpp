@@ -375,6 +375,18 @@ bool CSystem::LoadMainSceneInterface()
         return false;
     }
 
+    m_pMenuF10 = new CMenuF10Window;
+    if (m_pMenuF10->Create(m_pNewUIMng) == false)
+    {
+        return false;
+    }
+
+    m_pResetSystem = new CResetSystemWindow;
+    if (m_pResetSystem->Create(m_pNewUIMng) == false)
+    {
+        return false;
+    }
+
     m_pNewItemExplanationWindow = new CItemExplanationWindow;
     if (m_pNewItemExplanationWindow->Create(m_pNewUIMng) == false)
     {
@@ -635,6 +647,8 @@ void CSystem::UnloadMainSceneInterface()
     }
 
     SAFE_DELETE(m_pNewHelpWindow);
+    SAFE_DELETE(m_pMenuF10);
+    SAFE_DELETE(m_pResetSystem);
     SAFE_DELETE(m_pNewChatCommandWindow);
     SAFE_DELETE(m_pNewItemExplanationWindow);
     SAFE_DELETE(m_pNewSetItemExplanation);

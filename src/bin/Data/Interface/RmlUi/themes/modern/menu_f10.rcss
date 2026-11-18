@@ -1,0 +1,132 @@
+/* MuToDog (MU Estudo): o menu do F10 em grade (menu_f10.rml), no jeito do cliente Godot (janela_atalhos.gd):
+   casas de 72 x 72 com 6 de vao, 6 por linha. Px da tela de referencia 640 x 480 (.stage). O tema obsidiana poe por
+   cima a moldura e o botao do Meshy (tools/obsidiana_theme/menu_f10.rcss). */
+body { pointer-events: none; }
+#screen { pointer-events: none; }
+
+#panel {
+	position: absolute;
+	left: 79px;
+	top: 76px;
+	width: 482px;
+	height: 328px;
+	background-color: rgba(8, 10, 14, 240);
+	border: 1px #3e4652;
+	pointer-events: auto;
+	font-family: "token(font-body)";
+	color: #e9edf3;
+}
+#title {
+	position: absolute;
+	left: 0px;
+	top: 6px;
+	width: 482px;
+	height: 16px;
+	text-align: center;
+	font-family: "token(font-title)";
+	font-size: 12px;
+	line-height: 16px;
+	color: #dae0ea;
+}
+#help {
+	position: absolute;
+	left: 10px;
+	top: 28px;
+	width: 462px;
+	font-size: 9px;
+	line-height: 12px;
+	color: #78bfff;
+}
+#grid {
+	position: absolute;
+	left: 10px;
+	top: 44px;
+	width: 470px;
+	height: 234px;
+}
+.cell {
+	float: left;
+	position: relative;
+	width: 70px;
+	height: 70px;
+	margin-right: 6px;
+	margin-bottom: 6px;
+	background-color: #09101b;
+	border: 1px #3e4652;
+	border-radius: 4px;
+	cursor: pointer;
+}
+.cell:hover { background-color: #18202e; border: 2px #78bfff; }
+.halo {
+	position: absolute;
+	left: 12.6px;
+	top: 5.6px;
+	width: 44.8px;
+	height: 44.8px;
+	border-radius: 22.4px;
+	background-color: rgba(120, 191, 255, 28);
+}
+.cell:hover .halo { background-color: rgba(120, 191, 255, 41); }
+.icon {
+	position: absolute;
+	left: 15px;
+	top: 8px;
+	width: 40px;
+	height: 40px;
+}
+.key {
+	position: absolute;
+	right: 2px;
+	top: 2px;
+	height: 10px;
+	padding: 0px 3px;
+	background-color: #1a4f93;
+	border: 1px #78bfff;
+	border-radius: 2px;
+	font-size: 7px;
+	line-height: 10px;
+	color: #ffffff;
+}
+.name {
+	position: absolute;
+	left: 1px;
+	bottom: 3px;
+	width: 68px;
+	text-align: center;
+	font-size: 8px;
+	line-height: 9px;
+	color: #dae0ea;
+}
+.cell:hover .name { color: #ffffff; }
+#rule {
+	position: absolute;
+	left: 8px;
+	top: 282px;
+	width: 466px;
+	height: 1px;
+	background-color: #3e4652;
+}
+#hint {
+	position: absolute;
+	left: 10px;
+	top: 286px;
+	width: 462px;
+	height: 12px;
+	font-size: 9px;
+	line-height: 12px;
+	color: #b9c1cd;
+}
+#close {
+	position: absolute;
+	left: 211px;
+	top: 304px;
+	width: 60px;
+	height: 17px;
+	text-align: center;
+	font-size: 9px;
+	line-height: 17px;
+	background-color: #1e2228;
+	border: 1px #3e4652;
+	cursor: pointer;
+}
+#close:hover { border-color: #78bfff; color: #ffffff; }
