@@ -1,0 +1,15 @@
+/* ---- Obsidiana e prata: os buffs em cima da barra, colados na gema de vida, como a HUD dream do MU Estudo
+   (hud_mu.gd: fila de 12 icones 13 x 18 a partir de x 207, y 417,5; a segunda fila sobe 20).
+   Vai no fim da buff_strip.rcss do modern recolorida (tools/obsidiana_theme/gerar.py). ---- */
+#panel {
+	top: auto;
+	bottom: 44.5dp;
+	transform: none;
+	margin-left: -113dp;
+	width: 178dp;
+	flex-wrap: wrap-reverse;
+	column-gap: 2dp;
+	row-gap: 2dp;
+}
+.buff-slot { width: 13dp; height: 18dp; }
+.buff-icon-art { width: 13dp; height: 18dp; border: 1dp #3e4652; border-radius: 0; }

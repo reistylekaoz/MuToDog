@@ -1,0 +1,144 @@
+/* ---- Obsidiana e prata: a barra de baixo da HUD dream do MU Estudo (cliente Godot, scripts/hud_mu.gd).
+   Vai no fim da main_frame.rcss do modern recolorida (tools/obsidiana_theme/gerar.py), entao so o que muda.
+   Coordenadas da tela de 640x480 do Godot: a barra ocupa y 404 a 480; margin-left = x - 320, bottom = 480 - y de baixo.
+   Arte: fundo e frente da barra (Meshy, dados/hud/dream) e o liquido das gemas, em arte/ (2x). ---- */
+@spritesheet ob-hud-gemas {
+	src: arte/hud_gemas.tga;
+	resolution: 2x;
+	ob-gema-vida: 0px 0px 104px 112px;
+	ob-gema-mana: 104px 0px 104px 112px;
+	ob-gema-veneno: 208px 0px 104px 112px;
+}
+
+#hud_layout { width: 640dp; height: 76dp; }
+#hud_strip { margin-left: -320dp; bottom: 0dp; width: 640dp; height: 76dp; pointer-events: none; }
+/* fundo e frente em duas metades cada (o jogo nao carrega textura com mais de 1024 de largura): o fundo em
+   #frame_left e #frame_middle, a frente em #frame_right e #gauge_frame, que passa por cima do liquido, dos icones e
+   das skills (aros das casas e as facetas das gemas) */
+#frame_left, #frame_middle, #frame_right, #gauge_frame {
+	display: block;
+	position: absolute;
+	top: 0dp;
+	width: 320dp;
+	height: 76dp;
+	border-width: 0;
+	pointer-events: none;
+}
+#frame_left   { left: 0dp;   decorator: image(arte/hud_fundo_e.tga); }
+#frame_middle { left: 320dp; decorator: image(arte/hud_fundo_d.tga); }
+#frame_right  { left: 0dp;   decorator: image(arte/hud_frente_e.tga); z-index: 3; }
+#gauge_frame  { left: 320dp; decorator: image(arte/hud_frente_d.tga); z-index: 3; }
+#gauge_fill_left, #gauge_fill_right { display: none; }
+/* o que segura o clique em cima da barra: a faixa das casas (x 200 a 440, y 434 a 480) */
+#item_band_fill, #skill_band_fill { top: 30dp; height: 46dp; background-color: transparent; pointer-events: auto; }
+#item_band_fill { left: 200dp; width: 120dp; }
+#skill_band_fill { left: 320dp; width: 120dp; }
+
+/* gemas de vida (centro 184,447) e de mana (456,447), 52 x 56; SD e AG as barras finas de 107 x 4 em y 439,6 */
+#gauges_left  { margin-left: -162dp; bottom: 5dp; width: 52dp; height: 56dp; }
+#gauges_right { margin-left: 110dp;  bottom: 5dp; width: 52dp; height: 56dp; }
+#bar_hp, #bar_mp { left: 0dp; top: 0dp; width: 52dp; height: 56dp; background-color: transparent; border-width: 0; }
+#bar_sd { left: 53dp;   top: 20.6dp; width: 107dp; height: 4dp; background-color: rgba(4, 6, 10, 200); border-width: 0; }
+#bar_ag { left: -108dp; top: 20.6dp; width: 107dp; height: 4dp; background-color: rgba(4, 6, 10, 200); border-width: 0; }
+
+#bar_hp .gauge-fill-vertical, #bar_mp .gauge-fill-vertical {
+	display: block;
+	position: absolute;
+	left: 0dp;
+	bottom: 0dp;
+	width: 52dp;
+	background-color: transparent;
+	border-radius: 0;
+}
+#bar_hp .gauge-fill-horizontal, #bar_mp .gauge-fill-horizontal { display: none; }
+#bar_hp .gauge-fill-vertical { decorator: image(ob-gema-vida scale-none center bottom); }
+#bar_hp .gauge-fill-vertical.poisoned { decorator: image(ob-gema-veneno scale-none center bottom); }
+#bar_mp .gauge-fill-vertical { decorator: image(ob-gema-mana scale-none center bottom); }
+
+/* SD laranja e AG roxo, como no Godot; a AG enche da direita pra esquerda */
+#bar_sd .gauge-fill-horizontal, #bar_ag .gauge-fill-horizontal { border-radius: 0; }
+#bar_sd .gauge-fill-horizontal { background-color: #ffc460; decorator: linear-gradient(to bottom, #ffc460, #b05c0e); }
+#bar_ag .gauge-fill-horizontal { left: auto; right: 0dp; background-color: #de78ff; decorator: linear-gradient(to bottom, #de78ff, #6e1ea0); }
+
+/* numeros: so o valor atual, como no Godot (o valor com o maximo fica na dica) */
+#bar_hp .value-full, #bar_mp .value-full, #bar_sd .value-full, #bar_ag .value-full { display: none; }
+#bar_hp .value-current, #bar_mp .value-current, #bar_sd .value-current, #bar_ag .value-current { display: block; }
+#bar_hp .gauge-num, #bar_mp .gauge-num { font-size: 8dp; }
+#bar_sd .gauge-num, #bar_ag .gauge-num { font-size: 6dp; }
+#bar_sd .gauge-num { text-align: left; left: 4dp; }
+#bar_ag .gauge-num { text-align: right; left: auto; right: 4dp; }
+
+/* exp: a linha fina de ponta a ponta no rodape (y 477,3, 2,2 de alto), em ciano */
+#exp { margin-left: -320dp; bottom: 0.5dp; width: 640dp; height: 2.2dp; z-index: 4; }
+#exp_track { left: 0dp; right: 0dp; border-width: 0; background-color: transparent; }
+#exp_fill { background-color: #4fd2ff; decorator: linear-gradient(to right, #27697f, #4fd2ff); border-top: 0; }
+#exp_digit { display: none; }
+
+/* pocoes QWER: casas de 20 x 21 a partir de x 343, passo 22, y 447 (letra embaixo da casa) */
+#item_slots { margin-left: 23dp; bottom: 12dp; width: 86dp; height: 21dp; }
+#item_slot_0 { left: 0dp;  width: 20dp; height: 21dp; }
+#item_slot_1 { left: 22dp; width: 20dp; height: 21dp; }
+#item_slot_2 { left: 44dp; width: 20dp; height: 21dp; }
+#item_slot_3 { left: 66dp; width: 20dp; height: 21dp; }
+.item-icon { left: 1dp; top: 1dp; width: 18dp; height: 19dp; }
+.slot-hotkey-label, .skill-hotkey-label {
+	left: 0dp;
+	top: 23dp;
+	width: 100%;
+	text-align: center;
+	font-size: 6dp;
+	line-height: 6dp;
+	color: #e6c478;
+	z-index: 4;
+}
+.item-stack-label { right: 1dp; bottom: 1dp; font-size: 6dp; line-height: 6dp; z-index: 4; }
+
+/* skills 1 a 5: casas de 20 x 21 a partir de x 212,5, passo 21,5, y 447; a skill atual em 320,5 x 446 (21 x 23) */
+#skill_slots { margin-left: -107.5dp; bottom: 11dp; width: 129dp; height: 23dp; }
+#skill_slot_0 { left: 0dp;    top: 1dp; width: 20dp; height: 21dp; }
+#skill_slot_1 { left: 21.5dp; top: 1dp; width: 20dp; height: 21dp; }
+#skill_slot_2 { left: 43dp;   top: 1dp; width: 20dp; height: 21dp; }
+#skill_slot_3 { left: 64.5dp; top: 1dp; width: 20dp; height: 21dp; }
+#skill_slot_4 { left: 86dp;   top: 1dp; width: 20dp; height: 21dp; }
+#skill_slot_0, #skill_slot_1, #skill_slot_2, #skill_slot_3, #skill_slot_4 { border-radius: 0; }
+#current_skill_slot { left: 108dp; top: 0dp; width: 21dp; height: 23dp; }
+#current_skill_slot .skill-hotkey-label { display: none; }
+/* o icone de skill e 20 x 28: cabe inteiro na casa, centrado */
+.skill-icon, #skill_slots .selected .skill-icon { left: 2.5dp; top: 0dp; width: 15dp; height: 21dp; }
+#current_skill_slot .skill-icon { left: 2.5dp; top: 0.5dp; width: 16dp; height: 22dp; }
+#item_slots .selected, #skill_slots .selected { border: 1dp #78bfff; background-color: rgba(120, 191, 255, 30); }
+#skill_list_highlight { left: -1dp; top: 0dp; width: 108dp; height: 23dp; background-color: rgba(120, 191, 255, 40); }
+.cooldown-wipe { background-color: rgba(4, 6, 10, 170); }
+
+/* a lista de skills abre em cima da skill atual */
+#skill_list { margin-left: 0.5dp; bottom: 36dp; }
+.skill-cell { border: 1dp #3e4652; background-color: rgba(4, 6, 10, 200); }
+.skill-cell.selected { border: 1dp #78bfff; background-color: rgba(120, 191, 255, 30); }
+
+/* placas da barra: MENU na da esquerda (x 127, y 461, 40 x 15) e SHOP na da direita (x 473); os outros botoes ficam
+   no topo (main_frame_top) */
+#buttons { display: block; margin-left: -320dp; bottom: 0dp; width: 640dp; height: 76dp; pointer-events: none; }
+#btn_chainfo, #btn_myinven, #btn_friend { display: none; }
+#btn_window, #btn_cshop {
+	position: absolute;
+	top: 57dp;
+	width: 40dp;
+	height: 15dp;
+	border-width: 0;
+	background-color: transparent;
+	pointer-events: auto;
+	cursor: pointer;
+	text-align: center;
+	z-index: 4;
+}
+#btn_window { left: 127dp; }
+#btn_cshop { left: 473dp; }
+#btn_window .btn-icon-label, #btn_cshop .btn-icon-label {
+	font-family: "token(font-title)";
+	font-weight: normal;
+	font-size: 6dp;
+	line-height: 15dp;
+	color: #d6b068;
+}
+#btn_window:hover .btn-icon-label, #btn_cshop:hover .btn-icon-label, #btn_cshop.open .btn-icon-label,
+#btn_window.open .btn-icon-label { color: #ffecbe; }

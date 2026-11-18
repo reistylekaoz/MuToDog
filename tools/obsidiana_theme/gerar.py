@@ -9,6 +9,8 @@ O que faz, sempre do zero (apaga e refaz themes/obsidiana):
 - tokens.ini: os do modern pelo mesmo mapa, por cima a paleta do Tema 3 e as fontes.
 - base.rcss ganha no fim botao, moldura, campo e barra de rolar com as pecas do Meshy (tm_botao, jm_moldura,
   tm_campo, tm_rolar, 4x), convertidas pra OZT (TGA 32 bits com 4 bytes na frente) em arte/.
+- HUD dream do cliente Godot (rodada 5): main_frame.rcss, buff_strip.rcss e chat_input.rcss desta pasta vao no fim
+  das folhas geradas, sem passar pelo mapa; fundo e frente da barra e o liquido das gemas viram OZT em arte/hud_*.
 - fontes Spectral SC SemiBold (titulo) e Source Sans 3 SemiBold (texto), OFL, com o nome da familia acertado.
 
 Uso: python3 tools/obsidiana_theme/gerar.py [pasta das pecas] [pasta das fontes]
@@ -24,10 +26,12 @@ from pathlib import Path
 from fontTools.ttLib import TTFont
 from PIL import Image
 
-RAIZ = Path(__file__).resolve().parents[2]
+AQUI = Path(__file__).resolve().parent
+RAIZ = AQUI.parents[1]
 TEMAS = RAIZ / "src/bin/Data/Interface/RmlUi/themes"
 MODERN, SAIDA = TEMAS / "modern", TEMAS / "obsidiana"
 CASA = Path.home() / "casa/trabalho/mu-online/godot"
+DREAM = CASA / "dados/hud/dream"
 PECAS = Path(sys.argv[1]) if len(sys.argv) > 1 else CASA / "dados/hud/tema3"
 FONTES = Path(sys.argv[2]) if len(sys.argv) > 2 else CASA / "fontes"
 
@@ -255,6 +259,35 @@ def fonte(origem, familia, destino):
     t.save(destino)
 
 
+def hud():
+    """Arte da barra de baixo (HUD dream do cliente Godot, Meshy): fundo e frente em 2x (1280 x 152, em duas metades) e o liquido das
+    gemas de vida, mana e veneno (104 x 112 cada, lado a lado), no gradiente do hud_mu.gd (_gema)."""
+    for nome in ("fundo", "frente"):
+        im = Image.open(DREAM / f"{nome}.png").convert("RGBA").resize((1280, 152), Image.LANCZOS)
+        # o loader do jogo para em 1024 de largura (kBitmapMaximumWidth): vai em duas metades de 640
+        for lado, x in (("e", 0), ("d", 640)):
+            tmp = SAIDA / "arte" / f"hud_{nome}_{lado}.png"
+            im.crop((x, 0, x + 640, 152)).save(tmp)
+            ozt(tmp, tmp.with_suffix(".ozt"))
+            tmp.unlink()
+    w, h, gx, gy = 104, 112, 52.0, 56.0  # meia largura e meia altura do losango (GRX 26, GRY 28 em 2x)
+    cores = [((255, 86, 70), (70, 4, 8)), ((90, 175, 255), (4, 18, 70)), ((120, 235, 100), (10, 60, 16))]
+    folha = Image.new("RGBA", (w * 3, h))
+    px = folha.load()
+    for i, (claro, escuro) in enumerate(cores):
+        for y in range(h):
+            t = min(max(1.0 - (y + 0.5) / h, 0.0), 1.0) * 0.9 + 0.1
+            cor = tuple(round(e + (c - e) * t) for c, e in zip(claro, escuro))
+            for x in range(w):
+                d = abs(x + 0.5 - gx) / gx + abs(y + 0.5 - gy) / gy
+                if d <= 1.0:
+                    a = 255 if d <= 0.97 else round(255 * (1.0 - d) / 0.03)
+                    px[i * w + x, y] = cor + (a,)
+    folha.save(SAIDA / "arte" / "hud_gemas.png")
+    ozt(SAIDA / "arte" / "hud_gemas.png", SAIDA / "arte" / "hud_gemas.ozt")
+    (SAIDA / "arte" / "hud_gemas.png").unlink()
+
+
 def main():
     shutil.rmtree(SAIDA, ignore_errors=True)
     (SAIDA / "arte").mkdir(parents=True)
@@ -269,6 +302,9 @@ def main():
             novo += BASE_MESHY
         elif arq.suffix == ".rcss":
             novo += pecas_da_janela(texto)
+        if (AQUI / arq.name).exists():
+            # a HUD dream escrita a mao (main_frame, buff_strip) vai por cima, sem passar pelo mapa de cores
+            novo += "\n" + (AQUI / arq.name).read_text()
         if novo != texto:
             (SAIDA / arq.name).write_text(novo)
             mudados += 1
@@ -293,11 +329,12 @@ def main():
         "[Meta]\nDisplayName=Obsidiana e prata\n")
     for nome in ("tm_botao", "jm_moldura", "tm_campo", "tm_rolar", "jm_x", "jm_placa"):
         ozt(PECAS / f"{nome}.png", SAIDA / "arte" / f"{nome}.ozt")
+    hud()
     fonte(FONTES / "SpectralSC-SemiBold.ttf", "Spectral SC", SAIDA / "fontes/SpectralSC-SemiBold.ttf")
     fonte(FONTES / "SourceSans3-SemiBold.ttf", "Source Sans 3", SAIDA / "fontes/SourceSans3-SemiBold.ttf")
     for lic in ("OFL-SpectralSC.txt", "OFL-SourceSans3.txt"):
         shutil.copy(FONTES / lic, SAIDA / "fontes" / lic)
-    print(f"obsidiana: {mudados} arquivos do modern recoloridos, tokens, 6 pecas, 2 fontes")
+    print(f"obsidiana: {mudados} arquivos do modern recoloridos, tokens, 6 pecas, HUD, 2 fontes")
 
 
 if __name__ == "__main__":

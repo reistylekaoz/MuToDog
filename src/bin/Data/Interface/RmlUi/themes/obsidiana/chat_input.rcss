@@ -75,3 +75,9 @@
 	border-radius: token(radius-sm)px;
 	pointer-events: none;
 }
+
+/* ---- Obsidiana e prata: os botoes de canal ligados ganham um cobalto apagado com aro, em vez do bloco chapado
+   (vai no fim da chat_input.rcss do modern recolorida, tools/obsidiana_theme/gerar.py) ---- */
+.cib-btn { border: 1dp #3e4652; }
+.cib-btn:hover { background-color: #1a2230; border-color: #788291; }
+.cib-btn.on { background-color: rgba(120, 191, 255, 60); border-color: #78bfff; }
