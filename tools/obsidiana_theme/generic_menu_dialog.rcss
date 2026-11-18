@@ -1,0 +1,2 @@
+/* ---- Obsidiana e prata, rodada 6: titulo do menu de sistema (Esc) na fonte de titulo do tema ---- */
+.gmd-sys-title { font-family: "token(font-title)"; font-weight: normal; letter-spacing: 2dp; }

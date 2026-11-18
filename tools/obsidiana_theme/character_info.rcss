@@ -1,0 +1,23 @@
+/* ---- Obsidiana e prata, rodada 6: janela do personagem no jeito do cliente Godot. Cada atributo numa caixa
+   cha_caixa (placa de prata com o nome, recesso com o valor), + do Tema 3 (cha_mais, o quadro claro), resumo com filete de prata. ---- */
+@spritesheet ob-cha-mais {
+	src: arte/cha_mais.tga;
+	resolution: 4x;
+	ob-mais: 0px 0px 64px 60px;
+}
+.summary-fill { background-color: #04060a; border: 1px #788291; border-radius: 0; }
+.attr-textbox { background-color: transparent; border-radius: 0; decorator: image(arte/cha_caixa.tga); }
+.attr-label { left: 11px; width: 72px; color: #dae0ea; font-family: "token(font-title)"; }
+.attr-value { color: #78bfff; }
+.level-text, .levelup-point-text { color: #78bfff; }
+.stat-btn {
+	width: 16px;
+	height: 15px;
+	background-color: transparent;
+	border-width: 0;
+	decorator: image(ob-mais);
+	color: transparent;
+	font-size: 1px;
+}
+.stat-btn:hover { color: transparent; opacity: 0.8; }
+.chainfo-btn-exit { color: #e9edf3; border-color: #3e4652; }

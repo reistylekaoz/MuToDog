@@ -9,7 +9,8 @@ O que faz, sempre do zero (apaga e refaz themes/obsidiana):
 - tokens.ini: os do modern pelo mesmo mapa, por cima a paleta do Tema 3 e as fontes.
 - base.rcss ganha no fim botao, moldura, campo e barra de rolar com as pecas do Meshy (tm_botao, jm_moldura,
   tm_campo, tm_rolar, 4x), convertidas pra OZT (TGA 32 bits com 4 bytes na frente) em arte/.
-- HUD dream do cliente Godot (rodada 5): main_frame.rcss, buff_strip.rcss e chat_input.rcss desta pasta vao no fim
+- folhas escritas a mao desta pasta (rodada 5: main_frame, buff_strip, chat_input; rodada 6: base, item_grid,
+  my_inventory, character_info, generic_menu_dialog, option_window) vao no fim
   das folhas geradas, sem passar pelo mapa; fundo e frente da barra e o liquido das gemas viram OZT em arte/hud_*.
 - fontes Spectral SC SemiBold (titulo) e Source Sans 3 SemiBold (texto), OFL, com o nome da familia acertado.
 
@@ -288,8 +289,35 @@ def hud():
     (SAIDA / "arte" / "hud_gemas.png").unlink()
 
 
+def icones():
+    """Icones desenhados aqui (nao ha glifo nas fontes do jogo), em prata com a face em cobalto: martelo do consertar
+    (64 x 64, 4x de 16) e dois martelos do consertar tudo (80 x 64)."""
+    from PIL import ImageDraw
+
+    def martelo(d, dx, escala):
+        def p(x, y):
+            return (dx + x * escala, y * escala)
+        for cor, k in (((10, 12, 16, 220), 8), ((200, 208, 220, 255), 0)):
+            d.line([p(70 + k, 200 + k), p(165 + k, 105 + k)], fill=cor, width=round(30 * escala))
+            d.polygon([p(x + k, y + k) for x, y in ((112, 72), (160, 24), (232, 96), (184, 144))], fill=cor)
+        d.polygon([p(150, 48), p(168, 30), p(214, 76), p(196, 94)], fill=(120, 191, 255, 255))
+
+    for nome, w, marcas in (("ico_reparo", 256, [(0, 1.0)]), ("ico_reparo_tudo", 320, [(0, 0.85), (100, 0.85)])):
+        im = Image.new("RGBA", (w, 256))
+        d = ImageDraw.Draw(im)
+        for dx, escala in marcas:
+            martelo(d, dx, escala)
+        tmp = SAIDA / "arte" / f"{nome}.png"
+        im.resize((w // 4, 64), Image.LANCZOS).save(tmp)
+        ozt(tmp, tmp.with_suffix(".ozt"))
+        tmp.unlink()
+
+
 def main():
-    shutil.rmtree(SAIDA, ignore_errors=True)
+    # estudo/ (pecas com arte do S6, da camada dream do launcher; fora do git) fica
+    for velho in SAIDA.glob("*") if SAIDA.exists() else []:
+        if velho.name != "estudo":
+            shutil.rmtree(velho) if velho.is_dir() else velho.unlink()
     (SAIDA / "arte").mkdir(parents=True)
     (SAIDA / "fontes").mkdir()
     mudados = 0
@@ -327,14 +355,15 @@ def main():
         "[Theme]\nBase=modern\n\n"
         "[Fonts]\nSpectralSC=fontes/SpectralSC-SemiBold.ttf\nSourceSans3=fontes/SourceSans3-SemiBold.ttf\n\n"
         "[Meta]\nDisplayName=Obsidiana e prata\n")
-    for nome in ("tm_botao", "jm_moldura", "tm_campo", "tm_rolar", "jm_x", "jm_placa"):
+    for nome in ("tm_botao", "jm_moldura", "tm_campo", "tm_rolar", "jm_x", "jm_placa", "inv_casa", "cha_caixa", "cha_mais"):
         ozt(PECAS / f"{nome}.png", SAIDA / "arte" / f"{nome}.ozt")
     hud()
+    icones()
     fonte(FONTES / "SpectralSC-SemiBold.ttf", "Spectral SC", SAIDA / "fontes/SpectralSC-SemiBold.ttf")
     fonte(FONTES / "SourceSans3-SemiBold.ttf", "Source Sans 3", SAIDA / "fontes/SourceSans3-SemiBold.ttf")
     for lic in ("OFL-SpectralSC.txt", "OFL-SourceSans3.txt"):
         shutil.copy(FONTES / lic, SAIDA / "fontes" / lic)
-    print(f"obsidiana: {mudados} arquivos do modern recoloridos, tokens, 6 pecas, HUD, 2 fontes")
+    print(f"obsidiana: {mudados} arquivos do modern recoloridos, tokens, 9 pecas, HUD, 2 fontes")
 
 
 if __name__ == "__main__":

@@ -134,3 +134,4 @@ __pycache__/
 !/src/bin/Data/Interface/
 /src/bin/Data/Interface/*
 !/src/bin/Data/Interface/RmlUi/
+src/bin/Data/Interface/RmlUi/themes/obsidiana/estudo/

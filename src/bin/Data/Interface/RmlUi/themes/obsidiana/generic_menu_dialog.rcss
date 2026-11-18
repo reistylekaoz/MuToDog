@@ -337,3 +337,6 @@
 	#panel.system-menu .gmd-btn { height: 36dp; line-height: 36dp; font-size: 13dp; }
 	.gmd-sys-footer { height: 36dp; }
 }
+
+/* ---- Obsidiana e prata, rodada 6: titulo do menu de sistema (Esc) na fonte de titulo do tema ---- */
+.gmd-sys-title { font-family: "token(font-title)"; font-weight: normal; letter-spacing: 2dp; }

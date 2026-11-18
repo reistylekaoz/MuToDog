@@ -702,3 +702,6 @@
 	font-size: 12dp;
 	color: token(semantic-warning);
 }
+
+/* ---- Obsidiana e prata, rodada 6: titulos do Option na fonte de titulo do tema ---- */
+.opt-title, .opt-page-title { font-family: "token(font-title)"; font-weight: normal; }

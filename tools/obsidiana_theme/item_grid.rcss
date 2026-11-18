@@ -1,0 +1,3 @@
+/* ---- Obsidiana e prata, rodada 6: casa da grade (inventario, bau, loja, troca, mistura) = inv_casa do Tema 3 ---- */
+.item-cell-art { border-width: 0; decorator: image(arte/inv_casa.tga); }
+.item-grid-frame { border: 1px #3e4652; border-radius: 0; }

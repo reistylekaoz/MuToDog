@@ -199,3 +199,21 @@
 /* Obsidiana e prata: pecas do Meshy (tools/obsidiana_theme/gerar.py) */
 .inv-shell-edge { decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; box-shadow: none; }
 .rail-fill { background-color: transparent; decorator: ninepatch(ob-placa, ob-placa-in, 1); border-width: 0; box-shadow: none; }
+
+/* ---- Obsidiana e prata, rodada 6: slots de equipamento com a silhueta do Tema 3 (ferro e recesso em volta), como o
+   inventario do cliente Godot. As silhuetas levam arte do S6: vem da camada do estudo (estudo/, mumain_dream.py). ---- */
+.equip-slot { border-width: 0; background-color: transparent; }
+#slot_helper       { decorator: image(estudo/inv_pet.tga); }
+#slot_helm         { decorator: image(estudo/inv_elmo.tga); }
+#slot_wing         { decorator: image(estudo/inv_asa.tga); }
+#slot_weapon_right { decorator: image(estudo/inv_arma_dir.tga); }
+#slot_armor        { decorator: image(estudo/inv_armadura.tga); }
+#slot_weapon_left  { decorator: image(estudo/inv_arma_esq.tga); }
+#slot_gloves       { decorator: image(estudo/inv_luvas.tga); }
+#slot_pants        { decorator: image(estudo/inv_calca.tga); }
+#slot_boots        { decorator: image(estudo/inv_botas.tga); }
+#slot_ring_left, #slot_ring_right { decorator: image(estudo/inv_anel.tga); }
+#slot_amulet       { decorator: image(estudo/inv_colar.tga); }
+/* classe que nao usa o slot (elmo do Dark Lord, luva do Rage Fighter): sem silhueta */
+.equip-slot.no-art { decorator: none; }
+.inv-btn-exit { color: #e9edf3; border-color: #3e4652; }

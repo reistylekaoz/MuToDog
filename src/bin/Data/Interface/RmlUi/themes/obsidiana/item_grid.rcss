@@ -52,3 +52,7 @@ body { --item-cell: 20px; }
 
 /* The window's live items: the panel and a margin round it, for a model reaching past its slot. */
 .item-view { position: absolute; left: -20px; top: -20px; width: 230px; height: 469px; pointer-events: none; }
+
+/* ---- Obsidiana e prata, rodada 6: casa da grade (inventario, bau, loja, troca, mistura) = inv_casa do Tema 3 ---- */
+.item-cell-art { border-width: 0; decorator: image(arte/inv_casa.tga); }
+.item-grid-frame { border: 1px #3e4652; border-radius: 0; }
