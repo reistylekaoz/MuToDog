@@ -39,8 +39,8 @@
 					<span class="label">{{row.label}}</span>
 					<span class="value">{{row.value}}</span>
 				</div>
+				<div id="note">{{note}}</div>
 			</div>
-			<div id="note">{{note}}</div>
 			<div id="do" data-if="enabled" data-class-disabled="!can_act" data-event-click="reset_do">{{action}}</div>
 			<div id="close" data-event-click="reset_close">Fechar</div>
 		</div>

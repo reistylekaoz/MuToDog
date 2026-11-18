@@ -53,7 +53,7 @@ body { pointer-events: none; }
 	line-height: 16px;
 	color: #dde1e7;
 }
-#tabs { position: absolute; left: 12px; top: 30px; width: 206px; height: 20px; }
+#tabs { position: absolute; left: 12px; top: 30px; width: 218px; height: 20px; }
 .tab {
 	float: left;
 	width: 100px;
@@ -83,19 +83,19 @@ body { pointer-events: none; }
 	line-height: 14px;
 	color: #78bfff;
 }
-#rows { position: absolute; left: 14px; top: 90px; width: 202px; }
-.row { display: block; position: relative; height: 14px; font-size: 9px; line-height: 14px; }
+#rows { position: absolute; left: 14px; top: 88px; width: 202px; }
+.row { display: block; position: relative; height: 12px; font-size: 9px; line-height: 12px; }
 .row .label { position: absolute; left: 8px; color: #bac1cc; }
 .row .value { position: absolute; right: 8px; text-align: right; }
-.row.secao { height: 18px; margin-top: 4px; border-bottom: 1px #3e4652; margin-bottom: 4px; }
+.row.secao { height: 16px; line-height: 16px; margin-top: 2px; border-bottom: 1px #3e4652; margin-bottom: 2px; }
 .row.secao .label { left: 0px; font-family: "token(font-title)"; font-size: 10px; color: #dde1e7; }
 .row.ok .value { color: #78e678; }
 .row.falta .value { color: #ff6e5a; }
 .row.premio .value { color: #bfe0ff; }
 #note {
-	position: absolute;
-	left: 14px;
-	top: 184px;
+	display: block;
+	position: relative;
+	margin-top: 3px;
 	width: 202px;
 	text-align: center;
 	font-size: 8px;
