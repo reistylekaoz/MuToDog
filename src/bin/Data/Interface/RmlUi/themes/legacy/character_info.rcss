@@ -231,3 +231,8 @@
 .attr-lines.attr-lines-agi span { height: calc(13px * var(--root-scale)); }
 .attr-lines.attr-lines-vit span { height: calc(13px * var(--root-scale)); }
 .attr-lines.attr-lines-ene span { height: calc(13px * var(--root-scale)); }
+
+/* MuToDog: campo "Por clique" (quantos pontos cada + manda), a esquerda dos pontos livres. */
+.stat-amount-label { position: absolute; left: 18px; top: calc(112px + var(--points-room) / 2); color: #c8c8c8; font-size: 11px; white-space: nowrap; pointer-events: none; }
+.stat-amount-field { position: absolute; left: 76px; top: calc(110px + var(--points-room) / 2); width: 42px; height: 15px; font-size: 11px; padding: 0 3px; }
+.stat-amount-label.hidden, .stat-amount-field.hidden { display: none; }

@@ -46,6 +46,9 @@
 		<div class="summary-edge edge-right"></div>
 		<span class="level-text counter-scaled" data-style-font-size="text_px + 'px'">{{level_text}}</span>
 		<span class="levelup-point-text counter-scaled" data-class-hidden="!can_level_up" data-style-font-size="text_px + 'px'">{{levelup_point_text}}</span>
+		<!-- MuToDog: quantos pontos cada + manda de uma vez. -->
+		<span class="stat-amount-label" data-class-hidden="!can_level_up">Por clique</span>
+		<input type="text" class="text-field text-field--numeric stat-amount-field" maxlength="5" data-class-hidden="!can_level_up" data-value="stat_amount"/>
 		<span class="exp-text counter-scaled" data-style-font-size="text_px + 'px'">{{exp_text}}</span>
 		<span class="point-probability-text counter-scaled" data-style-font-size="text_px + 'px'">{{point_probability_text}}</span>
 		<span class="point-text counter-scaled" data-style-font-size="text_px + 'px'">{{point_text}}</span>

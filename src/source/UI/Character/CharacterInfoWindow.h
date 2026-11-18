@@ -133,6 +133,8 @@ namespace mu::ui::window
             float textPx = 0.f; // UI::RmlBridge::SyncNativeTextSize()
 
             bool canLevelUp = false;   // CharacterAttribute->LevelUpPoint > 0
+            // MuToDog: quantos pontos cada clique no + manda (campo ao lado dos pontos livres).
+            Rml::String statAmountText = "1";
             bool showCharisma = false; // base class == CLASS_DARK_LORD
 
             // CHARACTER::PK, not a colour: the theme decides what each outlaw level looks like.
@@ -183,5 +185,12 @@ namespace mu::ui::window
 
         // The critical damage rate line and the hints, formatted again only when what they show changes.
         UI::Character::CriticalHitTexts m_CriticalHitTexts;
+
+        // MuToDog: pontos em massa. Cada ponto vai num pacote de +1 (como o clique), no maximo
+        // StatPointsPerFrame por quadro: o comando /add faz o servidor reenviar a ficha e o mapa recarrega.
+        static constexpr int StatPointsPerFrame = 50;
+        int m_PendingStat = -1;
+        int m_PendingStatPoints = 0;
+        void SendPendingStatPoints();
     };
 }

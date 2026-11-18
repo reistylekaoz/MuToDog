@@ -127,6 +127,7 @@ void mu::ui::window::CCharacterInfoWindow::BindRmlModel(Rml::DataModelConstructo
     c.Bind("text_px", &model.textPx);
 
     c.Bind("can_level_up", &model.canLevelUp);
+    c.Bind("stat_amount", &model.statAmountText);
     c.Bind("show_charisma", &model.showCharisma);
 
     c.Bind("name_text", &model.nameText);
@@ -275,6 +276,7 @@ bool mu::ui::window::CCharacterInfoWindow::UpdateKeyEvent()
 
 bool mu::ui::window::CCharacterInfoWindow::Update()
 {
+    SendPendingStatPoints();
     SyncRmlModel();
     return true;
 }
@@ -326,8 +328,37 @@ void mu::ui::window::CCharacterInfoWindow::RmlClickIncreaseStat(int stat)
     if (stat < 0 || stat >= iCount)
         return;
 
-    SocketClient->ToGameServer()->SendIncreaseCharacterStatPoint(static_cast<CharacterStatAttribute>(stat));
+    // MuToDog: o campo diz quantos pontos o clique manda (vazio ou invalido = 1), ate os pontos livres.
+    long amount = 0;
+    for (const char ch : m_RmlView.GetModel().statAmountText)
+    {
+        if (ch < '0' || ch > '9')
+            continue;
+        amount = amount * 10 + (ch - '0');
+        if (amount > 100000)
+            break;
+    }
+    if (amount < 1)
+        amount = 1;
+    if (amount > CharacterAttribute->LevelUpPoint)
+        amount = CharacterAttribute->LevelUpPoint;
+
+    m_PendingStat = stat;
+    m_PendingStatPoints = static_cast<int>(amount);
+    SendPendingStatPoints();
     PlayBuffer(SOUND_CLICK01);
+}
+
+void mu::ui::window::CCharacterInfoWindow::SendPendingStatPoints()
+{
+    if (m_PendingStatPoints <= 0 || m_PendingStat < 0)
+        return;
+    const int now = (m_PendingStatPoints < StatPointsPerFrame) ? m_PendingStatPoints : StatPointsPerFrame;
+    for (int i = 0; i < now; ++i)
+    {
+        SocketClient->ToGameServer()->SendIncreaseCharacterStatPoint(static_cast<CharacterStatAttribute>(m_PendingStat));
+    }
+    m_PendingStatPoints -= now;
 }
 
 void mu::ui::window::CCharacterInfoWindow::RmlClickQuest()

@@ -189,3 +189,8 @@
 }
 .info-btn-quest:active { decorator: image(chainfo-classic-quest-pressed); }
 .btn-exit-label { display: none; }
+
+/* MuToDog: campo "Por clique" (quantos pontos cada + manda), a esquerda dos pontos livres. */
+.stat-amount-label { position: absolute; left: 18px; top: 41px; color: #c8c8c8; font-size: 11px; white-space: nowrap; pointer-events: none; }
+.stat-amount-field { position: absolute; left: 62px; top: 39px; width: 30px; height: 15px; font-size: 11px; padding: 0 3px; }
+.stat-amount-label.hidden, .stat-amount-field.hidden { display: none; }

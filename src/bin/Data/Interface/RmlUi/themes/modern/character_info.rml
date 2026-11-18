@@ -36,6 +36,9 @@
 		<div class="summary-fill"></div>
 		<span class="level-text">{{level_text}}</span>
 		<span class="levelup-point-text" data-class-hidden="!can_level_up">{{levelup_point_text}}</span>
+		<!-- MuToDog: quantos pontos cada + manda de uma vez. -->
+		<span class="stat-amount-label" data-class-hidden="!can_level_up">Por clique</span>
+		<input type="text" class="text-field text-field--numeric stat-amount-field" maxlength="5" data-class-hidden="!can_level_up" data-value="stat_amount"/>
 		<span class="exp-text">{{exp_text}}</span>
 		<span class="point-probability-text">{{point_probability_text}}</span>
 		<span class="point-text">{{point_text}}</span>
