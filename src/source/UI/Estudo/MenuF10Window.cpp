@@ -21,6 +21,7 @@ namespace
 constexpr int ActionReset = -1;
 constexpr int ActionSystemMenu = -2;
 constexpr int ActionColecoes = -3;
+constexpr int ActionAlma = -4;
 
 struct MenuF10Entry
 {
@@ -38,6 +39,7 @@ constexpr MenuF10Entry kEntries[] = {
     {'T', "T", "Minhas quests", "As missões que você pegou e o que falta.", "quests"},
     {ActionReset, "", "Reset", "Reset e grand reset: o que falta e o prêmio.", "reset"},
     {ActionColecoes, "", "Coleções", "Entregue sets de armadura e ganhe bônus pra sempre.", "colecoes"},
+    {ActionAlma, "", "Alma", "Pontos de alma de cada reset em 16 bônus.", "alma"},
     {'M', "M", "Mover de mapa", "Viajar pra outro mapa pagando zen.", "mover"},
     {VK_TAB, "Tab", "Minimapa", "O mapa do lugar onde você está.", "minimapa"},
     {'J', "J", "Comandos do chat", "Os comandos de barra (/) que o chat aceita.", "comandos_chat"},
@@ -150,6 +152,8 @@ void CMenuF10Window::RunCell(int index)
         g_pNewUISystem->Show(INTERFACE_RESET_SYSTEM);
     else if (key == ActionColecoes)
         g_pNewUISystem->Show(INTERFACE_COLECOES);
+    else if (key == ActionAlma)
+        g_pNewUISystem->Show(INTERFACE_ALMA);
     else if (key == ActionSystemMenu)
         ShowSystemMenuDialog();
     else

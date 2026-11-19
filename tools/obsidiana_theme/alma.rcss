@@ -1,0 +1,12 @@
+/* ---- Obsidiana e prata, rodada 10: Alma com a moldura, a placa do título e os botões do Meshy (base.rcss) ---- */
+#panel { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
+#title { left: 222px; top: 3px; width: 160px; height: 18px; line-height: 18px; decorator: ninepatch(ob-placa, ob-placa-in, 1); }
+.tab, .add, #redo, #close, .pay, #cancel { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 1); border-width: 0; }
+.tab:hover, .add:hover, #redo:hover, #close:hover, .pay:hover, #cancel:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 1); }
+.tab.selected { decorator: ninepatch(ob-botao-apertado, ob-botao-apertado-in, 1); }
+.add.disabled, .add.disabled:hover, #redo.disabled, #redo.disabled:hover, .pay.disabled, .pay.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 1); }
+#confirm_box { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
+/* as cores das árvores ficam as do Godot (o mapa deixaria Diversos azul igual a Defesa) */
+.tree3 .tab .line { background-color: #ffcd64; }
+.tree3 .fill { background-color: #d9ae55; }
+.tree3 .card:hover { border-color: #ffcd64; }

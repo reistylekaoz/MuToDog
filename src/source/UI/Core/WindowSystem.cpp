@@ -393,6 +393,12 @@ bool CSystem::LoadMainSceneInterface()
         return false;
     }
 
+    m_pAlma = new CAlmaWindow;
+    if (m_pAlma->Create(m_pNewUIMng) == false)
+    {
+        return false;
+    }
+
     m_pNewItemExplanationWindow = new CItemExplanationWindow;
     if (m_pNewItemExplanationWindow->Create(m_pNewUIMng) == false)
     {
@@ -656,6 +662,7 @@ void CSystem::UnloadMainSceneInterface()
     SAFE_DELETE(m_pMenuF10);
     SAFE_DELETE(m_pResetSystem);
     SAFE_DELETE(m_pColecoes);
+    SAFE_DELETE(m_pAlma);
     SAFE_DELETE(m_pNewChatCommandWindow);
     SAFE_DELETE(m_pNewItemExplanationWindow);
     SAFE_DELETE(m_pNewSetItemExplanation);

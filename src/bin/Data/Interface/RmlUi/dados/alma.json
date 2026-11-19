@@ -1,0 +1,490 @@
+{
+ "pontos_por_reset": 10,
+ "maximo": 100,
+ "refazer": {
+  "zen": 100000000,
+  "joia": [
+   14,
+   13
+  ],
+  "joias": 10
+ },
+ "arvores": [
+  "Ataque",
+  "Defesa",
+  "Suporte",
+  "Diversos"
+ ],
+ "tipos": {
+  "dano": [
+   "Dano mín. e máx.",
+   ""
+  ],
+  "exc_taxa": [
+   "Chance de dano excelente",
+   "%"
+  ],
+  "exc_dano": [
+   "Dano excelente",
+   "%"
+  ],
+  "crit_taxa": [
+   "Chance de dano crítico",
+   "%"
+  ],
+  "crit_dano": [
+   "Dano crítico",
+   "%"
+  ],
+  "pvm": [
+   "Dano contra monstros",
+   "%"
+  ],
+  "def": [
+   "Defesa",
+   ""
+  ],
+  "reflete": [
+   "Reflete dano",
+   "%"
+  ],
+  "hp_pct": [
+   "Vida máxima",
+   "%"
+  ],
+  "hp": [
+   "Vida máxima",
+   ""
+  ],
+  "reducao": [
+   "Redução de dano",
+   "%"
+  ],
+  "resist_exc": [
+   "Resiste a dano excelente",
+   "%"
+  ],
+  "absorve_exc": [
+   "Absorve dano excelente",
+   "%"
+  ],
+  "resist_crit": [
+   "Resiste a dano crítico",
+   "%"
+  ],
+  "absorve_crit": [
+   "Absorve dano crítico",
+   "%"
+  ],
+  "sd": [
+   "SD máximo",
+   "%"
+  ],
+  "status": [
+   "Todos os status",
+   ""
+  ],
+  "zen": [
+   "Zen que cai",
+   "%"
+  ],
+  "exp": [
+   "Experiência",
+   "%"
+  ],
+  "exp_master": [
+   "Experiência master",
+   "%"
+  ],
+  "regen": [
+   "Recupera vida",
+   "%"
+  ]
+ },
+ "elementos": [
+  {
+   "id": 0,
+   "arvore": 0,
+   "nome": "Dano",
+   "tipo": "dano",
+   "por_ponto": 12,
+   "marcos": [
+    [
+     40,
+     "dano",
+     100
+    ],
+    [
+     70,
+     "dano",
+     250
+    ],
+    [
+     100,
+     "dano",
+     400
+    ]
+   ]
+  },
+  {
+   "id": 1,
+   "arvore": 0,
+   "nome": "Golpe excelente",
+   "tipo": "exc_taxa",
+   "por_ponto": 0.1,
+   "marcos": [
+    [
+     40,
+     "exc_dano",
+     1
+    ],
+    [
+     70,
+     "exc_dano",
+     2
+    ],
+    [
+     100,
+     "exc_dano",
+     4
+    ]
+   ]
+  },
+  {
+   "id": 2,
+   "arvore": 0,
+   "nome": "Golpe crítico",
+   "tipo": "crit_taxa",
+   "por_ponto": 0.1,
+   "marcos": [
+    [
+     40,
+     "crit_dano",
+     1
+    ],
+    [
+     70,
+     "crit_dano",
+     2
+    ],
+    [
+     100,
+     "crit_dano",
+     4
+    ]
+   ]
+  },
+  {
+   "id": 3,
+   "arvore": 0,
+   "nome": "Caçador",
+   "tipo": "pvm",
+   "por_ponto": 0.1,
+   "marcos": [
+    [
+     40,
+     "pvm",
+     1
+    ],
+    [
+     70,
+     "pvm",
+     2
+    ],
+    [
+     100,
+     "pvm",
+     4
+    ]
+   ]
+  },
+  {
+   "id": 4,
+   "arvore": 1,
+   "nome": "Defesa",
+   "tipo": "def",
+   "por_ponto": 20,
+   "marcos": [
+    [
+     40,
+     "def",
+     200
+    ],
+    [
+     70,
+     "def",
+     450
+    ],
+    [
+     100,
+     "def",
+     700
+    ]
+   ]
+  },
+  {
+   "id": 5,
+   "arvore": 1,
+   "nome": "Espinhos",
+   "tipo": "reflete",
+   "por_ponto": 0.1,
+   "marcos": [
+    [
+     40,
+     "reflete",
+     1
+    ],
+    [
+     70,
+     "reflete",
+     2
+    ],
+    [
+     100,
+     "reflete",
+     3
+    ]
+   ]
+  },
+  {
+   "id": 6,
+   "arvore": 1,
+   "nome": "Vigor",
+   "tipo": "hp_pct",
+   "por_ponto": 0.2,
+   "marcos": [
+    [
+     40,
+     "hp",
+     1000
+    ],
+    [
+     70,
+     "hp",
+     2500
+    ],
+    [
+     100,
+     "hp",
+     4000
+    ]
+   ]
+  },
+  {
+   "id": 7,
+   "arvore": 1,
+   "nome": "Couraça",
+   "tipo": "reducao",
+   "por_ponto": 0.04,
+   "marcos": [
+    [
+     40,
+     "reducao",
+     1
+    ],
+    [
+     70,
+     "reducao",
+     2
+    ],
+    [
+     100,
+     "reducao",
+     3
+    ]
+   ]
+  },
+  {
+   "id": 8,
+   "arvore": 2,
+   "nome": "Contra excelente",
+   "tipo": "resist_exc",
+   "por_ponto": 0.1,
+   "marcos": [
+    [
+     40,
+     "absorve_exc",
+     1
+    ],
+    [
+     70,
+     "absorve_exc",
+     3
+    ],
+    [
+     100,
+     "absorve_exc",
+     6
+    ]
+   ]
+  },
+  {
+   "id": 9,
+   "arvore": 2,
+   "nome": "Contra crítico",
+   "tipo": "resist_crit",
+   "por_ponto": 0.1,
+   "marcos": [
+    [
+     40,
+     "absorve_crit",
+     1
+    ],
+    [
+     70,
+     "absorve_crit",
+     3
+    ],
+    [
+     100,
+     "absorve_crit",
+     6
+    ]
+   ]
+  },
+  {
+   "id": 10,
+   "arvore": 2,
+   "nome": "Escudo",
+   "tipo": "sd",
+   "por_ponto": 0.2,
+   "marcos": [
+    [
+     40,
+     "sd",
+     3
+    ],
+    [
+     70,
+     "sd",
+     5
+    ],
+    [
+     100,
+     "sd",
+     8
+    ]
+   ]
+  },
+  {
+   "id": 11,
+   "arvore": 2,
+   "nome": "Essência",
+   "tipo": "status",
+   "por_ponto": 1,
+   "marcos": [
+    [
+     40,
+     "status",
+     20
+    ],
+    [
+     70,
+     "status",
+     35
+    ],
+    [
+     100,
+     "status",
+     50
+    ]
+   ]
+  },
+  {
+   "id": 12,
+   "arvore": 3,
+   "nome": "Fortuna",
+   "tipo": "zen",
+   "por_ponto": 0.1,
+   "marcos": [
+    [
+     40,
+     "zen",
+     3
+    ],
+    [
+     70,
+     "zen",
+     6
+    ],
+    [
+     100,
+     "zen",
+     10
+    ]
+   ]
+  },
+  {
+   "id": 13,
+   "arvore": 3,
+   "nome": "Sabedoria",
+   "tipo": "exp",
+   "por_ponto": 0.025,
+   "marcos": [
+    [
+     40,
+     "exp",
+     0.5
+    ],
+    [
+     70,
+     "exp",
+     1
+    ],
+    [
+     100,
+     "exp",
+     1.5
+    ]
+   ]
+  },
+  {
+   "id": 14,
+   "arvore": 3,
+   "nome": "Mestria",
+   "tipo": "exp_master",
+   "por_ponto": 0.025,
+   "marcos": [
+    [
+     40,
+     "exp_master",
+     1
+    ],
+    [
+     70,
+     "exp_master",
+     1.5
+    ],
+    [
+     100,
+     "exp_master",
+     2
+    ]
+   ]
+  },
+  {
+   "id": 15,
+   "arvore": 3,
+   "nome": "Renovação",
+   "tipo": "regen",
+   "por_ponto": 0.05,
+   "marcos": [
+    [
+     40,
+     "regen",
+     2
+    ],
+    [
+     70,
+     "regen",
+     4
+    ],
+    [
+     100,
+     "regen",
+     6
+    ]
+   ]
+  }
+ ]
+}

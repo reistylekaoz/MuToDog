@@ -1,0 +1,165 @@
+/* MuToDog (MU Estudo, rodada 10): Alma (alma.rml), no jeito do cliente Godot (janela_alma.gd): janela de 604 x 442
+   no meio da tela, 4 cartas de 132 x 313 por aba. Px da tela de referência 640 x 480 (.stage). A arte (fundo, cartas,
+   ícones, aro e cadeado) sai de tools/obsidiana_theme/icones_alma.py; o obsidiana põe o Meshy por cima
+   (tools/obsidiana_theme/alma.rcss). */
+@spritesheet alma-folha
+{
+	src: "../modern/alma/folha.tga";
+	al-0: 0px 0px 128px 128px;
+	al-1: 128px 0px 128px 128px;
+	al-2: 256px 0px 128px 128px;
+	al-3: 384px 0px 128px 128px;
+	al-4: 512px 0px 128px 128px;
+	al-5: 640px 0px 128px 128px;
+	al-6: 0px 128px 128px 128px;
+	al-7: 128px 128px 128px 128px;
+	al-8: 256px 128px 128px 128px;
+	al-9: 384px 128px 128px 128px;
+	al-10: 512px 128px 128px 128px;
+	al-11: 640px 128px 128px 128px;
+	al-12: 0px 256px 128px 128px;
+	al-13: 128px 256px 128px 128px;
+	al-14: 256px 256px 128px 128px;
+	al-15: 384px 256px 128px 128px;
+	al-aro: 512px 256px 128px 128px;
+	al-cadeado: 640px 256px 128px 128px;
+}
+body { pointer-events: none; }
+#screen { pointer-events: none; }
+
+#panel {
+	position: absolute;
+	left: 18px;
+	top: 19px;
+	width: 604px;
+	height: 442px;
+	background-color: rgba(8, 10, 14, 245);
+	border: 1px #3e4652;
+	pointer-events: auto;
+	font-family: "token(font-body)";
+	color: #e9edf3;
+}
+#art { position: absolute; left: 6px; top: 24px; width: 592px; height: 412px; decorator: image(../modern/alma/fundo.tga); opacity: 0.6; }
+#title {
+	position: absolute;
+	left: 0px;
+	top: 4px;
+	width: 604px;
+	height: 16px;
+	text-align: center;
+	font-family: "token(font-title)";
+	font-size: 12px;
+	line-height: 16px;
+	color: #dae0ea;
+}
+.tab {
+	position: absolute;
+	top: 30px;
+	width: 92px;
+	height: 22px;
+	text-align: center;
+	font-size: 10px;
+	line-height: 22px;
+	background-color: #1e2228;
+	border: 1px #3e4652;
+	cursor: pointer;
+	color: #b9c1cd;
+}
+.tab:hover, .tab.selected { color: #ffffff; }
+.tab .line { position: absolute; left: 2px; bottom: -1px; width: 88px; height: 2px; }
+#free { position: absolute; left: 400px; top: 34px; width: 192px; text-align: right; font-size: 11px; line-height: 14px; color: #b9c1cd; }
+#free.lit { color: #e8c96a; }
+
+.card {
+	position: absolute;
+	top: 60px;
+	width: 132px;
+	height: 313px;
+	border: 1px #3e4652;
+	border-radius: 4px;
+	background-color: rgba(10, 14, 22, 200);
+}
+.name { position: absolute; left: 0px; top: 9px; width: 132px; text-align: center; font-size: 11px; line-height: 14px; color: #ffffff; }
+.glow { position: absolute; left: 32px; top: 28px; width: 68px; height: 68px; border-radius: 34px; }
+.icon { position: absolute; left: 41px; top: 37px; width: 50px; height: 50px; opacity: 0.62; }
+.icon.lit { opacity: 1; }
+.ring { position: absolute; left: 31px; top: 27px; width: 70px; height: 70px; decorator: image(al-aro); }
+.now { position: absolute; left: 4px; top: 97px; width: 124px; text-align: center; font-size: 8px; line-height: 10px; color: #7d8796; }
+.now.lit { color: #78e678; }
+.bar { position: absolute; left: 19px; top: 141px; width: 10px; height: 110px; background-color: rgba(0, 0, 0, 190); }
+.fill { position: absolute; left: 1px; bottom: 1px; width: 8px; height: 0px; border-top: 2px #ffffd9; }
+.shine { position: absolute; left: 0px; top: 0px; width: 3px; height: 100%; background-color: rgba(255, 255, 255, 90); }
+.mark { position: absolute; left: 0px; width: 132px; height: 26px; }
+.tick { position: absolute; left: 18px; top: 12px; width: 12px; height: 2px; background-color: #e8c96a; }
+.mring { position: absolute; left: 33px; top: -3px; width: 32px; height: 32px; decorator: image(al-aro); }
+.micon { position: absolute; left: 40px; top: 4px; width: 18px; height: 18px; opacity: 0.85; }
+.lock { position: absolute; left: 53px; top: 15px; width: 11px; height: 13px; decorator: image(al-cadeado); }
+.mlabel { position: absolute; left: 66px; top: 1px; width: 64px; font-size: 8px; line-height: 10px; color: #dae0ea; white-space: nowrap; }
+.mvalue { position: absolute; left: 66px; top: 12px; width: 64px; font-size: 9px; line-height: 11px; color: #dae0ea; white-space: nowrap; }
+.mark.vale .micon { opacity: 1; }
+.mark.vale .mlabel, .mark.vale .mvalue { color: #e8c96a; font-weight: bold; }
+.mark.apagado .tick { background-color: #4a515c; }
+.mark.apagado .mring { opacity: 0.55; }
+.mark.apagado .micon { opacity: 0.5; }
+.mark.apagado .mlabel, .mark.apagado .mvalue { color: #6a717c; }
+.mname { position: absolute; left: 16px; top: 253px; width: 112px; font-size: 8px; line-height: 10px; color: #8d95a1; white-space: nowrap; overflow: hidden; }
+.points { position: absolute; left: 0px; top: 266px; width: 132px; text-align: center; font-size: 12px; line-height: 16px; font-weight: bold; color: #ffffff; }
+.points.full { color: #e8c96a; }
+
+.add, #redo, #close, .pay, #cancel {
+	position: absolute;
+	text-align: center;
+	background-color: #1e2228;
+	border: 1px #3e4652;
+	cursor: pointer;
+	color: #ffffff;
+}
+.add:hover, #redo:hover, #close:hover, .pay:hover, #cancel:hover { border-color: #78bfff; }
+.add.disabled, #redo.disabled, .pay.disabled { color: #4a515c; cursor: default; }
+.add.disabled:hover, #redo.disabled:hover, .pay.disabled:hover { border-color: #3e4652; }
+.add { top: 287px; width: 50px; height: 18px; font-size: 9px; line-height: 18px; }
+.add1 { left: 12px; }
+.add10 { left: 70px; }
+#foot { position: absolute; left: 0px; top: 380px; width: 604px; text-align: center; font-size: 9px; line-height: 12px; color: #8d95a1; }
+#redo { left: 14px; top: 402px; width: 108px; height: 24px; font-size: 10px; line-height: 24px; }
+#close { left: 498px; top: 402px; width: 92px; height: 24px; font-size: 10px; line-height: 24px; }
+
+#confirm_layer { z-index: 3; position: absolute; left: 0px; top: 24px; width: 604px; height: 418px; background-color: rgba(0, 0, 0, 165); }
+#confirm_box {
+	position: absolute;
+	left: 152px;
+	top: 106px;
+	width: 300px;
+	height: 150px;
+	background-color: rgba(12, 19, 36, 252);
+	border: 2px #525a66;
+	border-radius: 5px;
+}
+#confirm_title { position: absolute; left: 0px; top: 10px; width: 300px; text-align: center; font-family: "token(font-title)"; font-size: 12px; line-height: 16px; color: #dae0ea; }
+#confirm_text { position: absolute; left: 0px; top: 30px; width: 300px; text-align: center; font-size: 9px; line-height: 12px; color: #b9c1cd; }
+.pay { left: 30px; width: 240px; height: 22px; font-size: 9px; line-height: 22px; }
+#pay_zen { top: 52px; }
+#pay_jewel { top: 80px; }
+#cancel { left: 100px; top: 116px; width: 100px; height: 22px; font-size: 9px; line-height: 22px; }
+
+/* a cor da árvore aberta */
+.tree0 .tab .line { background-color: #ff6e5a; }
+.tree0 .fill { background-color: #d95d4c; }
+.tree0 .card { decorator: image(../modern/alma/carta_0.tga); }
+.tree0 .card:hover { border-color: #ff6e5a; }
+.tree0 .glow { background-color: #ff6e5a38; }
+.tree1 .tab .line { background-color: #6eaaff; }
+.tree1 .fill { background-color: #5d90d9; }
+.tree1 .card { decorator: image(../modern/alma/carta_1.tga); }
+.tree1 .card:hover { border-color: #6eaaff; }
+.tree1 .glow { background-color: #6eaaff38; }
+.tree2 .tab .line { background-color: #78e682; }
+.tree2 .fill { background-color: #66c46e; }
+.tree2 .card { decorator: image(../modern/alma/carta_2.tga); }
+.tree2 .card:hover { border-color: #78e682; }
+.tree2 .glow { background-color: #78e68238; }
+.tree3 .tab .line { background-color: #ffcd64; }
+.tree3 .fill { background-color: #d9ae55; }
+.tree3 .card { decorator: image(../modern/alma/carta_3.tga); }
+.tree3 .card:hover { border-color: #ffcd64; }
+.tree3 .glow { background-color: #ffcd6438; }

@@ -7,6 +7,7 @@
 #include "UI/Chat/Chat.h"
 #include "UI/Estudo/ResetSystemWindow.h"
 #include "UI/Estudo/ColecoesWindow.h"
+#include "UI/Estudo/AlmaWindow.h"
 #include "UI/Chat/ChatMessages.h"
 #include "UI/Combat/SiegeUpdates.h"
 #include "UI/Events/DoppelgangerUpdates.h"
@@ -14795,6 +14796,8 @@ static void ProcessPacket(const BYTE* ReceiveBuffer, int32_t Size)
         mu::ui::window::CResetSystemWindow::ReceiveState(ReceiveBuffer, Size);
         // C2 FB 40 (a lista das colecoes) e C1 FB 42 (a peca entregue)
         mu::ui::window::CColecoesWindow::ReceivePacket(ReceiveBuffer, Size);
+        // C2 FB 50 (o estado da alma)
+        mu::ui::window::CAlmaWindow::ReceivePacket(ReceiveBuffer, Size);
         break;
     default:
         break;

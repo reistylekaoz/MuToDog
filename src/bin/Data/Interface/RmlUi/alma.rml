@@ -1,0 +1,58 @@
+<rml>
+<head>
+	<title>Alma</title>
+	<link type="text/rcss" href="base.rcss"/>
+	<link type="text/rcss" href="alma.rcss"/>
+</head>
+<body data-model="alma">
+	<!-- MuToDog (MU Estudo, rodada 10): Alma (CAlmaWindow), no jeito do cliente Godot (janela_alma.gd): 4 abas
+	     (Ataque, Defesa, Suporte, Diversos) de 4 cartas. Cada carta tem o ícone no aro, o que dá agora, a barra
+	     vertical (100 pontos em cima) com os 3 marcos (o maior alcançado em ouro, os que faltam com cadeado), os
+	     pontos e os botões +1 e +10. Refazer abre a caixa de pagar com zen ou Jewel of Bless. Geometria em px da tela
+	     de referência 640 x 480 (.stage). Ícones: sprites al-<n>, al-aro e al-cadeado (alma.rcss). -->
+	<div id="screen" class="stage">
+		<div id="panel" data-attr-class="'tree' + tab">
+			<div id="art"></div>
+			<div id="title">Alma</div>
+			<div class="tab" data-for="t, i : tabs" data-style-left="(12 + i * 96) + 'px'"
+			     data-class-selected="tab == i" data-event-click="alma_tab(i)">{{t}}<div class="line" data-if="tab == i"></div></div>
+			<div id="free" data-class-lit="free_lit">{{free}}</div>
+
+			<div class="card" data-for="c, k : cards" data-style-left="(12 + k * 149) + 'px'">
+				<div class="name">{{c.name}}</div>
+				<div class="glow" data-if="c.lit"></div>
+				<div class="icon" data-class-lit="c.lit" data-style-decorator="c.icon"></div>
+				<div class="ring"></div>
+				<div class="now" data-class-lit="c.lit">{{c.now}}</div>
+				<div class="bar"><div class="fill" data-style-height="c.bar"><div class="shine"></div></div></div>
+				<div data-for="m : c.marks" data-attr-class="'mark ' + m.look" data-style-top="m.top">
+					<div class="tick"></div>
+					<div class="mring"></div>
+					<div class="micon" data-style-decorator="c.icon"></div>
+					<div class="lock" data-if="m.look == 'apagado'"></div>
+					<div class="mlabel">{{m.label}}</div>
+					<div class="mvalue">{{m.value}}</div>
+				</div>
+				<div class="mname">{{c.mark_name}}</div>
+				<div class="points" data-class-full="c.full">{{c.points}}</div>
+				<div class="add add1" data-class-disabled="!c.can_add" data-event-click="alma_add(c.element, 1)">+1</div>
+				<div class="add add10" data-class-disabled="!c.can_add" data-event-click="alma_add(c.element, 10)">+10</div>
+			</div>
+
+			<div id="foot">{{foot}}</div>
+			<div id="redo" data-class-disabled="!can_redo" data-event-click="alma_redo">Refazer</div>
+			<div id="close" data-event-click="alma_close">Fechar</div>
+
+			<div id="confirm_layer" data-if="confirm">
+				<div id="confirm_box">
+					<div id="confirm_title">Refazer a alma?</div>
+					<div id="confirm_text">Todos os pontos voltam a ficar livres.</div>
+					<div id="pay_zen" class="pay" data-class-disabled="!pay_zen_ok" data-event-click="alma_redo_zen">{{pay_zen}}</div>
+					<div id="pay_jewel" class="pay" data-class-disabled="!pay_jewel_ok" data-event-click="alma_redo_jewel">{{pay_jewel}}</div>
+					<div id="cancel" data-event-click="alma_cancel">Cancelar</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>
