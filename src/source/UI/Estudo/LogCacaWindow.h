@@ -1,7 +1,7 @@
 #pragma once
 
 // MuToDog (MU Estudo, rodada 11): Log de caça (tecla K), no jeito do cliente Godot (godot/scripts/log_caca.gd, o
-// "Instant Hunting Log" da MuDream): painel no canto de cima à esquerda com o tempo, dano, zen e exp por minuto e quando
+// "Instant Hunting Log" da MuDream): painel no canto de cima à direita com o tempo, dano, zen e exp por minuto e quando
 // chega o próximo nível; embaixo o dano no Boneco de Treino da saída de Lorencia (monstro 924): golpes, total, último,
 // maior, média e por segundo. Tudo sai do que o cliente já recebe: o golpe dado (C1 11, WSclient.cpp
 // ReceiveAttackDamageExtended), a exp de monstro (UI::Hud::ShowExperienceGain), o zen e o nível (lidos a cada quadro).

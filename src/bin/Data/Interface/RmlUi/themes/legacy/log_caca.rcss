@@ -1,15 +1,15 @@
 /* MuToDog (MU Estudo, rodada 11): Log de caça (log_caca.rml), no jeito do cliente Godot (log_caca.gd): painel de 150 de
-   largura no canto de cima à esquerda (4, 30), a altura vem das linhas. Px da tela de referência 640 x 480 (.stage). */
+   largura no canto de cima à direita (486, 34), a altura vem das linhas. Px da tela de referência 640 x 480 (.stage). */
 body { pointer-events: none; }
 #screen { pointer-events: none; }
 
 #panel {
 	position: absolute;
-	left: 4px;
-	top: 30px;
+	left: 486px;
+	top: 34px;
 	width: 150px;
 	padding-bottom: 16px;
-	background-color: rgba(20, 20, 24, 199);
+	background-color: rgba(20, 20, 24, 240);
 	pointer-events: auto;
 	drag: drag;
 	cursor: move;

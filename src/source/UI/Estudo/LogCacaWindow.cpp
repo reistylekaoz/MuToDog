@@ -27,8 +27,8 @@ namespace
 {
 constexpr int TrainingDummy = 924; // Boneco de Treino da saída de Lorencia
 constexpr float PanelWidth = 150.f;
-constexpr float CornerX = 4.f; // embaixo do Menu (F10), longe do chat
-constexpr float CornerY = 30.f;
+constexpr float CornerX = 486.f; // à direita, embaixo dos botões do topo e longe das mensagens do sistema
+constexpr float CornerY = 34.f;
 constexpr const char* PlaceFile = "log_caca.ini";
 
 // as contas (tempo em ms do relógio do jogo)
