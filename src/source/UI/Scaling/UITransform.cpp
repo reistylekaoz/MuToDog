@@ -16,8 +16,9 @@ constexpr float kMaximumHudScale = 2.0f;
 // ponytail: 2x ceiling; raise only if native screenshots still show unreadable UI. Public copy of
 // this value lives at UI::Scaling::MaximumPanelScale (UITransform.h) -- RmlUiRuntime.cpp's dp-ratio
 // auto-fit reuses it, so it can't stay anonymous-namespace-only anymore.
-// ponytail: 2.25x dock ceiling; adjust only from rebuilt native screenshots.
-constexpr float kMaximumDockScale = 2.25f;
+// MU Estudo: dock ceiling = panel ceiling. The dock is drawn with transform scale(dock / dp ratio); at 2.25 vs 2.0
+// the text of the docked windows (C, inventory) came out stretched 1.125x and blurry at 1920x1080 and above.
+constexpr float kMaximumDockScale = UI::Scaling::MaximumPanelScale;
 constexpr float kMaximumTypographyScale = 2.25f;
 constexpr int kNormalFontPointSize = 11;
 constexpr int kMaximumNormalFontPointSize = 16;
