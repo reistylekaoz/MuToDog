@@ -97,7 +97,7 @@ std::string BossName()
     if (it != kNames.end())
         return it->second;
     // os dourados marcados como boss: o nome do monstro na tabela do jogo
-    const wchar_t* name = GetMonsterName(g_Bar.number);
+    const wchar_t* name = Data::Monsters::GetMonsterName(g_Bar.number);
     if (name != nullptr && std::wcscmp(name, L"()") != 0 && name[0] != L'\0')
         return Core::Text::ToUtf8(name);
     return "Boss";
