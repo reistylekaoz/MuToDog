@@ -202,6 +202,7 @@ body { pointer-events: none; }
 }
 .tab {
 	position: absolute;
+	z-index: 2;
 	top: 30px;
 	height: 18px;
 	text-align: center;
@@ -271,9 +272,9 @@ body { pointer-events: none; }
 	cursor: pointer;
 }
 .arrow:hover { color: #ffffff; }
-#arrow_prev { left: 90px; }
-#arrow_next { left: 318px; }
-#parts { position: absolute; left: 115px; top: 60px; width: 200px; height: 34px; }
+#arrow_prev { left: 88px; }
+#arrow_next { left: 322px; }
+#parts { position: absolute; left: 110px; top: 60px; width: 212px; height: 36px; }
 .part {
 	float: left;
 	position: relative;
@@ -299,7 +300,7 @@ body { pointer-events: none; }
 /* aba Sets: a lista na esquerda, o set aberto e os bônus ligados na direita */
 #sets { position: absolute; left: 0px; top: 0px; width: 430px; height: 372px; }
 #cards { position: absolute; left: 8px; top: 60px; width: 110px; height: 276px; }
-.card { position: relative; width: 98px; height: 92px; margin-bottom: 4px; cursor: pointer; border: 1px rgba(0, 0, 0, 0); border-radius: 4px; }
+.card { display: block; position: relative; width: 98px; height: 92px; margin-bottom: 4px; cursor: pointer; border: 1px rgba(0, 0, 0, 0); border-radius: 4px; }
 .card.open { border-color: #78bfff; background-color: rgba(120, 191, 255, 26); }
 .card .label { position: absolute; left: 3px; top: 2px; width: 90px; }
 .card.done .label, .card.open .label { color: #ffffff; }
@@ -320,7 +321,7 @@ body { pointer-events: none; }
 }
 #set_name { position: absolute; left: 0px; top: 3px; width: 296px; text-align: center; font-family: "token(font-title)"; font-size: 10px; line-height: 14px; color: #dde1e7; }
 #slots { position: absolute; left: 13px; top: 20px; width: 270px; height: 64px; }
-.slot { float: left; position: relative; width: 54px; height: 64px; }
+.slot { float: left; position: relative; width: 54px; height: 64px; border-width: 0; }
 .slot .label { position: absolute; left: 3px; top: 0px; width: 46px; height: 12px; line-height: 12px; }
 .slot .piece { position: absolute; left: 4px; top: 16px; width: 44px; height: 44px; cursor: pointer; }
 #set_text { position: absolute; left: 0px; top: 88px; width: 296px; text-align: center; font-size: 9px; line-height: 12px; color: #bac1cc; }
@@ -337,13 +338,13 @@ body { pointer-events: none; }
 	border: 1px #262b33;
 	border-radius: 4px;
 }
-#active_title { margin: 4px 8px 0px 8px; font-family: "token(font-title)"; font-size: 10px; line-height: 14px; color: #dde1e7; }
-#active_count { margin: 0px 8px 4px 8px; font-size: 8px; line-height: 11px; color: #a9d3ff; }
-.bonus { margin: 0px 8px; font-size: 9px; line-height: 12px; color: #78e678; }
-#active_none { margin: 0px 8px; font-size: 8px; line-height: 11px; color: #7a8699; }
+#active_title { display: block; margin: 4px 8px 0px 8px; font-family: "token(font-title)"; font-size: 10px; line-height: 14px; color: #dde1e7; }
+#active_count { display: block; margin: 0px 8px 4px 8px; font-size: 8px; line-height: 11px; color: #a9d3ff; }
+.bonus { display: block; margin: 0px 8px; font-size: 9px; line-height: 12px; color: #78e678; }
+#active_none { display: block; margin: 0px 8px; font-size: 8px; line-height: 11px; color: #7a8699; }
 
 /* a caixinha + Adicionar item: uma casa, o item escolhido, a lista das peças de set da mochila */
-#aadddd { position: absolute; left: 0px; top: 56px; width: 430px; height: 316px; background-color: rgba(0, 0, 0, 140); }
+#add_layer { z-index: 3; position: absolute; left: 0px; top: 56px; width: 430px; height: 316px; background-color: rgba(0, 0, 0, 140); }
 #add_box {
 	position: absolute;
 	left: 95px;
@@ -364,7 +365,7 @@ body { pointer-events: none; }
 #add_msg.falta { color: #ff6e5a; }
 #bag_title { position: absolute; left: 10px; top: 126px; width: 220px; font-size: 8px; line-height: 10px; color: #bac1cc; }
 #bag { position: absolute; left: 10px; top: 138px; width: 220px; height: 82px; border: 1px #262b33; }
-.bag { position: relative; height: 20px; cursor: pointer; border-bottom: 1px #171a1f; }
+.bag { display: block; position: relative; height: 20px; cursor: pointer; border-bottom: 1px #171a1f; }
 .bag:hover { background-color: rgba(120, 191, 255, 20); }
 .bag.selected { background-color: rgba(120, 191, 255, 46); }
 .bag .art { left: 2px; top: 1px; width: 18px; height: 18px; }
@@ -372,7 +373,7 @@ body { pointer-events: none; }
 .bag .info { position: absolute; left: 146px; top: 0px; width: 64px; text-align: right; font-size: 7px; line-height: 20px; color: #7a8699; }
 .bag.ok .info { color: #78e678; }
 .bag.falta .info { color: #ff6e5a; }
-#bag_none { padding: 6px; font-size: 8px; color: #7a8699; }
+#bag_none { display: block; padding: 6px; font-size: 8px; color: #7a8699; }
 #add_note { position: absolute; left: 6px; top: 226px; width: 228px; text-align: center; font-size: 8px; line-height: 10px; color: #7a8699; }
 #give, #add_close, #close {
 	position: absolute;
@@ -387,7 +388,7 @@ body { pointer-events: none; }
 #give:hover, #add_close:hover, #close:hover { border-color: #78bfff; color: #ffffff; }
 #give.disabled { color: #48515e; cursor: default; }
 #give.disabled:hover { border-color: #3e4652; }
-#close { left: 185px; top: 344px; width: 60px; height: 18px; line-height: 18px; }
+#close { z-index: 2; left: 185px; top: 344px; width: 60px; height: 18px; line-height: 18px; }
 
 /* ---- Obsidiana e prata, rodada 8: Coleções com a moldura, a placa do título e os botões do Meshy (base.rcss) ---- */
 #panel { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }

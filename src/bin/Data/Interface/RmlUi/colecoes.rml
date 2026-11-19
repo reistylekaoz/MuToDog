@@ -70,7 +70,7 @@
 				</div>
 			</div>
 
-			<div id="add" data-if="add_open">
+			<div id="add_layer" data-if="add_open">
 				<div id="add_box">
 					<div id="add_title">Adicionar item à coleção</div>
 					<div id="add_slot" data-class-filled="add_name != ''"><div class="art" data-style-decorator="add_decorator"></div></div>

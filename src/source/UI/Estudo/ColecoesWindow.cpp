@@ -23,6 +23,7 @@
 #include <cmath>
 #include <fstream>
 #include <map>
+#include <set>
 
 using namespace mu::ui::window;
 
@@ -718,9 +719,13 @@ void CColecoesWindow::BuildAdd(ColecoesRmlModel& model)
     const ITEM* chosen = m_AddSlot >= 0 ? UI::Inventory::FindPlayerItem(m_AddSlot) : nullptr;
     if (chosen == nullptr)
         m_AddSlot = -1;
+    // FindPlayerItem acha o item em todas as casas que ele cobre: a primeira (a de cima na esquerda) vale, as outras pulam
+    std::set<const ITEM*> seen;
     for (int slot = MAX_EQUIPMENT_INDEX; slot < MAX_MY_INVENTORY_EX_INDEX; ++slot)
     {
         const ITEM* item = UI::Inventory::FindPlayerItem(slot);
+        if (item == nullptr || !seen.insert(item).second)
+            continue;
         int piece = -1;
         const SetDef* s = item != nullptr && item->Type >= 0 ? ColSetOfItem(*item, piece) : nullptr;
         if (s == nullptr)
