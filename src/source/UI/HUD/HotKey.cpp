@@ -224,6 +224,20 @@ bool mu::ui::window::CHotKey::UpdateKeyEvent()
         PlayBuffer(SOUND_CLICK01);
         return false;
     }
+    else if (mu::ui::window::IsPress('H'))
+    {
+        // MuToDog: Horario dos eventos
+        g_pNewUISystem->Toggle(mu::ui::window::INTERFACE_EVENTOS);
+        PlayBuffer(SOUND_CLICK01);
+        return false;
+    }
+    else if (mu::ui::window::IsPress('K'))
+    {
+        // MuToDog: Log de caca
+        g_pNewUISystem->Toggle(mu::ui::window::INTERFACE_LOG_CACA);
+        PlayBuffer(SOUND_CLICK01);
+        return false;
+    }
     else if (mu::ui::window::IsPress('P'))
     {
         TogglePartyWindow();

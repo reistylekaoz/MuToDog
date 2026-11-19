@@ -47,6 +47,9 @@
 #include "UI/Estudo/ResetSystemWindow.h"
 #include "UI/Estudo/ColecoesWindow.h"
 #include "UI/Estudo/AlmaWindow.h"
+#include "UI/Estudo/BossBarWindow.h"
+#include "UI/Estudo/EventosWindow.h"
+#include "UI/Estudo/LogCacaWindow.h"
 #include "UI/Dialogs/ChatCommandWindow.h"
 #include "UI/Inventory/ItemExplanationWindow.h"
 #include "UI/Inventory/SetItemExplanation.h"
@@ -195,6 +198,9 @@ namespace mu::ui::window
         CResetSystemWindow* m_pResetSystem = nullptr;   // MuToDog: Reset System
         CColecoesWindow* m_pColecoes = nullptr;         // MuToDog: Coleções
         CAlmaWindow* m_pAlma = nullptr;                 // MuToDog: Alma
+        CEventosWindow* m_pEventos = nullptr;           // MuToDog: Horário dos eventos (H)
+        CBossBarWindow* m_pBossBar = nullptr;           // MuToDog: barra do boss no topo
+        CLogCacaWindow* m_pLogCaca = nullptr;           // MuToDog: Log de caça (K)
         CChatCommandWindow* m_pNewChatCommandWindow;
         CItemExplanationWindow* m_pNewItemExplanationWindow;
         CSetItemExplanation* m_pNewSetItemExplanation;

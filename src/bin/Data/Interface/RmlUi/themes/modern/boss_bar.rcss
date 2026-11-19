@@ -1,0 +1,26 @@
+/* MuToDog (MU Estudo, rodada 11): barra do boss (boss_bar.rml), no jeito do cliente Godot (barra_boss.gd): no alto e no meio
+   da tela, a barra de 240 x 10 com o nome em cima e a disputa embaixo. Px da tela de referência 640 x 480 (.stage). */
+body { pointer-events: none; }
+#screen { pointer-events: none; font-family: "token(font-body)"; }
+#name, #end, #leader, #me, #hp { position: absolute; text-align: center; white-space: nowrap; font-effect: outline(1px #000000e6); }
+#name { left: 0px; top: 19px; width: 640px; font-size: 8px; line-height: 11px; font-weight: bold; color: #ffe2a0; }
+#bar { position: absolute; left: 199px; top: 31px; width: 240px; height: 10px; background-color: #0a0508d9; border: 1px #ffc846cc; }
+#under { position: absolute; left: 0px; top: 0px; width: 240px; height: 10px; }
+#trail { position: absolute; left: 0px; top: 0px; width: 0px; height: 10px; background-color: #ffecc8c8; }
+#fill { position: absolute; left: 0px; top: 0px; width: 0px; height: 10px; }
+#shine { position: absolute; left: 0px; top: 0px; width: 240px; height: 5px; background-color: #ffffff30; }
+#hp { left: 0px; top: 1px; width: 240px; font-size: 6px; line-height: 8px; color: #ffffff; }
+#marker { position: absolute; left: 177px; top: 31px; width: 19px; height: 10px; border: 1px #ffc846cc; text-align: center; font-size: 7px; line-height: 10px; font-weight: bold; color: #ffffff; font-effect: outline(1px #000000e6); }
+#end { left: 0px; top: 45px; width: 640px; font-size: 7px; line-height: 10px; font-weight: bold; color: #ffc846; }
+#leader { left: 0px; top: 45px; width: 640px; font-size: 7px; line-height: 10px; font-weight: bold; color: #ffc846; }
+#leader.eu { color: #78e678; }
+#leader.pisca { color: #ffffff; }
+#me { left: 0px; top: 55px; width: 640px; font-size: 6px; line-height: 9px; color: #c8cde0; }
+.crown { display: inline-block; position: relative; width: 9px; height: 6px; }
+.crown span { position: absolute; background-color: #ffc846; }
+#leader.eu .crown span { background-color: #78e678; }
+#leader.pisca .crown span { background-color: #ffffff; }
+.cb { left: 0px; top: 4px; width: 9px; height: 2px; }
+.c1 { left: 0px; top: 1px; width: 2px; height: 3px; }
+.c2 { left: 3px; top: 0px; width: 3px; height: 4px; }
+.c3 { left: 7px; top: 1px; width: 2px; height: 3px; }

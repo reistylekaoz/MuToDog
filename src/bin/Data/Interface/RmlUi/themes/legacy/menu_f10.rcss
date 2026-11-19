@@ -7,9 +7,9 @@ body { pointer-events: none; }
 #panel {
 	position: absolute;
 	left: 79px;
-	top: 76px;
+	top: 38px;
 	width: 482px;
-	height: 328px;
+	height: 404px;
 	background-color: rgba(8, 10, 14, 240);
 	border: 1px #3e4652;
 	pointer-events: auto;
@@ -40,7 +40,7 @@ body { pointer-events: none; }
 	left: 10px;
 	top: 44px;
 	width: 470px;
-	height: 234px;
+	height: 310px;
 }
 .cell {
 	float: left;
@@ -99,7 +99,7 @@ body { pointer-events: none; }
 #rule {
 	position: absolute;
 	left: 8px;
-	top: 282px;
+	top: 358px;
 	width: 466px;
 	height: 1px;
 	background-color: #3e4652;
@@ -107,7 +107,7 @@ body { pointer-events: none; }
 #hint {
 	position: absolute;
 	left: 10px;
-	top: 286px;
+	top: 362px;
 	width: 462px;
 	height: 12px;
 	font-size: 9px;
@@ -117,7 +117,7 @@ body { pointer-events: none; }
 #close {
 	position: absolute;
 	left: 211px;
-	top: 304px;
+	top: 380px;
 	width: 60px;
 	height: 17px;
 	text-align: center;

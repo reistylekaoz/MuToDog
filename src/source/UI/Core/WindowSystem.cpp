@@ -399,6 +399,24 @@ bool CSystem::LoadMainSceneInterface()
         return false;
     }
 
+    m_pEventos = new CEventosWindow;
+    if (m_pEventos->Create(m_pNewUIMng) == false)
+    {
+        return false;
+    }
+
+    m_pBossBar = new CBossBarWindow;
+    if (m_pBossBar->Create(m_pNewUIMng) == false)
+    {
+        return false;
+    }
+
+    m_pLogCaca = new CLogCacaWindow;
+    if (m_pLogCaca->Create(m_pNewUIMng) == false)
+    {
+        return false;
+    }
+
     m_pNewItemExplanationWindow = new CItemExplanationWindow;
     if (m_pNewItemExplanationWindow->Create(m_pNewUIMng) == false)
     {
@@ -663,6 +681,9 @@ void CSystem::UnloadMainSceneInterface()
     SAFE_DELETE(m_pResetSystem);
     SAFE_DELETE(m_pColecoes);
     SAFE_DELETE(m_pAlma);
+    SAFE_DELETE(m_pEventos);
+    SAFE_DELETE(m_pBossBar);
+    SAFE_DELETE(m_pLogCaca);
     SAFE_DELETE(m_pNewChatCommandWindow);
     SAFE_DELETE(m_pNewItemExplanationWindow);
     SAFE_DELETE(m_pNewSetItemExplanation);

@@ -10,3 +10,4 @@
 .tree3 .tab .line { background-color: #ffcd64; }
 .tree3 .fill { background-color: #d9ae55; }
 .tree3 .card:hover { border-color: #ffcd64; }
+.mark.apagado .mlabel, .mark.apagado .mvalue { color: #8590a0; }

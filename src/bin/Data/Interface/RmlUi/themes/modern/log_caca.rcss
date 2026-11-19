@@ -1,0 +1,51 @@
+/* MuToDog (MU Estudo, rodada 11): Log de caça (log_caca.rml), no jeito do cliente Godot (log_caca.gd): painel de 150 de
+   largura no canto de cima à esquerda (4, 30), a altura vem das linhas. Px da tela de referência 640 x 480 (.stage). */
+body { pointer-events: none; }
+#screen { pointer-events: none; }
+
+#panel {
+	position: absolute;
+	left: 4px;
+	top: 30px;
+	width: 150px;
+	padding-bottom: 16px;
+	background-color: rgba(20, 20, 24, 199);
+	pointer-events: auto;
+	drag: drag;
+	cursor: move;
+	font-family: "token(font-body)";
+	color: #e9edf3;
+	border: 1px #3e4652;
+	box-sizing: border-box;
+}
+#title {
+	display: block;
+	height: 13px;
+	margin: 1px 1px 4px 1px;
+	background-color: rgba(120, 191, 255, 41);
+	text-align: center;
+	font-family: "token(font-title)";
+	font-size: 8px;
+	line-height: 13px;
+	color: #dae0ea;
+}
+.row { display: block; position: relative; height: 10px; margin: 0px 6px; font-size: 8px; line-height: 10px; white-space: nowrap; }
+.row.vao { height: 4px; }
+.row .label { color: #bec6d2; }
+.row .value { position: absolute; right: 0px; top: 0px; color: #e9edf3; }
+.row.titulo { border-top: 1px rgba(62, 70, 82, 128); }
+.row.titulo .label { font-weight: bold; color: #aad6ff; }
+#reset {
+	position: absolute;
+	right: 4px;
+	bottom: 3px;
+	width: 40px;
+	height: 10px;
+	background-color: rgba(120, 191, 255, 46);
+	text-align: center;
+	font-size: 8px;
+	line-height: 10px;
+	color: #aad6ff;
+	cursor: pointer;
+}
+#reset:hover { color: #ffffff; }

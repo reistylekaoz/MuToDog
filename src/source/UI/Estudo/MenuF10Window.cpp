@@ -46,6 +46,8 @@ constexpr MenuF10Entry kEntries[] = {
     {'D', "D", "Comandos", "Troca, grupo, duelo e guilda com outro jogador.", "comandos"},
     {'F', "F", "Amigos", "Lista de amigos e cartas.", "amigos"},
     {'G', "G", "Guilda", "A sua guilda e os membros.", "guilda"},
+    {'H', "H", "Eventos", "Horário dos eventos e quanto falta pra abrir.", "eventos"},
+    {'K', "K", "Log de caça", "Dano, zen e exp por minuto e o dano no Boneco de Treino.", "log_caca"},
     {'B', "B", "Gens", "Duprian ou Vanert: a guerra das famílias.", "gens"},
     {'X', "X", "Loja de cash", "Itens da loja do jogo.", "cash"},
     {'Z', "Z", "MU Helper", "Configurar o que o helper caça e pega.", "helper"},

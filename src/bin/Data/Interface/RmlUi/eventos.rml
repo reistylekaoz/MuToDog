@@ -1,0 +1,36 @@
+<rml>
+<head>
+	<title>Horário dos eventos</title>
+	<link type="text/rcss" href="base.rcss"/>
+	<link type="text/rcss" href="eventos.rcss"/>
+</head>
+<body data-model="eventos">
+	<!-- MuToDog (MU Estudo, rodada 11): Horário dos eventos (CEventosWindow, tecla H), no jeito do cliente Godot
+	     (janela_eventos.gd): 4 cartões por página com a arte do Meshy (sprites ev-<arte>, eventos.rcss), o nome, o selo
+	     ABERTO, a contagem, o próximo horário em Brasília e a faixa de nível com o cadeado. Geometria em px da tela de
+	     referência 640 x 480 (.stage). -->
+	<div id="screen" class="stage">
+		<div id="panel">
+			<div id="title">Horário dos eventos (H)</div>
+			<div id="clock">{{clock}}</div>
+			<div id="status" data-if="status != ''">{{status}}</div>
+			<div data-for="c, i : cards" data-attr-class="'card card' + i" data-class-open="c.open">
+				<div class="art" data-style-decorator="c.art"></div>
+				<div class="band"></div>
+				<div class="name">{{c.name}}</div>
+				<div class="badge" data-if="c.open">ABERTO</div>
+				<div class="watch"><div class="hand"></div></div>
+				<div class="count">{{c.count}}</div>
+				<div class="next">{{c.next}}</div>
+				<div class="lock" data-class-enter="c.enter"><div class="shackle"></div><div class="body"></div></div>
+				<div class="level" data-class-enter="c.enter">{{c.level}}</div>
+				<div class="about">{{c.about}}</div>
+			</div>
+			<div id="prev" data-class-disabled="!can_prev" data-event-click="ev_prev">&lt;</div>
+			<div id="page">{{page}}</div>
+			<div id="next" data-class-disabled="!can_next" data-event-click="ev_next">&gt;</div>
+			<div id="close" data-event-click="ev_close">Fechar</div>
+		</div>
+	</div>
+</body>
+</rml>

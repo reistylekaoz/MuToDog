@@ -1,0 +1,27 @@
+<rml>
+<head>
+	<title>Barra do boss</title>
+	<link type="text/rcss" href="base.rcss"/>
+	<link type="text/rcss" href="boss_bar.rcss"/>
+</head>
+<body data-model="boss_bar">
+	<!-- MuToDog (MU Estudo, rodada 11): barra do boss no topo (CBossBarWindow), no jeito do cliente Godot
+	     (barra_boss.gd): nome, 10 barras de vida com o marcador e o rastro do dano, e a disputa de dano embaixo.
+	     Não pega o mouse. Geometria em px da tela de referência 640 x 480 (.stage). -->
+	<!-- bound-geometry: a largura da vida (fill) e do rastro (trail) é o medidor, vida / vida máxima -->
+	<div id="screen" class="stage">
+		<div id="name">{{name}}</div>
+		<div id="marker" data-if="marker != ''" data-style-background-color="marker_color">{{marker}}</div>
+		<div id="bar">
+			<div id="under" data-style-background-color="under"></div>
+			<div id="trail" data-style-width="trail"></div>
+			<div id="fill" data-style-width="fill" data-style-background-color="color"></div>
+			<div id="shine"></div>
+			<div id="hp">{{hp}}</div>
+		</div>
+		<div id="end" data-if="end != ''">{{end}}</div>
+		<div id="leader" data-if="contest" data-attr-class="leader_look"><span class="crown"><span class="c1"></span><span class="c2"></span><span class="c3"></span><span class="cb"></span></span> {{leader}}</div>
+		<div id="me" data-if="contest">{{me}}</div>
+	</div>
+</body>
+</rml>

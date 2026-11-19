@@ -1,0 +1,97 @@
+/* MuToDog (MU Estudo, rodada 11): Horário dos eventos (eventos.rml), no jeito do cliente Godot (janela_eventos.gd):
+   janela de 436 x 329 no meio da tela, cartões de 204 x 124 (2 x 2). Px da tela de referência 640 x 480 (.stage). A arte
+   sai de tools/obsidiana_theme/icones_r11.py; o obsidiana põe o Meshy por cima (tools/obsidiana_theme/eventos.rcss). */
+@spritesheet eventos-artes
+{
+	src: "../modern/eventos/folha.tga";
+	ev-bc: 0px 0px 320px 118px;
+	ev-ds: 320px 0px 320px 118px;
+	ev-cc: 640px 0px 320px 118px;
+	ev-hh: 0px 118px 320px 118px;
+	ev-dourado: 320px 118px 320px 118px;
+	ev-dragao: 640px 118px 320px 118px;
+	ev-mago: 0px 236px 320px 118px;
+	ev-kanturu: 320px 236px 320px 118px;
+	ev-goblins: 640px 236px 320px 118px;
+}
+body { pointer-events: none; }
+#screen { pointer-events: none; }
+
+#panel {
+	position: absolute;
+	left: 102px;
+	top: 75px;
+	width: 436px;
+	height: 329px;
+	background-color: rgba(8, 10, 14, 245);
+	border: 1px #3e4652;
+	pointer-events: auto;
+	color: #e9edf3;
+}
+#title {
+	position: absolute;
+	left: 0px;
+	top: 4px;
+	width: 436px;
+	height: 16px;
+	text-align: center;
+	font-size: 12px;
+	line-height: 16px;
+	color: #dae0ea;
+}
+#clock { position: absolute; left: 10px; top: 24px; width: 416px; font-size: 9px; line-height: 12px; color: #e8c96a; }
+#status { position: absolute; left: 10px; top: 49px; width: 416px; font-size: 9px; line-height: 12px; color: #8d95a1; }
+
+.card {
+	position: absolute;
+	width: 204px;
+	height: 124px;
+	background-color: #060a12;
+	border: 1px #3e4652;
+}
+.card0 { left: 10px; top: 39px; }
+.card1 { left: 222px; top: 39px; }
+.card2 { left: 10px; top: 171px; }
+.card3 { left: 222px; top: 171px; }
+.card.open { border-color: #28aa50; }
+.card:hover { border-color: #78bfff; }
+.art { position: absolute; left: 1px; top: 1px; width: 200px; height: 74px; opacity: 0.82; }
+.card.open .art, .card:hover .art { opacity: 1; }
+.band { position: absolute; left: 1px; top: 53px; width: 200px; height: 22px; decorator: linear-gradient(to bottom, #00000000 0%, #000000d0 100%); }
+.name { position: absolute; left: 7px; top: 60px; width: 140px; font-size: 10px; line-height: 13px; font-weight: bold; color: #ffffff; font-effect: shadow(1px 1px #000000); white-space: nowrap; }
+.badge { position: absolute; left: 143px; top: 5px; width: 54px; height: 13px; background-color: #147832e6; text-align: center; font-size: 8px; line-height: 13px; font-weight: bold; color: #ffffff; }
+.watch { position: absolute; left: 5px; top: 81px; width: 7px; height: 7px; border: 1px #ffd25a; border-radius: 5px; }
+.hand { position: absolute; left: 3px; top: 1px; width: 1px; height: 3px; background-color: #ffd25a; }
+.count { position: absolute; left: 17px; top: 79px; width: 120px; font-size: 9px; line-height: 12px; font-weight: bold; color: #ffd25a; white-space: nowrap; }
+.card.open .count { color: #78eb8c; }
+.card.open .watch { border-color: #78eb8c; }
+.card.open .hand { background-color: #78eb8c; }
+.next { position: absolute; left: 130px; top: 80px; width: 68px; text-align: right; font-size: 8px; line-height: 11px; color: #a6aebb; white-space: nowrap; }
+.lock { position: absolute; left: 5px; top: 96px; width: 8px; height: 10px; }
+.shackle { position: absolute; left: 1px; top: 0px; width: 4px; height: 4px; border: 1px #78787f; border-bottom-width: 0px; border-radius: 3px 3px 0px 0px; }
+.body { position: absolute; left: 0px; top: 4px; width: 8px; height: 6px; background-color: #78787f; }
+.lock.enter .shackle { border-color: #e6b950; }
+.lock.enter .body { background-color: #e6b950; }
+.level { position: absolute; left: 17px; top: 95px; width: 76px; font-size: 8px; line-height: 11px; color: #8d95a1; white-space: nowrap; }
+.level.enter { color: #ffffff; }
+.about { position: absolute; left: 92px; top: 95px; width: 108px; font-size: 7px; line-height: 9px; color: #a6aebb; }
+
+#prev, #next, #close {
+	position: absolute;
+	top: 303px;
+	height: 16px;
+	text-align: center;
+	font-size: 9px;
+	line-height: 16px;
+	background-color: #1e2228;
+	border: 1px #3e4652;
+	cursor: pointer;
+	color: #ffffff;
+}
+#prev:hover, #next:hover, #close:hover { border-color: #78bfff; }
+#prev.disabled, #next.disabled { color: #4a515c; cursor: default; }
+#prev.disabled:hover, #next.disabled:hover { border-color: #3e4652; }
+#prev { left: 10px; width: 24px; }
+#next { left: 140px; width: 24px; }
+#close { left: 366px; width: 60px; }
+#page { position: absolute; left: 40px; top: 305px; width: 96px; font-size: 9px; line-height: 12px; color: #a6aebb; }

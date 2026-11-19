@@ -8,6 +8,9 @@
 #include "UI/Estudo/ResetSystemWindow.h"
 #include "UI/Estudo/ColecoesWindow.h"
 #include "UI/Estudo/AlmaWindow.h"
+#include "UI/Estudo/BossBarWindow.h"
+#include "UI/Estudo/EventosWindow.h"
+#include "UI/Estudo/LogCacaWindow.h"
 #include "UI/Chat/ChatMessages.h"
 #include "UI/Combat/SiegeUpdates.h"
 #include "UI/Events/DoppelgangerUpdates.h"
@@ -3515,6 +3518,12 @@ void ReceiveAttackDamageExtended(const BYTE* ReceiveBuffer)
     if (IsMonster(c))
     {
         MUHelper::g_MuHelper.AddTarget(Key, false);
+    }
+
+    // MuToDog: o golpe que eu dei vai pro Log de caca (o servidor so manda o de outro alvo pra quem bateu)
+    if (Index < MAX_CHARACTERS_CLIENT && Hero != nullptr && Key != Hero->Key && Damage > 0)
+    {
+        mu::ui::window::CLogCacaWindow::OnHit(static_cast<int>(Damage), static_cast<int>(c->MonsterIndex));
     }
 
     if (Data->HealthStatus == 0xFF)
@@ -14798,6 +14807,12 @@ static void ProcessPacket(const BYTE* ReceiveBuffer, int32_t Size)
         mu::ui::window::CColecoesWindow::ReceivePacket(ReceiveBuffer, Size);
         // C2 FB 50 (o estado da alma)
         mu::ui::window::CAlmaWindow::ReceivePacket(ReceiveBuffer, Size);
+        // C2 FB 20 (o horario dos eventos)
+        mu::ui::window::CEventosWindow::ReceivePacket(ReceiveBuffer, Size);
+        break;
+    case 0xFA:
+        // MuToDog (MU Estudo): C1 FA 01/02, a barra do boss e a disputa de dano (DisputaDano.cs)
+        mu::ui::window::CBossBarWindow::ReceivePacket(ReceiveBuffer, Size);
         break;
     default:
         break;

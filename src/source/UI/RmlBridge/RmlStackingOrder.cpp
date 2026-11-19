@@ -41,6 +41,9 @@ constexpr DocumentPlacement Placements[] = {
     {"world_labels.rml", 1.0f, MainScene},
     // The status texts over the world above the HUD, drawn with the name labels.
     {"hud_status.rml", 1.0f, MainScene},
+    // MuToDog: a barra do boss no topo e o Log de caca (K), com a HUD, debaixo das janelas.
+    {"boss_bar.rml", 1.0f, MainScene},
+    {"log_caca.rml", 1.05f, MainScene},
     // The modern theme's top-right button row: under every window, which dock over it.
     {"main_frame_top.rml", 1.05f, MainScene},
     // The duel and soccer boards drew under every panel.
@@ -130,6 +133,8 @@ constexpr DocumentPlacement Placements[] = {
     {"menu_f10.rml", 10.62f, MainScene},
     {"reset_system.rml", 10.62f, MainScene},
     {"colecoes.rml", 10.62f, MainScene},
+    {"alma.rml", 10.62f, MainScene},
+    {"eventos.rml", 10.62f, MainScene},
     {"command_window.rml", 10.65f, MainScene}, // UI::RmlBridge::ForegroundPanelLayerDepth
     {"chat_command.rml", 10.65f, MainScene},
     // The original drew it at 10.5, under the HUD; the modern theme's settings screen covers the

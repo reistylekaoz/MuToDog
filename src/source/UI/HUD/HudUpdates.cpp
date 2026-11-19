@@ -27,6 +27,8 @@ void ShowMapName()
 
 void ShowExperienceGain(std::int64_t previous, std::int64_t gained, bool master)
 {
+    // MuToDog: a exp de monstro vai pro Log de caca
+    mu::ui::window::CLogCacaWindow::OnExp(previous, gained, master);
     if (master)
     {
         g_pMainFrame->SetPreExp_Wide(previous);
