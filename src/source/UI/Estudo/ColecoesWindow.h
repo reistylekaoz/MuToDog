@@ -7,10 +7,16 @@
 // Os sets, os pedidos e os bonus vem de Data/Interface/RmlUi/dados/colecoes.json (o mesmo do servidor e do Godot).
 // Abas Todos os itens e Sets, a caixinha + Adicionar item (a lista das pecas de set da mochila no lugar do arrastar)
 // e o buff das colecoes na fila de buffs (CBuffStrip pergunta HasBonus e BonusTooltip).
+// Rodada 9 (Colecoes 2): a vitrine (o personagem vestindo o set aberto, +15 excelente, arrasta pra girar), o carrinho
+// na peca que falta (C1 FB 43 [colecao, peca] compra com zen pelo preco do pedido, Colecoes.PrecoCompra) e a dica da
+// peca com o preco e o item que ESTE personagem tem que entregar (o pedido dele: nivel, excelentes, luck e adicional).
 
 #include "UI/Core/WindowManager.h"
 #include "UI/RmlBridge/RmlThemedView.h"
+#include "UI/RmlBridge/RmlElementTooltip.h"
 #include "UI/RmlBridge/RmlTooltip.h"
+#include "UI/Social/PhotoViewer.h"
+#include "UI/Social/PhotoViewerControl.h"
 
 #include <RmlUi/Core/Types.h>
 
@@ -73,6 +79,15 @@ struct ColecoesRmlModel
     Rml::String addLook;
     bool addCan = false;
     std::vector<ColecoesBagRow> bag;
+    Rml::String setHelp;
+    Rml::String vitrineClass;
+    bool buyOpen = false;
+    Rml::String buyName;
+    Rml::String buyDecorator;
+    Rml::String buyAsk;
+    Rml::String buyHave;
+    Rml::String buyLook;
+    bool buyCan = false;
 };
 
 class CColecoesWindow : public CObject
@@ -108,10 +123,16 @@ private:
     void BuildAll(ColecoesRmlModel& model);
     void BuildSets(ColecoesRmlModel& model);
     void BuildAdd(ColecoesRmlModel& model);
+    void BuildBuy(ColecoesRmlModel& model);
     void ClickPiece(int set, int piece);
+    void OpenBuy(int set, int piece);
     std::string BagSignature() const;
+    void SyncVitrine(bool shown);
+    void DressVitrine(int set);
+    void SyncTip(bool shown);
     static void SendList();
     static void SendGive(int slot);
+    static void SendBuy(int set, int piece);
 
     CManager* m_pNewUIMng = nullptr;
     int m_Part = 1;       // aba Todos os itens: 0 elmo ... 4 botas
@@ -124,9 +145,32 @@ private:
     bool m_Dirty = true;
     std::string m_BagKey;
     std::uint32_t m_SeenVersion = 0;
+    unsigned long long m_SeenGold = 0;
+    int m_BuySet = -1;
+    int m_BuyPiece = -1;
+
+    // a vitrine: o personagem da foto das cartas (CUIPhotoViewer), vestido com o set aberto
+    CUIPhotoViewer m_Vitrine;
+    UI::Social::PhotoViewerControl m_VitrineControl;
+    bool m_VitrineReady = false;
+    int m_VitrineSet = -1;
+    int m_VitrineClass = -1;
+
+    // a dica da peca (chave = colecao * 8 + peca + 1)
+    UI::RmlBridge::ElementTooltip m_Tip;
+    int m_TipKey = -1;
+    std::uint32_t m_TipVersion = 0;
+    std::uint32_t m_BuildCount = 1;
+    bool m_TipShown = false;
+    std::vector<UI::RmlBridge::Tooltip::Line> m_TipLines;
 
     UI::RmlBridge::ThemedView<ColecoesRmlModel> m_RmlView{"colecoes",
         [this](Rml::DataModelConstructor& c, ColecoesRmlModel& model) { BindRmlModel(c, model); },
-        {{"Data/Interface/RmlUi/colecoes.rml"}}};
+        {{"Data/Interface/RmlUi/colecoes.rml"}},
+        {.beforeUnload = [this] {
+             m_VitrineControl.Detach();
+             m_Tip.Hide();
+             m_TipShown = false;
+         }}};
 };
 } // namespace mu::ui::window

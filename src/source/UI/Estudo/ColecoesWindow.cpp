@@ -3,7 +3,10 @@
 #include "UI/Core/WindowSystem.h"
 #include "UI/Core/WindowCommon.h"
 #include "Audio/DSPlaySound.h"
+#include "Character/CharacterManager.h"
 #include "Core/Text/Utf8.h"
+#include "Data/GameData/ItemData/ItemModelSlots.h"
+#include "Engine/Object/ItemTooltipSnapshot.h"
 #include "Engine/Object/ZzzCharacter.h"
 #include "Engine/Object/ZzzInfomation.h"
 #include "GameLogic/Items/ItemOptions.h"
@@ -33,7 +36,10 @@ constexpr std::uint8_t PacketCode = 0xFB;
 constexpr std::uint8_t CommandList = 0x40;
 constexpr std::uint8_t CommandGive = 0x41;
 constexpr std::uint8_t CommandResult = 0x42;
+constexpr std::uint8_t CommandBuy = 0x43;
 constexpr const char* DataFile = "Data/Interface/RmlUi/dados/colecoes.json";
+// o giro e o zoom da vitrine, lidos a cada vez que a janela abre (da pra acertar sem compilar)
+constexpr const char* VitrineFile = "Data/Interface/RmlUi/dados/vitrine.json";
 
 constexpr int ActionNone = 0;
 constexpr int ActionTab = 1;
@@ -46,8 +52,14 @@ constexpr int ActionAddClose = 7;
 constexpr int ActionBag = 8;
 constexpr int ActionGive = 9;
 constexpr int ActionClose = 10;
+constexpr int ActionBuyOpen = 11;
+constexpr int ActionBuyClose = 12;
+constexpr int ActionBuy = 13;
 
 constexpr const char* kColParts[5] = {"Elmo", "Armadura", "Calça", "Luvas", "Botas"};
+// a ordem do CLASS_TYPE (e do RequireClass)
+constexpr const char* kColClasses[7] = {"Dark Wizard", "Dark Knight", "Fairy Elf", "Magic Gladiator",
+                                        "Dark Lord",   "Summoner",    "Rage Fighter"};
 
 struct SetDef
 {
@@ -56,6 +68,7 @@ struct SetDef
     std::vector<std::array<int, 2>> pieces; // [grupo, numero]
     std::string bonusType;
     double bonusValue = 0;
+    double zen = 0;
 };
 
 struct ColecoesData
@@ -64,6 +77,7 @@ struct ColecoesData
     std::vector<SetDef> sets;
     std::vector<std::array<int, 4>> requests; // [nivel, excelentes, luck, adicional]
     std::map<std::string, std::string> suffix;
+    std::map<std::string, double> factor; // fator: nivel, excelente, adicional (o preco do carrinho)
 };
 
 // o nome do bonus na tela (o colecoes.json nao tem acento)
@@ -79,6 +93,7 @@ std::map<int, std::array<int, 5>> g_Asks;   // colecao -> indice do pedido de ca
 bool g_Received = false;
 std::string g_LastResult;
 bool g_LastOk = false;
+bool g_BuyPending = false;
 std::uint32_t g_Version = 1;
 
 const ColecoesData& ColSets()
@@ -103,6 +118,7 @@ const ColecoesData& ColSets()
         const auto bonus = c.value("bonus", nlohmann::json::object());
         s.bonusType = bonus.value("tipo", std::string());
         s.bonusValue = bonus.value("valor", 0.0);
+        s.zen = c.value("zen", 0.0);
         g_Data.sets.push_back(std::move(s));
     }
     for (const auto& p : j.value("pedidos", nlohmann::json::array()))
@@ -112,6 +128,10 @@ const ColecoesData& ColSets()
     for (auto it = types.begin(); it != types.end(); ++it)
         if (it.value().is_array() && it.value().size() == 2)
             g_Data.suffix[it.key()] = it.value()[1].get<std::string>();
+    const nlohmann::json factor = j.value("fator", nlohmann::json::object());
+    for (auto it = factor.begin(); it != factor.end(); ++it)
+        if (it.value().is_number())
+            g_Data.factor[it.key()] = it.value().get<double>();
     return g_Data;
 }
 
@@ -239,6 +259,161 @@ std::string ColItemLabel(const ITEM& item)
     return name;
 }
 
+double ColFactor(const char* name)
+{
+    const auto it = ColSets().factor.find(name);
+    return it != ColSets().factor.end() ? it->second : 0.0;
+}
+
+// o zen do carrinho: o preco do item pedido, como o Colecoes.PrecoCompra do servidor (o luck nao conta;
+// nearbyint arredonda o meio pro par, como o Math.Round do C#)
+long long ColPrice(const SetDef& s, const std::array<int, 4>& req)
+{
+    return static_cast<long long>(std::nearbyint(s.zen * (1 + ColFactor("nivel") * req[0]) *
+                                                 (1 + ColFactor("excelente") * ColBits(req[1])) *
+                                                 (1 + ColFactor("adicional") * req[3])));
+}
+
+std::string ColZen(long long value)
+{
+    std::string digits = std::to_string(value < 0 ? -value : value);
+    for (int i = static_cast<int>(digits.size()) - 3; i > 0; i -= 3)
+        digits.insert(static_cast<size_t>(i), ".");
+    return value < 0 ? "-" + digits : digits;
+}
+
+long long ColGold()
+{
+    return CharacterMachine != nullptr ? static_cast<long long>(CharacterMachine->Gold) : 0;
+}
+
+// o item que a peca pede deste personagem, como o servidor manda um item
+ItemCreationParams ColRequestedItem(const SetDef& s, int piece, const std::array<int, 4>& req)
+{
+    const auto& p = s.pieces[static_cast<size_t>(piece)];
+    ItemCreationParams params = Engine::Items::TooltipSnapshot::FullItemParameters(p[0], p[1]);
+    params.Level = static_cast<BYTE>(std::clamp(req[0], 0, 15));
+    params.WithLuck = req[2] != 0;
+    if (req[3] > 0)
+    {
+        params.WithOption = true;
+        params.OptionLevel = static_cast<BYTE>(req[3]);
+    }
+    if (req[1] > 0)
+    {
+        params.HasExcellentOption = true;
+        params.ExcellentFlags = static_cast<BYTE>(req[1] & 63);
+    }
+    params.Durability = Engine::Items::TooltipSnapshot::FullDurability(params);
+    return params;
+}
+
+// "Dragon Armor +9 · excelente · luck · adicional +8"
+std::string ColRequestedName(const SetDef& s, int piece, const std::array<int, 4>& req)
+{
+    const auto& p = s.pieces[static_cast<size_t>(piece)];
+    std::string name = ColItemName(p[0], p[1]);
+    if (req[0] > 0)
+        name += " +" + std::to_string(req[0]);
+    if (req[1] != 0)
+        name += " · excelente (" + std::to_string(ColBits(req[1])) + ")";
+    if (req[2] != 0)
+        name += " · luck";
+    if (req[3] > 0)
+        name += " · adicional +" + std::to_string(req[3] * 4);
+    return name;
+}
+
+UI::RmlBridge::Tooltip::LineColor ColLineColor(int color)
+{
+    using LineColor = UI::RmlBridge::Tooltip::LineColor;
+    switch (color)
+    {
+    case TEXT_COLOR_BLUE: return LineColor::Blue;
+    case TEXT_COLOR_GRAY: return LineColor::Gray;
+    case TEXT_COLOR_RED: return LineColor::Red;
+    case TEXT_COLOR_YELLOW: return LineColor::Yellow;
+    case TEXT_COLOR_GREEN: return LineColor::Green;
+    case TEXT_COLOR_PURPLE: return LineColor::Purple;
+    case TEXT_COLOR_REDPURPLE: return LineColor::RedPurple;
+    case TEXT_COLOR_VIOLET: return LineColor::Violet;
+    case TEXT_COLOR_ORANGE: return LineColor::Orange;
+    case TEXT_COLOR_DARKRED: return LineColor::DarkRedHighlight;
+    case TEXT_COLOR_DARKBLUE: return LineColor::DarkBlueHighlight;
+    case TEXT_COLOR_DARKYELLOW: return LineColor::DarkYellowHighlight;
+    case TEXT_COLOR_GREEN_BLUE: return LineColor::GreenBlueHighlight;
+    case TEXT_COLOR_WHITE: default: return LineColor::White;
+    }
+}
+
+// a dica da peca: o preco (ou ja entregue), se tem na mochila, e embaixo a dica inteira do item pedido
+std::vector<UI::RmlBridge::Tooltip::Line> ColPieceTip(int set, int piece)
+{
+    using UI::RmlBridge::Tooltip::Line;
+    using UI::RmlBridge::Tooltip::LineColor;
+    std::vector<Line> lines;
+    const SetDef* s = ColFindSet(set);
+    if (s == nullptr || piece < 0 || piece >= static_cast<int>(s->pieces.size()))
+        return lines;
+    const std::array<int, 4> req = ColRequest(set, piece);
+    if ((ColMask(set) & (1 << piece)) != 0)
+    {
+        lines.push_back({"Já está na coleção do " + s->name + ".", LineColor::Blue, true});
+    }
+    else
+    {
+        const long long price = ColPrice(*s, req);
+        lines.push_back({"Preço de compra: " + ColZen(price) + " zen", LineColor::Yellow, true});
+        if (ColGold() < price)
+            lines.push_back({"Zen insuficiente.", LineColor::Red});
+        if (ColBagSlotFor(*s, piece) >= 0)
+            lines.push_back({"Você tem uma que serve na mochila: entrega sem zen.", LineColor::Green});
+        else
+            lines.push_back({"Ou entregue um igual a este (nível, opções, luck e adicional).", LineColor::Gray});
+    }
+    Line spacer;
+    spacer.kind = Line::Kind::FullSpacer;
+    lines.push_back(spacer);
+    for (const ItemTooltipLine& row : Engine::Items::TooltipSnapshot::TooltipOfParameters(ColRequestedItem(*s, piece, req)))
+    {
+        Line line;
+        if (row.text == L"\n")
+            line.kind = Line::Kind::HalfSpacer;
+        else if (row.text == L" ")
+            line.kind = Line::Kind::FullSpacer;
+        else
+        {
+            line.text = Core::Text::ToUtf8(row.text.c_str());
+            line.color = ColLineColor(row.color);
+            line.bold = row.bold;
+        }
+        lines.push_back(std::move(line));
+    }
+    return lines;
+}
+
+// a classe que veste o set na vitrine: a do personagem se veste, senao a primeira que veste (o MG so quando o set
+// e so dele), como o classe_da_vitrine do Godot; pela armadura do set (ou a primeira peca)
+int ColVitrineClass(const SetDef& s, int own)
+{
+    if (s.pieces.empty() || ItemAttribute == nullptr)
+        return own;
+    std::array<int, 2> piece = s.pieces.front();
+    for (const auto& p : s.pieces)
+        if (p[0] == 8)
+            piece = p;
+    const int type = piece[0] * MAX_ITEM_INDEX + piece[1];
+    if (type < 0 || type >= MAX_ITEM)
+        return own;
+    const BYTE* classes = ItemAttribute[type].RequireClass;
+    if (own >= 0 && own < 7 && classes[own] != 0)
+        return own;
+    for (int i = 0; i < 7; ++i)
+        if (i != CLASS_DARK && classes[i] != 0)
+            return i;
+    return CLASS_DARK;
+}
+
 void ColSendRaw(BYTE* packet, int size)
 {
     if (SocketClient != nullptr)
@@ -267,6 +442,9 @@ bool CColecoesWindow::Create(CManager* pNewUIMng)
 
 void CColecoesWindow::Release()
 {
+    m_VitrineControl.Detach();
+    m_Tip.Hide();
+    m_TipShown = false;
     if (m_pNewUIMng)
     {
         m_pNewUIMng->RemoveUIObj(this);
@@ -282,6 +460,7 @@ void CColecoesWindow::Show(bool bShow)
     {
         SendList();
         m_Dirty = true;
+        m_VitrineSet = -1; // le o vitrine.json de novo
     }
 }
 
@@ -309,6 +488,8 @@ void CColecoesWindow::ReceivePacket(const std::uint8_t* packet, int size)
     if (packet[0] == 0xC1 && size >= 7 && packet[2] == PacketCode && packet[3] == CommandResult)
     {
         g_LastOk = packet[4] != 0;
+        const bool bought = g_BuyPending;
+        g_BuyPending = false;
         if (g_LastOk)
         {
             g_Masks[packet[5]] = packet[6];
@@ -316,12 +497,13 @@ void CColecoesWindow::ReceivePacket(const std::uint8_t* packet, int size)
             if (s != nullptr && ColComplete(*s))
                 g_LastResult = s->name + " completo: " + ColBonusText(s->bonusType, s->bonusValue) + " pra sempre.";
             else if (s != nullptr)
-                g_LastResult = "Peça entregue no " + s->name + " (" + std::to_string(ColBits(packet[6])) + " de " +
-                               std::to_string(s->pieces.size()) + ").";
+                g_LastResult = std::string(bought ? "Peça comprada no " : "Peça entregue no ") + s->name + " (" +
+                               std::to_string(ColBits(packet[6])) + " de " + std::to_string(s->pieces.size()) + ").";
         }
         else
         {
-            g_LastResult = "O servidor recusou a peça: o motivo está no chat.";
+            g_LastResult = bought ? "O servidor recusou a compra: o motivo está no chat."
+                                  : "O servidor recusou a peça: o motivo está no chat.";
         }
         ++g_Version;
     }
@@ -372,6 +554,12 @@ void CColecoesWindow::SendGive(int slot)
     ColSendRaw(packet, static_cast<int>(sizeof(packet)));
 }
 
+void CColecoesWindow::SendBuy(int set, int piece)
+{
+    BYTE packet[] = {0xC1, 6, PacketCode, CommandBuy, static_cast<BYTE>(set), static_cast<BYTE>(piece)};
+    ColSendRaw(packet, static_cast<int>(sizeof(packet)));
+}
+
 bool CColecoesWindow::UpdateMouseEvent()
 {
     // Aberta, segura o mouse (tudo e do RmlUi).
@@ -382,7 +570,9 @@ bool CColecoesWindow::UpdateKeyEvent()
 {
     if (IsVisible() && IsPress(VK_ESCAPE))
     {
-        if (m_RmlView.GetModel().addOpen)
+        if (m_RmlView.GetModel().buyOpen)
+            m_PendingAction = ActionBuyClose;
+        else if (m_RmlView.GetModel().addOpen)
             m_PendingAction = ActionAddClose;
         else
             g_pNewUISystem->Hide(INTERFACE_COLECOES);
@@ -421,17 +611,26 @@ bool CColecoesWindow::Update()
         return true;
     UI::RmlBridge::SyncDocumentVisibilityInFront(document, IsVisible() && inGame);
     if (!IsVisible() || !inGame)
+    {
+        SyncVitrine(false);
+        SyncTip(false);
         return true;
+    }
 
     const std::string bag = BagSignature();
-    if (bag != m_BagKey || m_SeenVersion != g_Version)
+    const auto gold = static_cast<unsigned long long>(ColGold());
+    if (bag != m_BagKey || m_SeenVersion != g_Version || gold != m_SeenGold)
     {
         m_BagKey = bag;
         m_SeenVersion = g_Version;
+        m_SeenGold = gold;
         m_Dirty = true;
     }
     if (m_Dirty)
         Rebuild();
+    const ColecoesRmlModel& model = m_RmlView.GetModel();
+    SyncVitrine(model.tab == 1);
+    SyncTip(!model.addOpen && !model.buyOpen);
     return true;
 }
 
@@ -464,6 +663,7 @@ void CColecoesWindow::RunPending()
     case ActionTab:
         model.tab = m_PendingA == 1 ? 1 : 0;
         model.addOpen = false;
+        model.buyOpen = false;
         break;
     case ActionPart:
         m_Part = std::clamp(m_PendingA, 0, 4);
@@ -478,6 +678,7 @@ void CColecoesWindow::RunPending()
         ClickPiece(m_PendingA, m_PendingB);
         break;
     case ActionAddOpen:
+        model.buyOpen = false;
         model.addOpen = true;
         m_AddSlot = -1;
         g_LastResult.clear();
@@ -500,6 +701,23 @@ void CColecoesWindow::RunPending()
         break;
     case ActionClose:
         g_pNewUISystem->Hide(INTERFACE_COLECOES);
+        break;
+    case ActionBuyOpen:
+        OpenBuy(m_PendingA, m_PendingB);
+        break;
+    case ActionBuyClose:
+        model.buyOpen = false;
+        break;
+    case ActionBuy:
+        // o servidor confere o zen de novo e responde FB 42 com a lista
+        if (model.buyOpen && model.buyCan && m_BuySet >= 0 && m_BuyPiece >= 0)
+        {
+            SendBuy(m_BuySet, m_BuyPiece);
+            g_BuyPending = true;
+            g_LastResult = "Comprando...";
+            g_LastOk = true;
+            model.buyOpen = false;
+        }
         break;
     default:
         break;
@@ -525,6 +743,20 @@ void CColecoesWindow::ClickPiece(int set, int piece)
     }
     model.tab = 1;
     model.setId = set;
+}
+
+// o carrinho da peca que falta: abre a confirmacao com o item pedido e o preco
+void CColecoesWindow::OpenBuy(int set, int piece)
+{
+    const SetDef* s = ColFindSet(set);
+    if (s == nullptr || piece < 0 || piece >= static_cast<int>(s->pieces.size()) || (ColMask(set) & (1 << piece)) != 0)
+        return;
+    ColecoesRmlModel& model = m_RmlView.GetModel();
+    m_BuySet = set;
+    m_BuyPiece = piece;
+    model.addOpen = false;
+    model.buyOpen = true;
+    g_LastResult.clear();
 }
 
 void CColecoesWindow::BindRmlModel(Rml::DataModelConstructor& c, ColecoesRmlModel& model)
@@ -576,6 +808,15 @@ void CColecoesWindow::BindRmlModel(Rml::DataModelConstructor& c, ColecoesRmlMode
     c.Bind("add_look", &model.addLook);
     c.Bind("add_can", &model.addCan);
     c.Bind("bag", &model.bag);
+    c.Bind("set_help", &model.setHelp);
+    c.Bind("vitrine_class", &model.vitrineClass);
+    c.Bind("buy_open", &model.buyOpen);
+    c.Bind("buy_name", &model.buyName);
+    c.Bind("buy_decorator", &model.buyDecorator);
+    c.Bind("buy_ask", &model.buyAsk);
+    c.Bind("buy_have", &model.buyHave);
+    c.Bind("buy_look", &model.buyLook);
+    c.Bind("buy_can", &model.buyCan);
 
     auto one = [this](int action)
     {
@@ -596,19 +837,42 @@ void CColecoesWindow::BindRmlModel(Rml::DataModelConstructor& c, ColecoesRmlMode
     c.BindEventCallback("col_bag", one(ActionBag));
     c.BindEventCallback("col_give", one(ActionGive));
     c.BindEventCallback("col_close", one(ActionClose));
+    c.BindEventCallback("col_buy_close", one(ActionBuyClose));
+    c.BindEventCallback("col_buy_ok", one(ActionBuy));
+    // o carrinho fica dentro da peca: o clique nao sobe pro col_piece dela
+    c.BindEventCallback("col_buy",
+        [this](Rml::DataModelHandle, Rml::Event& event, const Rml::VariantList& arguments)
+        {
+            event.StopPropagation();
+            m_PendingAction = ActionBuyOpen;
+            m_PendingA = arguments.size() >= 1 ? arguments[0].Get<int>(0) : 0;
+            m_PendingB = arguments.size() >= 2 ? arguments[1].Get<int>(0) : 0;
+        });
+    c.BindEventCallback("col_hover",
+        [this](Rml::DataModelHandle, Rml::Event& event, const Rml::VariantList& arguments)
+        {
+            const int set = arguments.size() >= 1 ? arguments[0].Get<int>(0) : 0;
+            const int piece = arguments.size() >= 2 ? arguments[1].Get<int>(-1) : -1;
+            m_Tip.Enter(event, set * 8 + piece + 1);
+        });
+    c.BindEventCallback("col_leave",
+        [this](Rml::DataModelHandle, Rml::Event& event, const Rml::VariantList&) { m_Tip.Leave(event); });
     m_Dirty = true;
 }
 
 void CColecoesWindow::Rebuild()
 {
     m_Dirty = false;
+    ++m_BuildCount;
     ColecoesRmlModel& model = m_RmlView.GetModel();
     BuildAll(model);
     BuildSets(model);
     BuildAdd(model);
+    BuildBuy(model);
     for (const char* field : {"tab", "part_name", "parts", "cells", "cards", "set_id", "set_name", "slots", "set_text",
                               "set_done", "set_bonus", "active", "active_count", "add_open", "add_name",
-                              "add_decorator", "add_msg", "add_look", "add_can", "bag"})
+                              "add_decorator", "add_msg", "add_look", "add_can", "bag", "set_help", "vitrine_class",
+                              "buy_open", "buy_name", "buy_decorator", "buy_ask", "buy_have", "buy_look", "buy_can"})
         m_RmlView.MarkDirty(field);
 }
 
@@ -697,6 +961,11 @@ void CColecoesWindow::BuildSets(ColecoesRmlModel& model)
         model.setBonus = "◆ " + ColBonusText(s->bonusType, s->bonusValue) + "   (" + std::to_string(ColBits(ColMask(s->id))) +
                          "/" + std::to_string(s->pieces.size()) + ")";
     }
+    model.setHelp = !g_LastResult.empty() ? g_LastResult
+                                          : "Clique na peça da mochila pra entregar, ou no carrinho pra comprar com zen.";
+    const int own = Hero != nullptr ? static_cast<int>(gCharacterManager.GetBaseClass(Hero->Class)) : 0;
+    const int shown = s != nullptr ? ColVitrineClass(*s, own) : own;
+    model.vitrineClass = shown >= 0 && shown < 7 ? kColClasses[shown] : "";
 
     model.active.clear();
     for (const auto& [type, value] : sum)
@@ -768,6 +1037,134 @@ void CColecoesWindow::BuildAdd(ColecoesRmlModel& model)
     }
     if (model.addMsg.empty())
         model.addMsg = "Escolha embaixo a peça da mochila que vai pra coleção.";
+}
+
+void CColecoesWindow::BuildBuy(ColecoesRmlModel& model)
+{
+    const SetDef* s = model.buyOpen ? ColFindSet(m_BuySet) : nullptr;
+    if (s == nullptr || m_BuyPiece < 0 || m_BuyPiece >= static_cast<int>(s->pieces.size()) ||
+        (ColMask(m_BuySet) & (1 << m_BuyPiece)) != 0)
+    {
+        model.buyOpen = false;
+        model.buyCan = false;
+        return;
+    }
+    const std::array<int, 4> req = ColRequest(m_BuySet, m_BuyPiece);
+    const long long price = ColPrice(*s, req);
+    const long long gold = ColGold();
+    const auto& p = s->pieces[static_cast<size_t>(m_BuyPiece)];
+    model.buyName = ColRequestedName(*s, m_BuyPiece, req);
+    model.buyDecorator = ColSprite(p[0], p[1]);
+    model.buyAsk = "Comprar pro " + s->name + " por " + ColZen(price) + " zen?";
+    model.buyCan = g_Received && gold >= price;
+    model.buyHave = model.buyCan ? "Você tem " + ColZen(gold) + " zen." : "Zen insuficiente: você tem " + ColZen(gold) + ".";
+    model.buyLook = model.buyCan ? "ok" : "falta";
+}
+
+// a vitrine: o personagem da foto das cartas vestindo o set aberto, de frente; arrastar gira, o direito volta
+void CColecoesWindow::SyncVitrine(bool shown)
+{
+    Rml::ElementDocument* document = m_RmlView.Document();
+    if (!shown || document == nullptr || Hero == nullptr)
+    {
+        m_VitrineControl.Suspend();
+        return;
+    }
+    if (!m_VitrineReady)
+    {
+        m_Vitrine.Init(0);
+        m_Vitrine.SetCanControl(true);
+        m_VitrineReady = true;
+        m_VitrineSet = -1;
+    }
+    const ColecoesRmlModel& model = m_RmlView.GetModel();
+    if (m_VitrineSet != model.setId)
+        DressVitrine(model.setId);
+    m_Vitrine.Update();
+    m_VitrineControl.Attach(document, m_Vitrine);
+    m_VitrineControl.Sync();
+}
+
+void CColecoesWindow::DressVitrine(int set)
+{
+    m_VitrineSet = set;
+    const SetDef* s = ColFindSet(set);
+    if (s == nullptr)
+        return;
+    float angle = 0.f;
+    float zoom = 1.f;
+    if (std::ifstream file(VitrineFile); file)
+    {
+        const nlohmann::json j = nlohmann::json::parse(file, nullptr, false);
+        if (!j.is_discarded() && j.is_object())
+        {
+            angle = j.value("giro", angle);
+            zoom = j.value("zoom", zoom);
+        }
+    }
+
+    const int own = static_cast<int>(gCharacterManager.GetBaseClass(Hero->Class));
+    const auto shown = static_cast<CLASS_TYPE>(ColVitrineClass(*s, own));
+    CHARACTER* c = m_Vitrine.GetPhotoChar();
+    DeleteCloth(c, nullptr, nullptr);
+    c->SkinIndex = gCharacterManager.GetSkinModelIndex(shown);
+    if (m_VitrineClass != static_cast<int>(shown))
+    {
+        m_VitrineClass = static_cast<int>(shown);
+        m_Vitrine.SetClass(shown);
+    }
+    // sem a peca do set, a parte do corpo da classe (o MG sem elmo)
+    const int bodies[5] = {static_cast<int>(MODEL_BODY_HELM), static_cast<int>(MODEL_BODY_ARMOR),
+                           static_cast<int>(MODEL_BODY_PANTS), static_cast<int>(MODEL_BODY_GLOVES),
+                           static_cast<int>(MODEL_BODY_BOOTS)};
+    for (int part = 0; part < 5; ++part)
+    {
+        PART_t& body = c->BodyPart[BODYPART_HELM + part];
+        body.Type = static_cast<short>(bodies[part] + static_cast<int>(c->SkinIndex));
+        body.Level = 0;
+        body.ExcellentFlags = 0;
+        body.AncientDiscriminator = 0;
+        for (const auto& p : s->pieces)
+            if (p[0] - 7 == part)
+            {
+                // +15 excelente, com o brilho, como as pecas douradas da vitrine da MuDream
+                body.Type = static_cast<short>(Data::Items::ToModelSlot(Data::Items::MakeItemType(p[0], p[1])));
+                body.Level = 15;
+                body.ExcellentFlags = 1;
+            }
+        body.m_pCloth[0] = nullptr;
+        body.m_pCloth[1] = nullptr;
+        body.m_byNumCloth = 0;
+    }
+    c->Weapon[0].Type = -1;
+    c->Weapon[1].Type = -1;
+    c->Wing.Type = -1;
+    c->Helper.Type = -1;
+    m_Vitrine.SetAnimation(AT_STAND1);
+    m_Vitrine.SetAngle(angle);
+    m_Vitrine.SetZoom(zoom);
+}
+
+void CColecoesWindow::SyncTip(bool shown)
+{
+    const int key = shown ? m_Tip.Hovered() : -1;
+    if (key < 0)
+    {
+        if (m_TipShown)
+            m_Tip.Hide();
+        m_TipShown = false;
+        m_TipKey = -1;
+        return;
+    }
+    if (key != m_TipKey || m_TipVersion != m_BuildCount)
+    {
+        m_TipKey = key;
+        m_TipVersion = m_BuildCount;
+        m_TipLines = ColPieceTip(key / 8, key % 8 - 1);
+    }
+    UI::RmlBridge::ElementTooltip::Placement placement;
+    m_Tip.Show(m_TipLines, placement);
+    m_TipShown = true;
 }
 
 float CColecoesWindow::GetLayerDepth()

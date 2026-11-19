@@ -6,3 +6,8 @@
 .tab.selected { decorator: ninepatch(ob-botao-apertado, ob-botao-apertado-in, 1); border-bottom: 2px #78bfff; }
 #give.disabled, #give.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 1); }
 #add_box { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
+/* rodada 9: a caixa da compra e os botões dela no Meshy; a vitrine com a moldura fina */
+#buy_box { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
+#buy_ok, #buy_cancel { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 1); border-width: 0; }
+#buy_ok:hover, #buy_cancel:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 1); }
+#buy_ok.disabled, #buy_ok.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 1); }

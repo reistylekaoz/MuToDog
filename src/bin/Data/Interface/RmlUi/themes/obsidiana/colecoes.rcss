@@ -173,6 +173,11 @@
 	it-11-33: 320px 640px 64px 64px;
 }
 /* fim dos sprites */
+@spritesheet colecoes-carrinho
+{
+	src: "../modern/colecoes/carrinho.tga";
+	col-carrinho: 0px 0px 64px 64px;
+}
 body { pointer-events: none; }
 #screen { pointer-events: none; }
 
@@ -330,9 +335,9 @@ body { pointer-events: none; }
 #set_help { position: absolute; left: 0px; top: 122px; width: 296px; text-align: center; font-size: 8px; line-height: 10px; color: #7a8699; }
 #active {
 	position: absolute;
-	left: 124px;
+	left: 270px;
 	top: 206px;
-	width: 296px;
+	width: 150px;
 	height: 130px;
 	background-color: rgba(15, 18, 23, 235);
 	border: 1px #262b33;
@@ -390,6 +395,78 @@ body { pointer-events: none; }
 #give.disabled:hover { border-color: #3e4652; }
 #close { z-index: 2; left: 185px; top: 344px; width: 60px; height: 18px; line-height: 18px; }
 
+/* rodada 9: o carrinho no canto da peça que falta (compra com zen) */
+.cart {
+	position: absolute;
+	z-index: 1;
+	width: 16px;
+	height: 16px;
+	background-color: #1e2d42;
+	border: 1px #3c6fa4;
+	border-radius: 3px;
+	cursor: pointer;
+	decorator: image(col-carrinho);
+}
+.cart:hover { background-color: #304664; border-color: #6ca5e3; }
+.slot .cart { left: 34px; top: 45px; }
+.cell .cart { left: 52px; top: 62px; }
+
+/* a vitrine: o personagem vestindo o set aberto (render target do PhotoViewerControl) */
+#photo_slot {
+	position: absolute;
+	left: 124px;
+	top: 206px;
+	width: 140px;
+	height: 130px;
+	decorator: linear-gradient(to bottom, #2a1d44 0%, #0b0e12 100%);
+	border: 1px #3a4452;
+	border-radius: 4px;
+	cursor: move;
+	pointer-events: auto;
+}
+#photo_image { position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; pointer-events: none; }
+#vitrine_class { position: absolute; left: 6px; bottom: 3px; font-size: 8px; line-height: 10px; color: #b4a6d6; pointer-events: none; }
+#vitrine_hint { position: absolute; right: 5px; top: 3px; font-size: 7px; line-height: 9px; color: #566376; pointer-events: none; }
+
+/* a confirmação da compra */
+#buy_layer { z-index: 3; position: absolute; left: 0px; top: 56px; width: 430px; height: 316px; background-color: rgba(0, 0, 0, 140); }
+#buy_box {
+	position: absolute;
+	left: 85px;
+	top: 40px;
+	width: 260px;
+	height: 190px;
+	background-color: rgba(19, 23, 29, 252);
+	border: 2px #505a68;
+	border-radius: 5px;
+}
+#buy_title { position: absolute; left: 0px; top: 6px; width: 260px; text-align: center; font-family: "token(font-title)"; font-size: 10px; line-height: 14px; color: #dde1e7; }
+#buy_slot { position: absolute; left: 100px; top: 24px; width: 60px; height: 60px; background-color: #0e1116; border: 1px #a9d3ff; border-radius: 4px; }
+#buy_slot .art { left: 4px; top: 4px; width: 52px; height: 52px; }
+#buy_name { position: absolute; left: 6px; top: 88px; width: 248px; text-align: center; font-size: 9px; line-height: 12px; color: #78bfff; }
+#buy_ask { position: absolute; left: 6px; top: 104px; width: 248px; text-align: center; font-size: 9px; line-height: 12px; color: #a9d3ff; }
+#buy_have { position: absolute; left: 6px; top: 118px; width: 248px; text-align: center; font-size: 8px; line-height: 11px; color: #7a8699; }
+#buy_have.ok { color: #78e678; }
+#buy_have.falta { color: #ff6e5a; }
+#buy_note { position: absolute; left: 6px; top: 134px; width: 248px; text-align: center; font-size: 8px; line-height: 10px; color: #7a8699; }
+#buy_ok, #buy_cancel {
+	position: absolute;
+	top: 160px;
+	width: 96px;
+	height: 18px;
+	line-height: 18px;
+	text-align: center;
+	background-color: #1e2228;
+	border: 1px #3e4652;
+	cursor: pointer;
+	font-size: 9px;
+}
+#buy_ok { left: 26px; color: #ffffff; }
+#buy_cancel { left: 138px; }
+#buy_ok:hover, #buy_cancel:hover { border-color: #78bfff; color: #ffffff; }
+#buy_ok.disabled { color: #48515e; cursor: default; }
+#buy_ok.disabled:hover { border-color: #3e4652; }
+
 /* ---- Obsidiana e prata, rodada 8: Coleções com a moldura, a placa do título e os botões do Meshy (base.rcss) ---- */
 #panel { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
 #title { left: 135px; top: 4px; width: 160px; height: 18px; line-height: 18px; decorator: ninepatch(ob-placa, ob-placa-in, 1); }
@@ -398,3 +475,8 @@ body { pointer-events: none; }
 .tab.selected { decorator: ninepatch(ob-botao-apertado, ob-botao-apertado-in, 1); border-bottom: 2px #78bfff; }
 #give.disabled, #give.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 1); }
 #add_box { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
+/* rodada 9: a caixa da compra e os botões dela no Meshy; a vitrine com a moldura fina */
+#buy_box { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
+#buy_ok, #buy_cancel { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 1); border-width: 0; }
+#buy_ok:hover, #buy_cancel:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 1); }
+#buy_ok.disabled, #buy_ok.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 1); }

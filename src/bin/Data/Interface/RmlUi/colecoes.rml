@@ -9,7 +9,10 @@
 	     aba Todos os itens (a peça escolhida em cima e a grade com ela de todos os sets), aba Sets (a lista na
 	     esquerda, as peças e o bônus do set na direita) e a caixinha + Adicionar item. Peça entregue acesa com visto,
 	     na mochila (e serve) com a borda piscando, faltando apagada. Geometria em px da tela de referência 640 x 480
-	     (.stage). Os ícones das peças são sprites it-<grupo>-<numero> (colecoes.rcss). -->
+	     (.stage). Os ícones das peças são sprites it-<grupo>-<numero> (colecoes.rcss).
+	     Rodada 9: o carrinho (.cart) na peça que falta abre #buy_layer (compra com zen, C1 FB 43); a dica da peça
+	     (col_hover) mostra o preço e o item que este personagem tem que entregar; #photo_slot é a vitrine, o
+	     personagem vestindo o set aberto (PhotoViewerControl: arrastar gira, botão direito volta de frente). -->
 	<div id="screen" class="stage">
 		<div id="panel">
 			<div id="title">Coleções</div>
@@ -30,10 +33,11 @@
 				<div id="grid" class="scroll-pane">
 					<div class="cell" data-for="c : cells" data-event-click="col_piece(c.set, c.piece)">
 						<div class="label">{{c.name}}</div>
-						<div class="piece" data-attr-class="'piece ' + c.look">
+						<div class="piece" data-attr-class="'piece ' + c.look" data-event-mouseover="col_hover(c.set, c.piece)" data-event-mouseout="col_leave">
 							<div class="art" data-style-decorator="c.decorator"></div>
 							<div class="check" data-if="c.look == 'dada'">✓</div>
 						</div>
+						<div class="cart" data-if="c.look == 'falta' || c.look == 'mochila'" data-event-click="col_buy(c.set, c.piece)"></div>
 					</div>
 				</div>
 			</div>
@@ -51,16 +55,17 @@
 					<div id="slots">
 					<div class="slot" data-for="p : slots" data-event-click="col_piece(set_id, p.piece)">
 						<div class="label">{{p.label}}</div>
-						<div data-attr-class="'piece ' + p.look">
+						<div data-attr-class="'piece ' + p.look" data-event-mouseover="col_hover(set_id, p.piece)" data-event-mouseout="col_leave">
 							<div class="art" data-style-decorator="p.decorator"></div>
 							<div class="check" data-if="p.look == 'dada'">✓</div>
 							<div class="none" data-if="p.look == 'vazia'">sem elmo</div>
 						</div>
+						<div class="cart" data-if="p.look == 'falta' || p.look == 'mochila'" data-event-click="col_buy(set_id, p.piece)"></div>
 					</div>
 					</div>
 					<div id="set_text" data-class-done="set_done">{{set_text}}</div>
 					<div id="set_bonus">{{set_bonus}}</div>
-					<div id="set_help">Clique numa peça que você tem na mochila pra entregar.</div>
+					<div id="set_help">{{set_help}}</div>
 				</div>
 				<div id="active">
 					<div id="active_title">Bônus das coleções</div>
@@ -68,6 +73,13 @@
 					<div class="bonus" data-for="b : active">{{b}}</div>
 					<div id="active_none" data-if="active.size == 0">Nenhum set completo ainda. O bônus liga quando as peças do set inteiro entram.</div>
 				</div>
+			</div>
+
+			<!-- fora do #sets (data-if refaz os elementos): o PhotoViewerControl prende os eventos uma vez -->
+			<div id="photo_slot" data-visible="tab == 1">
+				<img id="photo_image"/>
+				<div id="vitrine_class">{{vitrine_class}}</div>
+				<div id="vitrine_hint">arraste pra girar</div>
 			</div>
 
 			<div id="add_layer" data-if="add_open">
@@ -88,6 +100,19 @@
 					<div id="add_note">A peça some e entra na coleção, sem zen.</div>
 					<div id="give" data-class-disabled="!add_can" data-event-click="col_give">Entregar</div>
 					<div id="add_close" data-event-click="col_add_close">Fechar</div>
+				</div>
+			</div>
+
+			<div id="buy_layer" data-if="buy_open">
+				<div id="buy_box">
+					<div id="buy_title">Comprar peça da coleção</div>
+					<div id="buy_slot"><div class="art" data-style-decorator="buy_decorator"></div></div>
+					<div id="buy_name">{{buy_name}}</div>
+					<div id="buy_ask">{{buy_ask}}</div>
+					<div id="buy_have" data-attr-class="buy_look">{{buy_have}}</div>
+					<div id="buy_note">A peça entra na coleção sem precisar do item.</div>
+					<div id="buy_ok" data-class-disabled="!buy_can" data-event-click="col_buy_ok">Comprar</div>
+					<div id="buy_cancel" data-event-click="col_buy_close">Cancelar</div>
 				</div>
 			</div>
 
