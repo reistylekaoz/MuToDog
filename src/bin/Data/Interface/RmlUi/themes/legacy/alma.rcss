@@ -63,6 +63,14 @@ body { pointer-events: none; }
 	cursor: pointer;
 	color: #b9c1cd;
 }
+.tab0 { left: 12px; }
+.tab1 { left: 108px; }
+.tab2 { left: 204px; }
+.tab3 { left: 300px; }
+.card0 { left: 12px; }
+.card1 { left: 161px; }
+.card2 { left: 311px; }
+.card3 { left: 460px; }
 .tab:hover, .tab.selected { color: #ffffff; }
 .tab .line { position: absolute; left: 2px; bottom: -1px; width: 88px; height: 2px; }
 #free { position: absolute; left: 400px; top: 34px; width: 192px; text-align: right; font-size: 11px; line-height: 14px; color: #b9c1cd; }

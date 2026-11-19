@@ -10,15 +10,16 @@
 	     vertical (100 pontos em cima) com os 3 marcos (o maior alcançado em ouro, os que faltam com cadeado), os
 	     pontos e os botões +1 e +10. Refazer abre a caixa de pagar com zen ou Jewel of Bless. Geometria em px da tela
 	     de referência 640 x 480 (.stage). Ícones: sprites al-<n>, al-aro e al-cadeado (alma.rcss). -->
+	<!-- bound-geometry: a altura do que está cheio na barra (c.bar) e a dos marcos nela (m.top) são o medidor, pontos / máximo -->
 	<div id="screen" class="stage">
 		<div id="panel" data-attr-class="'tree' + tab">
 			<div id="art"></div>
 			<div id="title">Alma</div>
-			<div class="tab" data-for="t, i : tabs" data-style-left="(12 + i * 96) + 'px'"
+			<div data-for="t, i : tabs" data-attr-class="'tab tab' + i"
 			     data-class-selected="tab == i" data-event-click="alma_tab(i)">{{t}}<div class="line" data-if="tab == i"></div></div>
 			<div id="free" data-class-lit="free_lit">{{free}}</div>
 
-			<div class="card" data-for="c, k : cards" data-style-left="(12 + k * 149) + 'px'">
+			<div data-for="c, k : cards" data-attr-class="'card card' + k">
 				<div class="name">{{c.name}}</div>
 				<div class="glow" data-if="c.lit"></div>
 				<div class="icon" data-class-lit="c.lit" data-style-decorator="c.icon"></div>
