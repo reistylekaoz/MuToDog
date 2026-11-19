@@ -134,6 +134,7 @@ enum INTERFACE_LIST
     // MuToDog (MU Estudo): o menu do F10 em grade e o Reset System (UI/Estudo).
     INTERFACE_MENU_F10,
     INTERFACE_RESET_SYSTEM,
+    INTERFACE_COLECOES,
     INTERFACE_END,
     INTERFACE_COUNT = INTERFACE_END - 2,
 };

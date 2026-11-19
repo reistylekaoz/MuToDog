@@ -129,6 +129,7 @@ constexpr DocumentPlacement Placements[] = {
     // MuToDog: o menu do F10 em grade e o Reset System (com os icones da barra), por cima da HUD.
     {"menu_f10.rml", 10.62f, MainScene},
     {"reset_system.rml", 10.62f, MainScene},
+    {"colecoes.rml", 10.62f, MainScene},
     {"command_window.rml", 10.65f, MainScene}, // UI::RmlBridge::ForegroundPanelLayerDepth
     {"chat_command.rml", 10.65f, MainScene},
     // The original drew it at 10.5, under the HUD; the modern theme's settings screen covers the

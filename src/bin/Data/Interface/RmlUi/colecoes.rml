@@ -1,0 +1,98 @@
+<rml>
+<head>
+	<title>Coleções</title>
+	<link type="text/rcss" href="base.rcss"/>
+	<link type="text/rcss" href="colecoes.rcss"/>
+</head>
+<body data-model="colecoes">
+	<!-- MuToDog (MU Estudo, rodada 8): Coleções (CColecoesWindow), no jeito do cliente Godot (janela_colecoes.gd):
+	     aba Todos os itens (a peça escolhida em cima e a grade com ela de todos os sets), aba Sets (a lista na
+	     esquerda, as peças e o bônus do set na direita) e a caixinha + Adicionar item. Peça entregue acesa com visto,
+	     na mochila (e serve) com a borda piscando, faltando apagada. Geometria em px da tela de referência 640 x 480
+	     (.stage). Os ícones das peças são sprites it-<grupo>-<numero> (colecoes.rcss). -->
+	<div id="screen" class="stage">
+		<div id="panel">
+			<div id="title">Coleções</div>
+			<div id="tab_all" class="tab" data-class-selected="tab == 0" data-event-click="col_tab(0)">Todos os itens</div>
+			<div id="tab_sets" class="tab" data-class-selected="tab == 1" data-event-click="col_tab(1)">Sets</div>
+			<div id="tab_add" class="tab" data-class-selected="add_open" data-event-click="col_add_open">+ Adicionar item</div>
+			<div id="rule"></div>
+
+			<div id="all" data-if="tab == 0">
+				<div id="arrow_prev" class="arrow" data-event-click="col_part_step(-1)">&lt;</div>
+				<div id="parts">
+					<div class="part" data-for="p : parts" data-class-selected="p.selected" data-event-click="col_part(p.index)">
+						<div class="art" data-style-decorator="p.decorator"></div>
+					</div>
+				</div>
+				<div id="arrow_next" class="arrow" data-event-click="col_part_step(1)">&gt;</div>
+				<div id="part_name">{{part_name}}</div>
+				<div id="grid" class="scroll-pane">
+					<div class="cell" data-for="c : cells" data-event-click="col_piece(c.set, c.piece)">
+						<div class="label">{{c.name}}</div>
+						<div class="piece" data-attr-class="'piece ' + c.look">
+							<div class="art" data-style-decorator="c.decorator"></div>
+							<div class="check" data-if="c.look == 'dada'">✓</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="sets" data-if="tab == 1">
+				<div id="cards" class="scroll-pane">
+					<div class="card" data-for="s : cards" data-class-open="s.open" data-class-done="s.done" data-event-click="col_set(s.id)">
+						<div class="label">{{s.name}}</div>
+						<div class="box"><div class="art" data-style-decorator="s.decorator"></div></div>
+						<div class="count">{{s.count}}</div>
+					</div>
+				</div>
+				<div id="setbox">
+					<div id="set_name">{{set_name}}</div>
+					<div id="slots">
+					<div class="slot" data-for="p : slots" data-event-click="col_piece(set_id, p.piece)">
+						<div class="label">{{p.label}}</div>
+						<div data-attr-class="'piece ' + p.look">
+							<div class="art" data-style-decorator="p.decorator"></div>
+							<div class="check" data-if="p.look == 'dada'">✓</div>
+							<div class="none" data-if="p.look == 'vazia'">sem elmo</div>
+						</div>
+					</div>
+					</div>
+					<div id="set_text" data-class-done="set_done">{{set_text}}</div>
+					<div id="set_bonus">{{set_bonus}}</div>
+					<div id="set_help">Clique numa peça que você tem na mochila pra entregar.</div>
+				</div>
+				<div id="active">
+					<div id="active_title">Bônus das coleções</div>
+					<div id="active_count">{{active_count}}</div>
+					<div class="bonus" data-for="b : active">{{b}}</div>
+					<div id="active_none" data-if="active.size == 0">Nenhum set completo ainda. O bônus liga quando as peças do set inteiro entram.</div>
+				</div>
+			</div>
+
+			<div id="add" data-if="add_open">
+				<div id="add_box">
+					<div id="add_title">Adicionar item à coleção</div>
+					<div id="add_slot" data-class-filled="add_name != ''"><div class="art" data-style-decorator="add_decorator"></div></div>
+					<div id="add_name">{{add_name}}</div>
+					<div id="add_msg" data-attr-class="add_look">{{add_msg}}</div>
+					<div id="bag_title">Peças de set na mochila</div>
+					<div id="bag" class="scroll-pane">
+						<div class="bag" data-for="b : bag" data-attr-class="'bag ' + b.look" data-event-click="col_bag(b.slot)">
+							<div class="art" data-style-decorator="b.decorator"></div>
+							<div class="name">{{b.name}}</div>
+							<div class="info">{{b.info}}</div>
+						</div>
+						<div id="bag_none" data-if="bag.size == 0">Nenhuma peça de set na mochila.</div>
+					</div>
+					<div id="add_note">A peça some e entra na coleção, sem zen.</div>
+					<div id="give" data-class-disabled="!add_can" data-event-click="col_give">Entregar</div>
+					<div id="add_close" data-event-click="col_add_close">Fechar</div>
+				</div>
+			</div>
+
+			<div id="close" data-event-click="col_close">Fechar</div>
+		</div>
+	</div>
+</body>
+</rml>

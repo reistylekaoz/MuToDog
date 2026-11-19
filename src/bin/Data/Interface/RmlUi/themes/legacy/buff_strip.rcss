@@ -233,3 +233,10 @@
 	pointer-events: auto;
 	/* decorator set per-instance via data-style-decorator (buff_strip.rml). */
 }
+
+/* MuToDog (MU Estudo, rodada 8): o icone do buff das colecoes (CBuffStrip, "image(buff-colecao)"), o mesmo do Godot */
+@spritesheet buff-colecao-sheet
+{
+	src: "../modern/menu_f10/buff_colecao.tga";
+	buff-colecao: 0px 0px 80px 80px;
+}

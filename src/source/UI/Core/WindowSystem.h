@@ -45,6 +45,7 @@
 #include "UI/Dialogs/HelpWindow.h"
 #include "UI/Estudo/MenuF10Window.h"
 #include "UI/Estudo/ResetSystemWindow.h"
+#include "UI/Estudo/ColecoesWindow.h"
 #include "UI/Dialogs/ChatCommandWindow.h"
 #include "UI/Inventory/ItemExplanationWindow.h"
 #include "UI/Inventory/SetItemExplanation.h"
@@ -191,6 +192,7 @@ namespace mu::ui::window
         CHelpWindow* m_pNewHelpWindow;
         CMenuF10Window* m_pMenuF10 = nullptr;           // MuToDog: F10 em grade
         CResetSystemWindow* m_pResetSystem = nullptr;   // MuToDog: Reset System
+        CColecoesWindow* m_pColecoes = nullptr;         // MuToDog: Coleções
         CChatCommandWindow* m_pNewChatCommandWindow;
         CItemExplanationWindow* m_pNewItemExplanationWindow;
         CSetItemExplanation* m_pNewSetItemExplanation;

@@ -326,7 +326,7 @@ void CResetSystemWindow::RebuildModel()
     model.action.clear();
     model.canAct = false;
     if (!g_State.enabled)
-        model.message = g_State.received ? "O reset esta desligado neste servidor." : "Pedindo os numeros do reset ao servidor...";
+        model.message = g_State.received ? "O reset está desligado neste servidor." : "Pedindo os números do reset ao servidor...";
     else if (model.tab == 1)
         BuildGrandTab(model, level, zen);
     else
@@ -344,17 +344,17 @@ void CResetSystemWindow::BuildResetTab(ResetSystemRmlModel& model, int level, st
     model.canAct = CanReset(s, level, zen);
     if (s.resets >= s.limit)
     {
-        model.message = "Voce chegou no maximo de resets.";
+        model.message = "Você chegou no máximo de resets.";
         if (s.grand < s.grandLimit)
-            model.message += " Agora e o grand reset (aba ao lado).";
+            model.message += " Agora é o grand reset (aba ao lado).";
         return;
     }
     model.rows.push_back({"Para o reset", "", "secao"});
-    model.rows.push_back({"Nivel", Fraction(level, s.level), level >= s.level ? "ok" : "falta"});
+    model.rows.push_back({"Nível", Fraction(level, s.level), level >= s.level ? "ok" : "falta"});
     model.rows.push_back({"Zen", Thousands(s.zen), zen >= s.zen ? "ok" : "falta"});
-    model.rows.push_back({"Premio do reset", "", "secao"});
+    model.rows.push_back({"Prêmio do reset", "", "secao"});
     model.rows.push_back({"Pontos", Thousands(s.points), "premio"});
-    model.note = "Os status voltam pra base e o nivel pro 10.";
+    model.note = "Os status voltam pra base e o nível pro 10.";
 }
 
 void CResetSystemWindow::BuildGrandTab(ResetSystemRmlModel& model, int level, std::uint32_t zen) const
@@ -365,14 +365,14 @@ void CResetSystemWindow::BuildGrandTab(ResetSystemRmlModel& model, int level, st
     model.canAct = CanGrand(s, level, zen);
     if (s.grand >= s.grandLimit)
     {
-        model.message = "Voce chegou no maximo de grand resets.";
+        model.message = "Você chegou no máximo de grand resets.";
         return;
     }
     model.rows.push_back({"Para o grand reset", "", "secao"});
-    model.rows.push_back({"Nivel", Fraction(level, s.level), level >= s.level ? "ok" : "falta"});
+    model.rows.push_back({"Nível", Fraction(level, s.level), level >= s.level ? "ok" : "falta"});
     model.rows.push_back({"Resets", Fraction(s.resets, s.grandResets), s.resets >= s.grandResets ? "ok" : "falta"});
     model.rows.push_back({"Zen", Thousands(s.grandZen), zen >= s.grandZen ? "ok" : "falta"});
-    model.rows.push_back({"Premio do grand reset", "", "secao"});
+    model.rows.push_back({"Prêmio do grand reset", "", "secao"});
     model.rows.push_back({"Pontos pra sempre", Thousands(s.grandPoints), "premio"});
     model.note = "Os resets voltam pra 0.";
 }

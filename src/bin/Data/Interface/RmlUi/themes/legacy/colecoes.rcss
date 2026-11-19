@@ -1,0 +1,385 @@
+/* MuToDog (MU Estudo, rodada 8): Coleções (colecoes.rml), no jeito do cliente Godot (janela_colecoes.gd): janela de
+   430 x 372 no meio da tela. Px da tela de referência 640 x 480 (.stage). O obsidiana põe o Meshy por cima
+   (tools/obsidiana_theme/colecoes.rcss). Os sprites das peças são escritos por tools/obsidiana_theme/icones_colecoes.py. */
+/* sprites */
+@spritesheet colecoes-itens
+{
+	src: "../modern/colecoes/itens.tga";
+	it-7-0: 0px 0px 64px 64px;
+	it-7-1: 64px 0px 64px 64px;
+	it-7-2: 128px 0px 64px 64px;
+	it-7-3: 192px 0px 64px 64px;
+	it-7-4: 256px 0px 64px 64px;
+	it-7-5: 320px 0px 64px 64px;
+	it-7-6: 384px 0px 64px 64px;
+	it-7-7: 448px 0px 64px 64px;
+	it-7-8: 512px 0px 64px 64px;
+	it-7-9: 576px 0px 64px 64px;
+	it-7-10: 640px 0px 64px 64px;
+	it-7-11: 704px 0px 64px 64px;
+	it-7-12: 768px 0px 64px 64px;
+	it-7-13: 832px 0px 64px 64px;
+	it-7-14: 896px 0px 64px 64px;
+	it-7-16: 960px 0px 64px 64px;
+	it-7-17: 0px 64px 64px 64px;
+	it-7-18: 64px 64px 64px 64px;
+	it-7-19: 128px 64px 64px 64px;
+	it-7-21: 192px 64px 64px 64px;
+	it-7-22: 256px 64px 64px 64px;
+	it-7-24: 320px 64px 64px 64px;
+	it-7-25: 384px 64px 64px 64px;
+	it-7-26: 448px 64px 64px 64px;
+	it-7-27: 512px 64px 64px 64px;
+	it-7-28: 576px 64px 64px 64px;
+	it-7-29: 640px 64px 64px 64px;
+	it-7-30: 704px 64px 64px 64px;
+	it-7-31: 768px 64px 64px 64px;
+	it-7-33: 832px 64px 64px 64px;
+	it-8-0: 896px 64px 64px 64px;
+	it-8-1: 960px 64px 64px 64px;
+	it-8-2: 0px 128px 64px 64px;
+	it-8-3: 64px 128px 64px 64px;
+	it-8-4: 128px 128px 64px 64px;
+	it-8-5: 192px 128px 64px 64px;
+	it-8-6: 256px 128px 64px 64px;
+	it-8-7: 320px 128px 64px 64px;
+	it-8-8: 384px 128px 64px 64px;
+	it-8-9: 448px 128px 64px 64px;
+	it-8-10: 512px 128px 64px 64px;
+	it-8-11: 576px 128px 64px 64px;
+	it-8-12: 640px 128px 64px 64px;
+	it-8-13: 704px 128px 64px 64px;
+	it-8-14: 768px 128px 64px 64px;
+	it-8-15: 832px 128px 64px 64px;
+	it-8-16: 896px 128px 64px 64px;
+	it-8-17: 960px 128px 64px 64px;
+	it-8-18: 0px 192px 64px 64px;
+	it-8-19: 64px 192px 64px 64px;
+	it-8-20: 128px 192px 64px 64px;
+	it-8-21: 192px 192px 64px 64px;
+	it-8-22: 256px 192px 64px 64px;
+	it-8-23: 320px 192px 64px 64px;
+	it-8-24: 384px 192px 64px 64px;
+	it-8-25: 448px 192px 64px 64px;
+	it-8-26: 512px 192px 64px 64px;
+	it-8-27: 576px 192px 64px 64px;
+	it-8-28: 640px 192px 64px 64px;
+	it-8-29: 704px 192px 64px 64px;
+	it-8-30: 768px 192px 64px 64px;
+	it-8-31: 832px 192px 64px 64px;
+	it-8-32: 896px 192px 64px 64px;
+	it-8-33: 960px 192px 64px 64px;
+	it-9-0: 0px 256px 64px 64px;
+	it-9-1: 64px 256px 64px 64px;
+	it-9-2: 128px 256px 64px 64px;
+	it-9-3: 192px 256px 64px 64px;
+	it-9-4: 256px 256px 64px 64px;
+	it-9-5: 320px 256px 64px 64px;
+	it-9-6: 384px 256px 64px 64px;
+	it-9-7: 448px 256px 64px 64px;
+	it-9-8: 512px 256px 64px 64px;
+	it-9-9: 576px 256px 64px 64px;
+	it-9-10: 640px 256px 64px 64px;
+	it-9-11: 704px 256px 64px 64px;
+	it-9-12: 768px 256px 64px 64px;
+	it-9-13: 832px 256px 64px 64px;
+	it-9-14: 896px 256px 64px 64px;
+	it-9-15: 960px 256px 64px 64px;
+	it-9-16: 0px 320px 64px 64px;
+	it-9-17: 64px 320px 64px 64px;
+	it-9-18: 128px 320px 64px 64px;
+	it-9-19: 192px 320px 64px 64px;
+	it-9-20: 256px 320px 64px 64px;
+	it-9-21: 320px 320px 64px 64px;
+	it-9-22: 384px 320px 64px 64px;
+	it-9-23: 448px 320px 64px 64px;
+	it-9-24: 512px 320px 64px 64px;
+	it-9-25: 576px 320px 64px 64px;
+	it-9-26: 640px 320px 64px 64px;
+	it-9-27: 704px 320px 64px 64px;
+	it-9-28: 768px 320px 64px 64px;
+	it-9-29: 832px 320px 64px 64px;
+	it-9-30: 896px 320px 64px 64px;
+	it-9-31: 960px 320px 64px 64px;
+	it-9-32: 0px 384px 64px 64px;
+	it-9-33: 64px 384px 64px 64px;
+	it-10-0: 128px 384px 64px 64px;
+	it-10-1: 192px 384px 64px 64px;
+	it-10-2: 256px 384px 64px 64px;
+	it-10-3: 320px 384px 64px 64px;
+	it-10-4: 384px 384px 64px 64px;
+	it-10-5: 448px 384px 64px 64px;
+	it-10-6: 512px 384px 64px 64px;
+	it-10-7: 576px 384px 64px 64px;
+	it-10-8: 640px 384px 64px 64px;
+	it-10-9: 704px 384px 64px 64px;
+	it-10-10: 768px 384px 64px 64px;
+	it-10-11: 832px 384px 64px 64px;
+	it-10-12: 896px 384px 64px 64px;
+	it-10-13: 960px 384px 64px 64px;
+	it-10-14: 0px 448px 64px 64px;
+	it-10-15: 64px 448px 64px 64px;
+	it-10-16: 128px 448px 64px 64px;
+	it-10-17: 192px 448px 64px 64px;
+	it-10-18: 256px 448px 64px 64px;
+	it-10-19: 320px 448px 64px 64px;
+	it-10-20: 384px 448px 64px 64px;
+	it-10-21: 448px 448px 64px 64px;
+	it-10-22: 512px 448px 64px 64px;
+	it-10-23: 576px 448px 64px 64px;
+	it-10-24: 640px 448px 64px 64px;
+	it-10-25: 704px 448px 64px 64px;
+	it-10-26: 768px 448px 64px 64px;
+	it-10-27: 832px 448px 64px 64px;
+	it-10-28: 896px 448px 64px 64px;
+	it-10-29: 960px 448px 64px 64px;
+	it-10-30: 0px 512px 64px 64px;
+	it-10-31: 64px 512px 64px 64px;
+	it-10-32: 128px 512px 64px 64px;
+	it-10-33: 192px 512px 64px 64px;
+	it-11-0: 256px 512px 64px 64px;
+	it-11-1: 320px 512px 64px 64px;
+	it-11-2: 384px 512px 64px 64px;
+	it-11-3: 448px 512px 64px 64px;
+	it-11-4: 512px 512px 64px 64px;
+	it-11-5: 576px 512px 64px 64px;
+	it-11-6: 640px 512px 64px 64px;
+	it-11-7: 704px 512px 64px 64px;
+	it-11-8: 768px 512px 64px 64px;
+	it-11-9: 832px 512px 64px 64px;
+	it-11-10: 896px 512px 64px 64px;
+	it-11-11: 960px 512px 64px 64px;
+	it-11-12: 0px 576px 64px 64px;
+	it-11-13: 64px 576px 64px 64px;
+	it-11-14: 128px 576px 64px 64px;
+	it-11-15: 192px 576px 64px 64px;
+	it-11-16: 256px 576px 64px 64px;
+	it-11-17: 320px 576px 64px 64px;
+	it-11-18: 384px 576px 64px 64px;
+	it-11-19: 448px 576px 64px 64px;
+	it-11-20: 512px 576px 64px 64px;
+	it-11-21: 576px 576px 64px 64px;
+	it-11-22: 640px 576px 64px 64px;
+	it-11-23: 704px 576px 64px 64px;
+	it-11-24: 768px 576px 64px 64px;
+	it-11-25: 832px 576px 64px 64px;
+	it-11-26: 896px 576px 64px 64px;
+	it-11-27: 960px 576px 64px 64px;
+	it-11-28: 0px 640px 64px 64px;
+	it-11-29: 64px 640px 64px 64px;
+	it-11-30: 128px 640px 64px 64px;
+	it-11-31: 192px 640px 64px 64px;
+	it-11-32: 256px 640px 64px 64px;
+	it-11-33: 320px 640px 64px 64px;
+}
+/* fim dos sprites */
+body { pointer-events: none; }
+#screen { pointer-events: none; }
+
+#panel {
+	position: absolute;
+	left: 105px;
+	top: 54px;
+	width: 430px;
+	height: 372px;
+	background-color: rgba(8, 10, 14, 240);
+	border: 1px #3e4652;
+	pointer-events: auto;
+	color: #e9edf3;
+}
+#title {
+	position: absolute;
+	left: 0px;
+	top: 6px;
+	width: 430px;
+	height: 16px;
+	text-align: center;
+	font-size: 12px;
+	line-height: 16px;
+	color: #dae0ea;
+}
+.tab {
+	position: absolute;
+	top: 30px;
+	height: 18px;
+	text-align: center;
+	font-size: 9px;
+	line-height: 18px;
+	background-color: #1e2228;
+	border: 1px #3e4652;
+	cursor: pointer;
+	color: #b9c1cd;
+}
+.tab:hover { color: #ffffff; }
+.tab.selected { border-bottom: 2px #78bfff; color: #ffffff; }
+#tab_all { left: 10px; width: 86px; }
+#tab_sets { left: 100px; width: 60px; }
+#tab_add { left: 164px; width: 100px; }
+#rule { position: absolute; left: 8px; top: 53px; width: 414px; height: 1px; background-color: #3e4652; }
+
+.art { position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; }
+.piece { position: relative; background-color: #09101b; border: 1px #3e4652; border-radius: 4px; }
+.piece .art { opacity: 0.32; }
+.piece.dada { border-color: #78bfff; background-color: #10213a; }
+.piece.dada .art, .piece.mochila .art { opacity: 1; }
+.piece.mochila { border: 2px #e8c96a; animation: 0.45s quadratic-in-out infinite alternate colecao-pisca; }
+.piece.vazia { border-color: #262b33; }
+@keyframes colecao-pisca {
+	from { border-color: #6b5a2a; }
+	to { border-color: #ffe08a; }
+}
+.check {
+	position: absolute;
+	right: 2px;
+	bottom: 1px;
+	width: 12px;
+	height: 12px;
+	border-radius: 6px;
+	background-color: #143c1e;
+	text-align: center;
+	font-size: 9px;
+	line-height: 12px;
+	color: #78e678;
+}
+.none { position: absolute; left: 0px; top: 17px; width: 100%; text-align: center; font-size: 7px; color: #4a515c; }
+.label {
+	height: 14px;
+	text-align: center;
+	font-size: 8px;
+	line-height: 14px;
+	background-color: #0e141f;
+	border: 1px #262b33;
+	border-radius: 3px;
+	color: #b9c1cd;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+/* aba Todos os itens: a peça escolhida (com as setas) e a grade 5 x 3 que rola */
+#all { position: absolute; left: 0px; top: 0px; width: 430px; height: 372px; }
+.arrow {
+	position: absolute;
+	top: 60px;
+	width: 22px;
+	height: 34px;
+	text-align: center;
+	font-size: 14px;
+	line-height: 34px;
+	color: #8791a0;
+	cursor: pointer;
+}
+.arrow:hover { color: #ffffff; }
+#arrow_prev { left: 90px; }
+#arrow_next { left: 318px; }
+#parts { position: absolute; left: 115px; top: 60px; width: 200px; height: 34px; }
+.part {
+	float: left;
+	position: relative;
+	width: 34px;
+	height: 34px;
+	margin-left: 3px;
+	margin-right: 3px;
+	background-color: #09101b;
+	border: 1px #3e4652;
+	border-radius: 4px;
+	cursor: pointer;
+}
+.part .art { opacity: 0.6; }
+.part:hover .art, .part.selected .art { opacity: 1; }
+.part.selected { border-color: #78bfff; background-color: #10213a; }
+#part_name { position: absolute; left: 345px; top: 70px; width: 76px; font-size: 9px; line-height: 14px; color: #dae0ea; }
+#grid { position: absolute; left: 18px; top: 100px; width: 392px; height: 236px; }
+.cell { float: left; position: relative; width: 76px; height: 84px; cursor: pointer; }
+.cell .label { position: absolute; left: 3px; top: 2px; width: 68px; }
+.cell .piece { position: absolute; left: 8px; top: 19px; width: 58px; height: 58px; }
+.cell:hover .piece { border-color: #78bfff; }
+
+/* aba Sets: a lista na esquerda, o set aberto e os bônus ligados na direita */
+#sets { position: absolute; left: 0px; top: 0px; width: 430px; height: 372px; }
+#cards { position: absolute; left: 8px; top: 60px; width: 110px; height: 276px; }
+.card { position: relative; width: 98px; height: 92px; margin-bottom: 4px; cursor: pointer; border: 1px rgba(0, 0, 0, 0); border-radius: 4px; }
+.card.open { border-color: #78bfff; background-color: rgba(120, 191, 255, 26); }
+.card .label { position: absolute; left: 3px; top: 2px; width: 90px; }
+.card.done .label, .card.open .label { color: #ffffff; }
+.card .box { position: absolute; left: 16px; top: 19px; width: 64px; height: 68px; background-color: #09101b; border: 1px #3e4652; border-radius: 4px; }
+.card .box .art { left: 4px; top: 6px; width: 56px; height: 56px; opacity: 0.7; }
+.card.done .box .art, .card.open .box .art { opacity: 1; }
+.card .count { position: absolute; left: 16px; top: 74px; width: 60px; text-align: right; font-size: 8px; color: #7d8796; }
+.card.done .count { color: #78e678; }
+#setbox {
+	position: absolute;
+	left: 124px;
+	top: 60px;
+	width: 296px;
+	height: 140px;
+	background-color: rgba(10, 15, 28, 235);
+	border: 1px #262b33;
+	border-radius: 4px;
+}
+#slots { position: absolute; left: 13px; top: 20px; width: 270px; height: 64px; }
+.slot { float: left; position: relative; width: 54px; height: 64px; }
+.slot .label { position: absolute; left: 3px; top: 0px; width: 46px; height: 12px; line-height: 12px; }
+.slot .piece { position: absolute; left: 4px; top: 16px; width: 44px; height: 44px; cursor: pointer; }
+#set_text { position: absolute; left: 0px; top: 88px; width: 296px; text-align: center; font-size: 9px; line-height: 12px; color: #b9c1cd; }
+#set_text.done { color: #78e678; }
+#set_bonus { position: absolute; left: 0px; top: 102px; width: 296px; text-align: center; font-size: 10px; line-height: 14px; color: #ffe08a; }
+#set_help { position: absolute; left: 0px; top: 122px; width: 296px; text-align: center; font-size: 8px; line-height: 10px; color: #7d8796; }
+#active {
+	position: absolute;
+	left: 124px;
+	top: 206px;
+	width: 296px;
+	height: 130px;
+	background-color: rgba(10, 15, 28, 235);
+	border: 1px #262b33;
+	border-radius: 4px;
+}
+#active_count { margin: 0px 8px 4px 8px; font-size: 8px; line-height: 11px; color: #ffe08a; }
+.bonus { margin: 0px 8px; font-size: 9px; line-height: 12px; color: #78e678; }
+#active_none { margin: 0px 8px; font-size: 8px; line-height: 11px; color: #7d8796; }
+
+/* a caixinha + Adicionar item: uma casa, o item escolhido, a lista das peças de set da mochila */
+#add { position: absolute; left: 0px; top: 56px; width: 430px; height: 316px; background-color: rgba(0, 0, 0, 140); }
+#add_box {
+	position: absolute;
+	left: 95px;
+	top: 6px;
+	width: 240px;
+	height: 276px;
+	background-color: rgba(12, 19, 36, 252);
+	border: 2px #525a66;
+	border-radius: 5px;
+}
+#add_slot { position: absolute; left: 90px; top: 24px; width: 60px; height: 60px; background-color: #09101b; border: 1px #3e4652; border-radius: 4px; }
+#add_slot.filled { border-color: #ffe08a; }
+#add_slot .art { left: 4px; top: 4px; width: 52px; height: 52px; }
+#add_name { position: absolute; left: 6px; top: 88px; width: 228px; text-align: center; font-size: 9px; line-height: 12px; color: #ffe08a; }
+#add_msg { position: absolute; left: 6px; top: 101px; width: 228px; text-align: center; font-size: 8px; line-height: 11px; color: #7d8796; }
+#add_msg.ok { color: #78e678; }
+#add_msg.falta { color: #ff6e5a; }
+#bag_title { position: absolute; left: 10px; top: 126px; width: 220px; font-size: 8px; line-height: 10px; color: #b9c1cd; }
+#bag { position: absolute; left: 10px; top: 138px; width: 220px; height: 82px; border: 1px #262b33; }
+.bag { position: relative; height: 20px; cursor: pointer; border-bottom: 1px #161a20; }
+.bag:hover { background-color: rgba(120, 191, 255, 20); }
+.bag.selected { background-color: rgba(120, 191, 255, 46); }
+.bag .art { left: 2px; top: 1px; width: 18px; height: 18px; }
+.bag .name { position: absolute; left: 24px; top: 0px; width: 120px; font-size: 8px; line-height: 20px; color: #e9edf3; white-space: nowrap; overflow: hidden; }
+.bag .info { position: absolute; left: 146px; top: 0px; width: 64px; text-align: right; font-size: 7px; line-height: 20px; color: #7d8796; }
+.bag.ok .info { color: #78e678; }
+.bag.falta .info { color: #ff6e5a; }
+#bag_none { padding: 6px; font-size: 8px; color: #7d8796; }
+#add_note { position: absolute; left: 6px; top: 226px; width: 228px; text-align: center; font-size: 8px; line-height: 10px; color: #7d8796; }
+#give, #add_close, #close {
+	position: absolute;
+	text-align: center;
+	background-color: #1e2228;
+	border: 1px #3e4652;
+	cursor: pointer;
+	font-size: 9px;
+}
+#give { left: 14px; top: 246px; width: 96px; height: 18px; line-height: 18px; color: #ffffff; }
+#add_close { left: 130px; top: 246px; width: 96px; height: 18px; line-height: 18px; }
+#give:hover, #add_close:hover, #close:hover { border-color: #78bfff; color: #ffffff; }
+#give.disabled { color: #4a515c; cursor: default; }
+#give.disabled:hover { border-color: #3e4652; }
+#close { left: 185px; top: 344px; width: 60px; height: 18px; line-height: 18px; }

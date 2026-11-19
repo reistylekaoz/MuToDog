@@ -6,6 +6,7 @@
 #include "Core/Utilities/Log/MuLogger.h"
 #include "UI/Chat/Chat.h"
 #include "UI/Estudo/ResetSystemWindow.h"
+#include "UI/Estudo/ColecoesWindow.h"
 #include "UI/Chat/ChatMessages.h"
 #include "UI/Combat/SiegeUpdates.h"
 #include "UI/Events/DoppelgangerUpdates.h"
@@ -14790,8 +14791,10 @@ static void ProcessPacket(const BYTE* ReceiveBuffer, int32_t Size)
         ReceiveMuHelperConfigurationData(received_span);
         break;
     case 0xFB:
-        // MuToDog (MU Estudo): o grupo livre do servidor do estudo; C1 FB 34 e o estado do reset.
+        // MuToDog (MU Estudo): o grupo livre do servidor do estudo; C1 FB 34 e o estado do reset, FB 40/42 as colecoes.
         mu::ui::window::CResetSystemWindow::ReceiveState(ReceiveBuffer, Size);
+        // C2 FB 40 (a lista das colecoes) e C1 FB 42 (a peca entregue)
+        mu::ui::window::CColecoesWindow::ReceivePacket(ReceiveBuffer, Size);
         break;
     default:
         break;

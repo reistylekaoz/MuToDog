@@ -12,7 +12,7 @@
 	     Geometria em px da tela de referencia 640 x 480: a janela no .stage, os icones no .hud-board. -->
 	<div id="board" class="hud-board">
 		<div id="bar_icons">
-			<div id="icon_agenda" data-attr-data-hint="'Horario dos eventos (H)'"><img class="hud-icon" src="menu_f10/agenda.tga"/></div>
+			<div id="icon_agenda" data-attr-data-hint="'Horário dos eventos (H)'"><img class="hud-icon" src="menu_f10/agenda.tga"/></div>
 			<div id="icon_reset" data-class-ready="ready == 1" data-class-ready-grand="ready == 2"
 			     data-attr-data-hint="'Reset System'" data-event-click="reset_icon_click">
 				<div id="icon_glow"></div>

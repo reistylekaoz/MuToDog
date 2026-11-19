@@ -20,6 +20,7 @@ namespace
 // O que a casa faz quando nao e uma tecla do jogo.
 constexpr int ActionReset = -1;
 constexpr int ActionSystemMenu = -2;
+constexpr int ActionColecoes = -3;
 
 struct MenuF10Entry
 {
@@ -32,25 +33,26 @@ struct MenuF10Entry
 
 // Os atalhos do cliente Godot que o MuMain tem (janela_atalhos.gd, mesma ordem e mesmos textos).
 constexpr MenuF10Entry kEntries[] = {
-    {'I', "I", "Inventario", "Itens, equipamento e zen. Arraste pra vestir.", "inventario"},
-    {'C', "C", "Personagem", "Pontos de forca, agilidade, vida e energia.", "personagem"},
-    {'T', "T", "Minhas quests", "As missoes que voce pegou e o que falta.", "quests"},
-    {ActionReset, "", "Reset", "Reset e grand reset: o que falta e o premio.", "reset"},
+    {'I', "I", "Inventário", "Itens, equipamento e zen. Arraste pra vestir.", "inventario"},
+    {'C', "C", "Personagem", "Pontos de força, agilidade, vida e energia.", "personagem"},
+    {'T', "T", "Minhas quests", "As missões que você pegou e o que falta.", "quests"},
+    {ActionReset, "", "Reset", "Reset e grand reset: o que falta e o prêmio.", "reset"},
+    {ActionColecoes, "", "Coleções", "Entregue sets de armadura e ganhe bônus pra sempre.", "colecoes"},
     {'M', "M", "Mover de mapa", "Viajar pra outro mapa pagando zen.", "mover"},
-    {VK_TAB, "Tab", "Minimapa", "O mapa do lugar onde voce esta.", "minimapa"},
+    {VK_TAB, "Tab", "Minimapa", "O mapa do lugar onde você está.", "minimapa"},
     {'J', "J", "Comandos do chat", "Os comandos de barra (/) que o chat aceita.", "comandos_chat"},
     {'D', "D", "Comandos", "Troca, grupo, duelo e guilda com outro jogador.", "comandos"},
     {'F', "F", "Amigos", "Lista de amigos e cartas.", "amigos"},
     {'G', "G", "Guilda", "A sua guilda e os membros.", "guilda"},
-    {'B', "B", "Gens", "Duprian ou Vanert: a guerra das familias.", "gens"},
+    {'B', "B", "Gens", "Duprian ou Vanert: a guerra das famílias.", "gens"},
     {'X', "X", "Loja de cash", "Itens da loja do jogo.", "cash"},
-    {'Z', "Z", "MU Helper", "Configurar o que o helper caca e pega.", "helper"},
-    {VK_HOME, "Home", "Ligar o Helper", "Liga e desliga a caca automatica.", "ligar_helper"},
-    {ActionSystemMenu, "Esc", "Menu do jogo", "Opcoes, trocar personagem e sair.", "menu_jogo"},
+    {'Z', "Z", "MU Helper", "Configurar o que o helper caça e pega.", "helper"},
+    {VK_HOME, "Home", "Ligar o Helper", "Liga e desliga a caça automática.", "ligar_helper"},
+    {ActionSystemMenu, "Esc", "Menu do jogo", "Opções, trocar personagem e sair.", "menu_jogo"},
     {VK_F1, "F1", "Ajuda", "Todos os atalhos de mouse e teclado.", "ajuda"},
 };
 constexpr int kEntryCount = static_cast<int>(std::size(kEntries));
-constexpr const char* kIdleHint = "Passe o mouse num icone pra ver pra que serve. Ctrl+F10 solta o zoom da camera.";
+constexpr const char* kIdleHint = "Passe o mouse num ícone pra ver pra que serve. Ctrl+F10 solta o zoom da câmera.";
 } // namespace
 
 CMenuF10Window::CMenuF10Window() = default;
@@ -146,6 +148,8 @@ void CMenuF10Window::RunCell(int index)
     const int key = kEntries[index].key;
     if (key == ActionReset)
         g_pNewUISystem->Show(INTERFACE_RESET_SYSTEM);
+    else if (key == ActionColecoes)
+        g_pNewUISystem->Show(INTERFACE_COLECOES);
     else if (key == ActionSystemMenu)
         ShowSystemMenuDialog();
     else

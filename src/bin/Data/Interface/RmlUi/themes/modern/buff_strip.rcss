@@ -228,3 +228,10 @@
 	atlas2-88: 160px 224px 20px 28px;
 	atlas2-89: 180px 224px 20px 28px;
 }
+
+/* MuToDog (MU Estudo, rodada 8): o icone do buff das colecoes (CBuffStrip, "image(buff-colecao)"), o mesmo do Godot */
+@spritesheet buff-colecao-sheet
+{
+	src: "../modern/menu_f10/buff_colecao.tga";
+	buff-colecao: 0px 0px 80px 80px;
+}
