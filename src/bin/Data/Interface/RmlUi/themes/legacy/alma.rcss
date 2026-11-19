@@ -30,15 +30,15 @@ body { pointer-events: none; }
 #panel {
 	position: absolute;
 	left: 18px;
-	top: 19px;
+	top: 4px;
 	width: 604px;
-	height: 442px;
+	height: 414px;
 	background-color: rgba(8, 10, 14, 245);
 	border: 1px #3e4652;
 	pointer-events: auto;
 	color: #e9edf3;
 }
-#art { position: absolute; left: 6px; top: 24px; width: 592px; height: 412px; decorator: image(../modern/alma/fundo.tga); opacity: 0.6; }
+#art { position: absolute; left: 6px; top: 24px; width: 592px; height: 384px; decorator: image(../modern/alma/fundo.tga); opacity: 0.6; }
 #title {
 	position: absolute;
 	left: 0px;
@@ -85,6 +85,8 @@ body { pointer-events: none; }
 	border-radius: 4px;
 	background-color: rgba(10, 14, 22, 200);
 }
+.shade { position: absolute; left: 0px; top: 0px; width: 132px; height: 313px; background-color: rgba(0, 0, 0, 70); }
+.name, .now, .mlabel, .mvalue, .mname, .points { font-effect: shadow(1px 1px #000000); }
 .name { position: absolute; left: 0px; top: 9px; width: 132px; text-align: center; font-size: 11px; line-height: 14px; color: #ffffff; }
 .glow { position: absolute; left: 32px; top: 28px; width: 68px; height: 68px; border-radius: 34px; }
 .icon { position: absolute; left: 41px; top: 37px; width: 50px; height: 50px; opacity: 0.62; }
@@ -107,7 +109,7 @@ body { pointer-events: none; }
 .mark.apagado .tick { background-color: #4a515c; }
 .mark.apagado .mring { opacity: 0.55; }
 .mark.apagado .micon { opacity: 0.5; }
-.mark.apagado .mlabel, .mark.apagado .mvalue { color: #6a717c; }
+.mark.apagado .mlabel, .mark.apagado .mvalue { color: #8a929e; }
 .mname { position: absolute; left: 16px; top: 253px; width: 112px; font-size: 8px; line-height: 10px; color: #8d95a1; white-space: nowrap; overflow: hidden; }
 .points { position: absolute; left: 0px; top: 266px; width: 132px; text-align: center; font-size: 12px; line-height: 16px; font-weight: bold; color: #ffffff; }
 .points.full { color: #e8c96a; }
@@ -126,15 +128,15 @@ body { pointer-events: none; }
 .add { top: 287px; width: 50px; height: 18px; font-size: 9px; line-height: 18px; }
 .add1 { left: 12px; }
 .add10 { left: 70px; }
-#foot { position: absolute; left: 0px; top: 380px; width: 604px; text-align: center; font-size: 9px; line-height: 12px; color: #8d95a1; }
-#redo { left: 14px; top: 402px; width: 108px; height: 24px; font-size: 10px; line-height: 24px; }
-#close { left: 498px; top: 402px; width: 92px; height: 24px; font-size: 10px; line-height: 24px; }
+#foot { position: absolute; left: 134px; top: 381px; width: 336px; text-align: center; font-size: 8px; line-height: 11px; color: #8d95a1; }
+#redo { left: 14px; top: 382px; width: 108px; height: 24px; font-size: 10px; line-height: 24px; }
+#close { left: 498px; top: 382px; width: 92px; height: 24px; font-size: 10px; line-height: 24px; }
 
-#confirm_layer { z-index: 3; position: absolute; left: 0px; top: 24px; width: 604px; height: 418px; background-color: rgba(0, 0, 0, 165); }
+#confirm_layer { z-index: 3; position: absolute; left: 0px; top: 24px; width: 604px; height: 390px; background-color: rgba(0, 0, 0, 165); }
 #confirm_box {
 	position: absolute;
 	left: 152px;
-	top: 106px;
+	top: 92px;
 	width: 300px;
 	height: 150px;
 	background-color: rgba(12, 19, 36, 252);

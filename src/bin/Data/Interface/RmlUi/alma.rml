@@ -20,6 +20,7 @@
 			<div id="free" data-class-lit="free_lit">{{free}}</div>
 
 			<div data-for="c, k : cards" data-attr-class="'card card' + k">
+				<div class="shade"></div>
 				<div class="name">{{c.name}}</div>
 				<div class="glow" data-if="c.lit"></div>
 				<div class="icon" data-class-lit="c.lit" data-style-decorator="c.icon"></div>
