@@ -1,0 +1,4 @@
+/* MU Estudo: a barra do helper (local e pet) flutua no canto e nao empurra o cabecalho. Sem isso a coluna da
+   direita perdia 37 unidades embaixo da barra do topo, o jogo encolhia as janelas pra uns 94% (data-ref-height 432)
+   e o texto saia reamostrado, borrado em 1920x1080. Assim as janelas cabem no tamanho cheio: escala = dp, texto nitido. */
+#shell_header .slot[data-window="mu_helper_bar"] { position: absolute; left: 0; top: 0; }
