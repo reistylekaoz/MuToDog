@@ -16,6 +16,7 @@
 #include <RmlUi/Core/DataModelHandle.h>
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/Event.h>
+#include <SDL3/SDL_clipboard.h>
 #include <SDL3/SDL_misc.h>
 
 #include <algorithm>
@@ -53,6 +54,11 @@ constexpr int ActionClose = 9;
 constexpr std::array<std::array<int, 2>, 16> kCoins = {{{14, 13}, {14, 14}, {14, 16}, {14, 22}, {14, 31}, {14, 41},
                                                         {14, 42}, {12, 15}, {14, 43}, {14, 44}, {14, 151}, {14, 152},
                                                         {14, 153}, {14, 156}, {14, 157}, {255, 255}}};
+// os nomes do Godot (janela_mercado.gd), sem o "Jewel of ": as joias da casa (14,151 em diante) não existem na tabela de
+// itens do MuMain (lá são cartas e caixas de evento)
+constexpr std::array<const char*, 16> kCoinNames = {"Bless",   "Soul",      "Life",  "Creation", "Guardian", "Gemstone",
+                                                   "Harmony", "Chaos",     "Lower Refine", "Higher Refine",
+                                                   "Shimmer", "Luck",      "Skill", "Excellent", "Corruption", "TDC"};
 
 struct Offer
 {
@@ -126,13 +132,10 @@ std::string ItemName(int group, int number)
 
 std::string CoinName(int group, int number)
 {
-    if (group == 255 && number == 255)
-        return "TDC";
-    std::string name = ItemName(group, number);
-    for (const char* prefix : {"Jewel of ", "Jewel Of "})
-        if (name.rfind(prefix, 0) == 0)
-            name = name.substr(std::char_traits<char>::length(prefix));
-    return name;
+    for (size_t i = 0; i < kCoins.size(); ++i)
+        if (kCoins[i][0] == group && kCoins[i][1] == number)
+            return kCoinNames[i];
+    return ItemName(group, number);
 }
 
 std::string Thousands(std::uint32_t v)
@@ -319,8 +322,12 @@ void CMercadoWindow::ReceivePacket(const std::uint8_t* packet, int size)
         if (pass.empty())
             return;
         const std::string url = SiteUrl + pass;
-        g_Note = SDL_OpenURL(url.c_str()) ? "O mercado abriu no navegador (o passe vale 2 minutos)."
-                                          : "Não deu pra abrir o navegador: " + url;
+        if (SDL_OpenURL(url.c_str()))
+            g_Note = "O mercado abriu no navegador (o passe vale 2 minutos).";
+        else if (SDL_SetClipboardText(url.c_str()))
+            g_Note = "Não deu pra abrir o navegador: o endereço foi copiado, cole nele (vale 2 minutos).";
+        else
+            g_Note = "Não deu pra abrir o navegador. Abra o site e entre no Mercado.";
         ++g_Version;
     }
 }
