@@ -234,6 +234,16 @@ std::uint32_t ParsePrice(const std::string& text)
 }
 } // namespace
 
+std::string CMercadoWindow::ItemSprite(int group, int number)
+{
+    return Sprite(group, number);
+}
+
+std::string CMercadoWindow::CoinLabel(int group, int number)
+{
+    return CoinName(group, number);
+}
+
 CMercadoWindow::CMercadoWindow() = default;
 
 CMercadoWindow::~CMercadoWindow()

@@ -85,6 +85,12 @@ public:
     // C2 FB 10 e C1 FB 14 (WSclient.cpp ProcessPacket).
     static void ReceivePacket(const std::uint8_t* packet, int size);
 
+    // "image(item-<grupo>-<numero>)" quando o item tem desenho (dados/itens_icones.json), senão "". O sprite precisa
+    // estar no rcss do documento (o mercado.rcss tem todos, o bau_joias.rcss as joias e a TDC).
+    static std::string ItemSprite(int group, int number);
+    // O nome curto das moedas (as 15 joias do baú e a TDC), o da tabela de itens no resto.
+    static std::string CoinLabel(int group, int number);
+
 private:
     void BindRmlModel(Rml::DataModelConstructor& c, MercadoRmlModel& model);
     void RunPending();

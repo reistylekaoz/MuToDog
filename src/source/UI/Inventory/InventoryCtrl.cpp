@@ -17,6 +17,7 @@
 #include "GameLogic/Items/ItemCategories.h"
 #include "UI/RmlBridge/RmlTooltip.h"
 #include "UI/Tooltip/LegacyTextListTooltip.h"
+#include "UI/Estudo/BauJoiasWindow.h"
 
 #include <RmlUi/Core/ElementDocument.h>
 
@@ -1018,7 +1019,8 @@ int StackCount(const ITEM* pItem)
         || GameLogic::Items::IsElitePotionType(type) || type == ITEM_MEDIUM_ELITE_HEALING_POTION
         || GameLogic::Items::IsElixirType(type)
         || (type >= ITEM_CHERRY_BLOSSOM_WINE && type <= ITEM_GOLDEN_CHERRY_BLOSSOM_BRANCH)
-        || type == ITEM_ELITE_SD_POTION;
+        || type == ITEM_ELITE_SD_POTION
+        || mu::ui::window::CBauJoiasWindow::IsBankJewel(type); // MuToDog: as joias do baú empilham até 255
     if (stack && pItem->Durability > 1)
         return pItem->Durability;
     if (COMGEM::isCompiledGem(pItem))

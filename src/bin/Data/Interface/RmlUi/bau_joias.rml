@@ -1,0 +1,75 @@
+<rml>
+<head>
+	<title>Baú de joias</title>
+	<link type="text/rcss" href="base.rcss"/>
+	<link type="text/rcss" href="bau_joias.rcss"/>
+</head>
+<body data-model="bau_joias">
+	<!-- MuToDog (MU Estudo, rodada 16): Baú de joias (CBauJoiasWindow), no jeito do cliente Godot
+	     (janela_bau_joias.gd): o saldo da conta, uma linha por joia com Retirar (quantas, em pilhas de até 255), a TDC
+	     só pra ver. Separar tira parte de uma pilha da mochila; Agrupar junta as pilhas. Guardar é Ctrl + botão
+	     direito na joia da mochila. Geometria em px da tela de referência 640 x 480 (.stage). Os ícones são sprites
+	     item-<grupo>-<numero> (bau_joias.rcss, escritos por tools/obsidiana_theme/icones_itens.py). -->
+	<div id="screen" class="stage">
+		<div id="panel">
+			<div id="title">Baú de joias</div>
+			<div id="rule"></div>
+
+			<div id="saldo" data-if="mode == 0">
+				<div id="rows" class="scroll-pane">
+					<div class="row" data-for="r : rows">
+						<div class="art" data-style-decorator="r.decorator"></div>
+						<div class="name">{{r.name}}</div>
+						<div class="qty" data-class-zero="!r.can &amp;&amp; !r.tdc">{{r.qty}}</div>
+						<div class="act" data-if="r.can" data-event-click="bau_withdraw_open(r.index)">Retirar</div>
+						<div class="site" data-if="r.tdc">loja do site</div>
+					</div>
+				</div>
+				<div id="group" class="button" data-event-click="bau_group">Agrupar</div>
+				<div id="split_open" class="button" data-event-click="bau_split_open">Separar</div>
+				<div id="close" class="button" data-event-click="bau_close">Fechar</div>
+			</div>
+
+			<div id="retirar" data-if="mode == 1">
+				<div class="step">Retirar · Quantas colocar na mochila?</div>
+				<div class="picked">
+					<div class="box"><div class="art" data-style-decorator="pick_decorator"></div></div>
+					<div class="label">{{pick_name}}</div>
+				</div>
+				<input type="text" id="qty_field" class="text-field text-field--numeric" maxlength="13" data-value="qty"/>
+				<div class="help">{{help}}</div>
+				<div id="withdraw" class="button main" data-event-click="bau_withdraw">Retirar</div>
+				<div id="back1" class="button" data-event-click="bau_back">Voltar</div>
+			</div>
+
+			<div id="escolher" data-if="mode == 2">
+				<div class="step">Separar · Escolha a pilha da mochila</div>
+				<div id="bag" class="scroll-pane">
+					<div class="row pick" data-for="b : bag" data-event-click="bau_bag(b.slot)">
+						<div class="art" data-style-decorator="b.decorator"></div>
+						<div class="name">{{b.name}}</div>
+						<div class="qty">{{b.qty}}</div>
+					</div>
+					<div class="none" data-if="bag.size == 0">Nenhuma pilha de 2 ou mais joias na mochila.</div>
+				</div>
+				<div id="back2" class="button" data-event-click="bau_back">Voltar</div>
+			</div>
+
+			<div id="separar" data-if="mode == 3">
+				<div class="step">Separar · Quantas tirar da pilha?</div>
+				<div class="picked">
+					<div class="box"><div class="art" data-style-decorator="pick_decorator"></div></div>
+					<div class="label">{{pick_name}}</div>
+				</div>
+				<input type="text" id="qty_field" class="text-field text-field--numeric" maxlength="4" data-value="qty"/>
+				<div class="help">{{help}}</div>
+				<div id="split" class="button main" data-event-click="bau_split">Separar</div>
+				<div id="back3" class="button" data-event-click="bau_back">Voltar</div>
+			</div>
+
+			<div id="note">{{note}}</div>
+			<div id="hint">Guardar: Ctrl + botão direito na joia da mochila.<br/>O saldo é da conta e vale na loja do site.</div>
+		</div>
+	</div>
+</body>
+</rml>

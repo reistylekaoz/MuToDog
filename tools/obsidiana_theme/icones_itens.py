@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rodada 15 (Mercado): os ícones de todos os itens, tirados do atlas do cliente Godot (dados/icones.png + icones.json),
 numa folha só, 32 x 32 por item, 32 por linha: themes/modern/itens/todos.ozt. O @spritesheet (item-<grupo>-<numero>)
-é escrito entre as marcas /* sprites */ do mercado.rcss do modern e do legacy (o obsidiana vem do modern), e a lista
+é escrito entre as marcas /* sprites */ do mercado.rcss (e só as joias no bau_joias.rcss) do modern e do legacy (o obsidiana vem do modern), e a lista
 das chaves que têm desenho vai pra dados/itens_icones.json (o C++ só põe decorator no que existe).
 A TDC (a moeda da casa, 255,255) é desenhada aqui: moeda de ouro com T, como no Godot (janela_mercado.gd).
 Uso: python3 tools/obsidiana_theme/icones_itens.py [pasta godot]"""
@@ -21,6 +21,8 @@ GODOT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / "casa/trabalho
 JOIAS = Path.home() / "casa/trabalho/mu-online/ferramentas/joias/3d/cintilante-miniatura.png"
 CORES_JOIAS = {"14,151": None, "14,152": (215, 1.0, 1.0), "14,153": (50, 1.0, 1.0), "14,156": (130, 1.0, 1.0),
                "14,157": (262, 1.2, 0.6)}
+BAU = ["14,13", "14,14", "14,16", "14,22", "14,31", "14,41", "14,42", "12,15", "14,43", "14,44", "14,151", "14,152",
+       "14,153", "14,156", "14,157", "255,255"]
 LADO, POR_LINHA = 32, 32  # o MuMain lê textura de até 1024 x 1024 (BitmapTextureLimits.h)
 
 
@@ -102,12 +104,17 @@ def main():
     (TEMAS.parent / "dados/itens_icones.json").write_text(json.dumps(chaves, separators=(",", ":")) + "\n")
     bloco = ("/* sprites */\n@spritesheet itens-todos\n{\n\tsrc: \"../modern/itens/todos.tga\";\n"
              + "\n".join(sprites) + "\n}\n/* fim dos sprites */")
+    # o baú de joias (rodada 16) só leva as 15 joias e a TDC
+    bau = [s for s in sprites if s.split(":")[0].strip() in {"item-" + k.replace(",", "-") for k in BAU}]
+    bloco_bau = ("/* sprites */\n@spritesheet itens-bau\n{\n\tsrc: \"../modern/itens/todos.tga\";\n"
+                 + "\n".join(bau) + "\n}\n/* fim dos sprites */")
     for tema in ("modern", "legacy"):
-        rcss = TEMAS / tema / "mercado.rcss"
-        texto = rcss.read_text()
-        novo = re.sub(r"/\* sprites \*/.*?/\* fim dos sprites \*/", lambda _: bloco, texto, flags=re.S)
-        assert novo != texto or bloco in texto, rcss
-        rcss.write_text(novo)
+        for nome, b in (("mercado", bloco), ("bau_joias", bloco_bau)):
+            rcss = TEMAS / tema / f"{nome}.rcss"
+            texto = rcss.read_text()
+            novo = re.sub(r"/\* sprites \*/.*?/\* fim dos sprites \*/", lambda _: b, texto, flags=re.S)
+            assert novo != texto or b in texto, rcss
+            rcss.write_text(novo)
     print(f"itens: {len(chaves)} icones, folha {folha.width} x {folha.height}")
 
 

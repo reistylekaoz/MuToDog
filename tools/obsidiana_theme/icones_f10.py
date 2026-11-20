@@ -15,7 +15,7 @@ MENU = ["inventario", "personagem", "quests", "mover", "minimapa", "comandos_cha
         "gens", "cash", "helper", "ligar_helper", "menu_jogo", "ajuda"]
 HUD = ["reset", "grand_reset", "agenda"]
 # os que levam outro nome no F10: Mercado (rodada 15) usa o ícone do NPC da loja
-OUTROS = {"mercado": "npc/loja"}
+OUTROS = {"mercado": "npc/loja", "bau_joias": "npc/bau"}
 LADO = 80
 
 

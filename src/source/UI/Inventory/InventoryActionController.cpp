@@ -25,6 +25,7 @@
 #include "I18N/All.h"
 #include "GameLogic/Items/ShopRestrictions.h"
 #include "GameLogic/Items/TradeRestrictions.h"
+#include "UI/Estudo/BauJoiasWindow.h"
 
 namespace mu::ui::window
 {
@@ -149,6 +150,20 @@ bool CInventoryActionController::HandleRepairClick(CInventoryCtrl* targetControl
 bool CInventoryActionController::HandleRightClick(CInventoryCtrl* targetControl) const
 {
     m_pContext->ResetMouseRButton();
+
+    // MuToDog (MU Estudo, rodada 16): Ctrl + direito na joia da mochila guarda a pilha no baú de joias
+    if (IsRepeat(VK_CONTROL) && CInventoryCtrl::GetPickedItem() == nullptr && targetControl->ContainsPointer()
+        && targetControl->GetStorageType() == STORAGE_TYPE::INVENTORY)
+    {
+        const ITEM* pItem = targetControl->FindItemAtPointer();
+        const int slot = pItem != nullptr ? targetControl->GetIndexByItem(pItem) : -1;
+        if (pItem != nullptr && CBauJoiasWindow::IsBankJewel(pItem->Type) && slot >= MAX_EQUIPMENT_INDEX
+            && slot < MAX_MY_INVENTORY_EX_INDEX)
+        {
+            CBauJoiasWindow::Deposit(slot);
+            return true;
+        }
+    }
 
     if (g_pNewUISystem->IsVisible(INTERFACE_STORAGE))
     {

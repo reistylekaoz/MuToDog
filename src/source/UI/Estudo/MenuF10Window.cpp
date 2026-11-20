@@ -23,6 +23,7 @@ constexpr int ActionSystemMenu = -2;
 constexpr int ActionColecoes = -3;
 constexpr int ActionAlma = -4;
 constexpr int ActionMercado = -5;
+constexpr int ActionBauJoias = -6;
 
 struct MenuF10Entry
 {
@@ -42,6 +43,7 @@ constexpr MenuF10Entry kEntries[] = {
     {ActionColecoes, "", "Coleções", "Entregue sets de armadura e ganhe bônus pra sempre.", "colecoes"},
     {ActionAlma, "", "Alma", "Pontos de alma de cada reset em 16 bônus.", "alma"},
     {ActionMercado, "", "Mercado", "Venda itens pra outros jogadores. A compra é no site.", "mercado"},
+    {ActionBauJoias, "", "Baú de joias", "As joias guardadas da conta. Ctrl + botão direito guarda.", "bau_joias"},
     {'M', "M", "Mover de mapa", "Viajar pra outro mapa pagando zen.", "mover"},
     {VK_TAB, "Tab", "Minimapa", "O mapa do lugar onde você está.", "minimapa"},
     {'J', "J", "Comandos do chat", "Os comandos de barra (/) que o chat aceita.", "comandos_chat"},
@@ -160,6 +162,12 @@ void CMenuF10Window::RunCell(int index)
         g_pNewUISystem->Show(INTERFACE_ALMA);
     else if (key == ActionMercado)
         g_pNewUISystem->Show(INTERFACE_MERCADO);
+    else if (key == ActionBauJoias)
+    {
+        // a mochila do lado: guardar é Ctrl + botão direito nela
+        g_pNewUISystem->Show(INTERFACE_INVENTORY);
+        g_pNewUISystem->Show(INTERFACE_BAU_JOIAS);
+    }
     else if (key == ActionSystemMenu)
         ShowSystemMenuDialog();
     else

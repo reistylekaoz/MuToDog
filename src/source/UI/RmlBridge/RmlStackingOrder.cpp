@@ -138,6 +138,7 @@ constexpr DocumentPlacement Placements[] = {
     {"colecoes.rml", 10.62f, MainScene},
     {"alma.rml", 10.62f, MainScene},
     {"mercado.rml", 10.64f, MainScene},
+    {"bau_joias.rml", 10.64f, MainScene},
     {"eventos.rml", 10.62f, MainScene},
     {"missoes.rml", 10.62f, MainScene},
     {"command_window.rml", 10.65f, MainScene}, // UI::RmlBridge::ForegroundPanelLayerDepth
