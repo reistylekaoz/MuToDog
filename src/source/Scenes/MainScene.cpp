@@ -608,7 +608,9 @@ static void RenderGameWorldPass(BYTE& byWaterMap, int width, int height)
             }
         }
         else
-            if (gMapManager.WorldActive != WD_10HEAVEN && gMapManager.WorldActive != -1)
+            // MuToDog (MU Estudo, rodada 19): o Icarus é a Crimson Icarus do S20, que pisa no terreno (o do S6 pisava
+            // nas ilhas e não desenhava o terreno)
+            if (gMapManager.WorldActive != -1)
             {
                 if ((gMapManager.IsPKField() || IsDoppelGanger2()) && renderStatic)
                 {
