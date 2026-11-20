@@ -1,0 +1,22 @@
+<rml>
+<head>
+	<title>Nomes dos NPCs</title>
+	<link type="text/rcss" href="base.rcss"/>
+	<link type="text/rcss" href="nomes_npc.rcss"/>
+</head>
+<body data-model="nomes_npc">
+	<!-- MuToDog (MU Estudo, rodada 14): nome e ícone em cima de cada NPC, sempre à mostra (CNomesNpcWindow), no jeito do
+	     cliente Godot (textos_mu.gd _nome_npc): o ícone do que ele faz boiando em cima do nome; o Zoak com o estado da
+	     missão do mapa (! pra pegar, V apagado, V aceso pulsando). Em px da janela, sem a escala da raiz: o C++ manda a
+	     posição da cabeça e o tamanho da letra e do ícone já na escala da tela, pro texto sair nítido. -->
+	<!-- bound-geometry: cada NPC fica onde a câmera põe a cabeça dele, e letra e ícone seguem o tamanho da janela -->
+	<div class="npc" data-for="n : rows" data-style-left="n.left" data-style-top="n.top"
+	     data-class-pulse="n.pulse" data-class-hot="n.hot">
+		<div class="tag" data-style-font-size="font_size">
+			<img class="icon" data-if="n.icon != ''" data-attr-src="n.icon"
+			     data-style-width="icon_size" data-style-height="icon_size"/>
+			<div class="name">{{n.name}}</div>
+		</div>
+	</div>
+</body>
+</rml>

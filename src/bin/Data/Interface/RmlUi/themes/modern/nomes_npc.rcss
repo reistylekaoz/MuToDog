@@ -1,0 +1,36 @@
+/* MuToDog (MU Estudo, rodada 14): nome e ícone em cima dos NPCs (nomes_npc.rml), no jeito do cliente Godot
+   (textos_mu.gd _nome_npc, a MuDream): nome em azul claro com contorno, sem caixa; ícone boiando devagar em cima,
+   o ! e o V aceso pulsando. Px da janela: posição, letra e ícone chegam do C++ já na escala da tela. */
+body { pointer-events: none; font-family: "token(font-body)"; }
+
+.npc { position: absolute; width: 0px; height: 0px; pointer-events: none; }
+.tag {
+	position: absolute;
+	left: -200px;
+	bottom: 0px;
+	width: 400px;
+	text-align: center;
+	pointer-events: none;
+}
+.icon {
+	display: block;
+	margin: 0px auto;
+	animation: 1.6s sine-in-out infinite alternate npc-boia;
+}
+.npc.pulse .icon { animation: 0.8s sine-in-out infinite alternate npc-pulsa; }
+@keyframes npc-boia {
+	from { transform: translateY(0%); }
+	to { transform: translateY(-8%); }
+}
+@keyframes npc-pulsa {
+	from { transform: translateY(0%) scale(1); }
+	to { transform: translateY(-8%) scale(1.08); }
+}
+.name {
+	display: block;
+	white-space: nowrap;
+	font-weight: bold;
+	color: #78d2fa;
+	font-effect: outline(1px #000000d8);
+}
+.npc.hot .name { color: #aaebff; }
