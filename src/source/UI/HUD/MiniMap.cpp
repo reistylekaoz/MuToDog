@@ -295,6 +295,7 @@ void mu::ui::window::CMiniMap::BindRmlModel(Rml::DataModelConstructor& c, MiniMa
     marker.RegisterMember("portal", &MiniMapMarkerEntry::portal);
     marker.RegisterMember("size", &MiniMapMarkerEntry::size);
     marker.RegisterMember("transform", &MiniMapMarkerEntry::transform);
+    marker.RegisterMember("icon", &MiniMapMarkerEntry::icon); // MuToDog (rodada 14)
     c.RegisterArray<std::vector<MiniMapMarkerEntry>>();
     c.Bind("markers", &model.markers);
 
