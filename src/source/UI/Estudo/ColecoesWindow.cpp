@@ -338,6 +338,11 @@ UI::RmlBridge::Tooltip::LineColor ColLineColor(int color)
     case TEXT_COLOR_REDPURPLE: return LineColor::RedPurple;
     case TEXT_COLOR_VIOLET: return LineColor::Violet;
     case TEXT_COLOR_ORANGE: return LineColor::Orange;
+    case TEXT_COLOR_TIER1: return LineColor::Tier1;
+    case TEXT_COLOR_TIER2: return LineColor::Tier2;
+    case TEXT_COLOR_TIER3: return LineColor::Tier3;
+    case TEXT_COLOR_TIER4: return LineColor::Tier4;
+    case TEXT_COLOR_TIER5: return LineColor::Tier5;
     case TEXT_COLOR_DARKRED: return LineColor::DarkRedHighlight;
     case TEXT_COLOR_DARKBLUE: return LineColor::DarkBlueHighlight;
     case TEXT_COLOR_DARKYELLOW: return LineColor::DarkYellowHighlight;

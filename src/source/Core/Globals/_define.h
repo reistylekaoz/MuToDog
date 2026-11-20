@@ -231,6 +231,12 @@ enum struct STORAGE_TYPE
 #define TEXT_COLOR_REDPURPLE  11
 #define TEXT_COLOR_VIOLET	12
 #define TEXT_COLOR_ORANGE	13
+// MuToDog (MU Estudo, rodada 18): os tiers das linhas excelentes, Comum a Lendário (UI/Estudo/TiersExcelentes.h)
+#define TEXT_COLOR_TIER1	14
+#define TEXT_COLOR_TIER2	15
+#define TEXT_COLOR_TIER3	16
+#define TEXT_COLOR_TIER4	17
+#define TEXT_COLOR_TIER5	18
 
 ////////////////////////////////////////_inventory end_///////////////////////////////////////////////////////
 ////////////////////////////////////////_LodTerrain start_//////////////////////////////////////////////////////

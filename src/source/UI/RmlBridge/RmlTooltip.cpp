@@ -38,6 +38,8 @@ namespace UI::RmlBridge::Tooltip
             bool colorRedPurple = false;
             bool colorViolet = false;
             bool colorOrange = false;
+            // MuToDog (MU Estudo, rodada 18): o tier da linha excelente, 0 = não é (classes tt-tier1 a tt-tier5)
+            int tier = 0;
             bool highlightDarkRed = false;
             bool highlightDarkBlue = false;
             bool highlightDarkYellow = false;
@@ -129,6 +131,7 @@ namespace UI::RmlBridge::Tooltip
             line.RegisterMember("color_redpurple", &TooltipLineEntry::colorRedPurple);
             line.RegisterMember("color_violet", &TooltipLineEntry::colorViolet);
             line.RegisterMember("color_orange", &TooltipLineEntry::colorOrange);
+            line.RegisterMember("tier", &TooltipLineEntry::tier);
             line.RegisterMember("highlight_darkred", &TooltipLineEntry::highlightDarkRed);
             line.RegisterMember("highlight_darkblue", &TooltipLineEntry::highlightDarkBlue);
             line.RegisterMember("highlight_darkyellow", &TooltipLineEntry::highlightDarkYellow);
@@ -185,6 +188,11 @@ namespace UI::RmlBridge::Tooltip
             case LineColor::RedPurple: entry.colorRedPurple = true; break;
             case LineColor::Violet: entry.colorViolet = true; break;
             case LineColor::Orange: entry.colorOrange = true; break;
+            case LineColor::Tier1: entry.tier = 1; break;
+            case LineColor::Tier2: entry.tier = 2; break;
+            case LineColor::Tier3: entry.tier = 3; break;
+            case LineColor::Tier4: entry.tier = 4; break;
+            case LineColor::Tier5: entry.tier = 5; break;
             case LineColor::DarkRedHighlight: entry.highlightDarkRed = true; break;
             case LineColor::DarkBlueHighlight: entry.highlightDarkBlue = true; break;
             case LineColor::DarkYellowHighlight: entry.highlightDarkYellow = true; break;

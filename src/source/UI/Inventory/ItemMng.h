@@ -41,7 +41,17 @@ struct ItemCreationParams
 
     bool WithExpiration;
     bool IsExpired;
+
+    // MuToDog (MU Estudo, rodada 18): o bloco do estudo (ITEM::ExcTier, ExcBonus, KundunTier)
+    BYTE ExcTier[6];
+    WORD ExcBonus;
+    BYTE KundunTier;
 };
+
+// MuToDog (MU Estudo, rodada 18): o bit 0x80 do byte excelente (as opções usam só os bits 0..5) avisa que o item traz
+// os 4 bytes do estudo no fim (tiers das linhas, semente das linhas bônus, tier da Box of Kundun).
+inline constexpr BYTE EstudoBlockFlag = 0x80;
+inline constexpr int EstudoBlockLength = 4;
 
 ItemCreationParams ParseItemData(std::span<const BYTE> itemData);
 

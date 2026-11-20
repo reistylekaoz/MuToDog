@@ -47,6 +47,12 @@ namespace UI::RmlBridge::Tooltip
         RedPurple,
         Violet,
         Orange,
+        // MuToDog (MU Estudo, rodada 18): os tiers das linhas excelentes, Comum a Lendário
+        Tier1,
+        Tier2,
+        Tier3,
+        Tier4,
+        Tier5,
         DarkRedHighlight,
         DarkBlueHighlight,
         DarkYellowHighlight,

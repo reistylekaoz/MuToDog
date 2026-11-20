@@ -250,7 +250,11 @@ void GetSpecialOptionText(wchar_t* Text, WORD Option, WORD Value, int iMana);
 std::optional<int> WriteDefinitionOptionLines(const ITEM& item, int slot, int textNum, int rowLimit);
 // The tooltip lines of `option` with `value`: its texts, blue and not bold, from row `textNum` on and before row
 // `rowLimit`; the rows written.
-int WriteOptionLines(const Data::Items::ItemOption& option, int value, int textNum, int rowLimit);
+// MuToDog (MU Estudo, rodada 18): `color` e `divisor` (> 0 troca o do termo "level/20") pra linha com tier.
+int WriteOptionLines(const Data::Items::ItemOption& option, int value, int textNum, int rowLimit,
+                     int color = TEXT_COLOR_BLUE, int divisor = 0);
+// O divisor do termo da opção ("level/20" dá 20); 0 sem termo.
+int OptionDivisor(const Data::Items::ItemOption& option);
 // The item's information and repair tooltips, anchored in window pixels: their layout runs in the
 // screen's 640x480 stretch, the space the original computed it in, whichever window asks.
 void RenderItemInfoAtPx(float x, float y, const ITEM* ip, bool Sell, int Inventype = 0,

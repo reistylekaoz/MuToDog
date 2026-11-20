@@ -16,7 +16,7 @@
 		     data-class-tt-red="line.color_red" data-class-tt-yellow="line.color_yellow"
 		     data-class-tt-green="line.color_green" data-class-tt-purple="line.color_purple"
 		     data-class-tt-redpurple="line.color_redpurple" data-class-tt-violet="line.color_violet"
-		     data-class-tt-orange="line.color_orange" data-class-tt-hl-darkred="line.highlight_darkred"
+		     data-class-tt-orange="line.color_orange" data-class-tt-tier1="line.tier == 1" data-class-tt-tier2="line.tier == 2" data-class-tt-tier3="line.tier == 3" data-class-tt-tier4="line.tier == 4" data-class-tt-tier5="line.tier == 5" data-class-tt-hl-darkred="line.highlight_darkred"
 		     data-class-tt-hl-darkblue="line.highlight_darkblue" data-class-tt-hl-darkyellow="line.highlight_darkyellow"
 		     data-class-tt-hl-greenblue="line.highlight_greenblue" data-class-bold="line.bold"
 		     data-class-tt-half-spacer="line.is_half_spacer" data-class-tt-full-spacer="line.is_full_spacer"

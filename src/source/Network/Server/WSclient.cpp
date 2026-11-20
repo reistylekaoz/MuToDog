@@ -1777,8 +1777,11 @@ int CalcItemLength(std::span<const BYTE> ReceiveBuffer)
         size++;
     }
 
+    // MuToDog (MU Estudo, rodada 18): o bloco do estudo (ItemMng.h, EstudoBlockFlag) vem depois de tudo
+    bool estudoBlock = false;
     if (Data->OptionFlags & ItemOptionFlags::HasExcellent)
     {
+        estudoBlock = size < available && (ReceiveBuffer[size] & EstudoBlockFlag) != 0;
         size++;
     }
 
@@ -1797,6 +1800,10 @@ int CalcItemLength(std::span<const BYTE> ReceiveBuffer)
         const int socketCount = size < available ? ReceiveBuffer[size] & 0xF : 0;
         size++;
         size += socketCount;
+    }
+    else if (estudoBlock)
+    {
+        size += EstudoBlockLength;
     }
 
     if (size > available)

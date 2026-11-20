@@ -6,8 +6,8 @@
 // - O total vem do servidor: C1 0B FB 70 [id BE16] [degrau] [GS LE16] [0 0] (AuraForca.cs), mandado quando o
 //   personagem entra na visão (ele mesmo incluso) e quando troca equipamento. Antes do primeiro, a conta daqui.
 // - A caixa do item mostra Base Score e Grade Score (tabela dados/gear_score_base.json, a mesma do Godot, tirada do
-//   banco do servidor por ferramentas/gear_score_tabela.py). O protocolo do MuMain (ItemSerializerExtended) não traz
-//   o tier de cada linha excelente: aqui cada linha vale Raro, como o Godot faz quando o tier não veio.
+//   banco do servidor por ferramentas/gear_score_tabela.py). Cada linha excelente vale pelo tier dela (rodada 18,
+//   TiersExcelentes.h), a asa também (o servidor manda o tier das opções de asa no mesmo bloco).
 // - O ícone do GS fica na frente da fila de buffs (CBuffStrip pergunta Total e BonusTooltip).
 
 #include "UI/RmlBridge/RmlTooltip.h"

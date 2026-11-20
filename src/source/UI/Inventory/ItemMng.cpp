@@ -36,6 +36,34 @@ void ReadSockets(std::span<const BYTE> itemData, size_t index, ItemCreationParam
         params.SocketOptions[i] = itemData[first + i];
     }
 }
+
+// MuToDog (MU Estudo, rodada 18): os 4 bytes do estudo no fim do item excelente (ItemSerializerExtended do servidor,
+// os mesmos dos bytes 8..11 do formato S6): 3 bits de tier por linha (bit i do byte excelente em 3*i, 7 = sem
+// linha) e v = tier da Box of Kundun * 2048 + semente das linhas bônus (6 bits de cima do primeiro byte = v >> 8,
+// último byte = v & 0xFF); sem semente os 6 bits são 0x3F e o último byte 0xE0 | tier da caixa (ou 0xFF).
+void ReadEstudoBlock(std::span<const BYTE> itemData, size_t index, ItemCreationParams& params)
+{
+    if (itemData.size() < index + 4)
+        return;
+    const int bits = (itemData[index] << 16) | (itemData[index + 1] << 8) | itemData[index + 2];
+    for (int i = 0; i < 6; ++i)
+    {
+        const int tier = (bits >> (3 * i)) & 7;
+        params.ExcTier[i] = tier >= 1 && tier <= 5 ? static_cast<BYTE>(tier) : 0;
+    }
+    const int high = (itemData[index] >> 2) & 0x3F;
+    const BYTE last = itemData[index + 3];
+    if (high != 0x3F)
+    {
+        const int v = (high << 8) | last;
+        params.ExcBonus = static_cast<WORD>((v & 0x7FF) + 1);
+        params.KundunTier = static_cast<BYTE>(v >> 11);
+    }
+    else if ((last & 0xF0) == 0xE0)
+    {
+        params.KundunTier = last & 0x0F;
+    }
+}
 } // namespace
 
 ItemCreationParams ParseItemData(std::span<const BYTE> itemData)
@@ -62,9 +90,12 @@ ItemCreationParams ParseItemData(std::span<const BYTE> itemData)
         offset++;
     }
 
+    bool estudoBlock = false;
     if (flags & ItemOptionFlags::HasExcellent)
     {
-        params.ExcellentFlags = ItemByteAt(itemData, 5 + offset);
+        const BYTE excellentByte = ItemByteAt(itemData, 5 + offset);
+        estudoBlock = (excellentByte & EstudoBlockFlag) != 0;
+        params.ExcellentFlags = static_cast<BYTE>(excellentByte & ~EstudoBlockFlag);
         offset++;
     }
 
@@ -91,6 +122,10 @@ ItemCreationParams ParseItemData(std::span<const BYTE> itemData)
     if (flags & ItemOptionFlags::HasSockets)
     {
         ReadSockets(itemData, 5 + offset, params);
+    }
+    else if (estudoBlock)
+    {
+        ReadEstudoBlock(itemData, 5 + offset, params);
     }
 
     return params;
@@ -188,6 +223,9 @@ void FillItemFromParameters(ITEM& item, const ItemCreationParams& parameters)
     item.option_380 = parameters.HasGuardianOption;
     item.SocketCount = parameters.SocketCount;
     item.SocketSeedSetOption = parameters.SocketBonusOption;
+    std::copy(std::begin(parameters.ExcTier), std::end(parameters.ExcTier), std::begin(item.ExcTier));
+    item.ExcBonus = parameters.ExcBonus;
+    item.KundunTier = parameters.KundunTier;
     for (int i = 0; i < MAX_SOCKETS; ++i)
     {
         item.bySocketOption[i] = parameters.SocketOptions[i];

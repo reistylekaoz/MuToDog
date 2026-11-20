@@ -51,6 +51,7 @@
 #include "GameLogic/Items/ItemNameParts.h"
 #include "Data/GameData/ItemData/ItemDescriptionPlaceholders.h"
 #include "UI/Estudo/GearScore.h"
+#include "UI/Estudo/TiersExcelentes.h"
 #include "Data/GameData/ItemData/ItemTooltipLines.h"
 #include "Data/GameData/ItemData/ItemType.h"
 #include "Core/Text/TextLineWrap.h"
@@ -387,6 +388,11 @@ void RenderTipTextList(const int sx, const int sy, int TextNum, int Tab, int iSo
             case TEXT_COLOR_REDPURPLE: g_pRenderText->SetTextColor(204, 128, 204, 255); break;
             case TEXT_COLOR_VIOLET: g_pRenderText->SetTextColor(179, 102, 255, 255); break;
             case TEXT_COLOR_ORANGE: g_pRenderText->SetTextColor(230, 107, 10, 255); break;
+            case TEXT_COLOR_TIER1: g_pRenderText->SetTextColor(157, 157, 157, 255); break;
+            case TEXT_COLOR_TIER2: g_pRenderText->SetTextColor(30, 255, 0, 255); break;
+            case TEXT_COLOR_TIER3: g_pRenderText->SetTextColor(47, 143, 255, 255); break;
+            case TEXT_COLOR_TIER4: g_pRenderText->SetTextColor(180, 92, 255, 255); break;
+            case TEXT_COLOR_TIER5: g_pRenderText->SetTextColor(255, 128, 0, 255); break;
             default: g_pRenderText->SetTextColor(255, 255, 255, 255); break;
             }
             if (TEXT_COLOR_DARKRED == TextListColor[i])
@@ -1093,21 +1099,45 @@ std::optional<int> WriteDefinitionOptionLines(const ITEM& item, int slot, int te
     {
         return std::nullopt;
     }
-    return WriteOptionLines(*slotOption->option, GameLogic::Items::GetSlotOptionValue(item, *slotOption), textNum,
-                            rowLimit);
+    int value = GameLogic::Items::GetSlotOptionValue(item, *slotOption);
+    // MuToDog (MU Estudo, rodada 18): a linha excelente sai com o valor e a cor do tier dela (TiersExcelentes.h)
+    const Data::Items::ItemOption& option = *slotOption->option;
+    if (slotOption->definition->type == Data::Items::ItemOptionType::Excellent &&
+        g_ItemDatabase.GetSlot(item.Type) != Data::Items::ItemSlot::Wings)
+    {
+        int divisor = OptionDivisor(option);
+        const int bit = option.number - 1;
+        if (mu::ui::window::TiersExcelentes::ValorDoTier(item, bit, option.attribute, value, divisor))
+        {
+            return WriteOptionLines(option, value, textNum, rowLimit,
+                                    mu::ui::window::TiersExcelentes::Cor(
+                                        mu::ui::window::TiersExcelentes::TierLinha(item, bit)),
+                                    divisor);
+        }
+    }
+    return WriteOptionLines(option, value, textNum, rowLimit);
 }
 
-int WriteOptionLines(const Data::Items::ItemOption& option, int value, int textNum, int rowLimit)
+int OptionDivisor(const Data::Items::ItemOption& option)
 {
-    Engine::Items::OptionLines::LineValues values;
-    values.value = value;
     for (const Data::Items::ItemOptionTerm& term : option.value.per)
     {
         if (term.divisor > 0)
         {
-            values.divisor = term.divisor;
-            break;
+            return term.divisor;
         }
+    }
+    return 0;
+}
+
+int WriteOptionLines(const Data::Items::ItemOption& option, int value, int textNum, int rowLimit, int color,
+                     int divisor)
+{
+    Engine::Items::OptionLines::LineValues values;
+    values.value = value;
+    if (const int termDivisor = OptionDivisor(option); termDivisor > 0)
+    {
+        values.divisor = divisor > 0 ? divisor : termDivisor;
     }
     const int lastRow = std::min(rowLimit, MaxTextListRows);
     int row = textNum;
@@ -1115,7 +1145,7 @@ int WriteOptionLines(const Data::Items::ItemOption& option, int value, int textN
     {
         if (row < lastRow && Engine::Items::OptionLines::Write(name, values, TextList[row], std::size(TextList[row])))
         {
-            TextListColor[row] = TEXT_COLOR_BLUE;
+            TextListColor[row] = color;
             TextBold[row] = false;
             ++row;
         }
@@ -1925,8 +1955,14 @@ static ItemTooltipBuild BuildItemTooltipText(const ITEM* ip, bool Sell, int Inve
         }
     }
 
-    mu_swprintf(TextList[TextNum], L"%.*ls", static_cast<int>(std::size(TextList[0]) - 1), name.text.c_str());
-    TextListColor[TextNum] = Color;
+    // MuToDog (MU Estudo, rodada 18): "(Tier N) " na frente do excelente da Box of Kundun +N, e o nome na cor do
+    // melhor tier das linhas excelentes, como no cliente Godot
+    const std::wstring kundunPrefix =
+        ip->KundunTier > 0 && ip->ExcellentFlags != 0 ? L"(Tier " + std::to_wstring(ip->KundunTier) + L") " : L"";
+    mu_swprintf(TextList[TextNum], L"%.*ls%.*ls", static_cast<int>(kundunPrefix.size()), kundunPrefix.c_str(),
+                static_cast<int>(std::size(TextList[0]) - 1 - kundunPrefix.size()), name.text.c_str());
+    const int bestTier = mu::ui::window::TiersExcelentes::MelhorTier(*ip);
+    TextListColor[TextNum] = bestTier > 0 ? mu::ui::window::TiersExcelentes::Cor(bestTier) : Color;
     TextBold[TextNum] = true;
     TextNum++;
     writeLayoutLines(Data::Items::TooltipSection::Name);
@@ -2218,6 +2254,9 @@ static ItemTooltipBuild BuildItemTooltipText(const ITEM* ip, bool Sell, int Inve
             TextListColor[TextNum] = TEXT_COLOR_DARKRED; TextBold[TextNum] = false; TextNum++;
         }
     }
+
+    // MuToDog (MU Estudo, rodada 18): as 2 linhas bônus do excelente e o bônus de +13 a +15
+    TextNum += mu::ui::window::TiersExcelentes::EscreverLinhasBonus(*ip, TextNum, MaxTextListRows);
 
     // The blank row after the options.
     writeLayoutLines(Data::Items::TooltipSection::Options);

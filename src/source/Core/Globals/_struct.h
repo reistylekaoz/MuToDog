@@ -225,6 +225,13 @@ typedef struct tagITEM
     bool	bExpiredPeriod;
     long	lExpireTime;
 
+    // MuToDog (MU Estudo, rodada 18): o bloco do estudo no fim do item excelente (UI/Estudo/TiersExcelentes.h). O
+    // tier 1..5 de cada linha excelente (bit 0..5 do ExcellentFlags; 0 = não veio, vale Raro), a semente das 2
+    // linhas bônus + 1 (0 = sem) e o tier da Box of Kundun (0 = sem).
+    BYTE ExcTier[6];
+    WORD ExcBonus;
+    BYTE KundunTier;
+
 private:
     friend class mu::ui::window::CItemMng;
     int   RefCount;

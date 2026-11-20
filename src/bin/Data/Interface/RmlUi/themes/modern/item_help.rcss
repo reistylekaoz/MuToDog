@@ -46,6 +46,13 @@
 .tip-line--redpurple { color: #cc80cc; }
 .tip-line--violet { color: #b366ff; }
 .tip-line--orange { color: #e66b0a; }
+/* MuToDog (MU Estudo, rodada 18): tiers das linhas excelentes, Comum a Lendario */
+.tip-line--tier1 { color: #9d9d9d; }
+.tip-line--tier2 { color: #1eff00; }
+.tip-line--tier3 { color: #2f8fff; }
+.tip-line--tier4 { color: #b45cff; }
+.tip-line--tier5 { color: #ff8000; }
+
 .tip-line--hl-darkred span { color: #ffffff; background-color: rgb(160, 0, 0); }
 .tip-line--hl-darkblue span { color: #ffffff; background-color: rgb(0, 0, 160); }
 .tip-line--hl-darkyellow span { color: #ffffff; background-color: rgb(160, 102, 0); }

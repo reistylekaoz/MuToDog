@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "UI/Estudo/GearScore.h"
+#include "UI/Estudo/TiersExcelentes.h"
 
 #include "Engine/Object/ZzzInfomation.h"
 #include "Network/Server/WSclient.h"
@@ -24,7 +25,6 @@ constexpr std::uint8_t CommandAura = 0x70;
 // os números do GearScore.cs (e do dica_item.gd)
 constexpr std::array<int, 16> LevelScore = {0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 35, 43, 52, 65, 80, 100};
 constexpr std::array<int, 6> TierScore = {0, 6, 12, 20, 30, 45};
-constexpr int TierSemTier = 3; // Raro: o tier não vem no protocolo do MuMain
 constexpr int LuckScore = 15;
 constexpr int SkillScore = 10;
 constexpr int OptionScore = 5;
@@ -102,7 +102,7 @@ bool CGearScore::Of(const ITEM& item, ItemScore& out)
         const int bits = item.ExcellentFlags & (generation > 0 ? 0x0F : 0x3F);
         for (int i = 0; i < 6; ++i)
             if (bits & (1 << i))
-                score += TierScore[TierSemTier];
+                score += TierScore[TiersExcelentes::TierLinha(item, i)];
     }
     if (item.HasLuck)
         score += LuckScore;

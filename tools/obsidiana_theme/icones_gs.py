@@ -2,6 +2,8 @@
 """Rodada 12 (gear score): leva do cliente Godot pro MuMain
 - dados/gear_score_base.json (o Base Score de cada item, ferramentas/gear_score_tabela.py tira do banco do servidor)
   pra Data/Interface/RmlUi/dados/gear_score_base.json;
+- dados/itens_bonus.json (rodada 18: os itens que podem ter as 2 linhas bônus do excelente, [x1 ou x2, DL equipa])
+  pra Data/Interface/RmlUi/dados/itens_bonus.json;
 - o ícone do GS (icones/hud/buff_gs.png, ferramentas/icones/icones_hud.py) pra themes/modern/menu_f10/buff_gs.ozt,
   80 x 80 como o buff_colecao (icones_colecoes.py).
 Uso: python3 tools/obsidiana_theme/icones_gs.py [pasta godot]"""
@@ -20,6 +22,7 @@ GODOT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / "casa/trabalho
 def main():
     dados = TEMAS.parent / "dados"
     shutil.copyfile(GODOT / "dados/gear_score_base.json", dados / "gear_score_base.json")
+    shutil.copyfile(GODOT / "dados/itens_bonus.json", dados / "itens_bonus.json")
     tmp = TEMAS / "modern/menu_f10/buff_gs.png"
     Image.open(GODOT / "icones/hud/buff_gs.png").convert("RGBA").resize((80, 80), Image.LANCZOS).save(tmp)
     ozt(tmp, tmp.with_suffix(".ozt"))

@@ -67,6 +67,13 @@ body {
 .tt-line.tt-redpurple { color: #cc80cc; }
 .tt-line.tt-violet { color: #b366ff; }
 .tt-line.tt-orange { color: #e66b0a; }
+/* MuToDog (MU Estudo, rodada 18): tiers das linhas excelentes, Comum a Lendario */
+.tt-line.tt-tier1 { color: #9d9d9d; }
+.tt-line.tt-tier2 { color: #1eff00; }
+.tt-line.tt-tier3 { color: #2f8fff; }
+.tt-line.tt-tier4 { color: #b45cff; }
+.tt-line.tt-tier5 { color: #ff8000; }
+
 
 /* Background-highlight variants -- text stays white except GreenBlue's own green, matching
    RenderTipTextList()'s SetBgColor()/SetTextColor() pairing exactly. */

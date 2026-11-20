@@ -32,6 +32,11 @@ const char* ColorName(int color)
     case TEXT_COLOR_REDPURPLE: return "redpurple";
     case TEXT_COLOR_VIOLET: return "violet";
     case TEXT_COLOR_ORANGE: return "orange";
+    case TEXT_COLOR_TIER1: return "tier1";
+    case TEXT_COLOR_TIER2: return "tier2";
+    case TEXT_COLOR_TIER3: return "tier3";
+    case TEXT_COLOR_TIER4: return "tier4";
+    case TEXT_COLOR_TIER5: return "tier5";
     default: return "white";
     }
 }
