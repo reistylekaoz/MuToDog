@@ -481,7 +481,9 @@ void mu::ui::window::CMiniMap::AddLiveNpcs()
         for (int i = 0; i < next && !known; i++)
         {
             const MINI_MAP& d = m_Mini_Map_Data[i];
-            known = d.Kind == 1 && std::abs(d.Location[0] - c->PositionX) <= 3 && std::abs(d.Location[1] - c->PositionY) <= 3;
+            // o mesmo NPC = perto e com o mesmo ícone (o Zoak fica a menos de 3 casas de outro NPC da Lorencia)
+            known = d.Kind == 1 && std::abs(d.Location[0] - c->PositionX) <= 3 && std::abs(d.Location[1] - c->PositionY) <= 3 &&
+                    mu::ui::window::IconesNpc::Tipo(d.Name) == tipo;
         }
         if (known)
             continue;
