@@ -547,7 +547,13 @@ bool CInventoryActionController::ApplyJewels(CInventoryCtrl* targetControl, CPic
             return false;
         }
         const int targetIndex = targetControl->GetIndexByItem(pItem);
+        const bool bStack = pPickItem->Durability > 1;
         SendRequestUse(iSourceIndex, targetIndex);
+        if (bStack)
+        {
+            // pilha (baú de joias): o servidor só baixa a quantidade, então a pilha volta pra casa dela
+            CInventoryCtrl::BackupPickedItem();
+        }
         PlayBuffer(SOUND_GET_ITEM01);
         return true;
     }
@@ -660,7 +666,13 @@ bool CInventoryActionController::ApplyJewels(CInventoryCtrl* targetControl, CPic
     if (bSuccess)
     {
         const int targetIndex = targetControl->GetIndexByItem(pItem);
+        const bool bStack = pPickItem->Durability > 1;
         SendRequestUse(iSourceIndex, targetIndex);
+        if (bStack)
+        {
+            // MuToDog (rodada 16): Bless, Soul e Life empilham no baú de joias; a pilha volta pra casa dela
+            CInventoryCtrl::BackupPickedItem();
+        }
         PlayBuffer(SOUND_GET_ITEM01);
         return true;
     }
