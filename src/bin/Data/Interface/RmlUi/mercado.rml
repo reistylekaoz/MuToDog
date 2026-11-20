@@ -1,0 +1,93 @@
+<rml>
+<head>
+	<title>Mercado</title>
+	<link type="text/rcss" href="base.rcss"/>
+	<link type="text/rcss" href="mercado.rcss"/>
+</head>
+<body data-model="mercado">
+	<!-- MuToDog (MU Estudo, rodada 15): Mercado (CMercadoWindow), no jeito do cliente Godot (janela_mercado.gd):
+	     a lista (o que está pra retirar e o que está à venda), e Vender item em 3 passos (o item da mochila, a moeda,
+	     o preço). A compra é no site: Comprar no site pede o passe (C1 FB 14) e abre o navegador. Geometria em px da
+	     tela de referência 640 x 480 (.stage). Os ícones são sprites item-<grupo>-<numero> (mercado.rcss, escritos
+	     por tools/obsidiana_theme/icones_itens.py). -->
+	<div id="screen" class="stage">
+		<div id="panel">
+			<div id="title">Mercado</div>
+			<div id="rule"></div>
+
+			<div id="lista" data-if="mode == 0">
+				<div id="deliv_title" class="section">{{deliveries_title}}</div>
+				<div id="deliv" class="scroll-pane">
+					<div class="row" data-for="r : deliveries">
+						<div class="art" data-style-decorator="r.decorator"></div>
+						<div class="name">{{r.name}}</div>
+						<div class="info" data-class-good="r.good">{{r.info}}</div>
+						<div class="act" data-event-click="mer_retire(r.id)">Retirar</div>
+					</div>
+					<div class="none" data-if="deliveries.size == 0">Nada pra retirar. O item comprado de alguém ou cancelado aparece aqui.</div>
+				</div>
+				<div id="offers_title" class="section">{{offers_title}}</div>
+				<div id="offers" class="scroll-pane">
+					<div class="row" data-for="r : offers">
+						<div class="art" data-style-decorator="r.decorator"></div>
+						<div class="name">{{r.name}}</div>
+						<div class="info price">{{r.info}}</div>
+						<div class="act" data-event-click="mer_cancel(r.id)">Cancelar</div>
+					</div>
+					<div class="none" data-if="offers.size == 0 &amp;&amp; loaded">Nenhum item seu à venda. Clique em Vender item.</div>
+					<div class="none" data-if="!loaded">Carregando...</div>
+				</div>
+				<div id="sell_open" class="button main" data-event-click="mer_sell_open">Vender item</div>
+				<div id="site" class="button" data-event-click="mer_site">Comprar no site</div>
+				<div id="close" class="button" data-event-click="mer_close">Fechar</div>
+			</div>
+
+			<div id="escolher" data-if="mode == 1">
+				<div class="step">1 de 3 · Escolha o item da mochila</div>
+				<div id="bag" class="scroll-pane">
+					<div class="row pick" data-for="b : bag" data-event-click="mer_bag(b.slot)">
+						<div class="art" data-style-decorator="b.decorator"></div>
+						<div class="name wide">{{b.name}}</div>
+					</div>
+					<div class="none" data-if="bag.size == 0">A mochila está vazia.</div>
+				</div>
+				<div id="back1" class="button" data-event-click="mer_back">Voltar</div>
+			</div>
+
+			<div id="moeda" data-if="mode == 2">
+				<div class="step">2 de 3 · Em que moeda você quer receber?</div>
+				<div class="picked">
+					<div class="box"><div class="art" data-style-decorator="pick_decorator"></div></div>
+					<div class="label">{{pick_name}}</div>
+				</div>
+				<div id="coins">
+					<div class="coin" data-for="m : coins" data-event-click="mer_coin(m.index)">
+						<div class="box"><div class="art" data-style-decorator="m.decorator"></div></div>
+						<div class="label">{{m.name}}</div>
+					</div>
+				</div>
+				<div id="back2" class="button" data-event-click="mer_back">Voltar</div>
+			</div>
+
+			<div id="preco" data-if="mode == 3">
+				<div class="step">3 de 3 · Qual o preço?</div>
+				<div class="picked">
+					<div class="box"><div class="art" data-style-decorator="pick_decorator"></div></div>
+					<div class="label">{{pick_name}}</div>
+				</div>
+				<div id="price_row">
+					<input type="text" id="price_field" class="text-field text-field--numeric" maxlength="13" data-value="price"/>
+					<div id="price_coin"><div class="art" data-style-decorator="coin_decorator"></div></div>
+					<div id="price_coin_name">{{coin_name}}</div>
+				</div>
+				<div id="price_help">Quanto o comprador paga, em {{coin_name}}. Só números.</div>
+				<div id="sell" class="button main" data-event-click="mer_sell">Pôr à venda</div>
+				<div id="back3" class="button" data-event-click="mer_back">Voltar</div>
+			</div>
+
+			<div id="note">{{note}}</div>
+			<div id="hint">O dinheiro da venda cai no baú de joias.</div>
+		</div>
+	</div>
+</body>
+</rml>

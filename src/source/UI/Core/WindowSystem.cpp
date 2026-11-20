@@ -435,6 +435,12 @@ bool CSystem::LoadMainSceneInterface()
         return false;
     }
 
+    m_pMercado = new CMercadoWindow;
+    if (m_pMercado->Create(m_pNewUIMng) == false)
+    {
+        return false;
+    }
+
     m_pNewItemExplanationWindow = new CItemExplanationWindow;
     if (m_pNewItemExplanationWindow->Create(m_pNewUIMng) == false)
     {
@@ -705,6 +711,7 @@ void CSystem::UnloadMainSceneInterface()
     SAFE_DELETE(m_pQuestsMain);
     SAFE_DELETE(m_pRastreio);
     SAFE_DELETE(m_pNomesNpc);
+    SAFE_DELETE(m_pMercado);
     SAFE_DELETE(m_pNewChatCommandWindow);
     SAFE_DELETE(m_pNewItemExplanationWindow);
     SAFE_DELETE(m_pNewSetItemExplanation);

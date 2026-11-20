@@ -13,6 +13,7 @@
 #include "UI/Estudo/EventosWindow.h"
 #include "UI/Estudo/LogCacaWindow.h"
 #include "UI/Estudo/QuestsMainWindow.h"
+#include "UI/Estudo/MercadoWindow.h"
 #include "UI/Chat/ChatMessages.h"
 #include "UI/Combat/SiegeUpdates.h"
 #include "UI/Events/DoppelgangerUpdates.h"
@@ -14815,6 +14816,8 @@ static void ProcessPacket(const BYTE* ReceiveBuffer, int32_t Size)
         mu::ui::window::CGearScore::ReceivePacket(ReceiveBuffer, Size);
         // C2 FB 30 (o estado das missões), C1 FB 31 (abriu o Zoak) e C1 FB 32 (morte contada), QuestsMain.cs
         mu::ui::window::CQuestsMainWindow::ReceivePacket(ReceiveBuffer, Size);
+        // C2 FB 10 (o mercado: à venda e pra retirar) e C1 FB 14 (o passe do site), MercadoJoias.cs
+        mu::ui::window::CMercadoWindow::ReceivePacket(ReceiveBuffer, Size);
         break;
     case 0xFA:
         // MuToDog (MU Estudo): C1 FA 01/02, a barra do boss e a disputa de dano (DisputaDano.cs)
