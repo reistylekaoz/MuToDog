@@ -26,6 +26,7 @@
 #include "GameLogic/Items/ShopRestrictions.h"
 #include "GameLogic/Items/TradeRestrictions.h"
 #include "UI/Estudo/BauJoiasWindow.h"
+#include "UI/Estudo/JoiasCasa.h"
 
 namespace mu::ui::window
 {
@@ -537,6 +538,20 @@ bool CInventoryActionController::RepairItemAtMousePoint(CInventoryCtrl* targetCo
 bool CInventoryActionController::ApplyJewels(CInventoryCtrl* targetControl, CPickedItem* pPickedItem,
                                                   ITEM* pPickItem, int iSourceIndex, int iTargetIndex) const
 {
+    // MuToDog (MU Estudo, rodada 17): joias da casa (Shimmer, Luck, Skill, Excellent, Corruption)
+    if (JoiasCasa::EhJoia(pPickItem->Type))
+    {
+        ITEM* pItem = targetControl->FindItem(iTargetIndex);
+        if (!JoiasCasa::PodeAplicar(pPickItem, pItem))
+        {
+            return false;
+        }
+        const int targetIndex = targetControl->GetIndexByItem(pItem);
+        SendRequestUse(iSourceIndex, targetIndex);
+        PlayBuffer(SOUND_GET_ITEM01);
+        return true;
+    }
+
     const bool bIsJewelType = pPickItem->Type == ITEM_JEWEL_OF_BLESS || pPickItem->Type == ITEM_JEWEL_OF_SOUL ||
                               pPickItem->Type == ITEM_JEWEL_OF_LIFE || pPickItem->Type == ITEM_JEWEL_OF_HARMONY ||
                               GameLogic::Items::IsRefineStone(pPickItem) || pPickItem->Type == ITEM_POTION + 160 ||

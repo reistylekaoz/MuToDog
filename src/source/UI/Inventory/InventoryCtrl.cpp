@@ -18,6 +18,7 @@
 #include "UI/RmlBridge/RmlTooltip.h"
 #include "UI/Tooltip/LegacyTextListTooltip.h"
 #include "UI/Estudo/BauJoiasWindow.h"
+#include "UI/Estudo/JoiasCasa.h"
 
 #include <RmlUi/Core/ElementDocument.h>
 
@@ -1046,6 +1047,12 @@ const char* TintClass(BYTE colorState)
 // Whether dropping `pPickItem` on `pTargetItem` acts on it (Render()'s green cell).
 bool mu::ui::window::CInventoryCtrl::DropActsOn(ITEM* pPickItem, ITEM* pTargetItem)
 {
+    // MuToDog (MU Estudo, rodada 17): destaque verde quando a joia da casa serve no item alvo
+    if (JoiasCasa::EhJoia(pPickItem->Type))
+    {
+        return JoiasCasa::PodeAplicar(pPickItem, pTargetItem);
+    }
+
     bool bSuccess = false;
     const int iType = pTargetItem->Type;
     const int iDurability = pTargetItem->Durability;
