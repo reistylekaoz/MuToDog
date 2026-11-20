@@ -69,5 +69,9 @@ private:
     bool m_PendingClose = false;
     // The screen the border tiles' matrices were built for (SyncScreen()).
     UI::MiniMap::Screen m_SideLinesScreen;
+    // MuToDog (rodada 14): quantas marcas vieram do bmd; depois delas entram os NPCs que estão no mapa agora e o bmd
+    // não tem (o Zoak), refeitas a cada quadro. -1 = contar de novo (mapa novo).
+    int m_FixedCount = -1;
+    void AddLiveNpcs();
 };
 }

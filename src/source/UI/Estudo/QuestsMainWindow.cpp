@@ -179,6 +179,25 @@ std::vector<int> CQuestsMainWindow::ActiveChains()
     return list;
 }
 
+std::string CQuestsMainWindow::MapMark(int map)
+{
+    if (!g_Received)
+        return {};
+    for (const auto& c : Chains())
+    {
+        if (std::find(c.maps.begin(), c.maps.end(), map) == c.maps.end())
+            continue;
+        const QuestMainState s = StateOf(c.id);
+        if (s.active > 0)
+        {
+            const QuestMainQuest* q = FindQuest(c.id, s.active);
+            return q != nullptr && s.kills >= q->amount ? "quest_pronta" : "quest_andando";
+        }
+        return s.done < static_cast<int>(c.quests.size()) ? "quest_nova" : "";
+    }
+    return {};
+}
+
 std::uint32_t CQuestsMainWindow::Version()
 {
     return g_Version;

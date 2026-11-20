@@ -116,6 +116,9 @@ public:
     // T e o clique no rastreio: abre na lista
     static void OpenList();
     static std::string Thousands(long long value);
+    // o sinal em cima do Zoak do mapa (IconesNpc): "quest_nova" (!) com missão pra pegar, "quest_andando" (V apagado)
+    // em andamento, "quest_pronta" (V aceso) pra entregar; "" sem missão no mapa, tudo feito ou antes do estado chegar
+    static std::string MapMark(int map);
 
 private:
     void BindRmlModel(Rml::DataModelConstructor& c, QuestsMainRmlModel& model);

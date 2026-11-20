@@ -23,11 +23,16 @@
 #include "UI/RmlBridge/RmlNativeTextSize.h"
 #include "UI/RmlBridge/RmlTheme.h"
 #include "Render/Text/CUIRenderText.h"
+#include "UI/Estudo/IconesNpc.h"
+#include "Engine/Object/ZzzCharacter.h"
 
 #include <RmlUi/Core/ElementDocument.h>
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
+#include <cwchar>
+#include <string>
 
 extern BYTE m_OccupationState;
 
@@ -41,6 +46,8 @@ constexpr int kMapAreaHeight = 430;
 // Marker sizes, physical px (the original never scaled them).
 constexpr float kNpcSize = 15.f;
 constexpr float kPortalSize = 30.f;
+// MuToDog: o NPC com ícone (IconesNpc), no mínimo
+constexpr float kNpcIconSize = 24.f;
 // The side border tiles: 35 x 6 reference units, 20 down each side, turned a quarter.
 constexpr float kTileWidth = 35.f;
 constexpr float kTileHeight = 6.f;
@@ -208,6 +215,7 @@ void mu::ui::window::CMiniMap::LoadImages(const wchar_t* Filename)
         m_WorldName = Filename;
     }
 
+    m_FixedCount = -1;
     mu_swprintf(Fname, L"Data\\Local\\%ls\\Minimap\\Minimap_%ls_%ls.bmd", g_strSelectedML.c_str(), Filename, g_strSelectedML.c_str());
 
     for (i = 0; i < MAX_MINI_MAP_DATA; i++)
@@ -407,6 +415,7 @@ void mu::ui::window::CMiniMap::SyncMap()
          MatrixText(UI::MiniMap::ElementToQuad(
              UI::MiniMap::MapQuad(screen, heroX, heroY, length, UI::MiniMap::MapRotation), length, length)));
 
+    AddLiveNpcs();
     std::vector<MiniMapMarkerEntry> markers;
     for (int i = 0; i < MAX_MINI_MAP_DATA; i++)
     {
@@ -417,28 +426,71 @@ void mu::ui::window::CMiniMap::SyncMap()
             continue;
 
         const bool portal = data.Kind == 2;
-        const float size = portal ? kPortalSize : kNpcSize;
+        // MuToDog (rodada 14): cada NPC com o ícone do que ele faz (os mesmos de cima da cabeça; o Zoak com o estado
+        // da missão), em pé e maior que o ponto, como no cliente Godot (minimapa.gd)
+        const std::string tipo = portal ? std::string() : mu::ui::window::IconesNpc::Tipo(data.Name);
+        const std::string icon = mu::ui::window::IconesNpc::Source(mu::ui::window::IconesNpc::Agora(tipo));
+        const float size = portal ? kPortalSize : !icon.empty() ? std::max(kNpcIconSize, 16.f * screen.scaleY) : kNpcSize;
         const float pointY = (static_cast<float>(data.Location[0]) / 256.f) * length;
         const float pointX = (static_cast<float>(data.Location[1]) / 256.f) * length;
         const UI::MiniMap::Marker marker =
-            UI::MiniMap::MarkerQuad(screen, heroX, heroY, pointX, pointY, size, static_cast<float>(data.Rotation),
+            UI::MiniMap::MarkerQuad(screen, heroX, heroY, pointX, pointY, size, icon.empty() ? static_cast<float>(data.Rotation) : 0.f,
                                     length, UI::MiniMap::MapRotation, portal);
         if (!MarkerDrawn(data))
             continue;
         // The original stored the name hint's box of every marker it drew.
         SetBtnPos(i, marker.hitBox[0], marker.hitBox[1], marker.hitBox[2], marker.hitBox[3]);
-        markers.push_back({portal, size, MatrixText(UI::MiniMap::ElementToQuad(marker.quad, size, size))});
+        markers.push_back({portal, size, MatrixText(UI::MiniMap::ElementToQuad(marker.quad, size, size)), icon});
     }
 
     MiniMapRmlModel& model = m_RmlView.GetModel();
     const bool same = model.markers.size() == markers.size() &&
                       std::equal(markers.begin(), markers.end(), model.markers.begin(),
                                  [](const MiniMapMarkerEntry& a, const MiniMapMarkerEntry& b)
-                                 { return a.portal == b.portal && a.size == b.size && a.transform == b.transform; });
+                                 { return a.portal == b.portal && a.size == b.size && a.transform == b.transform && a.icon == b.icon; });
     if (!same)
     {
         model.markers = std::move(markers);
         m_RmlView.MarkDirty("markers");
+    }
+}
+
+// MuToDog (rodada 14): o NPC que está no mapa e o bmd não tem (os nossos, como o Zoak) entra depois das marcas do bmd,
+// com o nome pra dica; NPC a até 3 casas de uma marca do bmd já está lá. Guarda e objeto do mapa ficam de fora.
+void mu::ui::window::CMiniMap::AddLiveNpcs()
+{
+    if (m_FixedCount < 0)
+    {
+        m_FixedCount = 0;
+        while (m_FixedCount < MAX_MINI_MAP_DATA && m_Mini_Map_Data[m_FixedCount].Kind > 0)
+            ++m_FixedCount;
+    }
+    for (int i = m_FixedCount; i < MAX_MINI_MAP_DATA; i++)
+        m_Mini_Map_Data[i].Kind = 0;
+    int next = m_FixedCount;
+    for (int k = 0; k < MAX_CHARACTERS_CLIENT && next < MAX_MINI_MAP_DATA; k++)
+    {
+        const CHARACTER* c = &CharactersClient[k];
+        if (!c->Object.Live || c->Object.Kind != KIND_NPC)
+            continue;
+        const std::string tipo = mu::ui::window::IconesNpc::Tipo(c->ID, static_cast<int>(c->MonsterIndex));
+        if (tipo.empty() || tipo == "guarda")
+            continue;
+        bool known = false;
+        for (int i = 0; i < next && !known; i++)
+        {
+            const MINI_MAP& d = m_Mini_Map_Data[i];
+            known = d.Kind == 1 && std::abs(d.Location[0] - c->PositionX) <= 3 && std::abs(d.Location[1] - c->PositionY) <= 3;
+        }
+        if (known)
+            continue;
+        MINI_MAP& d = m_Mini_Map_Data[next++];
+        d.Kind = 1;
+        d.Location[0] = c->PositionX;
+        d.Location[1] = c->PositionY;
+        d.Rotation = 0;
+        wcsncpy(d.Name, c->ID, MAX_MINIMAP_NAME - 1);
+        d.Name[MAX_MINIMAP_NAME - 1] = L'\0';
     }
 }
 

@@ -28,9 +28,11 @@
 				<div class="dim"></div>
 			</div>
 			<img class="map" data-attr-src="map_source" data-style-transform="map_transform"/>
+			<!-- MuToDog (rodada 14): o NPC com ícone (IconesNpc) mostra o desenho no lugar do ponto -->
 			<div class="marker" data-for="marker : markers" data-class-portal="marker.portal"
+			     data-class-icon="marker.icon != ''"
 			     data-style-width="marker.size + 'px'" data-style-height="marker.size + 'px'"
-			     data-style-transform="marker.transform"></div>
+			     data-style-transform="marker.transform"><img class="npc-icon" data-if="marker.icon != ''" data-attr-src="marker.icon"/></div>
 			<div class="screen">
 				<div class="hero"></div>
 				<!-- The top and bottom edge tiling: 25 fixed 35-unit tiles each, which the theme

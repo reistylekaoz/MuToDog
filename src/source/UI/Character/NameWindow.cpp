@@ -20,6 +20,7 @@
 #include "World/GameMaps/GMHellas.h"
 #include "World/GameMaps/GM_Kanturu_3rd.h"
 #include "Render/Text/CUIRenderText.h"
+#include "UI/Estudo/NomesNpcWindow.h"
 
 // DevEditor forward declarations (must be at global scope)
 #ifdef _EDITOR
@@ -173,8 +174,10 @@ void mu::ui::window::CNameWindow::RefreshNameTags()
     {
         if (SelectedNpc != -1)
         {
+            // MuToDog: o NPC com nome e ícone sempre à mostra (NomesNpcWindow) não ganha a etiqueta em dobro
             CHARACTER* c = &CharactersClient[SelectedNpc];
-            UI::Chat::CreateChat(c->ID, L"", c);
+            if (!CNomesNpcWindow::Draws(SelectedNpc))
+                UI::Chat::CreateChat(c->ID, L"", c);
         }
         else if (SelectedCharacter != -1)
         {

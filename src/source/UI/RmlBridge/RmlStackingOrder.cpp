@@ -39,6 +39,8 @@ constexpr DocumentPlacement Placements[] = {
     {"match_status.rml", BeforeWindowsDepth, MainScene},
     {"buff_strip.rml", 0.95f, MainScene},
     {"world_labels.rml", 1.0f, MainScene},
+    // MuToDog: nome e ícone em cima dos NPCs, logo acima das etiquetas do mundo.
+    {"nomes_npc.rml", 1.02f, MainScene},
     // The status texts over the world above the HUD, drawn with the name labels.
     {"hud_status.rml", 1.0f, MainScene},
     // MuToDog: a barra do boss no topo e o Log de caca (K), com a HUD, debaixo das janelas.

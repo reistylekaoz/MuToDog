@@ -52,6 +52,7 @@
 #include "UI/Estudo/LogCacaWindow.h"
 #include "UI/Estudo/QuestsMainWindow.h"
 #include "UI/Estudo/RastreioMissoesWindow.h"
+#include "UI/Estudo/NomesNpcWindow.h"
 #include "UI/Dialogs/ChatCommandWindow.h"
 #include "UI/Inventory/ItemExplanationWindow.h"
 #include "UI/Inventory/SetItemExplanation.h"
@@ -205,6 +206,7 @@ namespace mu::ui::window
         CLogCacaWindow* m_pLogCaca = nullptr;           // MuToDog: Log de caça (K)
         CQuestsMainWindow* m_pQuestsMain = nullptr;     // MuToDog: Missões (T) e a conversa do Zoak
         CRastreioMissoesWindow* m_pRastreio = nullptr;  // MuToDog: rastreio das missões no canto
+        CNomesNpcWindow* m_pNomesNpc = nullptr;  // MuToDog: nome e ícone em cima dos NPCs
         CChatCommandWindow* m_pNewChatCommandWindow;
         CItemExplanationWindow* m_pNewItemExplanationWindow;
         CSetItemExplanation* m_pNewSetItemExplanation;
