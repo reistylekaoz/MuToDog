@@ -32,6 +32,10 @@
 		<div id="slot_ring_left" data-attr-class="'native-anchor equip-slot ' + slot_states[11]"><div id="slot_ring_left_item" class="equip-slot-item"></div></div>
 		<div id="slot_amulet" data-attr-class="'native-anchor equip-slot ' + slot_states[9]"><div id="slot_amulet_item" class="equip-slot-item"></div></div>
 		<div id="slot_ring_right" data-attr-class="'native-anchor equip-slot ' + slot_states[10]"><div id="slot_ring_right_item" class="equip-slot-item"></div></div>
+		<!-- MU Estudo (rodada 18): brincos (237 e 238 no servidor) e pet (239), as casas 12 a 14 da janela. -->
+		<div id="slot_earring_right" data-attr-class="'native-anchor equip-slot ' + slot_states[12]"><div id="slot_earring_right_item" class="equip-slot-item"></div></div>
+		<div id="slot_earring_left" data-attr-class="'native-anchor equip-slot ' + slot_states[13]"><div id="slot_earring_left_item" class="equip-slot-item"></div></div>
+		<div id="slot_pet" data-attr-class="'native-anchor equip-slot ' + slot_states[14]"><div id="slot_pet_item" class="equip-slot-item"></div></div>
 		<!-- The inventory grid: its cells, then its frame (UI/Inventory/ItemGridModel.h). -->
 		<div id="item_grid" class="native-anchor item-grid">
 			<div class="item-grid-cells">

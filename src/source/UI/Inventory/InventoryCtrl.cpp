@@ -1563,7 +1563,13 @@ void mu::ui::window::CInventoryCtrl::BackupPickedItem()
         }
         else if (pItemObj->ex_src_type == ITEM_EX_SRC_EQUIPMENT)
         {
-            ITEM* pEquipmentItemSlot = &CharacterMachine->Equipment[pItemObj->lineal_pos];
+            // lineal_pos é o número do servidor: 0..11, ou 237..239 nas casas do estudo
+            ITEM* pEquipmentItemSlot = g_pMyInventory->GetEquippedItem(EquipmentSlotOfServer(pItemObj->lineal_pos));
+            if (pEquipmentItemSlot == nullptr)
+            {
+                DeletePickedItem();
+                return;
+            }
             memcpy(pEquipmentItemSlot, pItemObj, sizeof(ITEM));
 
             g_pMyInventory->CreateEquippingEffect(pEquipmentItemSlot);

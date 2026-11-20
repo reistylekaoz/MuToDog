@@ -23,6 +23,30 @@ namespace Rml { class ElementDocument; }
 
 namespace mu::ui::window
 {
+    // MuToDog (MU Estudo, rodada 18): as 3 casas do estudo depois das 12 do MuMain, brinco direito (237 no
+    // servidor), brinco esquerdo (238) e pet (239). Na janela elas são as casas 12, 13 e 14; o item guarda o número
+    // do servidor (lineal_pos) e só ele vai e volta pela rede.
+    inline constexpr int EQUIPMENT_EARRING_RIGHT = MAX_EQUIPMENT_INDEX;
+    inline constexpr int EQUIPMENT_EARRING_LEFT = MAX_EQUIPMENT_INDEX + 1;
+    inline constexpr int EQUIPMENT_PET = MAX_EQUIPMENT_INDEX + 2;
+    inline constexpr int MAX_EQUIPMENT_SLOTS = MAX_EQUIPMENT_INDEX + 3;
+    inline constexpr int SERVER_SLOT_EARRING_RIGHT = 237;
+    inline constexpr int SERVER_SLOT_PET = 239;
+    // A casa da janela -> o número do servidor (as 12 do MuMain ficam iguais).
+    constexpr int ServerEquipmentSlot(int slot)
+    {
+        return slot >= MAX_EQUIPMENT_INDEX ? SERVER_SLOT_EARRING_RIGHT + slot - MAX_EQUIPMENT_INDEX : slot;
+    }
+    // O número do servidor -> a casa da janela; -1 se não é casa de equipamento.
+    constexpr int EquipmentSlotOfServer(int index)
+    {
+        if (index >= 0 && index < MAX_EQUIPMENT_INDEX)
+            return index;
+        if (index >= SERVER_SLOT_EARRING_RIGHT && index <= SERVER_SLOT_PET)
+            return MAX_EQUIPMENT_INDEX + index - SERVER_SLOT_EARRING_RIGHT;
+        return -1;
+    }
+
     class CMyInventory
         : public CObject
         , public SEASON3B::IInventoryActionContext
@@ -78,7 +102,9 @@ namespace mu::ui::window
         CInventoryActionController m_ActionController;
 
 
-        EQUIPMENT_ITEM m_EquipmentSlots[MAX_EQUIPMENT_INDEX];
+        EQUIPMENT_ITEM m_EquipmentSlots[MAX_EQUIPMENT_SLOTS];
+        // Os itens das casas do estudo (brincos e pet); as 12 do MuMain ficam em CharacterMachine->Equipment.
+        ITEM m_ExtraEquipment[MAX_EQUIPMENT_SLOTS - MAX_EQUIPMENT_INDEX]{};
         int	m_iPointedSlot;
 
         MYSHOP_MODE m_MyShopMode;
@@ -123,7 +149,7 @@ namespace mu::ui::window
 
             // Per EQUIPMENT_* slot: "no-art", or its tint ("broken", "durability-20/30/50",
             // "unequipable"), and "refused" while the item on the cursor cannot go in.
-            std::vector<Rml::String> slotStates = std::vector<Rml::String>(MAX_EQUIPMENT_INDEX);
+            std::vector<Rml::String> slotStates = std::vector<Rml::String>(MAX_EQUIPMENT_SLOTS);
             UI::Items::ItemGridCells gridCells;
         };
         void BindRmlModel(Rml::DataModelConstructor& c, MyInventoryRmlModel& model);
@@ -145,8 +171,14 @@ namespace mu::ui::window
         bool Create(CManager* pNewUIMng);
         void Release();
 
+        // iIndex: a casa da janela (0..MAX_EQUIPMENT_SLOTS - 1).
         bool EquipItem(int iIndex, std::span<const BYTE> pbyItemPacket);
         void UnequipItem(int iIndex);
+        // O item vestido na casa da janela (as 12 do MuMain e as 3 do estudo); nullptr fora delas.
+        ITEM* GetEquippedItem(int slot);
+        const ITEM* GetEquippedItem(int slot) const;
+        // A casa do estudo do item (EQUIPMENT_EARRING_RIGHT, _LEFT ou EQUIPMENT_PET); -1 se ele não vai nelas.
+        static int EstudoSlotOf(int type);
         // The center of an equipment slot in window pixels; false for a slot number outside the
         // equipment or one the theme does not draw.
         bool GetEquipmentSlotCenter(int slot, POINT& center) const;

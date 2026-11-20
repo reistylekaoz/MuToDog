@@ -5,6 +5,7 @@
 #include "GameLogic/Items/InventoryUtils.h"
 #include "UI/Core/WindowSystem.h"
 #include "UI/Inventory/InventoryCtrl.h"
+#include "UI/Inventory/MyInventory.h"
 
 namespace UI::Inventory
 {
@@ -18,8 +19,8 @@ void ClearAllItems()
 
 void RemoveItem(int index)
 {
-    if (index >= 0 && index < MAX_EQUIPMENT_INDEX)
-        g_pMyInventory->UnequipItem(index);
+    if (const int slot = mu::ui::window::EquipmentSlotOfServer(index); slot != -1)
+        g_pMyInventory->UnequipItem(slot);
     else if (IsMainInventorySlot(index))
         g_pMyInventory->DeleteItem(index);
     else if (IsInventoryExtensionSlot(index))
@@ -30,16 +31,17 @@ void RemoveItem(int index)
 
 void RemoveDroppedItem(int index)
 {
-    if (index >= 0 && index < MAX_EQUIPMENT_INDEX)
-        g_pMyInventory->UnequipItem(index);
+    if (const int slot = mu::ui::window::EquipmentSlotOfServer(index); slot != -1)
+        g_pMyInventory->UnequipItem(slot);
     else
         g_pMyInventory->DeleteItem(index);
 }
 
 bool InsertItem(int index, std::span<const std::uint8_t> itemData)
 {
-    if (index >= 0 && index < MAX_EQUIPMENT_INDEX)
-        return g_pMyInventory->EquipItem(index, itemData);
+    // as casas do estudo (237..239) caem dentro das da loja pessoal: vêm antes dela
+    if (const int slot = mu::ui::window::EquipmentSlotOfServer(index); slot != -1)
+        return g_pMyInventory->EquipItem(slot, itemData);
     if (IsMainInventorySlot(index))
         return g_pMyInventory->InsertItem(index, itemData);
     if (IsInventoryExtensionSlot(index))
@@ -71,9 +73,9 @@ bool ReceivePlayerTransfer(int index, std::span<const std::uint8_t> itemData)
 {
     DiscardPickedItem();
 
-    if (index >= 0 && index < MAX_EQUIPMENT_INDEX)
+    if (const int slot = mu::ui::window::EquipmentSlotOfServer(index); slot != -1)
     {
-        g_pMyInventory->EquipItem(index, itemData);
+        g_pMyInventory->EquipItem(slot, itemData);
         return true;
     }
 

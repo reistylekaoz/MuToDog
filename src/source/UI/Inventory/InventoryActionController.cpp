@@ -404,21 +404,19 @@ int CInventoryActionController::FindAlternateEquipSlot(int nOriginalSlot, ITEM* 
 
 bool CInventoryActionController::IsSlotOccupied(int nSlot) const
 {
-    if (nSlot < 0 || nSlot >= MAX_EQUIPMENT_INDEX)
-    {
-        return true;
-    }
-
-    const ITEM* pEquipment = &CharacterMachine->Equipment[nSlot];
-    return (pEquipment->Type != -1);
+    const ITEM* pEquipment = g_pMyInventory->GetEquippedItem(nSlot);
+    return pEquipment == nullptr || pEquipment->Type != -1;
 }
 
 bool CInventoryActionController::TryEquipItem(CInventoryCtrl* targetControl, ITEM* pItem, int iSrcIndex) const
 {
     const ITEM_ATTRIBUTE* pItemAttr = &ItemAttribute[pItem->Type];
     int nDstIndex = pItemAttr->m_byItemSlot;
+    // brincos e pets vão nas casas do estudo (237..239 no servidor)
+    if (const int estudoSlot = CMyInventory::EstudoSlotOf(pItem->Type); estudoSlot != -1)
+        nDstIndex = estudoSlot;
 
-    if (nDstIndex < 0 || nDstIndex >= MAX_EQUIPMENT_INDEX)
+    if (nDstIndex < 0 || nDstIndex >= MAX_EQUIPMENT_SLOTS)
     {
         return false;
     }
@@ -461,7 +459,8 @@ bool CInventoryActionController::TryEquipItem(CInventoryCtrl* targetControl, ITE
     targetControl->RemoveItem(pItem);
     pPickedItem->HidePickedItem();
 
-    SendRequestEquipmentItem(STORAGE_TYPE::INVENTORY, iSrcIndex, pItem, STORAGE_TYPE::INVENTORY, nDstIndex);
+    SendRequestEquipmentItem(STORAGE_TYPE::INVENTORY, iSrcIndex, pItem, STORAGE_TYPE::INVENTORY,
+                             ServerEquipmentSlot(nDstIndex));
     return true;
 }
 

@@ -12,6 +12,8 @@
 #slot_boots        { decorator: image(estudo/inv_botas.tga); }
 #slot_ring_left, #slot_ring_right { decorator: image(estudo/inv_anel.tga); }
 #slot_amulet       { decorator: image(estudo/inv_colar.tga); }
+#slot_earring_left, #slot_earring_right { decorator: image(estudo/inv_brinco.tga); }
+#slot_pet          { decorator: image(estudo/inv_pet_voa.tga); }
 /* classe que nao usa o slot (elmo do Dark Lord, luva do Rage Fighter): sem silhueta */
 .equip-slot.no-art { decorator: none; }
 .inv-btn-exit { color: #e9edf3; border-color: #3e4652; }

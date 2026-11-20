@@ -77,6 +77,10 @@
 #slot_ring_left { left: 114px; top: 150px; width: 28px; height: 28px; }
 #slot_amulet { left: 54px; top: 87px; width: 28px; height: 28px; }
 #slot_ring_right { left: 54px; top: 150px; width: 28px; height: 28px; }
+/* MU Estudo (rodada 18): brincos entre o colar e os anéis, pet entre a montaria e o elmo (as casas do Godot) */
+#slot_earring_left { left: 54px; top: 119px; width: 28px; height: 28px; }
+#slot_earring_right { left: 114px; top: 119px; width: 28px; height: 28px; }
+#slot_pet { left: 54px; top: 52px; width: 28px; height: 28px; }
 /* The slots: recessed boxes. */
 .equip-slot { box-sizing: border-box; border: 1px token(border-inner); background-color: rgba(0, 0, 0, 90); }
 

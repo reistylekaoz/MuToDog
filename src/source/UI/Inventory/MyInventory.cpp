@@ -77,7 +77,12 @@ struct SlotAnchor
     int slot;
     const char* id;
 };
+// As casas pequenas do estudo vêm primeiro: o ponteiro fica com a primeira que achar, e o pet cobre um canto da
+// montaria.
 constexpr SlotAnchor SlotAnchors[] = {
+    {EQUIPMENT_EARRING_RIGHT, "slot_earring_right"},
+    {EQUIPMENT_EARRING_LEFT, "slot_earring_left"},
+    {EQUIPMENT_PET, "slot_pet"},
     {EQUIPMENT_HELPER, "slot_helper"},
     {EQUIPMENT_HELM, "slot_helm"},
     {EQUIPMENT_WING, "slot_wing"},
@@ -98,7 +103,12 @@ CMyInventory::CMyInventory()
     m_pNewUIMng = nullptr;
     m_pNewInventoryCtrl = nullptr;
 
-    memset(&m_EquipmentSlots, 0, sizeof(EQUIPMENT_ITEM) * MAX_EQUIPMENT_INDEX);
+    memset(&m_EquipmentSlots, 0, sizeof(m_EquipmentSlots));
+    for (ITEM& item : m_ExtraEquipment)
+    {
+        item.Type = -1;
+        item.Number = -1;
+    }
     m_iPointedSlot = -1;
 
     m_MyShopMode = MYSHOP_MODE_OPEN;
@@ -255,12 +265,12 @@ void CMyInventory::Release()
 
 bool CMyInventory::EquipItem(int iIndex, std::span<const BYTE> pbyItemPacket)
 {
-    if (iIndex < 0 || iIndex >= MAX_EQUIPMENT_INDEX || !g_pNewItemMng || !CharacterMachine)
+    if (iIndex < 0 || iIndex >= MAX_EQUIPMENT_SLOTS || !g_pNewItemMng || !CharacterMachine)
     {
         return false;
     }
 
-    ITEM* pTargetItemSlot = &CharacterMachine->Equipment[iIndex];
+    ITEM* pTargetItemSlot = GetEquippedItem(iIndex);
     if (pTargetItemSlot->Type > 0)
     {
         UnequipItem(iIndex);
@@ -284,7 +294,7 @@ bool CMyInventory::EquipItem(int iIndex, std::span<const BYTE> pbyItemPacket)
         SocketClient->ToGameServer()->SendPetInfoRequest(PetType::DarkRaven, StorageType::Inventory, iIndex);
     }
 
-    pTempItem->lineal_pos = iIndex;
+    pTempItem->lineal_pos = ServerEquipmentSlot(iIndex);
     pTempItem->ex_src_type = ITEM_EX_SRC_EQUIPMENT;
     memcpy(pTargetItemSlot, pTempItem, sizeof(ITEM));
     g_pNewItemMng->DeleteItem(pTempItem);
@@ -296,9 +306,9 @@ bool CMyInventory::EquipItem(int iIndex, std::span<const BYTE> pbyItemPacket)
 
 void CMyInventory::UnequipItem(int iIndex)
 {
-    if (iIndex >= 0 && iIndex < MAX_EQUIPMENT_INDEX && g_pNewItemMng && CharacterMachine)
+    if (iIndex >= 0 && iIndex < MAX_EQUIPMENT_SLOTS && g_pNewItemMng && CharacterMachine)
     {
-        ITEM* pEquippedItem = &CharacterMachine->Equipment[iIndex];
+        ITEM* pEquippedItem = GetEquippedItem(iIndex);
 
         if (pEquippedItem && pEquippedItem->Type != -1)
         {
@@ -338,10 +348,40 @@ void CMyInventory::UnequipAllItems()
 {
     if (CharacterMachine)
     {
-        for (int i = 0; i < MAX_EQUIPMENT_INDEX; i++)
+        for (int i = 0; i < MAX_EQUIPMENT_SLOTS; i++)
         {
             UnequipItem(i);
         }
+    }
+}
+
+ITEM* CMyInventory::GetEquippedItem(int slot)
+{
+    if (slot < 0 || slot >= MAX_EQUIPMENT_SLOTS || CharacterMachine == nullptr)
+        return nullptr;
+    return slot < MAX_EQUIPMENT_INDEX ? &CharacterMachine->Equipment[slot] : &m_ExtraEquipment[slot - MAX_EQUIPMENT_INDEX];
+}
+
+const ITEM* CMyInventory::GetEquippedItem(int slot) const
+{
+    return const_cast<CMyInventory*>(this)->GetEquippedItem(slot);
+}
+
+int CMyInventory::EstudoSlotOf(int type)
+{
+    switch (type)
+    {
+    case ITEM_WING + 457: return EQUIPMENT_EARRING_RIGHT;
+    case ITEM_WING + 449: return EQUIPMENT_EARRING_LEFT;
+    case ITEM_GUARDIAN_ANGEL:
+    case ITEM_IMP:
+    case ITEM_DEMON:
+    case ITEM_SPIRIT_OF_GUARDIAN:
+    case ITEM_PET_RUDOLF:
+    case ITEM_PET_PANDA:
+    case ITEM_PET_UNICORN:
+    case ITEM_PET_SKELETON: return EQUIPMENT_PET;
+    default: return -1;
     }
 }
 
@@ -349,6 +389,11 @@ bool CMyInventory::IsEquipable(int iIndex, ITEM* pItem) const
 {
     if (pItem == nullptr)
         return false;
+
+    // as casas do estudo: o brinco certo em cada orelha e os pets no 239 (no servidor eles saíram da casa 8)
+    const int estudoSlot = EstudoSlotOf(pItem->Type);
+    if (estudoSlot != -1 || iIndex >= MAX_EQUIPMENT_INDEX)
+        return estudoSlot == iIndex;
 
     const ITEM_ATTRIBUTE* pItemAttr = &ItemAttribute[pItem->Type];
     bool bEquipable = false;
@@ -585,7 +630,7 @@ void CMyInventory::SyncNativeLayout()
 
 bool CMyInventory::GetEquipmentSlotCenter(int slot, POINT& center) const
 {
-    if (slot < 0 || slot >= MAX_EQUIPMENT_INDEX)
+    if (slot < 0 || slot >= MAX_EQUIPMENT_SLOTS)
         return false;
 
     const EQUIPMENT_ITEM& equipmentSlot = m_EquipmentSlots[slot];
@@ -1022,9 +1067,9 @@ void CMyInventory::Render3D()
         m_pNewInventoryCtrl->Render3D();
     Rml::Element* panel = m_RmlView.Document() != nullptr ? m_RmlView.Document()->GetElementById("panel") : nullptr;
     const float scale = panel != nullptr ? UI::RmlBridge::DrawnScale(*panel) : 1.f;
-    for (int i = 0; i < MAX_EQUIPMENT_INDEX; i++)
+    for (int i = 0; i < MAX_EQUIPMENT_SLOTS; i++)
     {
-        const ITEM* pEquippedItem = &CharacterMachine->Equipment[i];
+        const ITEM* pEquippedItem = GetEquippedItem(i);
         if (pEquippedItem->Type >= 0)
         {
             float y = 0.f;
@@ -1316,7 +1361,17 @@ void CMyInventory::DeleteEquippingEffectBug(ITEM* pItem)
 
     if (IsMount(pItem) == true)
     {
+        // o anjo (casa do pet, 239) e a montaria (casa 8) são os dois Mounts do herói: tirar um não tira o outro
         DeleteMount(&Hero->Object);
+        if (pItem != &m_ExtraEquipment[EQUIPMENT_PET - MAX_EQUIPMENT_INDEX])
+        {
+            if (m_ExtraEquipment[EQUIPMENT_PET - MAX_EQUIPMENT_INDEX].Type == ITEM_GUARDIAN_ANGEL)
+                CreateMount(MODEL_HELPER, Hero->Object.Position, &Hero->Object);
+        }
+        else if (ITEM* mount = &CharacterMachine->Equipment[EQUIPMENT_HELPER]; IsMount(mount))
+        {
+            CreateEquippingEffect(mount);
+        }
     }
 }
 
@@ -1395,7 +1450,7 @@ void CMyInventory::SyncSlotStates()
 {
     auto& states = m_RmlView.GetModel().slotStates;
     bool changed = false;
-    for (int i = 0; i < MAX_EQUIPMENT_INDEX; i++)
+    for (int i = 0; i < MAX_EQUIPMENT_SLOTS; i++)
     {
         const char* state = "";
         const int baseClass = gCharacterManager.GetBaseClass(Hero->Class);
@@ -1403,7 +1458,7 @@ void CMyInventory::SyncSlotStates()
         {
             state = "no-art";
         }
-        else if (ITEM* pEquipmentItemSlot = &CharacterMachine->Equipment[i]; pEquipmentItemSlot->Type != -1)
+        else if (ITEM* pEquipmentItemSlot = GetEquippedItem(i); pEquipmentItemSlot->Type != -1)
         {
             ITEM_ATTRIBUTE* pItemAttr = &ItemAttribute[pEquipmentItemSlot->Type];
             const int iLevel = pEquipmentItemSlot->Level;
@@ -1429,7 +1484,7 @@ void CMyInventory::SyncSlotStates()
         if (i == m_iPointedSlot && CInventoryCtrl::GetPickedItem())
         {
             ITEM* pItemObj = CInventoryCtrl::GetPickedItem()->GetItem();
-            const ITEM* pEquipmentItemSlot = &CharacterMachine->Equipment[i];
+            const ITEM* pEquipmentItemSlot = GetEquippedItem(i);
             if (pItemObj && (pEquipmentItemSlot->Type != -1 || false == IsEquipable(i, pItemObj))
                 && !(baseClass == CLASS_RAGEFIGHTER && i == EQUIPMENT_GLOVES))
                 value += value.empty() ? "refused" : " refused";
@@ -1469,7 +1524,7 @@ bool CMyInventory::EquipmentWindowProcess()
                 return false;
             }
 
-            ITEM* pEquipmentItemSlot = &CharacterMachine->Equipment[iTargetIndex];
+            ITEM* pEquipmentItemSlot = GetEquippedItem(iTargetIndex);
             if (pEquipmentItemSlot && pEquipmentItemSlot->Type != -1)
             {
                 return true;
@@ -1500,7 +1555,8 @@ bool CMyInventory::EquipmentWindowProcess()
                 }
                 else
                 {
-                    SendRequestEquipmentItem(sourceType, iSourceIndex, pItemObj, STORAGE_TYPE::INVENTORY, iTargetIndex);
+                    SendRequestEquipmentItem(sourceType, iSourceIndex, pItemObj, STORAGE_TYPE::INVENTORY,
+                                             ServerEquipmentSlot(iTargetIndex));
                     return true;
                 }
             }
@@ -1509,7 +1565,7 @@ bool CMyInventory::EquipmentWindowProcess()
         {
             if (GetRepairMode() == SEASON3B::REPAIR_MODE_ON)
             {
-                ITEM* pEquippedItem = &CharacterMachine->Equipment[m_iPointedSlot];
+                ITEM* pEquippedItem = GetEquippedItem(m_iPointedSlot);
 
                 if (pEquippedItem == NULL)
                 {
@@ -1523,17 +1579,17 @@ bool CMyInventory::EquipmentWindowProcess()
 
                 if (g_pNewUISystem->IsVisible(INTERFACE_NPCSHOP) && g_pNPCShop->IsRepairShop())
                 {
-                    SocketClient->ToGameServer()->SendRepairItemRequest(m_iPointedSlot, 0);
+                    SocketClient->ToGameServer()->SendRepairItemRequest(ServerEquipmentSlot(m_iPointedSlot), 0);
                 }
                 else if (m_bRepairEnableLevel == true)
                 {
-                    SocketClient->ToGameServer()->SendRepairItemRequest(m_iPointedSlot, 1);
+                    SocketClient->ToGameServer()->SendRepairItemRequest(ServerEquipmentSlot(m_iPointedSlot), 1);
                 }
 
                 return true;
             }
 
-            ITEM* pEquippedItem = &CharacterMachine->Equipment[m_iPointedSlot];
+            ITEM* pEquippedItem = GetEquippedItem(m_iPointedSlot);
             if (pEquippedItem->Type >= 0 && CheckTakeOff(m_iPointedSlot))
             {
                 if (CInventoryCtrl::CreatePickedItem(nullptr, pEquippedItem))
@@ -1556,7 +1612,7 @@ bool CMyInventory::EquipmentWindowProcess()
         {
             ResetMouseRButton();
 
-            ITEM* pEquippedItem = &CharacterMachine->Equipment[iSourceIndex];
+            ITEM* pEquippedItem = GetEquippedItem(iSourceIndex);
 
             if (pEquippedItem->Type >= 0 && CheckTakeOff(iSourceIndex))
             {
@@ -1571,7 +1627,7 @@ bool CMyInventory::EquipmentWindowProcess()
                     UnequipItem(iSourceIndex);
                     pPickedItem->HidePickedItem();
                     // UnequipItem cleared the slot; the picked item has the item's data.
-                    SendRequestEquipmentItem(STORAGE_TYPE::INVENTORY, iSourceIndex, pPickedItem->GetItem(),
+                    SendRequestEquipmentItem(STORAGE_TYPE::INVENTORY, ServerEquipmentSlot(iSourceIndex), pPickedItem->GetItem(),
                                              STORAGE_TYPE::INVENTORY, emptySlotIndex);
                     return true;
                 }
@@ -1629,7 +1685,7 @@ void CMyInventory::RenderItemToolTip(int iSlotIndex) const
 {
     if (m_iPointedSlot != -1)
     {
-        const ITEM* pEquipmentItemSlot = &CharacterMachine->Equipment[iSlotIndex];
+        const ITEM* pEquipmentItemSlot = GetEquippedItem(iSlotIndex);
         if (pEquipmentItemSlot->Type != -1)
         {
             const float targetX = m_EquipmentSlots[iSlotIndex].x + m_EquipmentSlots[iSlotIndex].width / 2.f;
@@ -1795,7 +1851,7 @@ BYTE CMyInventory::GetDurabilityPointedItem() const
 
     if (m_iPointedSlot != -1)
     {
-        pItem = &CharacterMachine->Equipment[m_iPointedSlot];
+        pItem = GetEquippedItem(m_iPointedSlot);
         const BYTE byDurability = pItem->Durability;
 
         return byDurability;
