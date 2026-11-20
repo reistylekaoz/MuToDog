@@ -1,0 +1,25 @@
+<rml>
+<head>
+	<title>Rastreio das missões</title>
+	<link type="text/rcss" href="base.rcss"/>
+	<link type="text/rcss" href="rastreio_missoes.rcss"/>
+</head>
+<body data-model="rastreio_missoes">
+	<!-- MuToDog (MU Estudo, rodada 13): rastreio das missões (CRastreioMissoesWindow), no jeito do cliente Godot
+	     (rastreio_quests.gd): por missão ativa, o nome e a barra do monstro (x / total), verde quando pode entregar.
+	     Clique abre as Missões (T); segurar arrasta (drag: drag no #panel), botão direito volta pro canto.
+	     Geometria em px da tela de referência 640 x 480 (.stage). -->
+	<!-- bound-geometry: o painel segue o ponteiro quando arrasta (left/top do lugar que o jogador escolheu) -->
+	<div id="screen" class="stage">
+		<div id="panel" data-style-left="left" data-style-top="top"
+		     data-event-dragstart="rm_drag_start" data-event-drag="rm_drag" data-event-dragend="rm_drag_end"
+		     data-event-mousedown="rm_mouse_down" data-event-click="rm_click">
+			<div id="title">Missões (T)</div>
+			<div data-for="r : rows" class="quest" data-class-ready="r.ready">
+				<div class="name"><span class="tag"></span>{{r.name}}</div>
+				<div class="bar"><div class="fill" data-style-width="r.bar"></div><span class="label">{{r.label}}</span><span class="count">{{r.count}}</span></div>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

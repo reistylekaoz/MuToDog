@@ -1,0 +1,50 @@
+<rml>
+<head>
+	<title>Missões</title>
+	<link type="text/rcss" href="base.rcss"/>
+	<link type="text/rcss" href="missoes.rcss"/>
+</head>
+<body data-model="missoes">
+	<!-- MuToDog (MU Estudo, rodada 13): Missões (CQuestsMainWindow, tecla T) e a conversa do Zoak (NPC 905), no jeito do
+	     cliente Godot (janela_quests_main.gd): na lista, as missões ativas por mapa na esquerda e a ficha na direita
+	     (história, objetivo, progresso e prêmio) com Abandonar; no Zoak, a missão da vez do mapa com Aceitar ou Entregar.
+	     Geometria em px da tela de referência 640 x 480 (.stage). -->
+	<!-- bound-geometry: a barra do progresso enche com as mortes (width = mortes / total) -->
+	<div id="screen" class="stage">
+		<div id="panel" data-class-zoak="zoak">
+			<div id="title">{{title}}</div>
+			<div id="heading" data-if="zoak">{{heading}}</div>
+			<div id="list" data-if="!zoak">
+				<div data-for="r : rows" data-attr-class="r.header ? 'row header' : 'row quest'" data-class-selected="r.selected"
+				     data-class-ready="r.ready" data-event-click="qm_pick(r.chain)"><span class="mark" data-if="r.header"></span>{{r.text}}</div>
+				<div id="empty" data-if="empty">Nenhuma missão ativa.<br/>Fale com o Zoak dos mapas pra pegar a primeira.</div>
+			</div>
+			<div id="summary" data-if="!zoak">{{summary}}</div>
+			<div id="detail">
+				<div id="none" data-if="!has_detail &amp;&amp; !all_done">O Zoak espera você em cada mapa com missões.</div>
+				<div id="done" data-if="all_done"><div id="done_title">{{done_title}}</div><div id="done_text">{{done_text}}</div></div>
+				<div id="sheet" data-if="has_detail">
+					<div id="name">{{name}}</div>
+					<div id="box">
+						<div id="story">{{story}}</div>
+						<div id="objective">{{objective}}</div>
+						<div id="warn">Vale sozinho ou em grupo (o grupo precisa estar no mesmo mapa).</div>
+						<div class="band"><span class="dot"></span>Detalhe da missão</div>
+						<div id="bar"><div id="fill" data-style-width="bar"></div><span id="monster">{{monster}}</span><span id="progress">{{progress}}</span></div>
+						<div class="band"><span class="dot"></span>Recompensa</div>
+						<div class="prize">{{exp}}</div>
+						<div class="prize">{{zen}}</div>
+						<div class="prize">{{points}}</div>
+					</div>
+				</div>
+			</div>
+			<div id="accept" class="button" data-if="can_accept" data-event-click="qm_accept">Aceitar missão</div>
+			<div id="deliver" class="button" data-if="can_deliver" data-event-click="qm_deliver">Entregar missão</div>
+			<div id="hint" data-if="hint != ''">{{hint}}</div>
+			<div id="abandon" class="button" data-if="!zoak" data-class-disabled="!can_abandon" data-class-confirm="confirm"
+			     data-event-click="qm_abandon">{{confirm ? 'Confirmar abandono' : 'Abandonar missão'}}</div>
+			<div id="close" class="button" data-event-click="qm_close">Fechar</div>
+		</div>
+	</div>
+</body>
+</rml>

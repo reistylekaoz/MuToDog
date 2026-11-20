@@ -220,7 +220,8 @@ bool mu::ui::window::CHotKey::UpdateKeyEvent()
     }
     else if (mu::ui::window::IsPress('T'))
     {
-        g_pNewUISystem->Toggle(mu::ui::window::INTERFACE_MYQUEST);
+        // MuToDog: T abre as Missões (main quests do Zoak); o My Quest do S6 segue no botão da janela C
+        g_pNewUISystem->Toggle(mu::ui::window::INTERFACE_QUESTS_MAIN);
         PlayBuffer(SOUND_CLICK01);
         return false;
     }

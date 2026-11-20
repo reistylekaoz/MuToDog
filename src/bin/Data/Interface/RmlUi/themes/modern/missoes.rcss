@@ -1,0 +1,127 @@
+/* MuToDog (MU Estudo, rodada 13): Missões (missoes.rml), no jeito do cliente Godot (janela_quests_main.gd): janela de
+   470 x 300 no meio da tela; na lista, missões ativas na esquerda (172) e a ficha na direita; no Zoak, a ficha ocupa a
+   largura toda. Px da tela de referência 640 x 480 (.stage). */
+body { pointer-events: none; }
+#screen { pointer-events: none; }
+
+#panel {
+	position: absolute;
+	left: 85px;
+	top: 90px;
+	width: 470px;
+	height: 300px;
+	background-color: rgba(9, 11, 13, 245);
+	border: 1px #3e4652;
+	pointer-events: auto;
+	font-family: "token(font-body)";
+	color: #ebedf1;
+}
+#title {
+	position: absolute;
+	left: 0px;
+	top: 4px;
+	width: 470px;
+	height: 16px;
+	text-align: center;
+	font-family: "token(font-title)";
+	font-size: 12px;
+	line-height: 16px;
+	color: #dde1e7;
+}
+#heading { position: absolute; left: 10px; top: 25px; width: 450px; font-family: "token(font-title)"; font-size: 10px; line-height: 13px; color: #dde1e7; }
+
+#list {
+	position: absolute;
+	left: 8px;
+	top: 26px;
+	width: 172px;
+	height: 238px;
+	background-color: #090b0f;
+	border: 1px #3e4652;
+	overflow-y: auto;
+}
+.row { display: block; position: relative; height: 13px; margin: 0px 4px; font-size: 9px; line-height: 13px; white-space: nowrap; overflow: hidden; }
+.row.header { margin-top: 3px; font-family: "token(font-title)"; color: #dde1e7; }
+.row.header .mark { display: inline-block; width: 6px; height: 6px; margin: 0px 5px 1px 1px; background-color: #6f7a8a; }
+.row.quest { margin-left: 12px; padding-left: 4px; color: #f0be5a; cursor: pointer; border: 1px #00000000; }
+.row.quest.ready { color: #78e196; }
+.row.quest:hover { border-color: #3e4652; }
+.row.quest.selected { background-color: rgba(120, 191, 255, 46); border-color: #78bfff; }
+#empty { display: block; margin: 8px; font-size: 9px; line-height: 13px; color: #8a94a4; }
+#summary { position: absolute; left: 8px; top: 278px; width: 180px; font-size: 9px; line-height: 12px; color: #a6aebb; }
+
+#detail { position: absolute; left: 196px; top: 26px; width: 266px; height: 238px; }
+#panel.zoak #detail { left: 8px; top: 42px; width: 454px; height: 222px; }
+#none, #done {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	width: 100%;
+	height: 100%;
+	background-color: #090b0f;
+	border: 1px #3e4652;
+	box-sizing: border-box;
+	text-align: center;
+	font-size: 9px;
+	color: #8a94a4;
+}
+#none { padding-top: 110px; }
+#done { padding-top: 90px; }
+#done_title { font-size: 11px; line-height: 15px; font-weight: bold; color: #78e196; }
+#done_text { margin-top: 6px; font-size: 9px; line-height: 12px; color: #ebedf1; }
+
+#sheet { position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; }
+#name {
+	display: block;
+	height: 22px;
+	background-color: rgba(240, 190, 90, 26);
+	border: 1px #3e4652;
+	text-align: center;
+	font-family: "token(font-title)";
+	font-size: 12px;
+	line-height: 22px;
+	color: #78e196;
+}
+#box {
+	position: absolute;
+	left: 0px;
+	top: 28px;
+	right: 0px;
+	bottom: 0px;
+	padding: 5px 8px;
+	background-color: #090b0f;
+	border: 1px #3e4652;
+	overflow: hidden;
+}
+#story { display: block; max-height: 66px; overflow: hidden; font-size: 8px; line-height: 11px; color: #ebedf1; }
+#objective { display: block; margin-top: 4px; font-size: 9px; line-height: 12px; font-weight: bold; color: #ebedf1; }
+#warn { display: block; font-size: 8px; line-height: 11px; color: #eb5a50; }
+.band { display: block; position: relative; height: 13px; margin-top: 4px; padding-left: 14px; background-color: rgba(240, 190, 90, 41); font-family: "token(font-title)"; font-size: 9px; line-height: 13px; color: #dde1e7; }
+.band .dot { position: absolute; left: 4px; top: 4px; width: 5px; height: 5px; background-color: #f0be5a; }
+#bar { display: block; position: relative; height: 12px; margin: 3px 6px 0px 6px; background-color: rgba(0, 0, 0, 128); font-size: 9px; line-height: 12px; }
+#fill { position: absolute; left: 0px; top: 0px; height: 12px; background-color: rgba(240, 190, 90, 89); }
+#monster { position: absolute; left: 4px; top: 0px; color: #78e196; }
+#progress { position: absolute; right: 4px; top: 0px; color: #ebedf1; }
+.prize { display: block; height: 12px; margin: 2px 6px 0px 6px; padding-left: 4px; background-color: rgba(0, 0, 0, 89); font-size: 9px; line-height: 12px; color: #f0be5a; }
+
+.button {
+	position: absolute;
+	top: 274px;
+	height: 18px;
+	text-align: center;
+	font-size: 9px;
+	line-height: 18px;
+	background-color: #1e2228;
+	border: 1px #3e4652;
+	cursor: pointer;
+	color: #ffffff;
+}
+.button:hover { border-color: #78bfff; }
+.button.disabled { color: #4a515c; cursor: default; }
+.button.disabled:hover { border-color: #3e4652; }
+#abandon { left: 196px; width: 110px; }
+#abandon.confirm { color: #eb5a50; border-color: #eb5a50; }
+#accept, #deliver { left: 8px; width: 120px; }
+#deliver { color: #78e196; }
+#close { left: 382px; width: 80px; }
+#hint { position: absolute; left: 10px; top: 277px; width: 360px; font-size: 9px; line-height: 12px; color: #f0be5a; }

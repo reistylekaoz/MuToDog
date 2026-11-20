@@ -12,6 +12,7 @@
 #include "UI/Estudo/BossBarWindow.h"
 #include "UI/Estudo/EventosWindow.h"
 #include "UI/Estudo/LogCacaWindow.h"
+#include "UI/Estudo/QuestsMainWindow.h"
 #include "UI/Chat/ChatMessages.h"
 #include "UI/Combat/SiegeUpdates.h"
 #include "UI/Events/DoppelgangerUpdates.h"
@@ -14812,6 +14813,8 @@ static void ProcessPacket(const BYTE* ReceiveBuffer, int32_t Size)
         mu::ui::window::CEventosWindow::ReceivePacket(ReceiveBuffer, Size);
         // C1 FB 70 (o gear score de quem está na visão, AuraForca.cs: o meu vai pro ícone do GS)
         mu::ui::window::CGearScore::ReceivePacket(ReceiveBuffer, Size);
+        // C2 FB 30 (o estado das missões), C1 FB 31 (abriu o Zoak) e C1 FB 32 (morte contada), QuestsMain.cs
+        mu::ui::window::CQuestsMainWindow::ReceivePacket(ReceiveBuffer, Size);
         break;
     case 0xFA:
         // MuToDog (MU Estudo): C1 FA 01/02, a barra do boss e a disputa de dano (DisputaDano.cs)

@@ -36,7 +36,7 @@ struct MenuF10Entry
 constexpr MenuF10Entry kEntries[] = {
     {'I', "I", "Inventário", "Itens, equipamento e zen. Arraste pra vestir.", "inventario"},
     {'C', "C", "Personagem", "Pontos de força, agilidade, vida e energia.", "personagem"},
-    {'T', "T", "Minhas quests", "As missões que você pegou e o que falta.", "quests"},
+    {'T', "T", "Missões", "As missões do Zoak de cada mapa e o que falta.", "quests"},
     {ActionReset, "", "Reset", "Reset e grand reset: o que falta e o prêmio.", "reset"},
     {ActionColecoes, "", "Coleções", "Entregue sets de armadura e ganhe bônus pra sempre.", "colecoes"},
     {ActionAlma, "", "Alma", "Pontos de alma de cada reset em 16 bônus.", "alma"},

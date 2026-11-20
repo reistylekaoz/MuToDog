@@ -50,6 +50,8 @@
 #include "UI/Estudo/BossBarWindow.h"
 #include "UI/Estudo/EventosWindow.h"
 #include "UI/Estudo/LogCacaWindow.h"
+#include "UI/Estudo/QuestsMainWindow.h"
+#include "UI/Estudo/RastreioMissoesWindow.h"
 #include "UI/Dialogs/ChatCommandWindow.h"
 #include "UI/Inventory/ItemExplanationWindow.h"
 #include "UI/Inventory/SetItemExplanation.h"
@@ -201,6 +203,8 @@ namespace mu::ui::window
         CEventosWindow* m_pEventos = nullptr;           // MuToDog: Horário dos eventos (H)
         CBossBarWindow* m_pBossBar = nullptr;           // MuToDog: barra do boss no topo
         CLogCacaWindow* m_pLogCaca = nullptr;           // MuToDog: Log de caça (K)
+        CQuestsMainWindow* m_pQuestsMain = nullptr;     // MuToDog: Missões (T) e a conversa do Zoak
+        CRastreioMissoesWindow* m_pRastreio = nullptr;  // MuToDog: rastreio das missões no canto
         CChatCommandWindow* m_pNewChatCommandWindow;
         CItemExplanationWindow* m_pNewItemExplanationWindow;
         CSetItemExplanation* m_pNewSetItemExplanation;

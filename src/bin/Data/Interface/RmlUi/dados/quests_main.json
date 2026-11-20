@@ -1,0 +1,1009 @@
+[
+ {
+  "id": 1,
+  "nome": "Lorencia",
+  "mapas": [
+   0
+  ],
+  "quests": [
+   {
+    "nome": "Teia nos Campos",
+    "monstro": "Spider",
+    "monstroNumero": 3,
+    "quantidade": 20,
+    "exp": 5480,
+    "zen": 4000,
+    "pontos": 5,
+    "historia": "Viajante, os arredores de Lorencia ja nao sao seguros. Os guardas da cidade nao dao conta de tudo. Recebi relatos de grupos inteiros que cairam diante dos Spider. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Dragoezinhos Atrevidos",
+    "monstro": "Budge Dragon",
+    "monstroNumero": 2,
+    "quantidade": 25,
+    "exp": 13700,
+    "zen": 10000,
+    "pontos": 5,
+    "historia": "Viajante, os arredores de Lorencia ja nao sao seguros. Os guardas da cidade nao dao conta de tudo. Os Budge Dragon tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Chifres na Estrada",
+    "monstro": "Bull Fighter",
+    "monstroNumero": 0,
+    "quantidade": 50,
+    "exp": 41100,
+    "zen": 30000,
+    "pontos": 10,
+    "historia": "Viajante, os arredores de Lorencia ja nao sao seguros. Os guardas da cidade nao dao conta de tudo. Cada dia aparecem mais Bull Fighter. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Matilha Faminta",
+    "monstro": "Hound",
+    "monstroNumero": 1,
+    "quantidade": 70,
+    "exp": 86310,
+    "zen": 63000,
+    "pontos": 10,
+    "historia": "Viajante, os arredores de Lorencia ja nao sao seguros. Os guardas da cidade nao dao conta de tudo. Os Hound estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "A Elite dos Touros",
+    "monstro": "Elite Bull Fighter",
+    "monstroNumero": 4,
+    "quantidade": 100,
+    "exp": 164400,
+    "zen": 120000,
+    "pontos": 10,
+    "historia": "Viajante, os arredores de Lorencia ja nao sao seguros. Os guardas da cidade nao dao conta de tudo. Recebi relatos de grupos inteiros que cairam diante dos Elite Bull Fighter. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "O Feiticeiro Morto",
+    "monstro": "Lich",
+    "monstroNumero": 6,
+    "quantidade": 130,
+    "exp": 249340,
+    "zen": 182000,
+    "pontos": 10,
+    "historia": "Viajante, os arredores de Lorencia ja nao sao seguros. Os guardas da cidade nao dao conta de tudo. Os Lich tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Passos de Gigante",
+    "monstro": "Giant",
+    "monstroNumero": 7,
+    "quantidade": 170,
+    "exp": 395930,
+    "zen": 289000,
+    "pontos": 15,
+    "historia": "Viajante, os arredores de Lorencia ja nao sao seguros. Os guardas da cidade nao dao conta de tudo. Cada dia aparecem mais Giant. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   }
+  ]
+ },
+ {
+  "id": 2,
+  "nome": "Noria",
+  "mapas": [
+   3
+  ],
+  "quests": [
+   {
+    "nome": "Goblins na Trilha",
+    "monstro": "Goblin",
+    "monstroNumero": 26,
+    "quantidade": 50,
+    "exp": 20550,
+    "zen": 15000,
+    "pontos": 5,
+    "historia": "As fadas de Noria pediram ajuda: a floresta esta tomada e as trilhas ja nao levam a lugar nenhum. Os Goblin tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Ferrao Acorrentado",
+    "monstro": "Chain Scorpion",
+    "monstroNumero": 27,
+    "quantidade": 100,
+    "exp": 68500,
+    "zen": 50000,
+    "pontos": 5,
+    "historia": "As fadas de Noria pediram ajuda: a floresta esta tomada e as trilhas ja nao levam a lugar nenhum. Cada dia aparecem mais Chain Scorpion. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "A Tropa de Elite",
+    "monstro": "Elite Goblin",
+    "monstroNumero": 33,
+    "quantidade": 200,
+    "exp": 219200,
+    "zen": 160000,
+    "pontos": 10,
+    "historia": "As fadas de Noria pediram ajuda: a floresta esta tomada e as trilhas ja nao levam a lugar nenhum. Os Elite Goblin estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "Cacadores da Floresta",
+    "monstro": "Hunter",
+    "monstroNumero": 29,
+    "quantidade": 300,
+    "exp": 534300,
+    "zen": 390000,
+    "pontos": 10,
+    "historia": "As fadas de Noria pediram ajuda: a floresta esta tomada e as trilhas ja nao levam a lugar nenhum. Recebi relatos de grupos inteiros que cairam diante dos Hunter. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Raizes Vivas",
+    "monstro": "Forest Monster",
+    "monstroNumero": 30,
+    "quantidade": 500,
+    "exp": 1027500,
+    "zen": 750000,
+    "pontos": 15,
+    "historia": "As fadas de Noria pediram ajuda: a floresta esta tomada e as trilhas ja nao levam a lugar nenhum. Os Forest Monster tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "O Furor de Agon",
+    "monstro": "Agon",
+    "monstroNumero": 31,
+    "quantidade": 700,
+    "exp": 1534400,
+    "zen": 1120000,
+    "pontos": 15,
+    "historia": "As fadas de Noria pediram ajuda: a floresta esta tomada e as trilhas ja nao levam a lugar nenhum. Cada dia aparecem mais Agon. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Golens de Pedra",
+    "monstro": "Stone Golem",
+    "monstroNumero": 32,
+    "quantidade": 1000,
+    "exp": 2466000,
+    "zen": 1800000,
+    "pontos": 20,
+    "historia": "As fadas de Noria pediram ajuda: a floresta esta tomada e as trilhas ja nao levam a lugar nenhum. Os Stone Golem estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   }
+  ]
+ },
+ {
+  "id": 3,
+  "nome": "Elveland",
+  "mapas": [
+   51
+  ],
+  "quests": [
+   {
+    "nome": "Coelhos Medonhos",
+    "monstro": "Hideous Rabbit",
+    "monstroNumero": 420,
+    "quantidade": 210,
+    "exp": 546630,
+    "zen": 399000,
+    "pontos": 15,
+    "historia": "Elveland sempre foi um refugio, mas algo despertou nas matas e os elfos nao conseguem conter sozinhos. Cada dia aparecem mais Hideous Rabbit. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Uivo na Floresta",
+    "monstro": "Werewolf",
+    "monstroNumero": 421,
+    "quantidade": 260,
+    "exp": 854880,
+    "zen": 624000,
+    "pontos": 20,
+    "historia": "Elveland sempre foi um refugio, mas algo despertou nas matas e os elfos nao conseguem conter sozinhos. Os Werewolf estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "O Lich Amaldicoado",
+    "monstro": "Cursed Lich",
+    "monstroNumero": 422,
+    "quantidade": 500,
+    "exp": 2055000,
+    "zen": 1500000,
+    "pontos": 15,
+    "historia": "Elveland sempre foi um refugio, mas algo despertou nas matas e os elfos nao conseguem conter sozinhos. Recebi relatos de grupos inteiros que cairam diante dos Cursed Lich. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Totens Despertos",
+    "monstro": "Totem Golem",
+    "monstroNumero": 423,
+    "quantidade": 750,
+    "exp": 3699000,
+    "zen": 2700000,
+    "pontos": 20,
+    "historia": "Elveland sempre foi um refugio, mas algo despertou nas matas e os elfos nao conseguem conter sozinhos. Os Totem Golem tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Garras na Mata",
+    "monstro": "Grizzly",
+    "monstroNumero": 424,
+    "quantidade": 1000,
+    "exp": 5891000,
+    "zen": 4300000,
+    "pontos": 25,
+    "historia": "Elveland sempre foi um refugio, mas algo despertou nas matas e os elfos nao conseguem conter sozinhos. Cada dia aparecem mais Grizzly. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "O Capitao dos Ursos",
+    "monstro": "Captain Grizzly",
+    "monstroNumero": 425,
+    "quantidade": 1500,
+    "exp": 9864000,
+    "zen": 7200000,
+    "pontos": 30,
+    "historia": "Elveland sempre foi um refugio, mas algo despertou nas matas e os elfos nao conseguem conter sozinhos. Os Captain Grizzly estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   }
+  ]
+ },
+ {
+  "id": 4,
+  "nome": "Devias",
+  "mapas": [
+   2
+  ],
+  "quests": [
+   {
+    "nome": "Vermes no Gelo",
+    "monstro": "Worm",
+    "monstroNumero": 24,
+    "quantidade": 200,
+    "exp": 548000,
+    "zen": 400000,
+    "pontos": 5,
+    "historia": "O frio de Devias esconde perigos que crescem a cada nevasca. Quem cruza a neve nao volta inteiro. Os Worm estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "Coracao de Gelo",
+    "monstro": "Ice Monster",
+    "monstroNumero": 22,
+    "quantidade": 400,
+    "exp": 1205600,
+    "zen": 880000,
+    "pontos": 10,
+    "historia": "O frio de Devias esconde perigos que crescem a cada nevasca. Quem cruza a neve nao volta inteiro. Recebi relatos de grupos inteiros que cairam diante dos Ice Monster. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "A Furia de Hommerd",
+    "monstro": "Hommerd",
+    "monstroNumero": 23,
+    "quantidade": 700,
+    "exp": 2301600,
+    "zen": 1680000,
+    "pontos": 15,
+    "historia": "O frio de Devias esconde perigos que crescem a cada nevasca. Quem cruza a neve nao volta inteiro. Os Hommerd tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Assassinos Silenciosos",
+    "monstro": "Assassin",
+    "monstroNumero": 21,
+    "quantidade": 1000,
+    "exp": 3562000,
+    "zen": 2600000,
+    "pontos": 20,
+    "historia": "O frio de Devias esconde perigos que crescem a cada nevasca. Quem cruza a neve nao volta inteiro. Cada dia aparecem mais Assassin. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Pegadas na Neve",
+    "monstro": "Yeti",
+    "monstroNumero": 19,
+    "quantidade": 1400,
+    "exp": 5754000,
+    "zen": 4200000,
+    "pontos": 20,
+    "historia": "O frio de Devias esconde perigos que crescem a cada nevasca. Quem cruza a neve nao volta inteiro. Os Yeti estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "Os Yetis de Elite",
+    "monstro": "Elite Yeti",
+    "monstroNumero": 20,
+    "quantidade": 1800,
+    "exp": 8877600,
+    "zen": 6480000,
+    "pontos": 20,
+    "historia": "O frio de Devias esconde perigos que crescem a cada nevasca. Quem cruza a neve nao volta inteiro. Recebi relatos de grupos inteiros que cairam diante dos Elite Yeti. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "A Rainha do Gelo",
+    "monstro": "Ice Queen",
+    "monstroNumero": 25,
+    "quantidade": 2400,
+    "exp": 17097600,
+    "zen": 12480000,
+    "pontos": 30,
+    "historia": "O frio de Devias esconde perigos que crescem a cada nevasca. Quem cruza a neve nao volta inteiro. Os Ice Queen tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   }
+  ]
+ },
+ {
+  "id": 5,
+  "nome": "Deep Dungeon",
+  "mapas": [
+   1
+  ],
+  "quests": [
+   {
+    "nome": "Larvas do Abismo",
+    "monstro": "Larva",
+    "monstroNumero": 12,
+    "quantidade": 800,
+    "exp": 2740000,
+    "zen": 2000000,
+    "pontos": 20,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Recebi relatos de grupos inteiros que cairam diante dos Larva. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "O Olho do Ciclope",
+    "monstro": "Cyclops",
+    "monstroNumero": 17,
+    "quantidade": 1500,
+    "exp": 5754000,
+    "zen": 4200000,
+    "pontos": 20,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Os Cyclops tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Almas Perdidas",
+    "monstro": "Ghost",
+    "monstroNumero": 11,
+    "quantidade": 2000,
+    "exp": 8768000,
+    "zen": 6400000,
+    "pontos": 25,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Cada dia aparecem mais Ghost. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Flechas na Escuridao",
+    "monstro": "Skeleton Archer",
+    "monstroNumero": 15,
+    "quantidade": 2200,
+    "exp": 10247600,
+    "zen": 7480000,
+    "pontos": 30,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Os Skeleton Archer estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "Caes do Inferno",
+    "monstro": "Hell Hound",
+    "monstroNumero": 5,
+    "quantidade": 2800,
+    "exp": 14576800,
+    "zen": 10640000,
+    "pontos": 30,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Recebi relatos de grupos inteiros que cairam diante dos Hell Hound. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Aranhas Infernais",
+    "monstro": "Hell Spider",
+    "monstroNumero": 13,
+    "quantidade": 3600,
+    "exp": 19728000,
+    "zen": 14400000,
+    "pontos": 35,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Os Hell Spider tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "O Chefe dos Esqueletos",
+    "monstro": "Elite Skeleton",
+    "monstroNumero": 16,
+    "quantidade": 4600,
+    "exp": 26468400,
+    "zen": 19320000,
+    "pontos": 40,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Cada dia aparecem mais Elite Skeleton. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Trovao dos Mortos",
+    "monstro": "Thunder Lich",
+    "monstroNumero": 9,
+    "quantidade": 5600,
+    "exp": 33756800,
+    "zen": 24640000,
+    "pontos": 50,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Os Thunder Lich estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "Cavaleiros Sombrios",
+    "monstro": "Dark Knight",
+    "monstroNumero": 10,
+    "quantidade": 6800,
+    "exp": 44716800,
+    "zen": 32640000,
+    "pontos": 50,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Recebi relatos de grupos inteiros que cairam diante dos Dark Knight. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Touros Envenenados",
+    "monstro": "Poison Bull",
+    "monstroNumero": 8,
+    "quantidade": 8000,
+    "exp": 50416000,
+    "zen": 36800000,
+    "pontos": 60,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Os Poison Bull tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "O Olhar da Gorgona",
+    "monstro": "Gorgon",
+    "monstroNumero": 18,
+    "quantidade": 9400,
+    "exp": 70829000,
+    "zen": 51700000,
+    "pontos": 70,
+    "historia": "As galerias do Deep Dungeon sao profundas e escuras, e as criaturas daqui se espalham sem parar. Cada dia aparecem mais Gorgon. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   }
+  ]
+ },
+ {
+  "id": 6,
+  "nome": "Atlans",
+  "mapas": [
+   7
+  ],
+  "quests": [
+   {
+    "nome": "O Despertar do Bahamut",
+    "monstro": "Bahamut",
+    "monstroNumero": 45,
+    "quantidade": 600,
+    "exp": 3534600,
+    "zen": 2580000,
+    "pontos": 25,
+    "historia": "As aguas de Atlans guardam ruinas antigas, e os guardioes delas atacam qualquer um que se aproxime. Os Bahamut tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Correntes de Vepar",
+    "monstro": "Vepar",
+    "monstroNumero": 46,
+    "quantidade": 1200,
+    "exp": 7398000,
+    "zen": 5400000,
+    "pontos": 30,
+    "historia": "As aguas de Atlans guardam ruinas antigas, e os guardioes delas atacam qualquer um que se aproxime. Cada dia aparecem mais Vepar. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Lancas das Valquirias",
+    "monstro": "Valkyrie",
+    "monstroNumero": 47,
+    "quantidade": 2000,
+    "exp": 12604000,
+    "zen": 9200000,
+    "pontos": 35,
+    "historia": "As aguas de Atlans guardam ruinas antigas, e os guardioes delas atacam qualquer um que se aproxime. Os Valkyrie estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "O Grande Bahamut",
+    "monstro": "Great Bahamut",
+    "monstroNumero": 51,
+    "quantidade": 2800,
+    "exp": 25317600,
+    "zen": 18480000,
+    "pontos": 40,
+    "historia": "As aguas de Atlans guardam ruinas antigas, e os guardioes delas atacam qualquer um que se aproxime. Recebi relatos de grupos inteiros que cairam diante dos Great Bahamut. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Valquirias de Prata",
+    "monstro": "Silver Valkyrie",
+    "monstroNumero": 52,
+    "quantidade": 3800,
+    "exp": 35400800,
+    "zen": 25840000,
+    "pontos": 45,
+    "historia": "As aguas de Atlans guardam ruinas antigas, e os guardioes delas atacam qualquer um que se aproxime. Os Silver Valkyrie tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "O Rei Lagarto",
+    "monstro": "Lizard King",
+    "monstroNumero": 48,
+    "quantidade": 4800,
+    "exp": 46032000,
+    "zen": 33600000,
+    "pontos": 50,
+    "historia": "As aguas de Atlans guardam ruinas antigas, e os guardioes delas atacam qualquer um que se aproxime. Cada dia aparecem mais Lizard King. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "As Cabecas da Hidra",
+    "monstro": "Hydra",
+    "monstroNumero": 49,
+    "quantidade": 6000,
+    "exp": 60828000,
+    "zen": 44400000,
+    "pontos": 55,
+    "historia": "As aguas de Atlans guardam ruinas antigas, e os guardioes delas atacam qualquer um que se aproxime. Os Hydra estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   }
+  ]
+ },
+ {
+  "id": 7,
+  "nome": "Lost Tower",
+  "mapas": [
+   4
+  ],
+  "quests": [
+   {
+    "nome": "Sombras na Torre",
+    "monstro": "Shadow",
+    "monstroNumero": 36,
+    "quantidade": 500,
+    "exp": 3219500,
+    "zen": 2350000,
+    "pontos": 20,
+    "historia": "A Lost Tower foi tomada por forcas sombrias. Cada andar e mais perigoso que o anterior. Cada dia aparecem mais Shadow. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Sombras Venenosas",
+    "monstro": "Poison Shadow",
+    "monstroNumero": 39,
+    "quantidade": 1000,
+    "exp": 6850000,
+    "zen": 5000000,
+    "pontos": 25,
+    "historia": "A Lost Tower foi tomada por forcas sombrias. Cada andar e mais perigoso que o anterior. Os Poison Shadow estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "O Mago Amaldicoado",
+    "monstro": "Cursed Wizard",
+    "monstroNumero": 34,
+    "quantidade": 1700,
+    "exp": 12576600,
+    "zen": 9180000,
+    "pontos": 25,
+    "historia": "A Lost Tower foi tomada por forcas sombrias. Cada andar e mais perigoso que o anterior. Recebi relatos de grupos inteiros que cairam diante dos Cursed Wizard. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Vacas da Morte",
+    "monstro": "Death Cow",
+    "monstroNumero": 41,
+    "quantidade": 2400,
+    "exp": 18741600,
+    "zen": 13680000,
+    "pontos": 30,
+    "historia": "A Lost Tower foi tomada por forcas sombrias. Cada andar e mais perigoso que o anterior. Os Death Cow tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Pacto com o Diabo",
+    "monstro": "Devil",
+    "monstroNumero": 37,
+    "quantidade": 3300,
+    "exp": 27126000,
+    "zen": 19800000,
+    "pontos": 35,
+    "historia": "A Lost Tower foi tomada por forcas sombrias. Cada andar e mais perigoso que o anterior. Cada dia aparecem mais Devil. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Cavaleiros da Morte",
+    "monstro": "Death Knight",
+    "monstroNumero": 40,
+    "quantidade": 4200,
+    "exp": 35674800,
+    "zen": 26040000,
+    "pontos": 35,
+    "historia": "A Lost Tower foi tomada por forcas sombrias. Cada andar e mais perigoso que o anterior. Os Death Knight estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "A Gorgona da Morte",
+    "monstro": "Death Gorgon",
+    "monstroNumero": 35,
+    "quantidade": 5400,
+    "exp": 47347200,
+    "zen": 34560000,
+    "pontos": 40,
+    "historia": "A Lost Tower foi tomada por forcas sombrias. Cada andar e mais perigoso que o anterior. Recebi relatos de grupos inteiros que cairam diante dos Death Gorgon. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "A Queda do Balrog",
+    "monstro": "Balrog",
+    "monstroNumero": 38,
+    "quantidade": 6400,
+    "exp": 57868800,
+    "zen": 42240000,
+    "pontos": 50,
+    "historia": "A Lost Tower foi tomada por forcas sombrias. Cada andar e mais perigoso que o anterior. Os Balrog tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   }
+  ]
+ },
+ {
+  "id": 8,
+  "nome": "Tarkan",
+  "mapas": [
+   8
+  ],
+  "quests": [
+   {
+    "nome": "Mutantes do Deserto",
+    "monstro": "Mutant",
+    "monstroNumero": 62,
+    "quantidade": 2000,
+    "exp": 19728000,
+    "zen": 14400000,
+    "pontos": 40,
+    "historia": "O deserto de Tarkan queima de dia e mata de noite. As criaturas daqui nao deixam ninguem passar. Os Mutant estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "Lobos Sangrentos",
+    "monstro": "Bloody Wolf",
+    "monstroNumero": 60,
+    "quantidade": 4000,
+    "exp": 41648000,
+    "zen": 30400000,
+    "pontos": 50,
+    "historia": "O deserto de Tarkan queima de dia e mata de noite. As criaturas daqui nao deixam ninguem passar. Recebi relatos de grupos inteiros que cairam diante dos Bloody Wolf. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Rodas de Ferro",
+    "monstro": "Iron Wheel",
+    "monstroNumero": 57,
+    "quantidade": 8000,
+    "exp": 87680000,
+    "zen": 64000000,
+    "pontos": 80,
+    "historia": "O deserto de Tarkan queima de dia e mata de noite. As criaturas daqui nao deixam ninguem passar. Os Iron Wheel tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "A Ira de Tantallos",
+    "monstro": "Tantallos",
+    "monstroNumero": 58,
+    "quantidade": 8000,
+    "exp": 90968000,
+    "zen": 66400000,
+    "pontos": 80,
+    "historia": "O deserto de Tarkan queima de dia e mata de noite. As criaturas daqui nao deixam ninguem passar. Cada dia aparecem mais Tantallos. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Cavaleiros de Luz",
+    "monstro": "Beam Knight",
+    "monstroNumero": 61,
+    "quantidade": 16000,
+    "exp": 184128000,
+    "zen": 134400000,
+    "pontos": 100,
+    "historia": "O deserto de Tarkan queima de dia e mata de noite. As criaturas daqui nao deixam ninguem passar. Os Beam Knight estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   }
+  ]
+ },
+ {
+  "id": 9,
+  "nome": "Aida",
+  "mapas": [
+   33
+  ],
+  "quests": [
+   {
+    "nome": "Arvores da Morte",
+    "monstro": "Death Tree",
+    "monstroNumero": 308,
+    "quantidade": 4000,
+    "exp": 39456000,
+    "zen": 28800000,
+    "pontos": 50,
+    "historia": "Aida e uma terra amaldicoada, onde ate as arvores tem vontade propria e sede de sangue. Recebi relatos de grupos inteiros que cairam diante dos Death Tree. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Orcs da Floresta",
+    "monstro": "Forest Orc",
+    "monstroNumero": 307,
+    "quantidade": 8000,
+    "exp": 81104000,
+    "zen": 59200000,
+    "pontos": 70,
+    "historia": "Aida e uma terra amaldicoada, onde ate as arvores tem vontade propria e sede de sangue. Os Forest Orc tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Cavaleiros da Morte de Aida",
+    "monstro": "Death Rider",
+    "monstroNumero": 306,
+    "quantidade": 16000,
+    "exp": 170976000,
+    "zen": 124800000,
+    "pontos": 90,
+    "historia": "Aida e uma terra amaldicoada, onde ate as arvores tem vontade propria e sede de sangue. Cada dia aparecem mais Death Rider. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Golens Azuis",
+    "monstro": "Blue Golem",
+    "monstroNumero": 305,
+    "quantidade": 9000,
+    "exp": 103572000,
+    "zen": 75600000,
+    "pontos": 80,
+    "historia": "Aida e uma terra amaldicoada, onde ate as arvores tem vontade propria e sede de sangue. Os Blue Golem estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "A Rainha Bruxa",
+    "monstro": "Witch Queen",
+    "monstroNumero": 304,
+    "quantidade": 18000,
+    "exp": 231804000,
+    "zen": 169200000,
+    "pontos": 100,
+    "historia": "Aida e uma terra amaldicoada, onde ate as arvores tem vontade propria e sede de sangue. Recebi relatos de grupos inteiros que cairam diante dos Witch Queen. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   }
+  ]
+ },
+ {
+  "id": 10,
+  "nome": "Crimson Icarus",
+  "mapas": [
+   10
+  ],
+  "quests": [
+   {
+    "nome": "Asas de Alquamos",
+    "monstro": "Alquamos",
+    "monstroNumero": 69,
+    "quantidade": 3000,
+    "exp": 30825000,
+    "zen": 22500000,
+    "pontos": 30,
+    "historia": "A fortaleza de Crimson Icarus flutua num mar de nuvens vermelhas. Quem guarda as pontes nao quer visitas. Os Alquamos tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Carapacas Gigantes",
+    "monstro": "Mega Crust",
+    "monstroNumero": 71,
+    "quantidade": 5000,
+    "exp": 53430000,
+    "zen": 39000000,
+    "pontos": 40,
+    "historia": "A fortaleza de Crimson Icarus flutua num mar de nuvens vermelhas. Quem guarda as pontes nao quer visitas. Cada dia aparecem mais Mega Crust. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "A Rainha Rainer",
+    "monstro": "Queen Rainer",
+    "monstroNumero": 70,
+    "quantidade": 7000,
+    "exp": 78638000,
+    "zen": 57400000,
+    "pontos": 50,
+    "historia": "A fortaleza de Crimson Icarus flutua num mar de nuvens vermelhas. Quem guarda as pontes nao quer visitas. Os Queen Rainer estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "O Voo do Drakan",
+    "monstro": "Drakan",
+    "monstroNumero": 73,
+    "quantidade": 9000,
+    "exp": 106038000,
+    "zen": 77400000,
+    "pontos": 60,
+    "historia": "A fortaleza de Crimson Icarus flutua num mar de nuvens vermelhas. Quem guarda as pontes nao quer visitas. Recebi relatos de grupos inteiros que cairam diante dos Drakan. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "A Carapaca Alfa",
+    "monstro": "Alpha Crust",
+    "monstroNumero": 74,
+    "quantidade": 11000,
+    "exp": 138644000,
+    "zen": 101200000,
+    "pontos": 70,
+    "historia": "A fortaleza de Crimson Icarus flutua num mar de nuvens vermelhas. Quem guarda as pontes nao quer visitas. Os Alpha Crust tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Cavaleiros Fantasmas",
+    "monstro": "Phantom Knight",
+    "monstroNumero": 72,
+    "quantidade": 13000,
+    "exp": 170976000,
+    "zen": 124800000,
+    "pontos": 80,
+    "historia": "A fortaleza de Crimson Icarus flutua num mar de nuvens vermelhas. Quem guarda as pontes nao quer visitas. Cada dia aparecem mais Phantom Knight. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "O Grande Drakan",
+    "monstro": "Great Drakan",
+    "monstroNumero": 75,
+    "quantidade": 15000,
+    "exp": 205500000,
+    "zen": 150000000,
+    "pontos": 100,
+    "historia": "A fortaleza de Crimson Icarus flutua num mar de nuvens vermelhas. Quem guarda as pontes nao quer visitas. Os Great Drakan estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   }
+  ]
+ },
+ {
+  "id": 11,
+  "nome": "Crywolf",
+  "mapas": [
+   34
+  ],
+  "quests": [
+   {
+    "nome": "Batedores do Martelo",
+    "monstro": "Hammer Scout",
+    "monstroNumero": 310,
+    "quantidade": 4000,
+    "exp": 53156000,
+    "zen": 38800000,
+    "pontos": 50,
+    "historia": "A fortaleza de Crywolf esta cercada. Os batedores do inimigo vigiam cada passo de quem chega. Cada dia aparecem mais Hammer Scout. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Batedores da Lanca",
+    "monstro": "Lance Scout",
+    "monstroNumero": 311,
+    "quantidade": 6000,
+    "exp": 79734000,
+    "zen": 58200000,
+    "pontos": 70,
+    "historia": "A fortaleza de Crywolf esta cercada. Os batedores do inimigo vigiam cada passo de quem chega. Os Lance Scout estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "Batedores do Arco",
+    "monstro": "Bow Scout",
+    "monstroNumero": 312,
+    "quantidade": 8000,
+    "exp": 106312000,
+    "zen": 77600000,
+    "pontos": 90,
+    "historia": "A fortaleza de Crywolf esta cercada. Os batedores do inimigo vigiam cada passo de quem chega. Recebi relatos de grupos inteiros que cairam diante dos Bow Scout. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Lobisomens de Crywolf",
+    "monstro": "Werewolf",
+    "monstroNumero": 313,
+    "quantidade": 10000,
+    "exp": 161660000,
+    "zen": 118000000,
+    "pontos": 110,
+    "historia": "A fortaleza de Crywolf esta cercada. Os batedores do inimigo vigiam cada passo de quem chega. Os Werewolf tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   }
+  ]
+ },
+ {
+  "id": 12,
+  "nome": "Kanturu",
+  "mapas": [
+   37
+  ],
+  "quests": [
+   {
+    "nome": "Lobos Estilhacados",
+    "monstro": "Splinter Wolf",
+    "monstroNumero": 351,
+    "quantidade": 6000,
+    "exp": 65760000,
+    "zen": 48000000,
+    "pontos": 40,
+    "historia": "As ruinas de Kanturu guardam maquinas e monstros de uma guerra antiga que nunca acabou. Os Splinter Wolf estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "Cavaleiros de Ferro",
+    "monstro": "Iron Rider",
+    "monstroNumero": 352,
+    "quantidade": 10000,
+    "exp": 112340000,
+    "zen": 82000000,
+    "pontos": 50,
+    "historia": "As ruinas de Kanturu guardam maquinas e monstros de uma guerra antiga que nunca acabou. Recebi relatos de grupos inteiros que cairam diante dos Iron Rider. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Satiros nas Ruinas",
+    "monstro": "Satyros",
+    "monstroNumero": 353,
+    "quantidade": 14000,
+    "exp": 163030000,
+    "zen": 119000000,
+    "pontos": 60,
+    "historia": "As ruinas de Kanturu guardam maquinas e monstros de uma guerra antiga que nunca acabou. Os Satyros tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Cacadores de Laminas",
+    "monstro": "Blade Hunter",
+    "monstroNumero": 354,
+    "quantidade": 18000,
+    "exp": 217008000,
+    "zen": 158400000,
+    "pontos": 70,
+    "historia": "As ruinas de Kanturu guardam maquinas e monstros de uma guerra antiga que nunca acabou. Cada dia aparecem mais Blade Hunter. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Gigantis",
+    "monstro": "Gigantis",
+    "monstroNumero": 356,
+    "quantidade": 22000,
+    "exp": 295372000,
+    "zen": 215600000,
+    "pontos": 80,
+    "historia": "As ruinas de Kanturu guardam maquinas e monstros de uma guerra antiga que nunca acabou. Os Gigantis estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   },
+   {
+    "nome": "A Furia dos Berserkers",
+    "monstro": "Berserker",
+    "monstroNumero": 350,
+    "quantidade": 26000,
+    "exp": 356200000,
+    "zen": 260000000,
+    "pontos": 90,
+    "historia": "As ruinas de Kanturu guardam maquinas e monstros de uma guerra antiga que nunca acabou. Recebi relatos de grupos inteiros que cairam diante dos Berserker. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "Kentauros",
+    "monstro": "Kentauros",
+    "monstroNumero": 355,
+    "quantidade": 30000,
+    "exp": 382230000,
+    "zen": 279000000,
+    "pontos": 100,
+    "historia": "As ruinas de Kanturu guardam maquinas e monstros de uma guerra antiga que nunca acabou. Os Kentauros tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "O Genocida",
+    "monstro": "Genocider",
+    "monstroNumero": 357,
+    "quantidade": 35000,
+    "exp": 503475000,
+    "zen": 367500000,
+    "pontos": 110,
+    "historia": "As ruinas de Kanturu guardam maquinas e monstros de uma guerra antiga que nunca acabou. Cada dia aparecem mais Genocider. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   }
+  ]
+ },
+ {
+  "id": 13,
+  "nome": "Kanturu Relics",
+  "mapas": [
+   38
+  ],
+  "quests": [
+   {
+    "nome": "Caudas Gemeas",
+    "monstro": "Twin Tale",
+    "monstroNumero": 359,
+    "quantidade": 20000,
+    "exp": 320580000,
+    "zen": 234000000,
+    "pontos": 40,
+    "historia": "No fundo de Kanturu, as reliquias atraem criaturas que nao deveriam existir. Recebi relatos de grupos inteiros que cairam diante dos Twin Tale. Preciso de alguem com coragem pra enfrentar essa ameaca."
+   },
+   {
+    "nome": "As Personas",
+    "monstro": "Persona",
+    "monstroNumero": 358,
+    "quantidade": 25000,
+    "exp": 404150000,
+    "zen": 295000000,
+    "pontos": 60,
+    "historia": "No fundo de Kanturu, as reliquias atraem criaturas que nao deveriam existir. Os Persona tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "O Pavor das Reliquias",
+    "monstro": "Dreadfear",
+    "monstroNumero": 360,
+    "quantidade": 30000,
+    "exp": 489090000,
+    "zen": 357000000,
+    "pontos": 80,
+    "historia": "No fundo de Kanturu, as reliquias atraem criaturas que nao deveriam existir. Cada dia aparecem mais Dreadfear. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   }
+  ]
+ },
+ {
+  "id": 14,
+  "nome": "Karutan",
+  "mapas": [
+   80,
+   81
+  ],
+  "quests": [
+   {
+    "nome": "Cryptas Retorcidas",
+    "monstro": "Crypta",
+    "monstroNumero": 573,
+    "quantidade": 25000,
+    "exp": 380175000,
+    "zen": 277500000,
+    "pontos": 50,
+    "historia": "Karutan foi retorcida por uma energia estranha. O que vive aqui nao e mais o que era. Os Crypta tomaram conta da regiao e ja ninguem se arrisca sozinho. Mostre que voce e capaz de mudar isso."
+   },
+   {
+    "nome": "Gollocks Retorcidos",
+    "monstro": "Gollock",
+    "monstroNumero": 572,
+    "quantidade": 35000,
+    "exp": 517860000,
+    "zen": 378000000,
+    "pontos": 70,
+    "historia": "Karutan foi retorcida por uma energia estranha. O que vive aqui nao e mais o que era. Cada dia aparecem mais Gollock. Se voce acabar com eles, a recompensa e sua e o caminho fica livre pros proximos."
+   },
+   {
+    "nome": "Condras Retorcidos",
+    "monstro": "Condra",
+    "monstroNumero": 575,
+    "quantidade": 45000,
+    "exp": 721305000,
+    "zen": 526500000,
+    "pontos": 90,
+    "historia": "Karutan foi retorcida por uma energia estranha. O que vive aqui nao e mais o que era. Os Condra estao se multiplicando e atacam todo viajante que passa. Se ninguem diminuir o numero deles, ninguem mais vai conseguir cacar aqui."
+   }
+  ]
+ }
+]
