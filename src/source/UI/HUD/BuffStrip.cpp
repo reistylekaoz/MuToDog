@@ -16,6 +16,7 @@
 #include "Core/Utilities/StringUtils.h"
 #include "Data/GameData/BuffData/BuffDatabase.h"
 #include "UI/Estudo/ColecoesWindow.h"
+#include "UI/Estudo/GearScore.h"
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/Event.h>
 #include <algorithm>
@@ -63,6 +64,8 @@ void BuffSort(std::list<eBuffState>& buffstate)
 const int kMaxTileIndex = 89; // rows 0-8, 10 cols
 // O buff das colecoes (MuToDog) na lista dos mostrados: nao e um eBuffState.
 constexpr int kCollectionBuff = -2;
+// O gear score (rodada 12): sempre na frente da fila quando tem algo vestido (JanelaBuffs.GS do Godot).
+constexpr int kGearScoreBuff = -1;
 Rml::String BuildIconDecorator(eBuffState buff)
 {
     const int buffId = static_cast<int>(buff);
@@ -241,6 +244,15 @@ void CBuffStrip::SyncRmlModel()
         model.buffs.push_back(entry);
     }
 
+    // MuToDog (MU Estudo, rodada 12): o gear score na frente de tudo, do lado do buff das colecoes
+    if (mu::ui::window::CGearScore::Total() > 0)
+    {
+        m_ShownBuffs.insert(m_ShownBuffs.begin(), kGearScoreBuff);
+        BuffEntry entry;
+        entry.decorator = "image(buff-gs)";
+        model.buffs.insert(model.buffs.begin(), entry);
+    }
+
     // Slot positions are the stylesheets' own: #panel wraps its 20x28 slots at 8 per row, which is
     // what native's own counters produced. Order here is the order they appear.
     for (eBuffState buff : buffstate)
@@ -266,7 +278,9 @@ void CBuffStrip::SyncTooltip()
     // Native RenderTipTextList() hung the box from the icon's centre, 20 of its 28 units down.
     UI::RmlBridge::ElementTooltip::Placement placement;
     placement.anchorAt = 20.f / 28.f;
-    if (m_ShownBuffs[slot] == kCollectionBuff)
+    if (m_ShownBuffs[slot] == kGearScoreBuff)
+        m_Tooltip.Show(mu::ui::window::CGearScore::BonusTooltip(), placement);
+    else if (m_ShownBuffs[slot] == kCollectionBuff)
         m_Tooltip.Show(mu::ui::window::CColecoesWindow::BonusTooltip(), placement);
     else
         m_Tooltip.Show(BuildTooltip(static_cast<eBuffState>(m_ShownBuffs[slot])), placement);
@@ -274,7 +288,7 @@ void CBuffStrip::SyncTooltip()
 
 void CBuffStrip::OnBuffRightClick(int slot)
 {
-    if (slot < 0 || slot >= static_cast<int>(m_ShownBuffs.size()) || m_ShownBuffs[slot] == kCollectionBuff)
+    if (slot < 0 || slot >= static_cast<int>(m_ShownBuffs.size()) || m_ShownBuffs[slot] < 0)
         return;
     const int skill = CancellableSkill(static_cast<eBuffState>(m_ShownBuffs[slot]));
     if (skill == 0)

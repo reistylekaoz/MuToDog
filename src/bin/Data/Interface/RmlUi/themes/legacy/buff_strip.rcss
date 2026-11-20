@@ -240,3 +240,10 @@
 	src: "../modern/menu_f10/buff_colecao.tga";
 	buff-colecao: 0px 0px 80px 80px;
 }
+
+/* MuToDog (MU Estudo, rodada 12): o icone do gear score (CBuffStrip, "image(buff-gs)"), o mesmo do Godot */
+@spritesheet buff-gs-sheet
+{
+	src: "../modern/menu_f10/buff_gs.tga";
+	buff-gs: 0px 0px 80px 80px;
+}

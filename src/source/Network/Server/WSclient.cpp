@@ -5,6 +5,7 @@
 #include "Audio/SoundPlaces.h"
 #include "Core/Utilities/Log/MuLogger.h"
 #include "UI/Chat/Chat.h"
+#include "UI/Estudo/GearScore.h"
 #include "UI/Estudo/ResetSystemWindow.h"
 #include "UI/Estudo/ColecoesWindow.h"
 #include "UI/Estudo/AlmaWindow.h"
@@ -14809,6 +14810,8 @@ static void ProcessPacket(const BYTE* ReceiveBuffer, int32_t Size)
         mu::ui::window::CAlmaWindow::ReceivePacket(ReceiveBuffer, Size);
         // C2 FB 20 (o horario dos eventos)
         mu::ui::window::CEventosWindow::ReceivePacket(ReceiveBuffer, Size);
+        // C1 FB 70 (o gear score de quem está na visão, AuraForca.cs: o meu vai pro ícone do GS)
+        mu::ui::window::CGearScore::ReceivePacket(ReceiveBuffer, Size);
         break;
     case 0xFA:
         // MuToDog (MU Estudo): C1 FA 01/02, a barra do boss e a disputa de dano (DisputaDano.cs)

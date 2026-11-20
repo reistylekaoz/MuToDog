@@ -50,6 +50,7 @@
 #include "Data/GameData/ItemData/ItemDatabase.h"
 #include "GameLogic/Items/ItemNameParts.h"
 #include "Data/GameData/ItemData/ItemDescriptionPlaceholders.h"
+#include "UI/Estudo/GearScore.h"
 #include "Data/GameData/ItemData/ItemTooltipLines.h"
 #include "Data/GameData/ItemData/ItemType.h"
 #include "Core/Text/TextLineWrap.h"
@@ -1929,6 +1930,20 @@ static ItemTooltipBuild BuildItemTooltipText(const ITEM* ip, bool Sell, int Inve
     TextBold[TextNum] = true;
     TextNum++;
     writeLayoutLines(Data::Items::TooltipSection::Name);
+
+    // MuToDog (MU Estudo, rodada 12): o gear score do item embaixo do nome, como no cliente Godot
+    if (mu::ui::window::CGearScore::ItemScore score; mu::ui::window::CGearScore::Of(*ip, score) &&
+                                                     TextNum + 2 < static_cast<int>(std::size(TextList)))
+    {
+        mu_swprintf(TextList[TextNum], L"Base Score: %d", score.base);
+        TextListColor[TextNum] = TEXT_COLOR_ORANGE;
+        TextBold[TextNum] = false;
+        TextNum++;
+        mu_swprintf(TextList[TextNum], L"Grade Score: %d", score.grade);
+        TextListColor[TextNum] = TEXT_COLOR_VIOLET;
+        TextBold[TextNum] = false;
+        TextNum++;
+    }
 
     // The item cases whose lines need the game (the reset points, the saved revive position, the socket system,
     // the signs still needed); the others' lines are their descriptions.
