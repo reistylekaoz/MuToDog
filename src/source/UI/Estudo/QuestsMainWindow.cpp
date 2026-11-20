@@ -130,6 +130,8 @@ void CQuestsMainWindow::Show(bool bShow)
 {
     CObject::Show(bShow);
     m_Confirm = false;
+    if (!bShow)
+        g_ZoakMode = false; // fechou: a T e o F10 abrem na lista, só o Zoak abre no Zoak
     if (bShow)
     {
         SendState();
