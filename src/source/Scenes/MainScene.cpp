@@ -51,6 +51,7 @@
 #include "Render/Drawing/DeferredDraws.h"
 #include "Render/Drawing/DrawCallLog.h"
 #include "Render/Drawing/LegacyCalls.h"
+#include "UI/Estudo/GolpeBoss.h"
 
 #include <optional>
 #ifdef _EDITOR
@@ -334,6 +335,8 @@ static void UpdateGameEntities()
         FRAME_PROFILE(MoveParticles);
         MoveParticles();
     }
+    // MuToDog (MU Estudo, rodada 20): o golpe especial e a aura da Séphora
+    mu::ui::window::GolpeBoss::Update();
     MovePointers();
     {
         FRAME_PROFILE(UpdateEffects);
@@ -686,6 +689,7 @@ static void RenderGameWorldPass(BYTE& byWaterMap, int width, int height)
         RenderEffects();
         RenderBlurs();
     }
+    mu::ui::window::GolpeBoss::RenderGround();
     BeginSprite();
 
     if (ShouldRenderLeaves())
@@ -695,6 +699,7 @@ static void RenderGameWorldPass(BYTE& byWaterMap, int width, int height)
 
     { FRAME_PROFILE(Sprites); RenderSprites(); }
     { FRAME_PROFILE(Particles); RenderParticles(); }
+    mu::ui::window::GolpeBoss::RenderSprites();
 
     if (IsWaterTerrain() == false)
     {

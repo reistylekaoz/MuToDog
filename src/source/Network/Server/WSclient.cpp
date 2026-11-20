@@ -10,6 +10,7 @@
 #include "UI/Estudo/ColecoesWindow.h"
 #include "UI/Estudo/AlmaWindow.h"
 #include "UI/Estudo/BossBarWindow.h"
+#include "UI/Estudo/GolpeBoss.h"
 #include "UI/Estudo/EventosWindow.h"
 #include "UI/Estudo/LogCacaWindow.h"
 #include "UI/Estudo/QuestsMainWindow.h"
@@ -14832,6 +14833,8 @@ static void ProcessPacket(const BYTE* ReceiveBuffer, int32_t Size)
     case 0xFA:
         // MuToDog (MU Estudo): C1 FA 01/02, a barra do boss e a disputa de dano (DisputaDano.cs)
         mu::ui::window::CBossBarWindow::ReceivePacket(ReceiveBuffer, Size);
+        // C1 FA 03/04, o aviso e o impacto do golpe especial da Séphora (GolpeBoss.cs)
+        mu::ui::window::GolpeBoss::ReceivePacket(ReceiveBuffer, Size);
         break;
     default:
         break;

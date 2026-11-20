@@ -24,3 +24,5 @@ body { pointer-events: none; }
 .c1 { left: 0px; top: 1px; width: 2px; height: 3px; }
 .c2 { left: 3px; top: 0px; width: 3px; height: 4px; }
 .c3 { left: 7px; top: 1px; width: 2px; height: 3px; }
+/* rodada 20: o aviso do golpe especial, embaixo da disputa */
+#golpe { position: absolute; left: 119px; top: 70px; width: 400px; text-align: center; white-space: nowrap; font-size: 10px; line-height: 14px; font-weight: bold; color: #ff6a30; background-color: #000000a0; font-effect: outline(1px #000000e6); }

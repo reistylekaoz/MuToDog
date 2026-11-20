@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "UI/Estudo/BossBarWindow.h"
+#include "UI/Estudo/GolpeBoss.h"
 #include "UI/Core/WindowSystem.h"
 #include "Core/Text/Utf8.h"
 #include "Data/GameData/MonsterData/MonsterDatabase.h"
@@ -239,9 +240,23 @@ bool CBossBarWindow::Update()
     Rml::ElementDocument* document = m_RmlView.Document();
     if (document == nullptr)
         return true;
-    UI::RmlBridge::SyncDocumentVisibility(document, g_Bar.active);
-    if (g_Bar.active)
-        Rebuild(now);
+    // o aviso do golpe especial aparece mesmo sem a barra (rodada 20)
+    const std::string golpe = GolpeBoss::Warning();
+    const bool visible = g_Bar.active || !golpe.empty();
+    UI::RmlBridge::SyncDocumentVisibility(document, visible);
+    if (visible)
+    {
+        BossBarRmlModel& model = m_RmlView.GetModel();
+        if (model.golpe != golpe || model.bar != g_Bar.active)
+        {
+            model.golpe = golpe;
+            model.bar = g_Bar.active;
+            m_RmlView.MarkDirty("golpe");
+            m_RmlView.MarkDirty("bar");
+        }
+        if (g_Bar.active)
+            Rebuild(now);
+    }
     m_LastTick = now;
     return true;
 }
@@ -266,6 +281,8 @@ void CBossBarWindow::BindRmlModel(Rml::DataModelConstructor& c, BossBarRmlModel&
     c.Bind("leader_look", &model.leaderLook);
     c.Bind("me", &model.me);
     c.Bind("contest", &model.contest);
+    c.Bind("bar", &model.bar);
+    c.Bind("golpe", &model.golpe);
 }
 
 void CBossBarWindow::Rebuild(std::uint32_t now)

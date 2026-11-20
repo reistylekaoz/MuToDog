@@ -294,6 +294,10 @@ enum
     BITMAP_GENS_RANKBACK,
 #endif // PBG_ADD_GENSRANKING
 
+    // MuToDog (MU Estudo, rodada 20): as marcas no chão do golpe especial da Séphora (UI/Estudo/GolpeBoss.cpp)
+    BITMAP_ESTUDO_GOLPE_DISCO,
+    BITMAP_ESTUDO_GOLPE_ANEL,
+
     BITMAP_INTERFACE_TEXTURE_END = 32000,
     BITMAP_EFFECT_TEXTURE_BEGIN = 32001,
 

@@ -1757,6 +1757,9 @@ static void OpenBasicDataStep1()
     LoadBitmap(L"Effect\\blood01.tga", BITMAP_BLOOD, GL_LINEAR, GL_CLAMP_TO_EDGE);
     LoadBitmap(L"Effect\\blood.tga", BITMAP_BLOOD + 1, GL_LINEAR, GL_CLAMP_TO_EDGE);
     LoadBitmap(L"Effect\\Explotion01.jpg", BITMAP_EXPLOTION, GL_LINEAR, GL_CLAMP_TO_EDGE);
+    // MuToDog (MU Estudo, rodada 20): o disco e o anel das marcas do golpe da Séphora (camada dream)
+    LoadBitmap(L"Effect\\estudo_golpe_disco.tga", BITMAP_ESTUDO_GOLPE_DISCO, GL_LINEAR, GL_CLAMP_TO_EDGE);
+    LoadBitmap(L"Effect\\estudo_golpe_anel.tga", BITMAP_ESTUDO_GOLPE_ANEL, GL_LINEAR, GL_CLAMP_TO_EDGE);
     LoadBitmap(L"Skill\\twlighthik01.jpg", BITMAP_TWLIGHT, GL_LINEAR, GL_CLAMP_TO_EDGE);
     LoadBitmap(L"Skill\\2line_gost.jpg", BITMAP_2LINE_GHOST, GL_LINEAR, GL_CLAMP_TO_EDGE);
     LoadBitmap(L"Effect\\damage01mono.jpg", BITMAP_DAMAGE_01_MONO, GL_LINEAR, GL_CLAMP_TO_EDGE);

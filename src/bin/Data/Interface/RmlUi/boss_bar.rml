@@ -10,6 +10,7 @@
 	     Não pega o mouse. Geometria em px da tela de referência 640 x 480 (.stage). -->
 	<!-- bound-geometry: a largura da vida (fill) e do rastro (trail) é o medidor, vida / vida máxima -->
 	<div id="screen" class="stage">
+		<div id="barra" data-if="bar">
 		<div id="name">{{name}}</div>
 		<div id="marker" data-if="marker != ''" data-style-background-color="marker_color">{{marker}}</div>
 		<div id="bar">
@@ -22,6 +23,9 @@
 		<div id="end" data-if="end != ''">{{end}}</div>
 		<div id="leader" data-if="contest" data-attr-class="leader_look"><span class="crown"><span class="c1"></span><span class="c2"></span><span class="c3"></span><span class="cb"></span></span> {{leader}}</div>
 		<div id="me" data-if="contest">{{me}}</div>
+		</div>
+		<!-- rodada 20: o aviso do golpe especial da Séphora (GolpeBoss.cpp), mesmo sem a barra -->
+		<div id="golpe" data-if="golpe != ''">{{golpe}}</div>
 	</div>
 </body>
 </rml>

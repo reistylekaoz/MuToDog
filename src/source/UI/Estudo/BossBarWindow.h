@@ -34,6 +34,8 @@ struct BossBarRmlModel
     Rml::String leaderLook; // "eu", "outro" ou "pisca"
     Rml::String me;
     bool contest = false;   // tem disputa (os bosses da Dungeon das 3 etapas só mostram a vida)
+    bool bar = false;       // a barra (some quando só o aviso do golpe está na tela)
+    Rml::String golpe;      // o aviso do golpe especial (GolpeBoss.cpp), vazio sem golpe
 };
 
 class CBossBarWindow : public CObject
