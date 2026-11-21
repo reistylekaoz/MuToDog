@@ -417,6 +417,11 @@
 						<span class="opt-label">{{disable_wing_shadow_label}}</span>
 						<div class="opt-control"><div class="opt-toggle" data-class-checked="disable_wing_shadow"><div class="opt-toggle-knob"></div></div></div>
 					</div>
+					<!-- MuToDog (MU Estudo, rodada 21): FPS abaixo de 25 por 6 s desliga o MSAA, depois as sombras -->
+					<div class="opt-row opt-toggle-row" data-event-click="option_toggle_auto_qualidade">
+						<span class="opt-label">{{auto_qualidade_label}}</span>
+						<div class="opt-control"><div class="opt-toggle" data-class-checked="auto_qualidade"><div class="opt-toggle-knob"></div></div></div>
+					</div>
 				</div>
 
 				<div class="opt-page" data-class-hidden="active_tab != 2">

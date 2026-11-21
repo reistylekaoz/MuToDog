@@ -182,6 +182,9 @@ public:
     // above, this time for the console-only `$fps <N>` diagnostic (SceneManager::SetTargetFps).
     int GetFpsCap() const { return m_fpsCap; }
     void SetFpsCap(int fps);
+    // MuToDog (MU Estudo, rodada 21): corte automático abaixo de 25 FPS.
+    bool GetAutoQualidade() const { return m_autoQualidade; }
+    void SetAutoQualidade(bool enabled);
 
     // Active texture pack (a folder in Data/TexturePacks), empty for the original textures. The
     // loader reads it once at startup, so a change takes effect after a restart.
@@ -269,6 +272,7 @@ private:
     bool m_disableWingShadow;
     bool m_disableBodyShadows;
     int m_fpsCap;
+    bool m_autoQualidade = true;
     std::wstring m_texturePack;
     bool m_useS6PlayerModels;
 

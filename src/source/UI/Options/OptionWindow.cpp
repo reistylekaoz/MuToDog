@@ -440,6 +440,8 @@ void mu::ui::window::COptionWindow::BindRmlModel(Rml::DataModelConstructor& c, O
     c.Bind("disable_wing_shadow_label", &model.disableWingShadowLabel);
     c.Bind("disable_body_shadows", &model.disableBodyShadows);
     c.Bind("disable_body_shadows_label", &model.disableBodyShadowsLabel);
+    c.Bind("auto_qualidade", &model.autoQualidade);
+    c.Bind("auto_qualidade_label", &model.autoQualidadeLabel);
     c.Bind("skill_effect_models_locked", &model.skillEffectModelsLocked);
     c.Bind("boids_locked", &model.boidsLocked);
     c.Bind("body_shadows_locked", &model.bodyShadowsLocked);
@@ -587,6 +589,8 @@ void mu::ui::window::COptionWindow::BindRmlModel(Rml::DataModelConstructor& c, O
         [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { RmlToggleDisableWingShadow(); });
     c.BindEventCallback("option_toggle_disable_body_shadows",
         [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { RmlToggleDisableBodyShadows(); });
+    c.BindEventCallback("option_toggle_auto_qualidade",
+        [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { RmlToggleAutoQualidade(); });
     c.BindEventCallback("option_toggle_enhanced_graphics",
                         [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&)
                         { RmlToggleEnhancedGraphics(); });
@@ -847,6 +851,10 @@ void mu::ui::window::COptionWindow::SyncImpliedEffectRows(OptionRmlModel& model)
             m_RmlView.MarkDirty(name);
         }
     };
+    // MuToDog (rodada 21): o corte automático (UI/Estudo/Desempenho.cpp) desliga as sombras pela config, então ela
+    // manda aqui, mesmo com a janela aberta.
+    m_bDisableBodyShadows = GameConfig::GetInstance().GetDisableBodyShadows();
+    syncFlag(model.autoQualidade, "auto_qualidade", GameConfig::GetInstance().GetAutoQualidade());
     const bool noBodyShadows = !m_bRenderAllEffects;
     const bool noWingShadow = noBodyShadows || m_bDisableBodyShadows;
     syncFlag(model.skillEffectModelsLocked, "skill_effect_models_locked", m_bDisableEffects);
@@ -1124,6 +1132,13 @@ void mu::ui::window::COptionWindow::RmlToggleDisableBodyShadows()
     SetDisableBodyShadows(m_bDisableBodyShadows);
     GameConfig::GetInstance().SetDisableBodyShadows(m_bDisableBodyShadows);
     GameConfig::GetInstance().Save();
+}
+
+void mu::ui::window::COptionWindow::RmlToggleAutoQualidade()
+{
+    GameConfig& config = GameConfig::GetInstance();
+    config.SetAutoQualidade(!config.GetAutoQualidade());
+    config.Save();
 }
 
 // The look preset through the one function start-up and `$look classic|enhanced` use: it saves
@@ -1768,7 +1783,7 @@ void mu::ui::window::COptionWindow::SyncRmlModel()
     SyncLabel(model.tabInterfaceLabel, "tab_interface_label", I18N::Game::Interface);
     SyncLabel(model.sectionQualityLabel, "section_quality_label", I18N::Game::Quality);
     SyncLabel(model.sectionEffectsLabel, "section_effects_label", I18N::Game::Effects);
-    SyncLabel(model.sectionShadowsLabel, "section_shadows_label", I18N::Game::Shadows);
+    SyncLabel(model.sectionShadowsLabel, "section_shadows_label", L"Sombras e desempenho");
     SyncLabel(model.autoAttackLabel, "auto_attack_label", I18N::Game::AutomaticAttack);
     SyncLabel(model.whisperSoundLabel, "whisper_sound_label", I18N::Game::BeepSoundForWhispering);
     SyncLabel(model.slideHelpLabel, "slide_help_label", I18N::Game::SlideHelp);
@@ -1789,8 +1804,9 @@ void mu::ui::window::COptionWindow::SyncRmlModel()
     SyncLabel(model.disableSkillEffectModelsLabel, "disable_skill_effect_models_label",
               I18N::Game::DisableSkillEffectModels);
     SyncLabel(model.disableBoidsLabel, "disable_boids_label", I18N::Game::DisableAmbientWildlife);
-    SyncLabel(model.disableWingShadowLabel, "disable_wing_shadow_label", I18N::Game::DisableWingShadow);
-    SyncLabel(model.disableBodyShadowsLabel, "disable_body_shadows_label", I18N::Game::DisableShadows);
+    SyncLabel(model.disableWingShadowLabel, "disable_wing_shadow_label", L"Desligar a sombra das asas");
+    SyncLabel(model.disableBodyShadowsLabel, "disable_body_shadows_label", L"Desligar as sombras");
+    SyncLabel(model.autoQualidadeLabel, "auto_qualidade_label", L"Corte automático abaixo de 25 FPS");
     SyncLabel(model.enhancedGraphicsLabel, "enhanced_graphics_label", I18N::Game::EnhancedGraphics);
     SyncLabel(model.lookLightingLabel, "look_lighting_label", I18N::Game::EnhancedLighting);
     SyncLabel(model.lookDynamicLightsLabel, "look_dynamic_lights_label", I18N::Game::DynamicLights);
@@ -1798,11 +1814,12 @@ void mu::ui::window::COptionWindow::SyncRmlModel()
     SyncLabel(model.lookLightMoodLabel, "look_light_mood_label", I18N::Game::LightMood);
     SyncLabel(model.lookPostProcessingLabel, "look_post_processing_label", I18N::Game::BloomAndColourGrading);
     SyncLabel(model.enhancedMovementLabel, "enhanced_movement_label", I18N::Game::EnhancedMovement);
-    SyncLabel(model.antialiasingRowLabel, "antialiasing_row_label", I18N::Game::AntiAliasing);
-    SyncLabel(model.antialiasingTooltip, "antialiasing_tooltip", I18N::Game::AntiAliasingTooltip);
+    SyncLabel(model.antialiasingRowLabel, "antialiasing_row_label", L"Antisserrilhado (MSAA)");
+    SyncLabel(model.antialiasingTooltip, "antialiasing_tooltip",
+              L"Suaviza as bordas serrilhadas (só no visual Enhanced). Pesa na placa de vídeo: com FPS baixo, desligue.");
     SyncLabel(model.anisotropyRowLabel, "anisotropy_row_label", I18N::Game::AnisotropicFiltering);
     SyncLabel(model.anisotropyTooltip, "anisotropy_tooltip", I18N::Game::AnisotropicFilteringTooltip);
-    SyncLabel(model.showFpsCounterLabel, "show_fps_counter_label", I18N::Game::ShowFPSCounter);
+    SyncLabel(model.showFpsCounterLabel, "show_fps_counter_label", L"Mostrar o FPS na tela");
     SyncLabel(model.showDebugInfoLabel, "show_debug_info_label", I18N::Game::ShowDebugInfo);
     SyncLabel(model.themeRowLabel, "theme_row_label", I18N::Game::UITheme);
     SyncLabel(model.uiScaleRowLabel, "ui_scale_row_label", I18N::Game::UIScale);

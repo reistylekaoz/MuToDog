@@ -90,6 +90,8 @@ namespace CfgKeys
     // User-chosen FPS cap when VSync is off; -1 = uncapped. Same promotion story as the toggles
     // above, this time for the console-only `$fps <N>` diagnostic.
     inline constexpr wchar_t CfgKeyFpsCap[] = L"FpsCap";
+    // MuToDog (MU Estudo, rodada 21): corte automático abaixo de 25 FPS (desliga o MSAA, depois as sombras).
+    inline constexpr wchar_t CfgKeyAutoQualidade[] = L"AutoQualidade";
     // Active texture pack, a folder in Data/TexturePacks; empty = the original textures. Read once
     // at startup -- see Render::Textures::TexturePack.
     inline constexpr wchar_t CfgKeyTexturePack[] = L"TexturePack";
@@ -167,6 +169,7 @@ namespace CfgDefaults
     inline constexpr bool CfgDefaultDisableWingShadow = false;
     inline constexpr bool CfgDefaultDisableBodyShadows = false;
     inline constexpr int CfgDefaultFpsCap = -1;  // Uncapped
+    inline constexpr bool CfgDefaultAutoQualidade = true;
     inline constexpr wchar_t CfgDefaultTexturePack[] = L""; // The original textures
     inline constexpr bool CfgDefaultUseS6PlayerModels = true;
 

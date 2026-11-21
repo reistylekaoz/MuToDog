@@ -177,6 +177,8 @@ namespace mu::ui::window
         void RmlToggleDisableBoids();
         void RmlToggleDisableWingShadow();
         void RmlToggleDisableBodyShadows();
+        // MuToDog (MU Estudo, rodada 21): corte automático abaixo de 25 FPS ([Render] AutoQualidade).
+        void RmlToggleAutoQualidade();
         // The look preset is read live (SyncRmlModel), since `$look classic|enhanced` changes it
         // outside this window too.
         void RmlToggleEnhancedGraphics();
@@ -335,6 +337,8 @@ namespace mu::ui::window
             Rml::String disableWingShadowLabel;
             bool disableBodyShadows = false;
             Rml::String disableBodyShadowsLabel;
+            bool autoQualidade = true;
+            Rml::String autoQualidadeLabel;
             // A row another setting already covers shows ticked and ignores clicks: Disable Effects
             // skips skill effect models and wildlife; without full effects, or with every body
             // shadow off, no wing shadow is drawn either.

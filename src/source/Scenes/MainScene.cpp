@@ -51,6 +51,7 @@
 #include "Render/Drawing/DeferredDraws.h"
 #include "Render/Drawing/DrawCallLog.h"
 #include "Render/Drawing/LegacyCalls.h"
+#include "UI/Estudo/Desempenho.h"
 #include "UI/Estudo/GolpeBoss.h"
 
 #include <optional>
@@ -337,6 +338,8 @@ static void UpdateGameEntities()
     }
     // MuToDog (MU Estudo, rodada 20): o golpe especial e a aura da Séphora
     mu::ui::window::GolpeBoss::Update();
+    // MuToDog (MU Estudo, rodada 21): corte automático abaixo de 25 FPS e MU_PERF=1
+    mu::ui::window::Desempenho::Update();
     MovePointers();
     {
         FRAME_PROFILE(UpdateEffects);
