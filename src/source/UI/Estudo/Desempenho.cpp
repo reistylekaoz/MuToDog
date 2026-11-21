@@ -130,7 +130,7 @@ void mu::ui::window::Desempenho::Update()
         SetDisableBodyShadows(true);
         config.SetDisableBodyShadows(true);
         config.Save();
-        Aviso(L"FPS baixo: desliguei as sombras. Pra ligar de novo: Option > Graphics > Sombras.");
+        Aviso(L"FPS baixo: desliguei as sombras. Pra voltar: Option > Graphics > Sombras e desempenho, desmarque Desligar as sombras.");
         std::printf("TESTE qualidade auto: sombras desligadas (%.1f fps)\n", fps);
         std::fflush(stdout);
     }
