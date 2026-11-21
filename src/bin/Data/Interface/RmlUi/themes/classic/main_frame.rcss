@@ -32,7 +32,7 @@
    highlight, the EXP frame art (the line is drawn on the bar's own art) and the readouts'
    current/max variant. */
 #gauge_fill_left, #gauge_fill_right, #item_band_fill, #skill_band_fill, #gauge_frame,
-#btn_cshop, #btn_window, .alert-dot, .btn-icon-label,
+#btn_cshop, #btn_window, #btn_helper, #btn_helper_config, .alert-dot, .btn-icon-label,
 #item_slot_3, .slot-hotkey-label,
 #skill_slot_0, #skill_slot_1, #skill_slot_2, #skill_slot_3, #skill_slot_4, #skill_list_highlight,
 .exp-frame, .gauge-num.value-full, .gauge-fill-horizontal {

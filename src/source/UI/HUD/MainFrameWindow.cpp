@@ -46,6 +46,7 @@
 #include <RmlUi/Core/Event.h>
 #include "GameLogic/Quests/QuestMng.h"
 #include "UI/Social/FriendWindow.h"
+#include "MUHelper/MuHelper.h"
 
 mu::ui::window::CMainFrameWindow::CMainFrameWindow()
 {
@@ -146,6 +147,7 @@ void mu::ui::window::CMainFrameWindow::BindRmlModel(Rml::DataModelConstructor& c
     c.Bind("myinven_open", &model.myInvenOpen);
     c.Bind("friend_open", &model.friendOpen);
     c.Bind("window_open", &model.windowOpen);
+    c.Bind("helper_active", &model.helperActive);
     c.Bind("cshop_tooltip", &model.cShopTooltip);
     c.Bind("chainfo_tooltip", &model.chaInfoTooltip);
     c.Bind("myinven_tooltip", &model.myInvenTooltip);
@@ -286,6 +288,10 @@ void mu::ui::window::CMainFrameWindow::BindRmlModel(Rml::DataModelConstructor& c
         [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { RmlClickFriend(); });
     c.BindEventCallback("mainframe_window_click",
         [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { RmlClickWindow(); });
+    c.BindEventCallback("mainframe_helper_click",
+        [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { RmlClickHelper(); });
+    c.BindEventCallback("mainframe_helper_config_click",
+        [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { RmlClickHelperConfig(); });
     c.BindEventCallback("mainframe_party_click",
                         [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { RmlClickParty(); });
     c.BindEventCallback("mainframe_guild_click",
@@ -417,6 +423,18 @@ bool mu::ui::window::CMainFrameWindow::Update()
     {
         m_bRmlWindowClicked = false;
         g_pNewUISystem->Toggle(mu::ui::window::INTERFACE_WINDOW_MENU);
+        PlayBuffer(SOUND_CLICK01);
+    }
+    if (m_bRmlHelperClicked)
+    {
+        m_bRmlHelperClicked = false;
+        MUHelper::g_MuHelper.Toggle();
+        PlayBuffer(SOUND_CLICK01);
+    }
+    if (m_bRmlHelperConfigClicked)
+    {
+        m_bRmlHelperConfigClicked = false;
+        g_pNewUISystem->Toggle(mu::ui::window::INTERFACE_MUHELPER);
         PlayBuffer(SOUND_CLICK01);
     }
     // These open windows that hide the inventory (HideAllGroupA()), which cancels a trade and
@@ -677,6 +695,7 @@ void mu::ui::window::CMainFrameWindow::SyncRmlModel()
     syncWide(&MainFrameRmlModel::partyTooltip, "party_tooltip", I18N::Game::PartyP);
     syncWide(&MainFrameRmlModel::guildTooltip, "guild_tooltip", I18N::Game::GuildG);
     syncWide(&MainFrameRmlModel::commandTooltip, "command_tooltip", I18N::Game::CommandD);
+    syncBool(&MainFrameRmlModel::helperActive, "helper_active", MUHelper::g_MuHelper.IsActive());
     syncBool(&MainFrameRmlModel::partyOpen, "party_open", g_pNewUISystem->IsVisible(mu::ui::window::INTERFACE_PARTY));
     syncBool(&MainFrameRmlModel::guildOpen, "guild_open",
              g_pNewUISystem->IsVisible(mu::ui::window::INTERFACE_GUILDINFO));

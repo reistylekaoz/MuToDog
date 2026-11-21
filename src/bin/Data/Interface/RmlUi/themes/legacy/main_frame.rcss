@@ -321,3 +321,6 @@
 #pet_skill_row .skill-cell:nth-child(2) { left: 0dp; }
 #pet_skill_row .skill-cell:nth-child(3) { left: 32dp; }
 #pet_skill_row .skill-cell:nth-child(4) { left: 64dp; }
+
+/* MuToDog: os botões do MU Helper só aparecem no tema obsidiana */
+#btn_helper, #btn_helper_config { display: none; }

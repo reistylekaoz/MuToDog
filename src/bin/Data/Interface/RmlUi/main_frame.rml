@@ -84,6 +84,11 @@
 		<div id="btn_window" class="frame-btn slot-frame slot-fill" data-class-open="window_open" data-event-click="mainframe_window_click" data-attr-data-hint="window_tooltip">
 			<span class="btn-icon-label">MENU</span>
 		</div>
+		<!-- MuToDog: liga e desliga o MU Helper e abre a configuração dele (engrenagem); só o tema obsidiana mostra -->
+		<div id="btn_helper" class="frame-btn" data-class-on="helper_active" data-event-click="mainframe_helper_click">
+			<span class="btn-icon-label">MU HELPER</span>
+		</div>
+		<div id="btn_helper_config" class="frame-btn" data-event-click="mainframe_helper_config_click"></div>
 	</div>
 
 	<!-- EXP bar, with the original art's bottom strip behind it (.exp-frame). exp_fraction is

@@ -93,6 +93,8 @@
 		<div id="btn_window" class="frame-btn slot-frame slot-fill" data-class-open="window_open" data-event-click="mainframe_window_click" data-attr-data-hint="window_tooltip">
 			<span class="btn-icon-label">MENU</span>
 		</div>
+		<div id="btn_helper" class="frame-btn" data-class-on="helper_active" data-event-click="mainframe_helper_click"></div>
+		<div id="btn_helper_config" class="frame-btn" data-event-click="mainframe_helper_config_click"></div>
 	</div>
 
 	<!-- The hero's map coordinates, in the box at the bar's left end. -->

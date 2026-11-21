@@ -87,7 +87,7 @@ private:
 
     CameraMode m_CurrentMode;
     ICamera* m_pActiveCamera;
-    bool m_ZoomLocked = true;  // F10 toggles; default = locked
+    bool m_ZoomLocked = false;  // MuToDog: a roda aproxima desde o começo (como no Godot); Ctrl+F10 trava
 
     // Camera instances
     std::unique_ptr<ICamera> m_pDefaultCamera;

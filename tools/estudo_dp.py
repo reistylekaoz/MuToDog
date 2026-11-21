@@ -9,8 +9,14 @@ rasterizada já no tamanho final. font-effect fica em px (o RmlUi lê o número 
 O ninepatch já multiplica a borda pelo dp ratio, e o esticão dobrava de novo: nas peças do Meshy destas janelas a
 escala vai de 1 pra 2, e a moldura e os botões ficam com a mesma espessura de antes em 1920x1080.
 
+Painel encaixado em dp (só no obsidiana, que usa o RML do modern sem .counter-scaled): a janela C é um #panel que o
+slot do workspace estica com transform: scale(--root-scale), e o texto de 10 a 12 px saía ampliado 2x, borrado. No
+fim da folha dela entra uma cópia em dp da base, do docked_panel_frame e dela mesma (só afeta o documento dela, e
+vem depois, então ganha regra por regra) e o #panel perde o transform. Sem @spritesheet na cópia (as coordenadas são
+da textura e já estão definidas acima).
+
 Uso: python3 tools/estudo_dp.py   (converte os temas modern, legacy, obsidiana e as sobreposições do obsidiana;
-rodar de novo não muda nada)
+rodar de novo não muda nada; depois do tools/obsidiana_theme/gerar.py, rode este de novo)
 """
 import re
 from pathlib import Path
@@ -22,6 +28,9 @@ JANELAS = ("missoes", "rastreio_missoes", "colecoes", "alma", "eventos", "log_ca
 PX = re.compile(r"(?<![\w.#-])(-?\d+(?:\.\d+)?)px\b")
 EFEITO = re.compile(r"font-effect\s*:[^;}]*")
 NINEPATCH = re.compile(r"(ninepatch\([\w-]+, [\w-]+), 1\)")
+PAINEIS = ("character_info",)
+MARCA = "/* ---- MU Estudo: painel em dp (tools/estudo_dp.py; gerado, nao edite daqui pra baixo) ---- */"
+ARROBA = re.compile(r"@[\w-]+[^{]*\{[^{}]*\}")
 
 
 def converter(texto):
@@ -32,6 +41,20 @@ def converter(texto):
         ultimo = m.end()
     partes.append(PX.sub(r"\1dp", texto[ultimo:]))
     return NINEPATCH.sub(r"\1, 2)", "".join(partes))
+
+
+def painel_dp(nome):
+    pasta = TEMAS / "obsidiana"
+    arq = pasta / f"{nome}.rcss"
+    propria = arq.read_text().split("\n" + MARCA)[0]
+    copia = "\n".join(ARROBA.sub("", converter(texto)) for texto in (
+        (pasta / "base.rcss").read_text(), (pasta / "docked_panel_frame.rcss").read_text(), propria))
+    novo = (propria + "\n" + MARCA + "\n" + copia
+            + "\n#panel, #panel.slot-placed { transform: none; }\n")
+    if novo != arq.read_text():
+        arq.write_text(novo)
+        return 1
+    return 0
 
 
 def main():
@@ -55,6 +78,7 @@ def main():
         if novo != texto:
             arq.write_text(novo)
             mudados += 1
+    mudados += sum(painel_dp(nome) for nome in PAINEIS)
     print(f"{mudados} arquivos em dp")
 
 

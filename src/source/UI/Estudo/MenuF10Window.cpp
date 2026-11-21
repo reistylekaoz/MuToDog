@@ -60,7 +60,7 @@ constexpr MenuF10Entry kEntries[] = {
     {VK_F1, "F1", "Ajuda", "Todos os atalhos de mouse e teclado.", "ajuda"},
 };
 constexpr int kEntryCount = static_cast<int>(std::size(kEntries));
-constexpr const char* kIdleHint = "Passe o mouse num ícone pra ver pra que serve. Ctrl+F10 solta o zoom da câmera.";
+constexpr const char* kIdleHint = "Passe o mouse num ícone pra ver pra que serve. A roda do mouse aproxima a câmera; Ctrl+F10 trava o zoom.";
 } // namespace
 
 CMenuF10Window::CMenuF10Window() = default;

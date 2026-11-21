@@ -60,3 +60,7 @@
 	pointer-events: none;
 }
 
+
+/* MuToDog: o painel SHOP, CHAR, INV, FRIEND e MENU do topo sai; a loja fica na placa SHOP da barra de baixo e as
+   janelas seguem no teclado (C, I, F, U) */
+#top_right_row { display: none; }

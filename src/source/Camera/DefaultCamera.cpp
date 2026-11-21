@@ -3,7 +3,9 @@
 
 #include "stdafx.h"
 #include "Core/Input/KeyState.h"
+#include "Core/Input/UiInputRouter.h"
 
+#include <algorithm>
 #include <iterator>
 
 #ifndef M_PI
@@ -89,6 +91,16 @@ namespace
     };
     constexpr int PLAYER_ZOOM_LEVEL_DEFAULT = 3;
     constexpr int PLAYER_ZOOM_LEVEL_COUNT   = static_cast<int>(std::size(PLAYER_ZOOM_LADDER));
+
+    // MuToDog: o arco do zoom (DefaultCamera.h). Longe = a câmera padrão do MU (1300 de recuo, 1150 de altura, 41,5
+    // graus); perto = 26% do raio, 15 graus e a mira no peito do herói, como o Godot (26 m e 49 graus até 5 m e 12).
+    constexpr float ZOOM_FAR_HORIZONTAL = 1300.f;
+    constexpr float ZOOM_FAR_HEIGHT = 1150.f;
+    constexpr float ZOOM_NEAR_RADIUS_FACTOR = 0.26f;
+    constexpr float ZOOM_NEAR_PITCH_DEG = 15.f;
+    constexpr float ZOOM_NEAR_AIM_Z = 110.f;
+    constexpr int ZOOM_STEPS = 8;
+    constexpr float ZOOM_SMOOTH_PER_SECOND = 10.f;
 }
 
 DefaultCamera::DefaultCamera(CameraState& state)
@@ -312,7 +324,10 @@ bool DefaultCamera::Update()
     // CalculateCameraPosition() seeds g_shCameraLevel from m_PlayerZoomLevel
     // each frame outside cutscenes.
     if (SceneFlag == MAIN_SCENE)
+    {
         HandleWheelZoom();
+        UpdateZoomArc();
+    }
 
     // FIX: Check if LoginScene is using WALK_PATHS animation (tour mode OFF)
     // In this case, MoveCamera() in LoginScene updates g_Camera directly
@@ -606,7 +621,10 @@ void DefaultCamera::CalculateCameraPosition()
     {
         m_State.Position[2] = g_fSpecialHeight = TW_HEIGHT_CAMERA_Z + 1;
     }
-    m_State.Position[2] += m_State.Distance - CAMERA_DISTANCE_HEIGHT_OFFSET;
+    if (SceneFlag == MAIN_SCENE && !(g_Direction.IsDirection() && !g_Direction.m_bDownHero))
+        m_State.Position[2] += ZoomHeight(); // MuToDog: o arco do zoom (em 0, Distance - 150 como antes)
+    else
+        m_State.Position[2] += m_State.Distance - CAMERA_DISTANCE_HEIGHT_OFFSET;
 
     // Raise camera when mounted (smooth lerp computed in AdjustHeroHeight).
     // Character stays on the ground; only the camera view lifts.
@@ -664,7 +682,8 @@ void DefaultCamera::SetCameraAngle()
     }
     else
     {
-        m_State.Angle[0] = -48.5f;
+        // MuToDog: -48,5 na câmera padrão; com o zoom, mais de frente pro herói (0 olha pra baixo)
+        m_State.Angle[0] = SceneFlag == MAIN_SCENE ? -(90.f - ZoomPitch()) : -48.5f;
     }
 
     // Effects roll a new shake every rendered frame; take one per reference frame, as at 25 FPS.
@@ -707,6 +726,37 @@ void DefaultCamera::UpdateCustomCameraDistance()
 void DefaultCamera::ResetView()
 {
     m_PlayerZoomLevel = PLAYER_ZOOM_LEVEL_DEFAULT;
+    m_ZoomTarget = 0.f;
+}
+
+void DefaultCamera::UpdateZoomArc()
+{
+    extern float FPS_ANIMATION_FACTOR;
+    const float dt = FPS_ANIMATION_FACTOR / 25.0f; // REFERENCE_FPS = 25
+    if (m_FramesSinceActivation < 2 || fabsf(m_ZoomTarget - m_Zoom) < 0.001f)
+        m_Zoom = m_ZoomTarget;
+    else
+        m_Zoom += (m_ZoomTarget - m_Zoom) * (1.0f - expf(-ZOOM_SMOOTH_PER_SECOND * dt));
+}
+
+float DefaultCamera::ZoomPitch() const
+{
+    const float far = atan2f(ZOOM_FAR_HEIGHT, ZOOM_FAR_HORIZONTAL) * 180.f / Q_PI;
+    return far + (ZOOM_NEAR_PITCH_DEG - far) * m_Zoom * m_Zoom;
+}
+
+float DefaultCamera::ZoomHorizontal() const
+{
+    const float farRadius = sqrtf(ZOOM_FAR_HORIZONTAL * ZOOM_FAR_HORIZONTAL + ZOOM_FAR_HEIGHT * ZOOM_FAR_HEIGHT);
+    const float radius = farRadius + (farRadius * ZOOM_NEAR_RADIUS_FACTOR - farRadius) * m_Zoom;
+    return radius * cosf(ZoomPitch() * Q_PI / 180.f);
+}
+
+float DefaultCamera::ZoomHeight() const
+{
+    const float farRadius = sqrtf(ZOOM_FAR_HORIZONTAL * ZOOM_FAR_HORIZONTAL + ZOOM_FAR_HEIGHT * ZOOM_FAR_HEIGHT);
+    const float radius = farRadius + (farRadius * ZOOM_NEAR_RADIUS_FACTOR - farRadius) * m_Zoom;
+    return radius * sinf(ZoomPitch() * Q_PI / 180.f) + ZOOM_NEAR_AIM_Z * m_Zoom;
 }
 
 void DefaultCamera::HandleWheelZoom()
@@ -723,16 +773,13 @@ void DefaultCamera::HandleWheelZoom()
 
     if (CameraManager::Instance().IsZoomLocked())
         return;
+    // MuToDog: a roda em cima de uma janela é dela (lista, chat), não da câmera
+    if (MouseOnWindow || Core::Input::IsMouseOverUI())
+        return;
 
-    // Wheel up (positive ticks) zooms in -> lower index. MouseWheel is
-    // already normalized to ticks in Winmain (HIWORD / WHEEL_DELTA), so a
-    // fast scroll producing 2+ ticks per frame moves multiple ladder rungs.
-    m_PlayerZoomLevel -= wheel;
-
-    if (m_PlayerZoomLevel < 0)
-        m_PlayerZoomLevel = 0;
-    if (m_PlayerZoomLevel >= PLAYER_ZOOM_LEVEL_COUNT)
-        m_PlayerZoomLevel = PLAYER_ZOOM_LEVEL_COUNT - 1;
+    // MuToDog: roda pra cima aproxima, 8 voltas do longe ao perto (o arco do zoom, DefaultCamera.h). A escada fica
+    // no nível padrão: LOD do terreno e plano de corte como antes.
+    m_ZoomTarget = std::clamp(m_ZoomTarget + static_cast<float>(wheel) / ZOOM_STEPS, 0.f, 1.f);
 }
 
 void DefaultCamera::UpdateCameraDistance()
@@ -744,6 +791,12 @@ void DefaultCamera::UpdateCameraDistance()
         return;
     }
 
+    if (SceneFlag == MAIN_SCENE && !(g_Direction.IsDirection() && !g_Direction.m_bDownHero))
+    {
+        // MuToDog: o recuo do arco do zoom, já suavizado em UpdateZoomArc()
+        m_State.DistanceTarget = m_State.Distance = ZoomHorizontal();
+        return;
+    }
     if (g_shCameraLevel >= 0 && g_shCameraLevel < PLAYER_ZOOM_LEVEL_COUNT)
         m_State.DistanceTarget = PLAYER_ZOOM_LADDER[g_shCameraLevel].distance;
     else

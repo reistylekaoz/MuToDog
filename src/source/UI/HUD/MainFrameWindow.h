@@ -88,6 +88,9 @@ namespace mu::ui::window
         void RmlClickMyInven() { m_bRmlMyInvenClicked = true; }
         void RmlClickFriend() { m_bRmlFriendClicked = true; }
         void RmlClickWindow() { m_bRmlWindowClicked = true; }
+        // MuToDog: plaquinha MU HELPER e engrenagem da barra (tema obsidiana), como no HUD do Godot.
+        void RmlClickHelper() { m_bRmlHelperClicked = true; }
+        void RmlClickHelperConfig() { m_bRmlHelperConfigClicked = true; }
         void RmlClickParty()
         {
             m_bRmlPartyClicked = true;
@@ -148,6 +151,7 @@ namespace mu::ui::window
             // and Guild buttons (0.97), the command window button (Season 1 / 2) and the hero's
             // coordinates.
             bool partyOpen = false, guildOpen = false, commandOpen = false;
+            bool helperActive = false;
             Rml::String partyTooltip, guildTooltip, commandTooltip;
             Rml::String coordX, coordY;
 
@@ -207,6 +211,8 @@ namespace mu::ui::window
         bool m_bRmlMyInvenClicked = false;
         bool m_bRmlFriendClicked = false;
         bool m_bRmlWindowClicked = false;
+        bool m_bRmlHelperClicked = false;
+        bool m_bRmlHelperConfigClicked = false;
         bool m_bRmlPartyClicked = false;
         bool m_bRmlGuildClicked = false;
         bool m_bRmlCommandClicked = false;

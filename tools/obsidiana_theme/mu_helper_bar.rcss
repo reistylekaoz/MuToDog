@@ -1,0 +1,4 @@
+/* MuToDog: o helper liga na placa MU HELPER da barra de baixo (main_frame) e a engrenagem de lá abre a configuração,
+   então os botões daqui saem e fica só o mapa com as coordenadas */
+#btn_config, #btn_start, #btn_stop { display: none; }
+#panel { width: 152dp; }

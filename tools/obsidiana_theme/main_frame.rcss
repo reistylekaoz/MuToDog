@@ -115,11 +115,12 @@
 .skill-cell { border: 1dp #3e4652; background-color: rgba(4, 6, 10, 200); }
 .skill-cell.selected { border: 1dp #78bfff; background-color: rgba(120, 191, 255, 30); }
 
-/* placas da barra: MENU na da esquerda (x 127, y 461, 40 x 15) e SHOP na da direita (x 473); os outros botoes ficam
-   no topo (main_frame_top) */
+/* placas da barra: MU HELPER na da esquerda (x 127, y 461, 40 x 15, liga e desliga o helper, verde quando ligado; a
+   engrenagem ao lado abre a configuracao, como no HUD do Godot) e SHOP na da direita (x 473); MENU e os botoes do topo
+   (main_frame_top) saem: C, I, F e U seguem no teclado */
 #buttons { display: block; margin-left: -320dp; bottom: 0dp; width: 640dp; height: 76dp; pointer-events: none; }
-#btn_chainfo, #btn_myinven, #btn_friend { display: none; }
-#btn_window, #btn_cshop {
+#btn_chainfo, #btn_myinven, #btn_friend, #btn_window { display: none; }
+#btn_helper, #btn_cshop {
 	position: absolute;
 	top: 57dp;
 	width: 40dp;
@@ -131,14 +132,28 @@
 	text-align: center;
 	z-index: 4;
 }
-#btn_window { left: 127dp; }
+#btn_helper { left: 127dp; }
+#btn_helper.on { background-color: rgba(90, 200, 120, 46); }
 #btn_cshop { left: 473dp; }
-#btn_window .btn-icon-label, #btn_cshop .btn-icon-label {
+#btn_helper .btn-icon-label, #btn_cshop .btn-icon-label {
 	font-family: "token(font-title)";
 	font-weight: normal;
 	font-size: 6dp;
 	line-height: 15dp;
 	color: #d6b068;
 }
-#btn_window:hover .btn-icon-label, #btn_cshop:hover .btn-icon-label, #btn_cshop.open .btn-icon-label,
-#btn_window.open .btn-icon-label { color: #ffecbe; }
+#btn_helper:hover .btn-icon-label, #btn_cshop:hover .btn-icon-label, #btn_cshop.open .btn-icon-label { color: #ffecbe; }
+#btn_helper.on .btn-icon-label { color: #b8f0c4; }
+#btn_helper_config {
+	position: absolute;
+	left: 113.5dp;
+	top: 58.5dp;
+	width: 12dp;
+	height: 12dp;
+	border-width: 0;
+	background-color: transparent;
+	pointer-events: auto;
+	cursor: pointer;
+	z-index: 4;
+}
+#btn_helper_config:hover { background-color: rgba(255, 236, 190, 40); }
