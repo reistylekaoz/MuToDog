@@ -1,13 +1,13 @@
 /* ---- Obsidiana e prata, rodada 8: Coleções com a moldura, a placa do título e os botões do Meshy (base.rcss) ---- */
-#panel { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
-#title { left: 135px; top: 4px; width: 160px; height: 18px; line-height: 18px; decorator: ninepatch(ob-placa, ob-placa-in, 1); }
-#close, #give, #add_close, .tab { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 1); border-width: 0; }
-#close:hover, #give:hover, #add_close:hover, .tab:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 1); }
-.tab.selected { decorator: ninepatch(ob-botao-apertado, ob-botao-apertado-in, 1); border-bottom: 2px #78bfff; }
-#give.disabled, #give.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 1); }
-#add_box { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
+#panel { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 2); border-width: 0; }
+#title { left: 135dp; top: 4dp; width: 160dp; height: 18dp; line-height: 18dp; decorator: ninepatch(ob-placa, ob-placa-in, 2); }
+#close, #give, #add_close, .tab { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 2); border-width: 0; }
+#close:hover, #give:hover, #add_close:hover, .tab:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 2); }
+.tab.selected { decorator: ninepatch(ob-botao-apertado, ob-botao-apertado-in, 2); border-bottom: 2dp #78bfff; }
+#give.disabled, #give.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 2); }
+#add_box { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 2); border-width: 0; }
 /* rodada 9: a caixa da compra e os botões dela no Meshy; a vitrine com a moldura fina */
-#buy_box { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
-#buy_ok, #buy_cancel { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 1); border-width: 0; }
-#buy_ok:hover, #buy_cancel:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 1); }
-#buy_ok.disabled, #buy_ok.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 1); }
+#buy_box { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 2); border-width: 0; }
+#buy_ok, #buy_cancel { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 2); border-width: 0; }
+#buy_ok:hover, #buy_cancel:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 2); }
+#buy_ok.disabled, #buy_ok.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 2); }

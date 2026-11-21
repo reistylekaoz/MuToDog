@@ -129,9 +129,10 @@ void BossLayer(float f, int& layer, float& part)
     part = std::clamp(f * Layers - static_cast<float>(layer - 1), 0.f, 1.f);
 }
 
-std::string BossPx(float v)
+// px da tela de referência em dp (a folha da janela é dp, tools/estudo_dp.py)
+std::string BossDp(float v)
 {
-    return std::to_string(static_cast<int>(std::lround(v))) + "px";
+    return std::to_string(static_cast<int>(std::lround(v))) + "dp";
 }
 } // namespace
 
@@ -309,8 +310,8 @@ void CBossBarWindow::Rebuild(std::uint32_t now)
     model.name = BossName();
     model.under = layer > 1 ? kColors[(layer - 2) % Layers] : "transparent";
     model.color = kColors[std::max(0, layer - 1) % Layers];
-    model.fill = BossPx(BarWidth * (layer >= 1 ? part : 0.f));
-    model.trail = BossPx(BarWidth * trail);
+    model.fill = BossDp(BarWidth * (layer >= 1 ? part : 0.f));
+    model.trail = BossDp(BarWidth * trail);
     model.marker = layer > 1 ? std::to_string(layer) + "X" : "";
     model.markerColor = kMarkerColors[std::max(0, layer - 1) % Layers];
     char percent[16];

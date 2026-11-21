@@ -472,6 +472,10 @@ input, select, textarea, .btn, [data-event-click] { drag: block; }
          --root-scale: var(--ui-scale); }
 .hud-board { bottom: 0; transform-origin: center bottom; transform: scale(var(--hud-scale));
              --root-scale: var(--hud-scale); }
+/* MU Estudo: .stage.dp is the same 640x480 screen in dp, without the transform (tools/estudo_dp.py). The dp ratio
+   is --ui-scale, so it lands in the same place, and its text is rasterized at the final size instead of being
+   stretched (blurry at 8-9 px x 2 in 1920x1080). Its windows' sheets are in dp. */
+.stage.dp { width: 640dp; height: 480dp; margin-left: -320dp; margin-top: -240dp; transform: none; --root-scale: 1; }
 /* A panel a workspace slot places (CObject::GetPlacedDocument()): the slot's top-left and its
    region's scale arrive as variables; the theme decides how they apply. It takes the pointer, so
    clicks on it never reach the world or the windows below. */

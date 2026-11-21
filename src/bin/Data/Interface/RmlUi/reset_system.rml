@@ -21,7 +21,7 @@
 			</div>
 		</div>
 	</div>
-	<div id="screen" class="stage">
+	<div id="screen" class="stage dp">
 		<div id="panel" data-if="open">
 			<div id="title">Reset System</div>
 			<div id="tabs">

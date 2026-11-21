@@ -10,7 +10,7 @@
 	     o preço). A compra é no site: Comprar no site pede o passe (C1 FB 14) e abre o navegador. Geometria em px da
 	     tela de referência 640 x 480 (.stage). Os ícones são sprites item-<grupo>-<numero> (mercado.rcss, escritos
 	     por tools/obsidiana_theme/icones_itens.py). -->
-	<div id="screen" class="stage">
+	<div id="screen" class="stage dp">
 		<div id="panel">
 			<div id="title">Mercado</div>
 			<div id="rule"></div>

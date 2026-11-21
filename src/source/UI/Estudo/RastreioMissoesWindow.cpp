@@ -28,9 +28,10 @@ constexpr float CornerX = 640.f - PanelWidth - 4.f; // a borda direita, como no 
 constexpr float CornerY = 118.f;
 constexpr const char* PlaceFile = "rastreio_missoes.ini";
 
-std::string RastreioPx(float v)
+// px da tela de referência em dp (a folha da janela é dp, tools/estudo_dp.py)
+std::string RastreioDp(float v)
 {
-    return std::to_string(static_cast<int>(std::lround(v))) + "px";
+    return std::to_string(static_cast<int>(std::lround(v))) + "dp";
 }
 
 std::filesystem::path RastreioPlacePath()
@@ -173,8 +174,8 @@ void CRastreioMissoesWindow::Place()
     const float y = std::clamp(CornerY + m_OffsetY, 0.f, std::max(0.f, 480.f - height));
     m_OffsetX = x - CornerX;
     m_OffsetY = y - CornerY;
-    model.left = RastreioPx(x);
-    model.top = RastreioPx(y);
+    model.left = RastreioDp(x);
+    model.top = RastreioDp(y);
     m_RmlView.MarkDirty("left");
     m_RmlView.MarkDirty("top");
 }

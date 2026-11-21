@@ -87,9 +87,10 @@ std::string LogThousands(long long value)
     return value < 0 ? "-" + digits : digits;
 }
 
-std::string LogPx(float v)
+// px da tela de referência em dp (a folha da janela é dp, tools/estudo_dp.py)
+std::string LogDp(float v)
 {
-    return std::to_string(static_cast<int>(std::lround(v))) + "px";
+    return std::to_string(static_cast<int>(std::lround(v))) + "dp";
 }
 
 std::filesystem::path LogPlacePath()
@@ -284,8 +285,8 @@ void CLogCacaWindow::Place()
     const float y = std::clamp(CornerY + m_OffsetY, 0.f, std::max(0.f, 480.f - height));
     m_OffsetX = x - CornerX;
     m_OffsetY = y - CornerY;
-    model.left = LogPx(x);
-    model.top = LogPx(y);
+    model.left = LogDp(x);
+    model.top = LogDp(y);
     m_RmlView.MarkDirty("left");
     m_RmlView.MarkDirty("top");
 }

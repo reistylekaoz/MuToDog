@@ -643,6 +643,10 @@ input, select, textarea, .btn, [data-event-click] { drag: block; }
          --root-scale: var(--ui-scale); }
 .hud-board { bottom: 0; transform-origin: center bottom; transform: scale(var(--hud-scale));
              --root-scale: var(--hud-scale); }
+/* MU Estudo: .stage.dp is the same 640x480 screen in dp, without the transform (tools/estudo_dp.py). The dp ratio
+   is --ui-scale, so it lands in the same place, and its text is rasterized at the final size instead of being
+   stretched (blurry at 8-9 px x 2 in 1920x1080). Its windows' sheets are in dp. */
+.stage.dp { width: 640dp; height: 480dp; margin-left: -320dp; margin-top: -240dp; transform: none; --root-scale: 1; }
 /* A panel a workspace slot places (CObject::GetPlacedDocument()): the slot's top-left and its
    region's scale arrive as variables; the theme decides how they apply. It takes the pointer, so
    clicks on it never reach the world or the windows below. */
@@ -1281,6 +1285,9 @@ input, select, textarea, .btn, [data-event-click] { drag: block; }
 	border-width: 0;
 }
 .text-field:focus { decorator: ninepatch(ob-campo-foco, ob-campo-foco-in, 1); }
+/* janelas do estudo em dp (tools/estudo_dp.py): o ninepatch ja multiplica pelo dp ratio, a escala 2 deixa a borda como era no .stage esticado */
+.stage.dp .text-field { decorator: ninepatch(ob-campo, ob-campo-in, 2); }
+.stage.dp .text-field:focus { decorator: ninepatch(ob-campo-foco, ob-campo-foco-in, 2); }
 
 /* ---- Obsidiana e prata, rodada 6: carteira do zen com a moeda do Tema 3 (inv_zen, 170 x 26). A peca leva arte do S6,
    entao vem da camada do estudo (estudo/, mumain_dream.py), fora do git; sem ela fica so a caixa. Presa no topo sem

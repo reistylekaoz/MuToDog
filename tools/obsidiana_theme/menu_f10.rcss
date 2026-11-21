@@ -1,5 +1,5 @@
 /* ---- Obsidiana e prata, rodada 7: o menu do F10 com a moldura, a placa do titulo e o botao do Meshy (base.rcss) ---- */
-#panel { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
-#title { left: 141px; top: 4px; width: 200px; height: 18px; line-height: 18px; decorator: ninepatch(ob-placa, ob-placa-in, 1); }
-#close { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 1); border-width: 0; }
-#close:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 1); }
+#panel { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 2); border-width: 0; }
+#title { left: 141dp; top: 4dp; width: 200dp; height: 18dp; line-height: 18dp; decorator: ninepatch(ob-placa, ob-placa-in, 2); }
+#close { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 2); border-width: 0; }
+#close:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 2); }

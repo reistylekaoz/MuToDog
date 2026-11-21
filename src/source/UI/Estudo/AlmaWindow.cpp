@@ -193,9 +193,10 @@ int AlmaJewels()
     return count;
 }
 
-std::string AlmaPx(float v)
+// px da tela de referência em dp (a folha da janela é dp, tools/estudo_dp.py)
+std::string AlmaDp(float v)
 {
-    return std::to_string(static_cast<int>(std::lround(v))) + "px";
+    return std::to_string(static_cast<int>(std::lround(v))) + "dp";
 }
 
 void AlmaSendRaw(BYTE* packet, int size)
@@ -468,7 +469,7 @@ void CAlmaWindow::Rebuild()
         card.full = p >= data.maximum;
         card.canAdd = g_Free > 0 && p < data.maximum;
         card.element = index;
-        card.bar = AlmaPx(barHeight * std::clamp(p, 0, data.maximum) / static_cast<float>(data.maximum));
+        card.bar = AlmaDp(barHeight * std::clamp(p, 0, data.maximum) / static_cast<float>(data.maximum));
         int best = -1;
         for (size_t j = 0; j < e.marks.size(); ++j)
             if (p >= e.marks[j].points)
@@ -481,7 +482,7 @@ void CAlmaWindow::Rebuild()
             row.value = "+" + AlmaNumber(m.value) + AlmaUnit(m.type);
             row.look = static_cast<int>(j) == best ? "vale" : (p >= m.points ? "aceso" : "apagado");
             // a linha do marco no meio da casa de 26 px
-            row.top = AlmaPx(kBarBottom - barHeight * m.points / static_cast<float>(data.maximum) - 13.f);
+            row.top = AlmaDp(kBarBottom - barHeight * m.points / static_cast<float>(data.maximum) - 13.f);
             card.marks.push_back(row);
         }
         if (!e.marks.empty())

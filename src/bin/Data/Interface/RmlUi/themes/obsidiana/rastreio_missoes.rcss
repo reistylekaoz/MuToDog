@@ -5,12 +5,12 @@ body { pointer-events: none; }
 
 #panel {
 	position: absolute;
-	left: 508px;
-	top: 118px;
-	width: 128px;
-	padding: 0px 2px 2px 2px;
+	left: 508dp;
+	top: 118dp;
+	width: 128dp;
+	padding: 0dp 2dp 2dp 2dp;
 	background-color: rgba(9, 11, 13, 215);
-	border: 1px #3e4652;
+	border: 1dp #3e4652;
 	box-sizing: border-box;
 	pointer-events: auto;
 	drag: drag;
@@ -18,24 +18,24 @@ body { pointer-events: none; }
 	font-family: "token(font-body)";
 	color: #ebedf1;
 }
-#title { display: block; height: 12px; text-align: right; padding-right: 4px; font-size: 8px; line-height: 12px; color: #c0c6d0; }
-.quest { display: block; height: 28px; margin-top: 1px; }
+#title { display: block; height: 12dp; text-align: right; padding-right: 4dp; font-size: 8dp; line-height: 12dp; color: #c0c6d0; }
+.quest { display: block; height: 28dp; margin-top: 1dp; }
 .name {
 	display: block;
 	position: relative;
-	height: 12px;
-	padding-left: 6px;
+	height: 12dp;
+	padding-left: 6dp;
 	background-color: rgba(255, 255, 255, 14);
-	font-size: 8px;
-	line-height: 12px;
+	font-size: 8dp;
+	line-height: 12dp;
 	color: #6fb0f5;
 	white-space: nowrap;
 	overflow: hidden;
 }
-.name .tag { position: absolute; left: 0px; top: 0px; width: 3px; height: 12px; background-color: #6fb0f5; }
+.name .tag { position: absolute; left: 0dp; top: 0dp; width: 3dp; height: 12dp; background-color: #6fb0f5; }
 .quest.ready .name { color: #78e196; }
 .quest.ready .name .tag { background-color: #78e196; }
-.bar { display: block; position: relative; height: 12px; margin-top: 1px; background-color: rgba(0, 0, 0, 200); font-size: 8px; line-height: 12px; }
-.fill { position: absolute; left: 0px; top: 0px; height: 12px; background-color: rgba(111, 176, 245, 89); }
-.label { position: absolute; left: 5px; top: 0px; color: #ebedf1; white-space: nowrap; }
-.count { position: absolute; right: 4px; top: 0px; color: #ebedf1; }
+.bar { display: block; position: relative; height: 12dp; margin-top: 1dp; background-color: rgba(0, 0, 0, 200); font-size: 8dp; line-height: 12dp; }
+.fill { position: absolute; left: 0dp; top: 0dp; height: 12dp; background-color: rgba(111, 176, 245, 89); }
+.label { position: absolute; left: 5dp; top: 0dp; color: #ebedf1; white-space: nowrap; }
+.count { position: absolute; right: 4dp; top: 0dp; color: #ebedf1; }

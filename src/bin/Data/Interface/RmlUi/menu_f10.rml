@@ -9,7 +9,7 @@
 	     (janela_atalhos.gd): 6 casas por linha, icone em cima, nome embaixo e a tecla num selo no canto.
 	     Clicar faz o mesmo que a tecla; o mouse em cima explica no rodape. Geometria em px da tela de
 	     referencia 640 x 480 (.stage). Icones do Meshy em menu_f10/ (os mesmos do Godot). -->
-	<div id="screen" class="stage">
+	<div id="screen" class="stage dp">
 		<div id="panel">
 			<div id="title">Atalhos (F10)</div>
 			<div id="help">Clique pra abrir. A tecla no canto faz o mesmo.</div>

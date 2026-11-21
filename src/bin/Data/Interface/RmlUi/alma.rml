@@ -11,7 +11,7 @@
 	     pontos e os botões +1 e +10. Refazer abre a caixa de pagar com zen ou Jewel of Bless. Geometria em px da tela
 	     de referência 640 x 480 (.stage). Ícones: sprites al-<n>, al-aro e al-cadeado (alma.rcss). -->
 	<!-- bound-geometry: a altura do que está cheio na barra (c.bar) e a dos marcos nela (m.top) são o medidor, pontos / máximo -->
-	<div id="screen" class="stage">
+	<div id="screen" class="stage dp">
 		<div id="panel" data-attr-class="'tree' + tab">
 			<div id="art"></div>
 			<div id="title">Alma</div>

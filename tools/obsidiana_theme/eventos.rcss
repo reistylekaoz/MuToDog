@@ -1,9 +1,9 @@
 /* ---- Obsidiana e prata, rodada 11: Horário dos eventos com a moldura, a placa do título e os botões do Meshy (base.rcss) ---- */
-#panel { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 1); border-width: 0; }
-#title { left: 128px; top: 3px; width: 180px; height: 18px; line-height: 18px; decorator: ninepatch(ob-placa, ob-placa-in, 1); }
-#prev, #next, #close { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 1); border-width: 0; }
-#prev:hover, #next:hover, #close:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 1); }
-#prev.disabled, #prev.disabled:hover, #next.disabled, #next.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 1); }
+#panel { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 2); border-width: 0; }
+#title { left: 128dp; top: 3dp; width: 180dp; height: 18dp; line-height: 18dp; decorator: ninepatch(ob-placa, ob-placa-in, 2); }
+#prev, #next, #close { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 2); border-width: 0; }
+#prev:hover, #next:hover, #close:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 2); }
+#prev.disabled, #prev.disabled:hover, #next.disabled, #next.disabled:hover { decorator: ninepatch(ob-botao-off, ob-botao-off-in, 2); }
 /* as cores da contagem e do cadeado ficam as do Godot (amarelo pra abrir, verde aberto, dourado entra) */
 #clock { color: #e8c96a; }
 .count { color: #ffd25a; }

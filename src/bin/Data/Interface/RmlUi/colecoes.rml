@@ -13,7 +13,7 @@
 	     Rodada 9: o carrinho (.cart) na peça que falta abre #buy_layer (compra com zen, C1 FB 43); a dica da peça
 	     (col_hover) mostra o preço e o item que este personagem tem que entregar; #photo_slot é a vitrine, o
 	     personagem vestindo o set aberto (PhotoViewerControl: arrastar gira, botão direito volta de frente). -->
-	<div id="screen" class="stage">
+	<div id="screen" class="stage dp">
 		<div id="panel">
 			<div id="title">Coleções</div>
 			<div id="tab_all" class="tab" data-class-selected="tab == 0" data-event-click="col_tab(0)">Todos os itens</div>

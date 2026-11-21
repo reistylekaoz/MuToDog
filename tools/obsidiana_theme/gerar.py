@@ -223,6 +223,9 @@ BASE_MESHY = """
 	border-width: 0;
 }
 .text-field:focus { decorator: ninepatch(ob-campo-foco, ob-campo-foco-in, 1); }
+/* janelas do estudo em dp (tools/estudo_dp.py): o ninepatch ja multiplica pelo dp ratio, a escala 2 deixa a borda como era no .stage esticado */
+.stage.dp .text-field { decorator: ninepatch(ob-campo, ob-campo-in, 2); }
+.stage.dp .text-field:focus { decorator: ninepatch(ob-campo-foco, ob-campo-foco-in, 2); }
 """
 
 

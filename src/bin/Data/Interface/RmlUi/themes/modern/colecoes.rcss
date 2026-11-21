@@ -5,232 +5,232 @@
 @spritesheet colecoes-itens
 {
 	src: "../modern/colecoes/itens.tga";
-	it-7-0: 0px 0px 64px 64px;
-	it-7-1: 64px 0px 64px 64px;
-	it-7-2: 128px 0px 64px 64px;
-	it-7-3: 192px 0px 64px 64px;
-	it-7-4: 256px 0px 64px 64px;
-	it-7-5: 320px 0px 64px 64px;
-	it-7-6: 384px 0px 64px 64px;
-	it-7-7: 448px 0px 64px 64px;
-	it-7-8: 512px 0px 64px 64px;
-	it-7-9: 576px 0px 64px 64px;
-	it-7-10: 640px 0px 64px 64px;
-	it-7-11: 704px 0px 64px 64px;
-	it-7-12: 768px 0px 64px 64px;
-	it-7-13: 832px 0px 64px 64px;
-	it-7-14: 896px 0px 64px 64px;
-	it-7-16: 960px 0px 64px 64px;
-	it-7-17: 0px 64px 64px 64px;
-	it-7-18: 64px 64px 64px 64px;
-	it-7-19: 128px 64px 64px 64px;
-	it-7-21: 192px 64px 64px 64px;
-	it-7-22: 256px 64px 64px 64px;
-	it-7-24: 320px 64px 64px 64px;
-	it-7-25: 384px 64px 64px 64px;
-	it-7-26: 448px 64px 64px 64px;
-	it-7-27: 512px 64px 64px 64px;
-	it-7-28: 576px 64px 64px 64px;
-	it-7-29: 640px 64px 64px 64px;
-	it-7-30: 704px 64px 64px 64px;
-	it-7-31: 768px 64px 64px 64px;
-	it-7-33: 832px 64px 64px 64px;
-	it-8-0: 896px 64px 64px 64px;
-	it-8-1: 960px 64px 64px 64px;
-	it-8-2: 0px 128px 64px 64px;
-	it-8-3: 64px 128px 64px 64px;
-	it-8-4: 128px 128px 64px 64px;
-	it-8-5: 192px 128px 64px 64px;
-	it-8-6: 256px 128px 64px 64px;
-	it-8-7: 320px 128px 64px 64px;
-	it-8-8: 384px 128px 64px 64px;
-	it-8-9: 448px 128px 64px 64px;
-	it-8-10: 512px 128px 64px 64px;
-	it-8-11: 576px 128px 64px 64px;
-	it-8-12: 640px 128px 64px 64px;
-	it-8-13: 704px 128px 64px 64px;
-	it-8-14: 768px 128px 64px 64px;
-	it-8-15: 832px 128px 64px 64px;
-	it-8-16: 896px 128px 64px 64px;
-	it-8-17: 960px 128px 64px 64px;
-	it-8-18: 0px 192px 64px 64px;
-	it-8-19: 64px 192px 64px 64px;
-	it-8-20: 128px 192px 64px 64px;
-	it-8-21: 192px 192px 64px 64px;
-	it-8-22: 256px 192px 64px 64px;
-	it-8-23: 320px 192px 64px 64px;
-	it-8-24: 384px 192px 64px 64px;
-	it-8-25: 448px 192px 64px 64px;
-	it-8-26: 512px 192px 64px 64px;
-	it-8-27: 576px 192px 64px 64px;
-	it-8-28: 640px 192px 64px 64px;
-	it-8-29: 704px 192px 64px 64px;
-	it-8-30: 768px 192px 64px 64px;
-	it-8-31: 832px 192px 64px 64px;
-	it-8-32: 896px 192px 64px 64px;
-	it-8-33: 960px 192px 64px 64px;
-	it-9-0: 0px 256px 64px 64px;
-	it-9-1: 64px 256px 64px 64px;
-	it-9-2: 128px 256px 64px 64px;
-	it-9-3: 192px 256px 64px 64px;
-	it-9-4: 256px 256px 64px 64px;
-	it-9-5: 320px 256px 64px 64px;
-	it-9-6: 384px 256px 64px 64px;
-	it-9-7: 448px 256px 64px 64px;
-	it-9-8: 512px 256px 64px 64px;
-	it-9-9: 576px 256px 64px 64px;
-	it-9-10: 640px 256px 64px 64px;
-	it-9-11: 704px 256px 64px 64px;
-	it-9-12: 768px 256px 64px 64px;
-	it-9-13: 832px 256px 64px 64px;
-	it-9-14: 896px 256px 64px 64px;
-	it-9-15: 960px 256px 64px 64px;
-	it-9-16: 0px 320px 64px 64px;
-	it-9-17: 64px 320px 64px 64px;
-	it-9-18: 128px 320px 64px 64px;
-	it-9-19: 192px 320px 64px 64px;
-	it-9-20: 256px 320px 64px 64px;
-	it-9-21: 320px 320px 64px 64px;
-	it-9-22: 384px 320px 64px 64px;
-	it-9-23: 448px 320px 64px 64px;
-	it-9-24: 512px 320px 64px 64px;
-	it-9-25: 576px 320px 64px 64px;
-	it-9-26: 640px 320px 64px 64px;
-	it-9-27: 704px 320px 64px 64px;
-	it-9-28: 768px 320px 64px 64px;
-	it-9-29: 832px 320px 64px 64px;
-	it-9-30: 896px 320px 64px 64px;
-	it-9-31: 960px 320px 64px 64px;
-	it-9-32: 0px 384px 64px 64px;
-	it-9-33: 64px 384px 64px 64px;
-	it-10-0: 128px 384px 64px 64px;
-	it-10-1: 192px 384px 64px 64px;
-	it-10-2: 256px 384px 64px 64px;
-	it-10-3: 320px 384px 64px 64px;
-	it-10-4: 384px 384px 64px 64px;
-	it-10-5: 448px 384px 64px 64px;
-	it-10-6: 512px 384px 64px 64px;
-	it-10-7: 576px 384px 64px 64px;
-	it-10-8: 640px 384px 64px 64px;
-	it-10-9: 704px 384px 64px 64px;
-	it-10-10: 768px 384px 64px 64px;
-	it-10-11: 832px 384px 64px 64px;
-	it-10-12: 896px 384px 64px 64px;
-	it-10-13: 960px 384px 64px 64px;
-	it-10-14: 0px 448px 64px 64px;
-	it-10-15: 64px 448px 64px 64px;
-	it-10-16: 128px 448px 64px 64px;
-	it-10-17: 192px 448px 64px 64px;
-	it-10-18: 256px 448px 64px 64px;
-	it-10-19: 320px 448px 64px 64px;
-	it-10-20: 384px 448px 64px 64px;
-	it-10-21: 448px 448px 64px 64px;
-	it-10-22: 512px 448px 64px 64px;
-	it-10-23: 576px 448px 64px 64px;
-	it-10-24: 640px 448px 64px 64px;
-	it-10-25: 704px 448px 64px 64px;
-	it-10-26: 768px 448px 64px 64px;
-	it-10-27: 832px 448px 64px 64px;
-	it-10-28: 896px 448px 64px 64px;
-	it-10-29: 960px 448px 64px 64px;
-	it-10-30: 0px 512px 64px 64px;
-	it-10-31: 64px 512px 64px 64px;
-	it-10-32: 128px 512px 64px 64px;
-	it-10-33: 192px 512px 64px 64px;
-	it-11-0: 256px 512px 64px 64px;
-	it-11-1: 320px 512px 64px 64px;
-	it-11-2: 384px 512px 64px 64px;
-	it-11-3: 448px 512px 64px 64px;
-	it-11-4: 512px 512px 64px 64px;
-	it-11-5: 576px 512px 64px 64px;
-	it-11-6: 640px 512px 64px 64px;
-	it-11-7: 704px 512px 64px 64px;
-	it-11-8: 768px 512px 64px 64px;
-	it-11-9: 832px 512px 64px 64px;
-	it-11-10: 896px 512px 64px 64px;
-	it-11-11: 960px 512px 64px 64px;
-	it-11-12: 0px 576px 64px 64px;
-	it-11-13: 64px 576px 64px 64px;
-	it-11-14: 128px 576px 64px 64px;
-	it-11-15: 192px 576px 64px 64px;
-	it-11-16: 256px 576px 64px 64px;
-	it-11-17: 320px 576px 64px 64px;
-	it-11-18: 384px 576px 64px 64px;
-	it-11-19: 448px 576px 64px 64px;
-	it-11-20: 512px 576px 64px 64px;
-	it-11-21: 576px 576px 64px 64px;
-	it-11-22: 640px 576px 64px 64px;
-	it-11-23: 704px 576px 64px 64px;
-	it-11-24: 768px 576px 64px 64px;
-	it-11-25: 832px 576px 64px 64px;
-	it-11-26: 896px 576px 64px 64px;
-	it-11-27: 960px 576px 64px 64px;
-	it-11-28: 0px 640px 64px 64px;
-	it-11-29: 64px 640px 64px 64px;
-	it-11-30: 128px 640px 64px 64px;
-	it-11-31: 192px 640px 64px 64px;
-	it-11-32: 256px 640px 64px 64px;
-	it-11-33: 320px 640px 64px 64px;
+	it-7-0: 0dp 0dp 64dp 64dp;
+	it-7-1: 64dp 0dp 64dp 64dp;
+	it-7-2: 128dp 0dp 64dp 64dp;
+	it-7-3: 192dp 0dp 64dp 64dp;
+	it-7-4: 256dp 0dp 64dp 64dp;
+	it-7-5: 320dp 0dp 64dp 64dp;
+	it-7-6: 384dp 0dp 64dp 64dp;
+	it-7-7: 448dp 0dp 64dp 64dp;
+	it-7-8: 512dp 0dp 64dp 64dp;
+	it-7-9: 576dp 0dp 64dp 64dp;
+	it-7-10: 640dp 0dp 64dp 64dp;
+	it-7-11: 704dp 0dp 64dp 64dp;
+	it-7-12: 768dp 0dp 64dp 64dp;
+	it-7-13: 832dp 0dp 64dp 64dp;
+	it-7-14: 896dp 0dp 64dp 64dp;
+	it-7-16: 960dp 0dp 64dp 64dp;
+	it-7-17: 0dp 64dp 64dp 64dp;
+	it-7-18: 64dp 64dp 64dp 64dp;
+	it-7-19: 128dp 64dp 64dp 64dp;
+	it-7-21: 192dp 64dp 64dp 64dp;
+	it-7-22: 256dp 64dp 64dp 64dp;
+	it-7-24: 320dp 64dp 64dp 64dp;
+	it-7-25: 384dp 64dp 64dp 64dp;
+	it-7-26: 448dp 64dp 64dp 64dp;
+	it-7-27: 512dp 64dp 64dp 64dp;
+	it-7-28: 576dp 64dp 64dp 64dp;
+	it-7-29: 640dp 64dp 64dp 64dp;
+	it-7-30: 704dp 64dp 64dp 64dp;
+	it-7-31: 768dp 64dp 64dp 64dp;
+	it-7-33: 832dp 64dp 64dp 64dp;
+	it-8-0: 896dp 64dp 64dp 64dp;
+	it-8-1: 960dp 64dp 64dp 64dp;
+	it-8-2: 0dp 128dp 64dp 64dp;
+	it-8-3: 64dp 128dp 64dp 64dp;
+	it-8-4: 128dp 128dp 64dp 64dp;
+	it-8-5: 192dp 128dp 64dp 64dp;
+	it-8-6: 256dp 128dp 64dp 64dp;
+	it-8-7: 320dp 128dp 64dp 64dp;
+	it-8-8: 384dp 128dp 64dp 64dp;
+	it-8-9: 448dp 128dp 64dp 64dp;
+	it-8-10: 512dp 128dp 64dp 64dp;
+	it-8-11: 576dp 128dp 64dp 64dp;
+	it-8-12: 640dp 128dp 64dp 64dp;
+	it-8-13: 704dp 128dp 64dp 64dp;
+	it-8-14: 768dp 128dp 64dp 64dp;
+	it-8-15: 832dp 128dp 64dp 64dp;
+	it-8-16: 896dp 128dp 64dp 64dp;
+	it-8-17: 960dp 128dp 64dp 64dp;
+	it-8-18: 0dp 192dp 64dp 64dp;
+	it-8-19: 64dp 192dp 64dp 64dp;
+	it-8-20: 128dp 192dp 64dp 64dp;
+	it-8-21: 192dp 192dp 64dp 64dp;
+	it-8-22: 256dp 192dp 64dp 64dp;
+	it-8-23: 320dp 192dp 64dp 64dp;
+	it-8-24: 384dp 192dp 64dp 64dp;
+	it-8-25: 448dp 192dp 64dp 64dp;
+	it-8-26: 512dp 192dp 64dp 64dp;
+	it-8-27: 576dp 192dp 64dp 64dp;
+	it-8-28: 640dp 192dp 64dp 64dp;
+	it-8-29: 704dp 192dp 64dp 64dp;
+	it-8-30: 768dp 192dp 64dp 64dp;
+	it-8-31: 832dp 192dp 64dp 64dp;
+	it-8-32: 896dp 192dp 64dp 64dp;
+	it-8-33: 960dp 192dp 64dp 64dp;
+	it-9-0: 0dp 256dp 64dp 64dp;
+	it-9-1: 64dp 256dp 64dp 64dp;
+	it-9-2: 128dp 256dp 64dp 64dp;
+	it-9-3: 192dp 256dp 64dp 64dp;
+	it-9-4: 256dp 256dp 64dp 64dp;
+	it-9-5: 320dp 256dp 64dp 64dp;
+	it-9-6: 384dp 256dp 64dp 64dp;
+	it-9-7: 448dp 256dp 64dp 64dp;
+	it-9-8: 512dp 256dp 64dp 64dp;
+	it-9-9: 576dp 256dp 64dp 64dp;
+	it-9-10: 640dp 256dp 64dp 64dp;
+	it-9-11: 704dp 256dp 64dp 64dp;
+	it-9-12: 768dp 256dp 64dp 64dp;
+	it-9-13: 832dp 256dp 64dp 64dp;
+	it-9-14: 896dp 256dp 64dp 64dp;
+	it-9-15: 960dp 256dp 64dp 64dp;
+	it-9-16: 0dp 320dp 64dp 64dp;
+	it-9-17: 64dp 320dp 64dp 64dp;
+	it-9-18: 128dp 320dp 64dp 64dp;
+	it-9-19: 192dp 320dp 64dp 64dp;
+	it-9-20: 256dp 320dp 64dp 64dp;
+	it-9-21: 320dp 320dp 64dp 64dp;
+	it-9-22: 384dp 320dp 64dp 64dp;
+	it-9-23: 448dp 320dp 64dp 64dp;
+	it-9-24: 512dp 320dp 64dp 64dp;
+	it-9-25: 576dp 320dp 64dp 64dp;
+	it-9-26: 640dp 320dp 64dp 64dp;
+	it-9-27: 704dp 320dp 64dp 64dp;
+	it-9-28: 768dp 320dp 64dp 64dp;
+	it-9-29: 832dp 320dp 64dp 64dp;
+	it-9-30: 896dp 320dp 64dp 64dp;
+	it-9-31: 960dp 320dp 64dp 64dp;
+	it-9-32: 0dp 384dp 64dp 64dp;
+	it-9-33: 64dp 384dp 64dp 64dp;
+	it-10-0: 128dp 384dp 64dp 64dp;
+	it-10-1: 192dp 384dp 64dp 64dp;
+	it-10-2: 256dp 384dp 64dp 64dp;
+	it-10-3: 320dp 384dp 64dp 64dp;
+	it-10-4: 384dp 384dp 64dp 64dp;
+	it-10-5: 448dp 384dp 64dp 64dp;
+	it-10-6: 512dp 384dp 64dp 64dp;
+	it-10-7: 576dp 384dp 64dp 64dp;
+	it-10-8: 640dp 384dp 64dp 64dp;
+	it-10-9: 704dp 384dp 64dp 64dp;
+	it-10-10: 768dp 384dp 64dp 64dp;
+	it-10-11: 832dp 384dp 64dp 64dp;
+	it-10-12: 896dp 384dp 64dp 64dp;
+	it-10-13: 960dp 384dp 64dp 64dp;
+	it-10-14: 0dp 448dp 64dp 64dp;
+	it-10-15: 64dp 448dp 64dp 64dp;
+	it-10-16: 128dp 448dp 64dp 64dp;
+	it-10-17: 192dp 448dp 64dp 64dp;
+	it-10-18: 256dp 448dp 64dp 64dp;
+	it-10-19: 320dp 448dp 64dp 64dp;
+	it-10-20: 384dp 448dp 64dp 64dp;
+	it-10-21: 448dp 448dp 64dp 64dp;
+	it-10-22: 512dp 448dp 64dp 64dp;
+	it-10-23: 576dp 448dp 64dp 64dp;
+	it-10-24: 640dp 448dp 64dp 64dp;
+	it-10-25: 704dp 448dp 64dp 64dp;
+	it-10-26: 768dp 448dp 64dp 64dp;
+	it-10-27: 832dp 448dp 64dp 64dp;
+	it-10-28: 896dp 448dp 64dp 64dp;
+	it-10-29: 960dp 448dp 64dp 64dp;
+	it-10-30: 0dp 512dp 64dp 64dp;
+	it-10-31: 64dp 512dp 64dp 64dp;
+	it-10-32: 128dp 512dp 64dp 64dp;
+	it-10-33: 192dp 512dp 64dp 64dp;
+	it-11-0: 256dp 512dp 64dp 64dp;
+	it-11-1: 320dp 512dp 64dp 64dp;
+	it-11-2: 384dp 512dp 64dp 64dp;
+	it-11-3: 448dp 512dp 64dp 64dp;
+	it-11-4: 512dp 512dp 64dp 64dp;
+	it-11-5: 576dp 512dp 64dp 64dp;
+	it-11-6: 640dp 512dp 64dp 64dp;
+	it-11-7: 704dp 512dp 64dp 64dp;
+	it-11-8: 768dp 512dp 64dp 64dp;
+	it-11-9: 832dp 512dp 64dp 64dp;
+	it-11-10: 896dp 512dp 64dp 64dp;
+	it-11-11: 960dp 512dp 64dp 64dp;
+	it-11-12: 0dp 576dp 64dp 64dp;
+	it-11-13: 64dp 576dp 64dp 64dp;
+	it-11-14: 128dp 576dp 64dp 64dp;
+	it-11-15: 192dp 576dp 64dp 64dp;
+	it-11-16: 256dp 576dp 64dp 64dp;
+	it-11-17: 320dp 576dp 64dp 64dp;
+	it-11-18: 384dp 576dp 64dp 64dp;
+	it-11-19: 448dp 576dp 64dp 64dp;
+	it-11-20: 512dp 576dp 64dp 64dp;
+	it-11-21: 576dp 576dp 64dp 64dp;
+	it-11-22: 640dp 576dp 64dp 64dp;
+	it-11-23: 704dp 576dp 64dp 64dp;
+	it-11-24: 768dp 576dp 64dp 64dp;
+	it-11-25: 832dp 576dp 64dp 64dp;
+	it-11-26: 896dp 576dp 64dp 64dp;
+	it-11-27: 960dp 576dp 64dp 64dp;
+	it-11-28: 0dp 640dp 64dp 64dp;
+	it-11-29: 64dp 640dp 64dp 64dp;
+	it-11-30: 128dp 640dp 64dp 64dp;
+	it-11-31: 192dp 640dp 64dp 64dp;
+	it-11-32: 256dp 640dp 64dp 64dp;
+	it-11-33: 320dp 640dp 64dp 64dp;
 }
 /* fim dos sprites */
 @spritesheet colecoes-carrinho
 {
 	src: "../modern/colecoes/carrinho.tga";
-	col-carrinho: 0px 0px 64px 64px;
+	col-carrinho: 0dp 0dp 64dp 64dp;
 }
 body { pointer-events: none; }
 #screen { pointer-events: none; }
 
 #panel {
 	position: absolute;
-	left: 105px;
-	top: 54px;
-	width: 430px;
-	height: 372px;
+	left: 105dp;
+	top: 54dp;
+	width: 430dp;
+	height: 372dp;
 	background-color: rgba(8, 10, 14, 240);
-	border: 1px #3e4652;
+	border: 1dp #3e4652;
 	pointer-events: auto;
 	font-family: "token(font-body)";
 	color: #e9edf3;
 }
 #title {
 	position: absolute;
-	left: 0px;
-	top: 6px;
-	width: 430px;
-	height: 16px;
+	left: 0dp;
+	top: 6dp;
+	width: 430dp;
+	height: 16dp;
 	text-align: center;
 	font-family: "token(font-title)";
-	font-size: 12px;
-	line-height: 16px;
+	font-size: 12dp;
+	line-height: 16dp;
 	color: #dae0ea;
 }
 .tab {
 	position: absolute;
 	z-index: 2;
-	top: 30px;
-	height: 18px;
+	top: 30dp;
+	height: 18dp;
 	text-align: center;
-	font-size: 9px;
-	line-height: 18px;
+	font-size: 9dp;
+	line-height: 18dp;
 	background-color: #1e2228;
-	border: 1px #3e4652;
+	border: 1dp #3e4652;
 	cursor: pointer;
 	color: #b9c1cd;
 }
 .tab:hover { color: #ffffff; }
-.tab.selected { border-bottom: 2px #78bfff; color: #ffffff; }
-#tab_all { left: 10px; width: 86px; }
-#tab_sets { left: 100px; width: 60px; }
-#tab_add { left: 164px; width: 100px; }
-#rule { position: absolute; left: 8px; top: 53px; width: 414px; height: 1px; background-color: #3e4652; }
+.tab.selected { border-bottom: 2dp #78bfff; color: #ffffff; }
+#tab_all { left: 10dp; width: 86dp; }
+#tab_sets { left: 100dp; width: 60dp; }
+#tab_add { left: 164dp; width: 100dp; }
+#rule { position: absolute; left: 8dp; top: 53dp; width: 414dp; height: 1dp; background-color: #3e4652; }
 
-.art { position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; }
-.piece { position: relative; background-color: #09101b; border: 1px #3e4652; border-radius: 4px; }
+.art { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; }
+.piece { position: relative; background-color: #09101b; border: 1dp #3e4652; border-radius: 4dp; }
 .piece .art { opacity: 0.32; }
 .piece.dada { border-color: #78bfff; background-color: #10213a; }
 .piece.dada .art, .piece.mochila .art { opacity: 1; }
-.piece.mochila { border: 2px #e8c96a; animation: 0.45s quadratic-in-out infinite alternate colecao-pisca; }
+.piece.mochila { border: 2dp #e8c96a; animation: 0.45s quadratic-in-out infinite alternate colecao-pisca; }
 .piece.vazia { border-color: #262b33; }
 @keyframes colecao-pisca {
 	from { border-color: #6b5a2a; }
@@ -238,231 +238,231 @@ body { pointer-events: none; }
 }
 .check {
 	position: absolute;
-	right: 2px;
-	bottom: 1px;
-	width: 12px;
-	height: 12px;
-	border-radius: 6px;
+	right: 2dp;
+	bottom: 1dp;
+	width: 12dp;
+	height: 12dp;
+	border-radius: 6dp;
 	background-color: #143c1e;
 	text-align: center;
-	font-size: 9px;
-	line-height: 12px;
+	font-size: 9dp;
+	line-height: 12dp;
 	color: #78e678;
 }
-.none { position: absolute; left: 0px; top: 17px; width: 100%; text-align: center; font-size: 7px; color: #4a515c; }
+.none { position: absolute; left: 0dp; top: 17dp; width: 100%; text-align: center; font-size: 7dp; color: #4a515c; }
 .label {
-	height: 14px;
+	height: 14dp;
 	text-align: center;
-	font-size: 8px;
-	line-height: 14px;
+	font-size: 8dp;
+	line-height: 14dp;
 	background-color: #0e141f;
-	border: 1px #262b33;
-	border-radius: 3px;
+	border: 1dp #262b33;
+	border-radius: 3dp;
 	color: #b9c1cd;
 	overflow: hidden;
 	white-space: nowrap;
 }
 
 /* aba Todos os itens: a peça escolhida (com as setas) e a grade 5 x 3 que rola */
-#all { position: absolute; left: 0px; top: 0px; width: 430px; height: 372px; }
+#all { position: absolute; left: 0dp; top: 0dp; width: 430dp; height: 372dp; }
 .arrow {
 	position: absolute;
-	top: 60px;
-	width: 22px;
-	height: 34px;
+	top: 60dp;
+	width: 22dp;
+	height: 34dp;
 	text-align: center;
-	font-size: 14px;
-	line-height: 34px;
+	font-size: 14dp;
+	line-height: 34dp;
 	color: #8791a0;
 	cursor: pointer;
 }
 .arrow:hover { color: #ffffff; }
-#arrow_prev { left: 88px; }
-#arrow_next { left: 322px; }
-#parts { position: absolute; left: 110px; top: 60px; width: 212px; height: 36px; }
+#arrow_prev { left: 88dp; }
+#arrow_next { left: 322dp; }
+#parts { position: absolute; left: 110dp; top: 60dp; width: 212dp; height: 36dp; }
 .part {
 	float: left;
 	position: relative;
-	width: 34px;
-	height: 34px;
-	margin-left: 3px;
-	margin-right: 3px;
+	width: 34dp;
+	height: 34dp;
+	margin-left: 3dp;
+	margin-right: 3dp;
 	background-color: #09101b;
-	border: 1px #3e4652;
-	border-radius: 4px;
+	border: 1dp #3e4652;
+	border-radius: 4dp;
 	cursor: pointer;
 }
 .part .art { opacity: 0.6; }
 .part:hover .art, .part.selected .art { opacity: 1; }
 .part.selected { border-color: #78bfff; background-color: #10213a; }
-#part_name { position: absolute; left: 345px; top: 70px; width: 76px; font-size: 9px; line-height: 14px; color: #dae0ea; }
-#grid { position: absolute; left: 18px; top: 100px; width: 392px; height: 236px; }
-.cell { float: left; position: relative; width: 76px; height: 84px; cursor: pointer; }
-.cell .label { position: absolute; left: 3px; top: 2px; width: 68px; }
-.cell .piece { position: absolute; left: 8px; top: 19px; width: 58px; height: 58px; }
+#part_name { position: absolute; left: 345dp; top: 70dp; width: 76dp; font-size: 9dp; line-height: 14dp; color: #dae0ea; }
+#grid { position: absolute; left: 18dp; top: 100dp; width: 392dp; height: 236dp; }
+.cell { float: left; position: relative; width: 76dp; height: 84dp; cursor: pointer; }
+.cell .label { position: absolute; left: 3dp; top: 2dp; width: 68dp; }
+.cell .piece { position: absolute; left: 8dp; top: 19dp; width: 58dp; height: 58dp; }
 .cell:hover .piece { border-color: #78bfff; }
 
 /* aba Sets: a lista na esquerda, o set aberto e os bônus ligados na direita */
-#sets { position: absolute; left: 0px; top: 0px; width: 430px; height: 372px; }
-#cards { position: absolute; left: 8px; top: 60px; width: 110px; height: 276px; }
-.card { display: block; position: relative; width: 98px; height: 92px; margin-bottom: 4px; cursor: pointer; border: 1px rgba(0, 0, 0, 0); border-radius: 4px; }
+#sets { position: absolute; left: 0dp; top: 0dp; width: 430dp; height: 372dp; }
+#cards { position: absolute; left: 8dp; top: 60dp; width: 110dp; height: 276dp; }
+.card { display: block; position: relative; width: 98dp; height: 92dp; margin-bottom: 4dp; cursor: pointer; border: 1dp rgba(0, 0, 0, 0); border-radius: 4dp; }
 .card.open { border-color: #78bfff; background-color: rgba(120, 191, 255, 26); }
-.card .label { position: absolute; left: 3px; top: 2px; width: 90px; }
+.card .label { position: absolute; left: 3dp; top: 2dp; width: 90dp; }
 .card.done .label, .card.open .label { color: #ffffff; }
-.card .box { position: absolute; left: 16px; top: 19px; width: 64px; height: 68px; background-color: #09101b; border: 1px #3e4652; border-radius: 4px; }
-.card .box .art { left: 4px; top: 6px; width: 56px; height: 56px; opacity: 0.7; }
+.card .box { position: absolute; left: 16dp; top: 19dp; width: 64dp; height: 68dp; background-color: #09101b; border: 1dp #3e4652; border-radius: 4dp; }
+.card .box .art { left: 4dp; top: 6dp; width: 56dp; height: 56dp; opacity: 0.7; }
 .card.done .box .art, .card.open .box .art { opacity: 1; }
-.card .count { position: absolute; left: 16px; top: 74px; width: 60px; text-align: right; font-size: 8px; color: #7d8796; }
+.card .count { position: absolute; left: 16dp; top: 74dp; width: 60dp; text-align: right; font-size: 8dp; color: #7d8796; }
 .card.done .count { color: #78e678; }
 #setbox {
 	position: absolute;
-	left: 124px;
-	top: 60px;
-	width: 296px;
-	height: 140px;
+	left: 124dp;
+	top: 60dp;
+	width: 296dp;
+	height: 140dp;
 	background-color: rgba(10, 15, 28, 235);
-	border: 1px #262b33;
-	border-radius: 4px;
+	border: 1dp #262b33;
+	border-radius: 4dp;
 }
-#set_name { position: absolute; left: 0px; top: 3px; width: 296px; text-align: center; font-family: "token(font-title)"; font-size: 10px; line-height: 14px; color: #dae0ea; }
-#slots { position: absolute; left: 13px; top: 20px; width: 270px; height: 64px; }
-.slot { float: left; position: relative; width: 54px; height: 64px; border-width: 0; }
-.slot .label { position: absolute; left: 3px; top: 0px; width: 46px; height: 12px; line-height: 12px; }
-.slot .piece { position: absolute; left: 4px; top: 16px; width: 44px; height: 44px; cursor: pointer; }
-#set_text { position: absolute; left: 0px; top: 88px; width: 296px; text-align: center; font-size: 9px; line-height: 12px; color: #b9c1cd; }
+#set_name { position: absolute; left: 0dp; top: 3dp; width: 296dp; text-align: center; font-family: "token(font-title)"; font-size: 10dp; line-height: 14dp; color: #dae0ea; }
+#slots { position: absolute; left: 13dp; top: 20dp; width: 270dp; height: 64dp; }
+.slot { float: left; position: relative; width: 54dp; height: 64dp; border-width: 0; }
+.slot .label { position: absolute; left: 3dp; top: 0dp; width: 46dp; height: 12dp; line-height: 12dp; }
+.slot .piece { position: absolute; left: 4dp; top: 16dp; width: 44dp; height: 44dp; cursor: pointer; }
+#set_text { position: absolute; left: 0dp; top: 88dp; width: 296dp; text-align: center; font-size: 9dp; line-height: 12dp; color: #b9c1cd; }
 #set_text.done { color: #78e678; }
-#set_bonus { position: absolute; left: 0px; top: 102px; width: 296px; text-align: center; font-size: 10px; line-height: 14px; color: #ffe08a; }
-#set_help { position: absolute; left: 0px; top: 122px; width: 296px; text-align: center; font-size: 8px; line-height: 10px; color: #7d8796; }
+#set_bonus { position: absolute; left: 0dp; top: 102dp; width: 296dp; text-align: center; font-size: 10dp; line-height: 14dp; color: #ffe08a; }
+#set_help { position: absolute; left: 0dp; top: 122dp; width: 296dp; text-align: center; font-size: 8dp; line-height: 10dp; color: #7d8796; }
 #active {
 	position: absolute;
-	left: 270px;
-	top: 206px;
-	width: 150px;
-	height: 130px;
+	left: 270dp;
+	top: 206dp;
+	width: 150dp;
+	height: 130dp;
 	background-color: rgba(10, 15, 28, 235);
-	border: 1px #262b33;
-	border-radius: 4px;
+	border: 1dp #262b33;
+	border-radius: 4dp;
 }
-#active_title { display: block; margin: 4px 8px 0px 8px; font-family: "token(font-title)"; font-size: 10px; line-height: 14px; color: #dae0ea; }
-#active_count { display: block; margin: 0px 8px 4px 8px; font-size: 8px; line-height: 11px; color: #ffe08a; }
-.bonus { display: block; margin: 0px 8px; font-size: 9px; line-height: 12px; color: #78e678; }
-#active_none { display: block; margin: 0px 8px; font-size: 8px; line-height: 11px; color: #7d8796; }
+#active_title { display: block; margin: 4dp 8dp 0dp 8dp; font-family: "token(font-title)"; font-size: 10dp; line-height: 14dp; color: #dae0ea; }
+#active_count { display: block; margin: 0dp 8dp 4dp 8dp; font-size: 8dp; line-height: 11dp; color: #ffe08a; }
+.bonus { display: block; margin: 0dp 8dp; font-size: 9dp; line-height: 12dp; color: #78e678; }
+#active_none { display: block; margin: 0dp 8dp; font-size: 8dp; line-height: 11dp; color: #7d8796; }
 
 /* a caixinha + Adicionar item: uma casa, o item escolhido, a lista das peças de set da mochila */
-#add_layer { z-index: 3; position: absolute; left: 0px; top: 56px; width: 430px; height: 316px; background-color: rgba(0, 0, 0, 140); }
+#add_layer { z-index: 3; position: absolute; left: 0dp; top: 56dp; width: 430dp; height: 316dp; background-color: rgba(0, 0, 0, 140); }
 #add_box {
 	position: absolute;
-	left: 95px;
-	top: 6px;
-	width: 240px;
-	height: 276px;
+	left: 95dp;
+	top: 6dp;
+	width: 240dp;
+	height: 276dp;
 	background-color: rgba(12, 19, 36, 252);
-	border: 2px #525a66;
-	border-radius: 5px;
+	border: 2dp #525a66;
+	border-radius: 5dp;
 }
-#add_title { position: absolute; left: 0px; top: 6px; width: 240px; text-align: center; font-family: "token(font-title)"; font-size: 10px; line-height: 14px; color: #dae0ea; }
-#add_slot { position: absolute; left: 90px; top: 24px; width: 60px; height: 60px; background-color: #09101b; border: 1px #3e4652; border-radius: 4px; }
+#add_title { position: absolute; left: 0dp; top: 6dp; width: 240dp; text-align: center; font-family: "token(font-title)"; font-size: 10dp; line-height: 14dp; color: #dae0ea; }
+#add_slot { position: absolute; left: 90dp; top: 24dp; width: 60dp; height: 60dp; background-color: #09101b; border: 1dp #3e4652; border-radius: 4dp; }
 #add_slot.filled { border-color: #ffe08a; }
-#add_slot .art { left: 4px; top: 4px; width: 52px; height: 52px; }
-#add_name { position: absolute; left: 6px; top: 88px; width: 228px; text-align: center; font-size: 9px; line-height: 12px; color: #ffe08a; }
-#add_msg { position: absolute; left: 6px; top: 101px; width: 228px; text-align: center; font-size: 8px; line-height: 11px; color: #7d8796; }
+#add_slot .art { left: 4dp; top: 4dp; width: 52dp; height: 52dp; }
+#add_name { position: absolute; left: 6dp; top: 88dp; width: 228dp; text-align: center; font-size: 9dp; line-height: 12dp; color: #ffe08a; }
+#add_msg { position: absolute; left: 6dp; top: 101dp; width: 228dp; text-align: center; font-size: 8dp; line-height: 11dp; color: #7d8796; }
 #add_msg.ok { color: #78e678; }
 #add_msg.falta { color: #ff6e5a; }
-#bag_title { position: absolute; left: 10px; top: 126px; width: 220px; font-size: 8px; line-height: 10px; color: #b9c1cd; }
-#bag { position: absolute; left: 10px; top: 138px; width: 220px; height: 82px; border: 1px #262b33; }
-.bag { display: block; position: relative; height: 20px; cursor: pointer; border-bottom: 1px #161a20; }
+#bag_title { position: absolute; left: 10dp; top: 126dp; width: 220dp; font-size: 8dp; line-height: 10dp; color: #b9c1cd; }
+#bag { position: absolute; left: 10dp; top: 138dp; width: 220dp; height: 82dp; border: 1dp #262b33; }
+.bag { display: block; position: relative; height: 20dp; cursor: pointer; border-bottom: 1dp #161a20; }
 .bag:hover { background-color: rgba(120, 191, 255, 20); }
 .bag.selected { background-color: rgba(120, 191, 255, 46); }
-.bag .art { left: 2px; top: 1px; width: 18px; height: 18px; }
-.bag .name { position: absolute; left: 24px; top: 0px; width: 120px; font-size: 8px; line-height: 20px; color: #e9edf3; white-space: nowrap; overflow: hidden; }
-.bag .info { position: absolute; left: 146px; top: 0px; width: 64px; text-align: right; font-size: 7px; line-height: 20px; color: #7d8796; }
+.bag .art { left: 2dp; top: 1dp; width: 18dp; height: 18dp; }
+.bag .name { position: absolute; left: 24dp; top: 0dp; width: 120dp; font-size: 8dp; line-height: 20dp; color: #e9edf3; white-space: nowrap; overflow: hidden; }
+.bag .info { position: absolute; left: 146dp; top: 0dp; width: 64dp; text-align: right; font-size: 7dp; line-height: 20dp; color: #7d8796; }
 .bag.ok .info { color: #78e678; }
 .bag.falta .info { color: #ff6e5a; }
-#bag_none { display: block; padding: 6px; font-size: 8px; color: #7d8796; }
-#add_note { position: absolute; left: 6px; top: 226px; width: 228px; text-align: center; font-size: 8px; line-height: 10px; color: #7d8796; }
+#bag_none { display: block; padding: 6dp; font-size: 8dp; color: #7d8796; }
+#add_note { position: absolute; left: 6dp; top: 226dp; width: 228dp; text-align: center; font-size: 8dp; line-height: 10dp; color: #7d8796; }
 #give, #add_close, #close {
 	position: absolute;
 	text-align: center;
 	background-color: #1e2228;
-	border: 1px #3e4652;
+	border: 1dp #3e4652;
 	cursor: pointer;
-	font-size: 9px;
+	font-size: 9dp;
 }
-#give { left: 14px; top: 246px; width: 96px; height: 18px; line-height: 18px; color: #ffffff; }
-#add_close { left: 130px; top: 246px; width: 96px; height: 18px; line-height: 18px; }
+#give { left: 14dp; top: 246dp; width: 96dp; height: 18dp; line-height: 18dp; color: #ffffff; }
+#add_close { left: 130dp; top: 246dp; width: 96dp; height: 18dp; line-height: 18dp; }
 #give:hover, #add_close:hover, #close:hover { border-color: #78bfff; color: #ffffff; }
 #give.disabled { color: #4a515c; cursor: default; }
 #give.disabled:hover { border-color: #3e4652; }
-#close { z-index: 2; left: 185px; top: 344px; width: 60px; height: 18px; line-height: 18px; }
+#close { z-index: 2; left: 185dp; top: 344dp; width: 60dp; height: 18dp; line-height: 18dp; }
 
 /* rodada 9: o carrinho no canto da peça que falta (compra com zen) */
 .cart {
 	position: absolute;
 	z-index: 1;
-	width: 16px;
-	height: 16px;
+	width: 16dp;
+	height: 16dp;
 	background-color: #50101a;
-	border: 1px #96603a;
-	border-radius: 3px;
+	border: 1dp #96603a;
+	border-radius: 3dp;
 	cursor: pointer;
 	decorator: image(col-carrinho);
 }
 .cart:hover { background-color: #7a1a1a; border-color: #dcaa5a; }
-.slot .cart { left: 34px; top: 45px; }
-.cell .cart { left: 52px; top: 62px; }
+.slot .cart { left: 34dp; top: 45dp; }
+.cell .cart { left: 52dp; top: 62dp; }
 
 /* a vitrine: o personagem vestindo o set aberto (render target do PhotoViewerControl) */
 #photo_slot {
 	position: absolute;
-	left: 124px;
-	top: 206px;
-	width: 140px;
-	height: 130px;
+	left: 124dp;
+	top: 206dp;
+	width: 140dp;
+	height: 130dp;
 	decorator: linear-gradient(to bottom, #2a1d44 0%, #0b0914 100%);
-	border: 1px #3e3458;
-	border-radius: 4px;
+	border: 1dp #3e3458;
+	border-radius: 4dp;
 	cursor: move;
 	pointer-events: auto;
 }
-#photo_image { position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; pointer-events: none; }
-#vitrine_class { position: absolute; left: 6px; bottom: 3px; font-size: 8px; line-height: 10px; color: #b4a6d6; pointer-events: none; }
-#vitrine_hint { position: absolute; right: 5px; top: 3px; font-size: 7px; line-height: 9px; color: #5e5478; pointer-events: none; }
+#photo_image { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; pointer-events: none; }
+#vitrine_class { position: absolute; left: 6dp; bottom: 3dp; font-size: 8dp; line-height: 10dp; color: #b4a6d6; pointer-events: none; }
+#vitrine_hint { position: absolute; right: 5dp; top: 3dp; font-size: 7dp; line-height: 9dp; color: #5e5478; pointer-events: none; }
 
 /* a confirmação da compra */
-#buy_layer { z-index: 3; position: absolute; left: 0px; top: 56px; width: 430px; height: 316px; background-color: rgba(0, 0, 0, 140); }
+#buy_layer { z-index: 3; position: absolute; left: 0dp; top: 56dp; width: 430dp; height: 316dp; background-color: rgba(0, 0, 0, 140); }
 #buy_box {
 	position: absolute;
-	left: 85px;
-	top: 40px;
-	width: 260px;
-	height: 190px;
+	left: 85dp;
+	top: 40dp;
+	width: 260dp;
+	height: 190dp;
 	background-color: rgba(12, 19, 36, 252);
-	border: 2px #525a66;
-	border-radius: 5px;
+	border: 2dp #525a66;
+	border-radius: 5dp;
 }
-#buy_title { position: absolute; left: 0px; top: 6px; width: 260px; text-align: center; font-family: "token(font-title)"; font-size: 10px; line-height: 14px; color: #dae0ea; }
-#buy_slot { position: absolute; left: 100px; top: 24px; width: 60px; height: 60px; background-color: #09101b; border: 1px #ffe08a; border-radius: 4px; }
-#buy_slot .art { left: 4px; top: 4px; width: 52px; height: 52px; }
-#buy_name { position: absolute; left: 6px; top: 88px; width: 248px; text-align: center; font-size: 9px; line-height: 12px; color: #78bfff; }
-#buy_ask { position: absolute; left: 6px; top: 104px; width: 248px; text-align: center; font-size: 9px; line-height: 12px; color: #ffe08a; }
-#buy_have { position: absolute; left: 6px; top: 118px; width: 248px; text-align: center; font-size: 8px; line-height: 11px; color: #7d8796; }
+#buy_title { position: absolute; left: 0dp; top: 6dp; width: 260dp; text-align: center; font-family: "token(font-title)"; font-size: 10dp; line-height: 14dp; color: #dae0ea; }
+#buy_slot { position: absolute; left: 100dp; top: 24dp; width: 60dp; height: 60dp; background-color: #09101b; border: 1dp #ffe08a; border-radius: 4dp; }
+#buy_slot .art { left: 4dp; top: 4dp; width: 52dp; height: 52dp; }
+#buy_name { position: absolute; left: 6dp; top: 88dp; width: 248dp; text-align: center; font-size: 9dp; line-height: 12dp; color: #78bfff; }
+#buy_ask { position: absolute; left: 6dp; top: 104dp; width: 248dp; text-align: center; font-size: 9dp; line-height: 12dp; color: #ffe08a; }
+#buy_have { position: absolute; left: 6dp; top: 118dp; width: 248dp; text-align: center; font-size: 8dp; line-height: 11dp; color: #7d8796; }
 #buy_have.ok { color: #78e678; }
 #buy_have.falta { color: #ff6e5a; }
-#buy_note { position: absolute; left: 6px; top: 134px; width: 248px; text-align: center; font-size: 8px; line-height: 10px; color: #7d8796; }
+#buy_note { position: absolute; left: 6dp; top: 134dp; width: 248dp; text-align: center; font-size: 8dp; line-height: 10dp; color: #7d8796; }
 #buy_ok, #buy_cancel {
 	position: absolute;
-	top: 160px;
-	width: 96px;
-	height: 18px;
-	line-height: 18px;
+	top: 160dp;
+	width: 96dp;
+	height: 18dp;
+	line-height: 18dp;
 	text-align: center;
 	background-color: #1e2228;
-	border: 1px #3e4652;
+	border: 1dp #3e4652;
 	cursor: pointer;
-	font-size: 9px;
+	font-size: 9dp;
 }
-#buy_ok { left: 26px; color: #ffffff; }
-#buy_cancel { left: 138px; }
+#buy_ok { left: 26dp; color: #ffffff; }
+#buy_cancel { left: 138dp; }
 #buy_ok:hover, #buy_cancel:hover { border-color: #78bfff; color: #ffffff; }
 #buy_ok.disabled { color: #4a515c; cursor: default; }
 #buy_ok.disabled:hover { border-color: #3e4652; }

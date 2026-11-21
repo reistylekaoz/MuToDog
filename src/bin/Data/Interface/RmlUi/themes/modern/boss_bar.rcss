@@ -3,26 +3,26 @@
 body { pointer-events: none; }
 #screen { pointer-events: none; font-family: "token(font-body)"; }
 #name, #end, #leader, #me, #hp { position: absolute; text-align: center; white-space: nowrap; font-effect: outline(1px #000000e6); }
-#name { left: 179px; top: 19px; width: 280px; background-color: #00000078; font-size: 8px; line-height: 11px; font-weight: bold; color: #ffe2a0; }
-#bar { position: absolute; left: 199px; top: 31px; width: 240px; height: 10px; background-color: #0a0508d9; border: 1px #ffc846cc; }
-#under { position: absolute; left: 0px; top: 0px; width: 240px; height: 10px; }
-#trail { position: absolute; left: 0px; top: 0px; width: 0px; height: 10px; background-color: #ffecc8c8; }
-#fill { position: absolute; left: 0px; top: 0px; width: 0px; height: 10px; }
-#shine { position: absolute; left: 0px; top: 0px; width: 240px; height: 5px; background-color: #ffffff30; }
-#hp { left: 0px; top: 1px; width: 240px; font-size: 6px; line-height: 8px; color: #ffffff; }
-#marker { position: absolute; left: 177px; top: 31px; width: 19px; height: 10px; border: 1px #ffc846cc; text-align: center; font-size: 7px; line-height: 10px; font-weight: bold; color: #ffffff; font-effect: outline(1px #000000e6); }
-#end { left: 179px; top: 45px; width: 280px; font-size: 8px; line-height: 11px; background-color: #000000b4; font-weight: bold; color: #ffc846; }
-#leader { left: 179px; top: 45px; width: 280px; font-size: 8px; line-height: 11px; background-color: #000000b4; font-weight: bold; color: #ffc846; }
+#name { left: 179dp; top: 19dp; width: 280dp; background-color: #00000078; font-size: 8dp; line-height: 11dp; font-weight: bold; color: #ffe2a0; }
+#bar { position: absolute; left: 199dp; top: 31dp; width: 240dp; height: 10dp; background-color: #0a0508d9; border: 1dp #ffc846cc; }
+#under { position: absolute; left: 0dp; top: 0dp; width: 240dp; height: 10dp; }
+#trail { position: absolute; left: 0dp; top: 0dp; width: 0dp; height: 10dp; background-color: #ffecc8c8; }
+#fill { position: absolute; left: 0dp; top: 0dp; width: 0dp; height: 10dp; }
+#shine { position: absolute; left: 0dp; top: 0dp; width: 240dp; height: 5dp; background-color: #ffffff30; }
+#hp { left: 0dp; top: 1dp; width: 240dp; font-size: 6dp; line-height: 8dp; color: #ffffff; }
+#marker { position: absolute; left: 177dp; top: 31dp; width: 19dp; height: 10dp; border: 1dp #ffc846cc; text-align: center; font-size: 7dp; line-height: 10dp; font-weight: bold; color: #ffffff; font-effect: outline(1px #000000e6); }
+#end { left: 179dp; top: 45dp; width: 280dp; font-size: 8dp; line-height: 11dp; background-color: #000000b4; font-weight: bold; color: #ffc846; }
+#leader { left: 179dp; top: 45dp; width: 280dp; font-size: 8dp; line-height: 11dp; background-color: #000000b4; font-weight: bold; color: #ffc846; }
 #leader.eu { color: #78e678; }
 #leader.pisca { color: #ffffff; }
-#me { left: 179px; top: 56px; width: 280px; font-size: 7px; line-height: 10px; color: #dde1ea; background-color: #000000b4; }
-.crown { display: inline-block; position: relative; width: 9px; height: 6px; }
+#me { left: 179dp; top: 56dp; width: 280dp; font-size: 7dp; line-height: 10dp; color: #dde1ea; background-color: #000000b4; }
+.crown { display: inline-block; position: relative; width: 9dp; height: 6dp; }
 .crown span { position: absolute; background-color: #ffc846; }
 #leader.eu .crown span { background-color: #78e678; }
 #leader.pisca .crown span { background-color: #ffffff; }
-.cb { left: 0px; top: 4px; width: 9px; height: 2px; }
-.c1 { left: 0px; top: 1px; width: 2px; height: 3px; }
-.c2 { left: 3px; top: 0px; width: 3px; height: 4px; }
-.c3 { left: 7px; top: 1px; width: 2px; height: 3px; }
+.cb { left: 0dp; top: 4dp; width: 9dp; height: 2dp; }
+.c1 { left: 0dp; top: 1dp; width: 2dp; height: 3dp; }
+.c2 { left: 3dp; top: 0dp; width: 3dp; height: 4dp; }
+.c3 { left: 7dp; top: 1dp; width: 2dp; height: 3dp; }
 /* rodada 20: o aviso do golpe especial, embaixo da disputa */
-#golpe { position: absolute; left: 119px; top: 70px; width: 400px; text-align: center; white-space: nowrap; font-size: 10px; line-height: 14px; font-weight: bold; color: #ff6a30; background-color: #000000a0; font-effect: outline(1px #000000e6); }
+#golpe { position: absolute; left: 119dp; top: 70dp; width: 400dp; text-align: center; white-space: nowrap; font-size: 10dp; line-height: 14dp; font-weight: bold; color: #ff6a30; background-color: #000000a0; font-effect: outline(1px #000000e6); }
