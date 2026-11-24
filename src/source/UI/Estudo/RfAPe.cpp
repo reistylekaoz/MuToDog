@@ -4,6 +4,7 @@
 
 #include "Engine/Object/ZzzCharacter.h"
 #include "Engine/Object/ZzzObject.h"
+#include "Character/CharacterManager.h"
 
 #include <chrono>
 #include <cstdint>
@@ -73,6 +74,31 @@ void Observar(const OBJECT* dono)
         g_ultimaSkill.erase(it);
         Voltar(dono);
     }
+}
+
+void Marcar(CHARACTER* c, int skill)
+{
+    if (c == nullptr || c->Object.Type != MODEL_PLAYER || c->Helper.Type != MODEL_HORN_OF_FENRIR ||
+        gCharacterManager.GetBaseClass(c->Class) == CLASS_DARK_LORD)
+    {
+        return;
+    }
+    if (skill == AT_SKILL_PLASMA_STORM_FENRIR)
+    {
+        g_ultimaSkill.erase(&c->Object);
+        return;
+    }
+    g_ultimaSkill[&c->Object] = Agora();
+}
+
+bool NoFenrir(const CHARACTER* c)
+{
+    return c->Helper.Type == MODEL_HORN_OF_FENRIR && !APe(&c->Object);
+}
+
+int Montaria(const CHARACTER* c)
+{
+    return c->Helper.Type == MODEL_HORN_OF_FENRIR && APe(&c->Object) ? -1 : c->Helper.Type;
 }
 
 bool APe(const OBJECT* dono)

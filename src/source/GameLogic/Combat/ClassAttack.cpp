@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "UI/Estudo/RfAPe.h"
 #include "Core/Utilities/Random.h"
 #include "GameLogic/Combat/ClassAttack.h"
 #include "GameLogic/Combat/CombatTarget.h"
@@ -712,7 +713,7 @@ void AttackKnight(CHARACTER* c, ActionSkillType Skill, float Distance)
                         SendRequestMagicContinue(Skill, (c->PositionX),
                             (c->PositionY), ((o->Angle[2] / 360.f) * 255), byValue, angle, TKey, 0);
                         SetAttackSpeed();
-                        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+                        if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
                         {
                             SetAction(o, PLAYER_FENRIR_ATTACK_MAGIC);
                         }
@@ -758,7 +759,7 @@ void AttackKnight(CHARACTER* c, ActionSkillType Skill, float Distance)
 
                     //									SetPlayerMagic(c);
 
-                    if (c->Helper.Type == MODEL_HORN_OF_FENRIR)
+                    if (mu::ui::window::RfAPe::NoFenrir(c))
                     {
                         SetAction(o, PLAYER_FENRIR_ATTACK_DARKLORD_STRIKE);
                     }
@@ -919,7 +920,7 @@ void AttackKnight(CHARACTER* c, ActionSkillType Skill, float Distance)
                         {
                             SetAction(o, PLAYER_ATTACK_RIDE_STRIKE);
                         }
-                        else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+                        else if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
                         {
                             SetAction(o, PLAYER_FENRIR_ATTACK_DARKLORD_STRIKE);
                         }
@@ -967,7 +968,7 @@ void AttackKnight(CHARACTER* c, ActionSkillType Skill, float Distance)
                         {
                             SetAction(o, PLAYER_ATTACK_RIDE_ATTACK_FLASH);
                         }
-                        else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+                        else if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
                         {
                             SetAction(o, PLAYER_FENRIR_ATTACK_DARKLORD_FLASH);
                         }
@@ -1403,7 +1404,7 @@ void AttackWizard(CHARACTER* c, int Skill, float Distance)
                 c->SkillSuccess = true;
                 SetAttackSpeed();
 
-                if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+                if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
                     SetAction(o, PLAYER_SKILL_FLASH);
                 else
                     SetAction(o, PLAYER_SKILL_FLASH);
@@ -1614,7 +1615,7 @@ void AttackWizard(CHARACTER* c, int Skill, float Distance)
             {
                 LetHeroStop();
 
-                switch (c->Helper.Type)
+                switch (mu::ui::window::RfAPe::Montaria(c))
                 {
                 case MODEL_HORN_OF_UNIRIA:
                     SetAction(o, PLAYER_SKILL_SLEEP_UNI);
@@ -1848,7 +1849,7 @@ void AttackCommon(CHARACTER* c, int Skill, float Distance)
                 {
                     SetAction(o, PLAYER_SKILL_RIDER_FLY);
                 }
-                else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+                else if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
                 {
                     SetAction(o, PLAYER_FENRIR_ATTACK_MAGIC);
                 }
@@ -1886,7 +1887,7 @@ void AttackCommon(CHARACTER* c, int Skill, float Distance)
                     {
                         SetAction(o, PLAYER_SKILL_RIDER_FLY);
                     }
-                    else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+                    else if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
                     {
                         SetAction(o, PLAYER_FENRIR_ATTACK_MAGIC);
                     }
@@ -1920,7 +1921,7 @@ void AttackCommon(CHARACTER* c, int Skill, float Distance)
             {
                 SetAction(o, PLAYER_SKILL_RIDER_FLY);
             }
-            else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+            else if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
             {
                 SetAction(o, PLAYER_FENRIR_ATTACK_MAGIC);
             }
@@ -1953,7 +1954,7 @@ void AttackCommon(CHARACTER* c, int Skill, float Distance)
             {
                 SetAction(o, PLAYER_SKILL_RIDER_FLY);
             }
-            else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+            else if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
             {
                 SetAction(o, PLAYER_FENRIR_ATTACK_MAGIC);
             }
@@ -1984,7 +1985,7 @@ void AttackCommon(CHARACTER* c, int Skill, float Distance)
             {
                 SetAction(o, PLAYER_SKILL_RIDER_FLY);
             }
-            else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+            else if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
             {
                 SetAction(o, PLAYER_FENRIR_ATTACK_MAGIC);
             }
@@ -2016,7 +2017,7 @@ void AttackCommon(CHARACTER* c, int Skill, float Distance)
             {
                 SetAction(o, PLAYER_SKILL_RIDER_FLY);
             }
-            else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+            else if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
             {
                 SetAction(o, PLAYER_FENRIR_ATTACK_MAGIC);
             }

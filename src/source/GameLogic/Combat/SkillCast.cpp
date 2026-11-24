@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "UI/Estudo/RfAPe.h"
 #include "Core/Utilities/Random.h"
 #include "GameLogic/Combat/SkillCast.h"
 #include "Audio/SoundPlaces.h"
@@ -302,7 +303,7 @@ void UseSkillWarrior(CHARACTER* c, OBJECT* o)
         switch (Skill)
         {
         case AT_SKILL_IMPALE:
-            if (c->Helper.Type == MODEL_HORN_OF_FENRIR)
+            if (mu::ui::window::RfAPe::NoFenrir(c))
                 SetAction(o, PLAYER_FENRIR_ATTACK_SPEAR);
             else
                 SetAction(o, PLAYER_ATTACK_SKILL_SPEAR);
@@ -342,7 +343,7 @@ void UseSkillWarrior(CHARACTER* c, OBJECT* o)
             SetAction(o, PLAYER_ATTACK_RUSH);
             break;
         default:
-            if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+            if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
             {
                 SetAction(o, PLAYER_FENRIR_ATTACK_MAGIC);
             }
@@ -620,7 +621,7 @@ void UseSkillSummon(CHARACTER* pCha, OBJECT* pObj)
         LetHeroStop();
         if (iSkill == AT_SKILL_ALICE_DRAINLIFE || iSkill == AT_SKILL_ALICE_DRAINLIFE_STR)
         {
-            switch (pCha->Helper.Type)
+            switch (mu::ui::window::RfAPe::Montaria(pCha))
             {
             case MODEL_HORN_OF_UNIRIA:
                 SetAction(pObj, PLAYER_SKILL_DRAIN_LIFE_UNI);
@@ -638,7 +639,7 @@ void UseSkillSummon(CHARACTER* pCha, OBJECT* pObj)
         }
         else if (iSkill == AT_SKILL_ALICE_LIGHTNINGORB)
         {
-            switch (pCha->Helper.Type)
+            switch (mu::ui::window::RfAPe::Montaria(pCha))
             {
             case MODEL_HORN_OF_UNIRIA:
                 SetAction(pObj, PLAYER_SKILL_LIGHTNING_ORB_UNI);
@@ -667,7 +668,7 @@ void UseSkillSummon(CHARACTER* pCha, OBJECT* pObj)
     {
         LetHeroStop();
 
-        switch (pCha->Helper.Type)
+        switch (mu::ui::window::RfAPe::Montaria(pCha))
         {
         case MODEL_HORN_OF_UNIRIA:
             SetAction(pObj, PLAYER_SKILL_CHAIN_LIGHTNING_UNI);
@@ -714,7 +715,7 @@ void UseSkillSummon(CHARACTER* pCha, OBJECT* pObj)
     case AT_SKILL_ALICE_BERSERKER:
     case AT_SKILL_ALICE_BERSERKER_STR:
         LetHeroStop();
-        switch (pCha->Helper.Type)
+        switch (mu::ui::window::RfAPe::Montaria(pCha))
         {
         case MODEL_HORN_OF_UNIRIA:
             SetAction(pObj, PLAYER_SKILL_SLEEP_UNI);
@@ -735,7 +736,7 @@ void UseSkillSummon(CHARACTER* pCha, OBJECT* pObj)
     case AT_SKILL_ALICE_ENERVATION:
         LetHeroStop();
         SendRequestMagicContinue(iSkill, pCha->PositionX, pCha->PositionY, (BYTE)(pObj->Angle[2] / 360.f * 256.f), 0, 0, 0xffff, 0);
-        switch (pCha->Helper.Type)
+        switch (mu::ui::window::RfAPe::Montaria(pCha))
         {
         case MODEL_HORN_OF_UNIRIA:
             SetAction(pObj, PLAYER_SKILL_SLEEP_UNI);

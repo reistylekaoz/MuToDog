@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "UI/Estudo/RfAPe.h"
 #include "Core/Platform/Quit.h"
 #include "Core/Utilities/Random.h"
 #include "App/Control/ControlTaps.h"
@@ -4055,7 +4056,7 @@ void SetPlayerBow(CHARACTER* c)
     {
     case BOWTYPE_BOW:
     {
-        if (c->Helper.Type == MODEL_HORN_OF_FENRIR)
+        if (mu::ui::window::RfAPe::NoFenrir(c))
         {
             SetAction(&c->Object, PLAYER_FENRIR_ATTACK_BOW);
         }
@@ -4075,7 +4076,7 @@ void SetPlayerBow(CHARACTER* c)
     break;
     case BOWTYPE_CROSSBOW:
     {
-        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+        if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
         {
             SetAction(&c->Object, PLAYER_FENRIR_ATTACK_CROSSBOW);
         }
@@ -4102,7 +4103,7 @@ void SetPlayerHighBow(CHARACTER* c)
     {
     case BOWTYPE_BOW:
     {
-        if (c->Helper.Type == MODEL_HORN_OF_FENRIR)
+        if (mu::ui::window::RfAPe::NoFenrir(c))
         {
             SetAction(&c->Object, PLAYER_ATTACK_RIDE_BOW_UP);
         }
@@ -4122,7 +4123,7 @@ void SetPlayerHighBow(CHARACTER* c)
     break;
     case BOWTYPE_CROSSBOW:
     {
-        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+        if (mu::ui::window::RfAPe::NoFenrir(c) && !c->SafeZone)
         {
             SetAction(&c->Object, PLAYER_ATTACK_RIDE_CROSSBOW_UP);
         }
@@ -4235,6 +4236,8 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
 
         sc->SkillSuccess = (Success != 0);
         sc->Skill = MagicNumber;
+        // MuToDog (MU Estudo): no Fenrir a skill sai a pé (UI/Estudo/RfAPe.h)
+        mu::ui::window::RfAPe::Marcar(sc, MagicNumber);
     }
     switch (MagicNumber)
     {
@@ -4397,7 +4400,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_ATTACK_RIDE_STRIKE);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_DARKLORD_STRIKE);
         }
@@ -4415,7 +4418,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_ATTACK_RIDE_STRIKE);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_DARKLORD_STRIKE);
         }
@@ -4478,7 +4481,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         break;
 
     case AT_SKILL_IMPALE: // 창찌르기
-        if (sc->Helper.Type == MODEL_HORN_OF_FENRIR)
+        if (mu::ui::window::RfAPe::NoFenrir(sc))
             SetAction(so, PLAYER_FENRIR_ATTACK_SPEAR);
         else
             SetAction(so, PLAYER_ATTACK_SKILL_SPEAR);
@@ -4594,7 +4597,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_ATTACK_RIDE_STRIKE);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_DARKLORD_STRIKE);
         }
@@ -4614,7 +4617,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_ATTACK_RIDE_ATTACK_MAGIC);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_MAGIC);
         }
@@ -4644,7 +4647,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_SKILL_RIDER_FLY);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_MAGIC);
         }
@@ -4668,7 +4671,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_SKILL_RIDER_FLY);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_MAGIC);
         }
@@ -4697,7 +4700,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_SKILL_RIDER_FLY);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_MAGIC);
         }
@@ -4729,7 +4732,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_SKILL_RIDER_FLY);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_MAGIC);
         }
@@ -4755,7 +4758,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_SKILL_RIDER_FLY);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_MAGIC);
         }
@@ -4792,7 +4795,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_SKILL_RIDER_FLY);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_MAGIC);
         }
@@ -4827,7 +4830,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_ATTACK_RIDE_ATTACK_MAGIC);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_MAGIC);
         }
@@ -4842,7 +4845,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
         {
             SetAction(so, PLAYER_ATTACK_RIDE_TELEPORT);
         }
-        else if (sc->Helper.Type == MODEL_HORN_OF_FENRIR && !sc->SafeZone)
+        else if (mu::ui::window::RfAPe::NoFenrir(sc) && !sc->SafeZone)
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_DARKLORD_TELEPORT);
         }
@@ -4910,7 +4913,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
     case AT_SKILL_FIRE_SCREAM:
     case AT_SKILL_FIRE_SCREAM_STR:
     {
-        if (sc->Helper.Type == MODEL_HORN_OF_FENRIR)
+        if (mu::ui::window::RfAPe::NoFenrir(sc))
         {
             SetAction(so, PLAYER_FENRIR_ATTACK_DARKLORD_STRIKE);
         }
@@ -4959,7 +4962,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
     {
         sc->AttackTime = 1;
 
-        switch (sc->Helper.Type)
+        switch (mu::ui::window::RfAPe::Montaria(sc))
         {
         case MODEL_HORN_OF_UNIRIA:
             SetAction(so, PLAYER_SKILL_SLEEP_UNI);
@@ -5032,7 +5035,7 @@ BOOL ReceiveMagic(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
     {
         if (so->Type == MODEL_PLAYER)
         {
-            if (sc->Helper.Type == MODEL_HORN_OF_FENRIR)
+            if (mu::ui::window::RfAPe::NoFenrir(sc))
             {
                 SetAction(&sc->Object, PLAYER_FENRIR_ATTACK_DARKLORD_STRIKE);
             }
@@ -5232,6 +5235,8 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
     Audio::PlaceCharacter(casterPlace, *sc);
 
     sc->Skill = MagicNumber;
+    // MuToDog (MU Estudo): no Fenrir a skill sai a pé (UI/Estudo/RfAPe.h)
+    mu::ui::window::RfAPe::Marcar(sc, MagicNumber);
 
     if (MagicNumber == AT_SKILL_PLASMA_STORM_FENRIR)
         sc->m_iFenrirSkillTarget = FindCharacterIndex(Key);
@@ -5282,7 +5287,7 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
             case AT_SKILL_TWISTING_SLASH_MASTERY:
             case AT_SKILL_TWISTING_SLASH_STR_MG:
 #ifdef YDG_ADD_SKILL_RIDING_ANIMATIONS
-                switch (sc->Helper.Type)
+                switch (mu::ui::window::RfAPe::Montaria(sc))
                 {
                 case MODEL_HORN_OF_UNIRIA:
                     SetAction(so, PLAYER_ATTACK_SKILL_WHEEL_UNI);
@@ -5305,7 +5310,7 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
             case AT_SKILL_FIRE_SCREAM:
             case AT_SKILL_FIRE_SCREAM_STR:
             {
-                if (sc->Helper.Type == MODEL_HORN_OF_FENRIR)
+                if (mu::ui::window::RfAPe::NoFenrir(sc))
                 {
                     SetAction(so, PLAYER_FENRIR_ATTACK_DARKLORD_STRIKE);
                 }
@@ -5322,7 +5327,7 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
             break;
 
             case AT_SKILL_THUNDER_STRIKE:
-                if (sc->Helper.Type == MODEL_HORN_OF_FENRIR)
+                if (mu::ui::window::RfAPe::NoFenrir(sc))
                     SetAction(so, PLAYER_FENRIR_ATTACK_DARKLORD_FLASH);
                 else
                     SetAction(so, PLAYER_SKILL_FLASH);
@@ -5344,7 +5349,7 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
                 SetAction(so, PLAYER_SKILL_BLOW_OF_DESTRUCTION);
                 break;
             case AT_SKILL_IMPALE:
-                if (sc->Helper.Type == MODEL_HORN_OF_FENRIR)
+                if (mu::ui::window::RfAPe::NoFenrir(sc))
                     SetAction(so, PLAYER_FENRIR_ATTACK_SPEAR);
                 else
                     SetAction(so, PLAYER_ATTACK_SKILL_SPEAR);
@@ -5352,7 +5357,7 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
             case AT_SKILL_FIRE_SLASH:
             case AT_SKILL_FIRE_SLASH_STR:
 #ifdef YDG_ADD_SKILL_RIDING_ANIMATIONS
-                switch (sc->Helper.Type)
+                switch (mu::ui::window::RfAPe::Montaria(sc))
                 {
                 case MODEL_HORN_OF_UNIRIA:
                     SetAction(so, PLAYER_ATTACK_SKILL_WHEEL_UNI);
@@ -5393,7 +5398,7 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
                 break;
             case AT_SKILL_CHAOTIC_DISEIER:
             {
-                if (sc->Helper.Type == MODEL_HORN_OF_FENRIR)
+                if (mu::ui::window::RfAPe::NoFenrir(sc))
                 {
                     SetAction(&sc->Object, PLAYER_FENRIR_ATTACK_DARKLORD_STRIKE);
                 }
@@ -5530,7 +5535,7 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
             break;
             case AT_SKILL_ALICE_LIGHTNINGORB:
             {
-                switch (sc->Helper.Type)
+                switch (mu::ui::window::RfAPe::Montaria(sc))
                 {
                 case MODEL_HORN_OF_UNIRIA:
                     SetAction(so, PLAYER_SKILL_LIGHTNING_ORB_UNI);
@@ -5550,7 +5555,7 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
             case AT_SKILL_ALICE_DRAINLIFE:
             case AT_SKILL_ALICE_DRAINLIFE_STR:
             {
-                switch (sc->Helper.Type)
+                switch (mu::ui::window::RfAPe::Montaria(sc))
                 {
                 case MODEL_HORN_OF_UNIRIA:
                     SetAction(so, PLAYER_SKILL_DRAIN_LIFE_UNI);
@@ -5569,7 +5574,7 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
             break;
             case AT_SKILL_ALICE_WEAKNESS:
             case AT_SKILL_ALICE_ENERVATION:
-                switch (sc->Helper.Type)
+                switch (mu::ui::window::RfAPe::Montaria(sc))
                 {
                 case MODEL_HORN_OF_UNIRIA:
                     SetAction(so, PLAYER_SKILL_SLEEP_UNI);
@@ -5647,8 +5652,10 @@ void ReceiveChainMagic(const BYTE* ReceiveBuffer)
     OBJECT* pTempObject = nullptr;
 
     // SetAction(pSourceObject, PLAYER_SKILL_CHAIN_LIGHTNING);
+    // MuToDog (MU Estudo): no Fenrir a skill sai a pé (UI/Estudo/RfAPe.h)
+    mu::ui::window::RfAPe::Marcar(pSourceChar, ((WORD)(pPacketData->MagicH) << 8) + pPacketData->MagicL);
 
-    switch (pSourceChar->Helper.Type)
+    switch (mu::ui::window::RfAPe::Montaria(pSourceChar))
     {
     case MODEL_HORN_OF_UNIRIA:
         SetAction(pSourceObject, PLAYER_SKILL_CHAIN_LIGHTNING_UNI);
@@ -5707,6 +5714,8 @@ void ReceiveMagicPosition(const BYTE* ReceiveBuffer, int Size)
     Audio::PlaceCharacter(casterPlace, *c);
     CreateMagicShiny(c);
     PlayBuffer(SOUND_MAGIC);
+    // MuToDog (MU Estudo): no Fenrir a skill sai a pé (UI/Estudo/RfAPe.h)
+    mu::ui::window::RfAPe::Marcar(c, MagicNumber);
     SetAction(o, PLAYER_SKILL_HELL);
     c->Skill = MagicNumber;
     c->AttackTime = 1;

@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "UI/Estudo/RfAPe.h"
 #include "GameLogic/Combat/SkillExecution.h"
 #include "GameLogic/Combat/ClassAttack.h"
 #include "GameLogic/Combat/CombatTarget.h"
@@ -320,6 +321,9 @@ int ExecuteSkill(CHARACTER* c, ActionSkillType Skill, float Distance)
         return 0;
     }
 
+    // MuToDog (MU Estudo): no Fenrir a skill sai a pé, menos no Dark Lord (UI/Estudo/RfAPe.h)
+    mu::ui::window::RfAPe::Marcar(c, Skill);
+
     if (ClassIndex != CLASS_WIZARD)
     {
         CheckTarget(c, Skill, Distance);
@@ -334,7 +338,9 @@ int ExecuteSkill(CHARACTER* c, ActionSkillType Skill, float Distance)
                     || ClassIndex == CLASS_RAGEFIGHTER)
                 {
                     bool bOk = false;
-                    if (!GameLogic::Items::IsRideableMountModel(c->Helper.Type))
+                    // MuToDog (MU Estudo): no Fenrir (menos o Dark Lord) todas as skills, a pé (UI/Estudo/RfAPe.h)
+                    if (!GameLogic::Items::IsRideableMountModel(c->Helper.Type) ||
+                        (c->Helper.Type == MODEL_HORN_OF_FENRIR && ClassIndex != CLASS_DARK_LORD))
                     {
                         bOk = true;
                     }

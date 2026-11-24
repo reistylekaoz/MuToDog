@@ -3,6 +3,7 @@
 
 #include "GameLogic/Combat/CombatTarget.h"
 #include "stdafx.h"
+#include "UI/Estudo/RfAPe.h"
 #include "Core/Utilities/Random.h"
 #include "SummonSystem.h"
 
@@ -46,7 +47,7 @@ void CSummonSystem::RemoveEquipEffects(CHARACTER* pCharacter)
 
 void CSummonSystem::SetPlayerSummon(CHARACTER* pCharacter, OBJECT* pObject)
 {
-    switch (pCharacter->Helper.Type)
+    switch (mu::ui::window::RfAPe::Montaria(pCharacter))
     {
     case MODEL_HORN_OF_UNIRIA:
         SetAction(pObject, PLAYER_SKILL_SUMMON_UNI);

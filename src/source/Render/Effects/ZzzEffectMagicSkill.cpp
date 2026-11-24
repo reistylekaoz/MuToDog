@@ -2,6 +2,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
+#include "UI/Estudo/RfAPe.h"
 #include "Render/Textures/ZzzOpenglUtil.h"
 #include "Render/Models/ZzzBMD.h"
 #include "Engine/Object/ZzzInfomation.h"
@@ -186,7 +187,7 @@ void CreateArrow(CHARACTER* c, OBJECT* o, OBJECT* to, WORD SkillIndex, WORD Skil
 {
     vec3_t ArrowPos;
     VectorCopy(o->Position, ArrowPos);
-    if (c->Helper.Type == MODEL_HORN_OF_FENRIR)
+    if (mu::ui::window::RfAPe::NoFenrir(c))
     {
         ArrowPos[2] += 30.0f; // slightly elevate when riding a fenrir
     }
