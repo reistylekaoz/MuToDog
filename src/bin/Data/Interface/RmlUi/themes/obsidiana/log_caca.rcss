@@ -1,14 +1,14 @@
-/* MuToDog (MU Estudo, rodada 11): Log de caça (log_caca.rml), no jeito do cliente Godot (log_caca.gd): painel de 150 de
-   largura no canto de cima à direita (486, 34), a altura vem das linhas. Px da tela de referência 640 x 480 (.stage). */
+/* MuToDog (MU Estudo, rodada 11): Log de caça (log_caca.rml), no jeito do cliente Godot (log_caca.gd): painel de 172 de
+   largura no canto de cima à direita (464, 34; v1.0.2: letra 9 e linha 13, era 8 e 10), a altura vem das linhas. Px da tela de referência 640 x 480 (.stage). */
 body { pointer-events: none; }
 #screen { pointer-events: none; }
 
 #panel {
 	position: absolute;
-	left: 486dp;
+	left: 464dp;
 	top: 34dp;
-	width: 150dp;
-	padding-bottom: 16dp;
+	width: 172dp;
+	padding-bottom: 24dp;
 	background-color: rgba(19, 21, 25, 240);
 	pointer-events: auto;
 	drag: drag;
@@ -20,31 +20,31 @@ body { pointer-events: none; }
 }
 #title {
 	display: block;
-	height: 13dp;
-	margin: 1dp 1dp 4dp 1dp;
+	height: 16dp;
+	margin: 1dp 1dp 6dp 1dp;
 	background-color: rgba(120, 191, 255, 41);
 	text-align: center;
 	font-family: "token(font-title)";
-	font-size: 8dp;
-	line-height: 13dp;
+	font-size: 10dp;
+	line-height: 16dp;
 	color: #dde1e7;
 }
-.row { display: block; position: relative; height: 10dp; margin: 0dp 6dp; font-size: 8dp; line-height: 10dp; white-space: nowrap; }
-.row.vao { height: 4dp; }
-.row .label { color: #c0c6d0; }
-.row .value { position: absolute; right: 0dp; top: 0dp; color: #ebedf1; }
+.row { display: block; position: relative; height: 13dp; margin: 0dp 8dp; font-size: 9dp; line-height: 13dp; white-space: nowrap; }
+.row.vao { height: 6dp; }
+.row .label { color: #a3abb8; }
+.row .value { position: absolute; right: 0dp; top: 0dp; color: #f4f6f9; }
 .row.titulo { border-top: 1dp rgba(62, 70, 82, 128); }
 .row.titulo .label { font-weight: bold; color: #aad6ff; }
 #reset {
 	position: absolute;
-	right: 4dp;
-	bottom: 3dp;
-	width: 40dp;
-	height: 10dp;
+	right: 8dp;
+	bottom: 5dp;
+	width: 48dp;
+	height: 14dp;
 	background-color: rgba(120, 191, 255, 46);
 	text-align: center;
-	font-size: 8dp;
-	line-height: 10dp;
+	font-size: 9dp;
+	line-height: 14dp;
 	color: #aad6ff;
 	cursor: pointer;
 }

@@ -26,8 +26,8 @@ using namespace mu::ui::window;
 namespace
 {
 constexpr int TrainingDummy = 924; // Boneco de Treino da saída de Lorencia
-constexpr float PanelWidth = 150.f;
-constexpr float CornerX = 486.f; // à direita, embaixo dos botões do topo e longe das mensagens do sistema
+constexpr float PanelWidth = 172.f; // v1.0.2: letra maior (era 150)
+constexpr float CornerX = 640.f - PanelWidth - 4.f; // à direita, embaixo dos botões do topo e longe das mensagens do sistema
 constexpr float CornerY = 34.f;
 constexpr const char* PlaceFile = "log_caca.ini";
 

@@ -23,6 +23,7 @@
 #include "UI/RmlBridge/RmlSyncField.h"
 #include "UI/RmlBridge/RmlPointer.h"
 #include "UI/RmlBridge/RmlWindowClose.h"
+#include <algorithm>
 #include "UI/RmlBridge/RmlNativeTextSize.h"
 #include "UI/RmlBridge/RmlTheme.h"
 #include "UI/Character/CriticalDamageRateLine.h"
@@ -518,7 +519,9 @@ void mu::ui::window::CCharacterInfoWindow::BuildSubjectTexts()
         SyncField(m_RmlView.Binder(), &CharacterInfoRmlModel::serverNameText, "servername_text", serverTitle);
     }
 
-    const float fAlpha = sinf(WorldTime * 0.001f) + 1.f;
+    // MU Estudo v1.0.2: classe e servidor dividem a mesma linha; a troca era um seno inteiro e os dois textos
+    // ficavam meio apagados um em cima do outro. Agora cada um fica inteiro e a troca leva um instante.
+    const float fAlpha = std::clamp(sinf(WorldTime * 0.001f) * 4.f, -1.f, 1.f) + 1.f;
     SyncField(m_RmlView.Binder(), &CharacterInfoRmlModel::classNameOpacity, "classname_opacity",
               (127 * (2.f - fAlpha)) / 255.f);
     SyncField(m_RmlView.Binder(), &CharacterInfoRmlModel::serverNameOpacity, "servername_opacity", (127 * fAlpha) / 255.f);

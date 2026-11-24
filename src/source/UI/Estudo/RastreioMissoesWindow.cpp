@@ -9,6 +9,7 @@
 #include "UI/RmlBridge/RmlDocumentVisibility.h"
 #include "UI/RmlBridge/RmlPointer.h"
 
+#include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/DataModelHandle.h>
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
@@ -158,6 +159,10 @@ void CRastreioMissoesWindow::Place()
     m_Placed = true;
     RastreioRmlModel& model = m_RmlView.GetModel();
     float height = 14.f + 28.f * static_cast<float>(model.rows.size());
+    // v1.0.2: o palco 640 x 480 fica no meio da tela; a sobra de cada lado (em px de referência) deixa o
+    // rastreio encostar na borda da janela do jogo, não na do palco
+    float sobraX = 0.f;
+    float sobraY = 0.f;
     if (Rml::ElementDocument* document = m_RmlView.Document())
     {
         if (Rml::Element* panel = document->GetElementById("panel"))
@@ -169,10 +174,17 @@ void CRastreioMissoesWindow::Place()
                 height = panel->GetClientHeight() / m_Scale;
             }
         }
+        if (Rml::Context* context = document->GetContext(); context != nullptr && m_Scale > 0.f)
+        {
+            const Rml::Vector2i tela = context->GetDimensions();
+            sobraX = std::max(0.f, (static_cast<float>(tela.x) / m_Scale - 640.f) * 0.5f);
+            sobraY = std::max(0.f, (static_cast<float>(tela.y) / m_Scale - 480.f) * 0.5f);
+        }
     }
-    const float x = std::clamp(CornerX + m_OffsetX, 0.f, std::max(0.f, 640.f - PanelWidth));
-    const float y = std::clamp(CornerY + m_OffsetY, 0.f, std::max(0.f, 480.f - height));
-    m_OffsetX = x - CornerX;
+    const float cantoX = CornerX + sobraX;
+    const float x = std::clamp(cantoX + m_OffsetX, -sobraX, std::max(-sobraX, 640.f + sobraX - PanelWidth));
+    const float y = std::clamp(CornerY + m_OffsetY, -sobraY, std::max(-sobraY, 480.f + sobraY - height));
+    m_OffsetX = x - cantoX;
     m_OffsetY = y - CornerY;
     model.left = RastreioDp(x);
     model.top = RastreioDp(y);

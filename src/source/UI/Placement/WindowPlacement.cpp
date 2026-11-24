@@ -153,11 +153,18 @@ Rml::Vector2f PanelSize(const Entry& entry)
         const std::string& url = document->GetSourceURL();
         if (url.size() < suffix.size() || url.compare(url.size() - suffix.size(), suffix.size(), suffix) != 0)
             continue;
-        // The panel's layout box: its own units, before the scale a slot gives it.
+        // The panel's layout box: its own units, before the scale a slot gives it. MU Estudo: a panel whose sheet
+        // is in dp (tools/estudo_dp.py, no transform) is measured in physical px, so it goes back to reference units.
         const auto panelSize = [document]() -> Rml::Vector2f
         {
             Rml::Element* panel = document->GetElementById("panel");
-            return panel != nullptr ? panel->GetBox().GetSize(Rml::BoxArea::Border) : Rml::Vector2f{};
+            if (panel == nullptr)
+                return Rml::Vector2f{};
+            Rml::Vector2f box = panel->GetBox().GetSize(Rml::BoxArea::Border);
+            const Rml::Property* width = panel->GetProperty(Rml::PropertyId::Width);
+            if (width != nullptr && width->unit == Rml::Unit::DP)
+                box /= document->GetContext()->GetDensityIndependentPixelRatio();
+            return box;
         };
         Rml::Vector2f size = panelSize();
         // The context leaves hidden documents out of its update: a window about to open may still be laid

@@ -5,10 +5,10 @@ body { pointer-events: none; }
 
 #panel {
 	position: absolute;
-	left: 486dp;
+	left: 464dp;
 	top: 34dp;
-	width: 150dp;
-	padding-bottom: 16dp;
+	width: 172dp;
+	padding-bottom: 24dp;
 	background-color: rgba(20, 20, 24, 240);
 	pointer-events: auto;
 	drag: drag;
@@ -20,31 +20,31 @@ body { pointer-events: none; }
 }
 #title {
 	display: block;
-	height: 13dp;
-	margin: 1dp 1dp 4dp 1dp;
+	height: 16dp;
+	margin: 1dp 1dp 6dp 1dp;
 	background-color: rgba(120, 191, 255, 41);
 	text-align: center;
 	font-family: "token(font-title)";
-	font-size: 8dp;
-	line-height: 13dp;
+	font-size: 10dp;
+	line-height: 16dp;
 	color: #dae0ea;
 }
-.row { display: block; position: relative; height: 10dp; margin: 0dp 6dp; font-size: 8dp; line-height: 10dp; white-space: nowrap; }
-.row.vao { height: 4dp; }
+.row { display: block; position: relative; height: 13dp; margin: 0dp 8dp; font-size: 9dp; line-height: 13dp; white-space: nowrap; }
+.row.vao { height: 6dp; }
 .row .label { color: #bec6d2; }
 .row .value { position: absolute; right: 0dp; top: 0dp; color: #e9edf3; }
 .row.titulo { border-top: 1dp rgba(62, 70, 82, 128); }
 .row.titulo .label { font-weight: bold; color: #aad6ff; }
 #reset {
 	position: absolute;
-	right: 4dp;
-	bottom: 3dp;
-	width: 40dp;
-	height: 10dp;
+	right: 8dp;
+	bottom: 5dp;
+	width: 48dp;
+	height: 14dp;
 	background-color: rgba(120, 191, 255, 46);
 	text-align: center;
-	font-size: 8dp;
-	line-height: 10dp;
+	font-size: 9dp;
+	line-height: 14dp;
 	color: #aad6ff;
 	cursor: pointer;
 }
