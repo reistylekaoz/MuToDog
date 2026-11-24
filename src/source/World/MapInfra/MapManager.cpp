@@ -1462,6 +1462,7 @@ const wchar_t* CMapManager::FindMapName(int iMap)
     case WD_0LORENCIA:
         return I18N::Game::Lorencia;
     case WD_1DUNGEON:
+    case WD_90DUNGEON_ETAPAS:
         return I18N::Game::Dungeon;
     case WD_2DEVIAS:
         return I18N::Game::Devias;

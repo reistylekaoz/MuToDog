@@ -139,6 +139,8 @@ constexpr DocumentPlacement Placements[] = {
     {"alma.rml", 10.62f, MainScene},
     {"mercado.rml", 10.64f, MainScene},
     {"bau_joias.rml", 10.64f, MainScene},
+    // MuToDog (24/11): o Guardião e o painel da Dungeon das 3 etapas
+    {"dungeon_etapas.rml", 10.62f, MainScene},
     {"eventos.rml", 10.62f, MainScene},
     {"missoes.rml", 10.62f, MainScene},
     {"command_window.rml", 10.65f, MainScene}, // UI::RmlBridge::ForegroundPanelLayerDepth

@@ -24,6 +24,7 @@
 #include "UI/RmlBridge/RmlTheme.h"
 #include "Render/Text/CUIRenderText.h"
 #include "UI/Estudo/IconesNpc.h"
+#include "UI/Estudo/DungeonEtapasWindow.h"
 #include "Engine/Object/ZzzCharacter.h"
 
 #include <RmlUi/Core/ElementDocument.h>
@@ -290,12 +291,14 @@ void mu::ui::window::CMiniMap::BindRmlModel(Rml::DataModelConstructor& c, MiniMa
 
     c.Bind("map_source", &model.mapSource);
     c.Bind("map_transform", &model.mapTransform);
+    c.Bind("fog_source", &model.fogSource);
 
     auto marker = c.RegisterStruct<MiniMapMarkerEntry>();
     marker.RegisterMember("portal", &MiniMapMarkerEntry::portal);
     marker.RegisterMember("size", &MiniMapMarkerEntry::size);
     marker.RegisterMember("transform", &MiniMapMarkerEntry::transform);
     marker.RegisterMember("icon", &MiniMapMarkerEntry::icon); // MuToDog (rodada 14)
+    marker.RegisterMember("dg", &MiniMapMarkerEntry::dg);     // MuToDog (24/11)
     c.RegisterArray<std::vector<MiniMapMarkerEntry>>();
     c.Bind("markers", &model.markers);
 
@@ -444,11 +447,26 @@ void mu::ui::window::CMiniMap::SyncMap()
         markers.push_back({portal, size, MatrixText(UI::MiniMap::ElementToQuad(marker.quad, size, size)), icon});
     }
 
+    // MuToDog (24/11): Dungeon das 3 etapas, a névoa da party por cima do mapa e o que está na parte revelada
+    // (C2 FA 22): horda, subchefe, boss e o portal pro próximo andar, como no minimapa.gd do Godot
+    Sync(m_RmlView.Binder(), &MiniMapRmlModel::fogSource, "fog_source", CDungeonEtapasWindow::FogSource());
+    for (const CDungeonEtapasWindow::Point& p : CDungeonEtapasWindow::Points())
+    {
+        static constexpr float kDungeonSizes[4] = {6.f, 10.f, 16.f, 20.f};
+        const int type = std::clamp(p.type, 0, 3);
+        const float size = kDungeonSizes[type] * std::max(1.f, screen.scaleY);
+        const float pointY = (static_cast<float>(p.x) / 256.f) * length;
+        const float pointX = (static_cast<float>(p.y) / 256.f) * length;
+        const UI::MiniMap::Marker marker =
+            UI::MiniMap::MarkerQuad(screen, heroX, heroY, pointX, pointY, size, 0.f, length, UI::MiniMap::MapRotation, false);
+        markers.push_back({false, size, MatrixText(UI::MiniMap::ElementToQuad(marker.quad, size, size)), {}, type});
+    }
+
     MiniMapRmlModel& model = m_RmlView.GetModel();
     const bool same = model.markers.size() == markers.size() &&
                       std::equal(markers.begin(), markers.end(), model.markers.begin(),
                                  [](const MiniMapMarkerEntry& a, const MiniMapMarkerEntry& b)
-                                 { return a.portal == b.portal && a.size == b.size && a.transform == b.transform && a.icon == b.icon; });
+                                 { return a.portal == b.portal && a.size == b.size && a.transform == b.transform && a.icon == b.icon && a.dg == b.dg; });
     if (!same)
     {
         model.markers = std::move(markers);

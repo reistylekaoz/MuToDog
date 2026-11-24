@@ -55,6 +55,7 @@
 #include "UI/Estudo/NomesNpcWindow.h"
 #include "UI/Estudo/MercadoWindow.h"
 #include "UI/Estudo/BauJoiasWindow.h"
+#include "UI/Estudo/DungeonEtapasWindow.h"
 #include "UI/Dialogs/ChatCommandWindow.h"
 #include "UI/Inventory/ItemExplanationWindow.h"
 #include "UI/Inventory/SetItemExplanation.h"
@@ -211,6 +212,7 @@ namespace mu::ui::window
         CNomesNpcWindow* m_pNomesNpc = nullptr;  // MuToDog: nome e ícone em cima dos NPCs
         CMercadoWindow* m_pMercado = nullptr;    // MuToDog: Mercado (vender no jogo, comprar no site)
         CBauJoiasWindow* m_pBauJoias = nullptr;  // MuToDog: Baú de joias (saldo da conta, retirar, separar)
+        CDungeonEtapasWindow* m_pDungeonEtapas = nullptr;  // MuToDog: Guardião e painel da Dungeon das 3 etapas
         CChatCommandWindow* m_pNewChatCommandWindow;
         CItemExplanationWindow* m_pNewItemExplanationWindow;
         CSetItemExplanation* m_pNewSetItemExplanation;

@@ -888,6 +888,7 @@ static void PlayWorldAmbientSounds()
                 }
                 break;
             case WD_1DUNGEON:
+            case WD_90DUNGEON_ETAPAS:
                 PlayBuffer(SOUND_DUNGEON01, NULL, true);
                 break;
             case WD_2DEVIAS:
@@ -968,7 +969,7 @@ static void StopInactiveAmbientSounds()
     {
         StopBuffer(SOUND_RAIN01, true);
     }
-    if (gMapManager.WorldActive != WD_1DUNGEON)
+    if (gMapManager.WorldActive != WD_1DUNGEON && gMapManager.WorldActive != WD_90DUNGEON_ETAPAS)
     {
         StopBuffer(SOUND_DUNGEON01, true);
     }
@@ -1066,7 +1067,8 @@ static void ManageBackgroundMusic()
         StopMp3(MUSIC_NORIA);
     }
 
-    if (gMapManager.WorldActive == WD_1DUNGEON || gMapManager.WorldActive == WD_5UNKNOWN)
+    if (gMapManager.WorldActive == WD_1DUNGEON || gMapManager.WorldActive == WD_5UNKNOWN ||
+        gMapManager.WorldActive == WD_90DUNGEON_ETAPAS)
     {
         PlayMp3(MUSIC_DUNGEON);
     }

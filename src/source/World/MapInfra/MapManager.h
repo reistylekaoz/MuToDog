@@ -66,6 +66,8 @@ enum ENUM_WORLD
     WD_79UNITEDMARKETPLACE = 79,
     WD_80KARUTAN1 = 80,
     WD_81KARUTAN2 = 81,
+    // MuToDog (MU Estudo, 24/11): a Dungeon das 3 etapas, mapa 90 do servidor (o Dungeon do S6 em Data/World91)
+    WD_90DUNGEON_ETAPAS = 90,
     NUM_WD
 };
 

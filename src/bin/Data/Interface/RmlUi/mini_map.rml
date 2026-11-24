@@ -28,9 +28,13 @@
 				<div class="dim"></div>
 			</div>
 			<img class="map" data-attr-src="map_source" data-style-transform="map_transform"/>
+			<!-- MuToDog (24/11): a névoa da Dungeon das 3 etapas, o mesmo quadrado do mapa (CDungeonEtapasWindow) -->
+			<img class="fog" data-if="fog_source != ''" data-attr-src="fog_source" data-style-transform="map_transform"/>
 			<!-- MuToDog (rodada 14): o NPC com ícone (IconesNpc) mostra o desenho no lugar do ponto -->
 			<div class="marker" data-for="marker : markers" data-class-portal="marker.portal"
 			     data-class-icon="marker.icon != ''"
+			     data-class-dg0="marker.dg == 0" data-class-dg1="marker.dg == 1"
+			     data-class-dg2="marker.dg == 2" data-class-dg3="marker.dg == 3"
 			     data-style-width="marker.size + 'px'" data-style-height="marker.size + 'px'"
 			     data-style-transform="marker.transform"><img class="npc-icon" data-if="marker.icon != ''" data-attr-src="marker.icon"/></div>
 			<div class="screen">

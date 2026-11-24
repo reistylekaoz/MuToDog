@@ -22,6 +22,7 @@ struct MiniMapMarkerEntry
     float size = 15.f;     // the icon's side, physical px (the original never scaled it)
     Rml::String transform; // CSS matrix() placing the icon element
     Rml::String icon;      // MuToDog: o ícone do NPC (IconesNpc::Source), "" = o ponto de sempre
+    int dg = -1;           // MuToDog (24/11): marca da Dungeon das 3 etapas (0 horda, 1 subchefe, 2 boss, 3 portal)
 };
 
 struct MiniMapRmlModel
@@ -32,6 +33,7 @@ struct MiniMapRmlModel
 
     Rml::String mapSource;    // the world's mini_map texture, relative to the document
     Rml::String mapTransform; // CSS matrix() placing the 800x800 map element
+    Rml::String fogSource;    // MuToDog (24/11): a névoa da Dungeon das 3 etapas, no mesmo lugar do mapa ("" sem)
     std::vector<MiniMapMarkerEntry> markers;
     std::vector<Rml::String> sideLines; // CSS matrix() of each left/right border tile
     Rml::String closeHint;

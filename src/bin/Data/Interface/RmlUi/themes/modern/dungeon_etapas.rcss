@@ -1,0 +1,110 @@
+/* MuToDog (MU Estudo, 24/11): a Dungeon das 3 etapas (dungeon_etapas.rml): a janela do Guardiao e o painel do canto,
+   no jeito do cliente Godot (janela_dungeon.gd, painel_dungeon.gd). A janela em px da tela de referencia 640 x 480
+   (.stage dp); o painel preso no canto inferior direito da tela. */
+body { pointer-events: none; }
+#screen { pointer-events: none; }
+
+/* o painel do canto inferior direito, 160 x 92 acima da barra de baixo (painel_dungeon.gd) */
+#corner {
+	position: absolute;
+	right: 6dp;
+	bottom: 62dp;
+	width: 160dp;
+	height: 92dp;
+	background-color: rgba(9, 11, 13, 235);
+	border: 1dp #3e4652;
+	pointer-events: auto;
+	font-family: "token(font-body)";
+	color: #ebedf1;
+}
+#corner_title {
+	position: absolute;
+	left: 20dp;
+	top: 3dp;
+	width: 120dp;
+	height: 14dp;
+	text-align: center;
+	font-family: "token(font-title)";
+	font-size: 9dp;
+	line-height: 14dp;
+	color: #dde1e7;
+}
+#corner_line, #corner_big, #corner_hint { position: absolute; left: 0dp; width: 160dp; text-align: center; white-space: nowrap; }
+#corner_line { top: 21dp; font-size: 8dp; line-height: 11dp; color: #bac1cc; }
+#corner_big { top: 34dp; font-size: 17dp; line-height: 22dp; font-weight: bold; color: #bfe0ff; }
+#corner_big.small { top: 30dp; font-size: 12dp; }
+#corner_hint { top: 58dp; font-size: 7dp; line-height: 10dp; color: #7a8699; }
+#corner_start {
+	position: absolute;
+	left: 35dp;
+	top: 68dp;
+	width: 90dp;
+	height: 16dp;
+	text-align: center;
+	font-size: 8dp;
+	line-height: 16dp;
+	background-color: #1e2228;
+	border: 1dp #3e4652;
+	cursor: pointer;
+	color: #ffffff;
+}
+#corner_start:hover { border-color: #78bfff; }
+
+/* a janela do Guardião, 300 x 256 no meio da tela (janela_dungeon.gd) */
+#guard {
+	position: absolute;
+	left: 170dp;
+	top: 112dp;
+	width: 300dp;
+	height: 256dp;
+	background-color: rgba(9, 11, 13, 240);
+	border: 1dp #3e4652;
+	pointer-events: auto;
+	font-family: "token(font-body)";
+	color: #ebedf1;
+}
+#title {
+	position: absolute;
+	left: 50dp;
+	top: 5dp;
+	width: 200dp;
+	height: 18dp;
+	text-align: center;
+	font-family: "token(font-title)";
+	font-size: 11dp;
+	line-height: 18dp;
+	color: #dde1e7;
+}
+#rules, #prizes, #member_note { position: absolute; left: 12dp; width: 276dp; text-align: center; }
+#rules { top: 28dp; font-size: 8dp; line-height: 11dp; color: #ebedf1; }
+#prizes { top: 40dp; font-size: 7dp; line-height: 10dp; color: #7a8699; }
+#rows { position: absolute; left: 12dp; top: 64dp; width: 276dp; }
+.dif {
+	display: block;
+	position: relative;
+	height: 23dp;
+	margin-bottom: 3dp;
+	border: 1dp transparent;
+	cursor: pointer;
+}
+.dif:hover { background-color: rgba(120, 191, 255, 16); }
+.dif.selected { background-color: rgba(120, 191, 255, 36); border-color: #78bfff; }
+.dif.locked { cursor: default; }
+.dif.locked:hover { background-color: transparent; }
+.dif .name { position: absolute; left: 8dp; top: 1dp; font-size: 9dp; line-height: 11dp; font-weight: bold; color: #ebedf1; }
+.dif.hard .name { color: #dc5a46; }
+.dif.selected .name { color: #ffffff; }
+.dif .note { position: absolute; left: 8dp; top: 12dp; width: 260dp; font-size: 7dp; line-height: 10dp; white-space: nowrap; color: #7a8699; }
+#confirm, #enter, #close {
+	position: absolute;
+	text-align: center;
+	background-color: #1e2228;
+	border: 1dp #3e4652;
+	cursor: pointer;
+	color: #ffffff;
+}
+#confirm { left: 85dp; top: 200dp; width: 130dp; height: 20dp; font-size: 9dp; line-height: 20dp; }
+#member_note { top: 196dp; font-size: 7dp; line-height: 10dp; color: #7a8699; }
+#enter { left: 85dp; top: 208dp; width: 130dp; height: 18dp; font-size: 9dp; line-height: 18dp; }
+#close { left: 120dp; top: 228dp; width: 60dp; height: 18dp; font-size: 8dp; line-height: 18dp; color: #bac1cc; }
+#confirm:hover, #enter:hover, #close:hover { border-color: #78bfff; color: #ffffff; }

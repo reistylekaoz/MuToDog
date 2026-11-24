@@ -19,6 +19,7 @@
 #include "UI/RmlBridge/ThemeFonts.h"
 #include "UI/Scaling/UITransform.h"
 #include "UI/Core/WindowSystem.h"
+#include "UI/Estudo/DungeonEtapasWindow.h"
 #include "UI/HUD/ChatLogWindow.h"
 
 namespace UI::RmlBridge
@@ -68,6 +69,12 @@ void InstallRuntimeHooks()
     hooks.createFileInterface = [] { return std::make_unique<ThemeFileInterface>(); };
     hooks.resolveTexture = [](const Rml::String& source, void*& texture, int& width, int& height)
     {
+        // MuToDog (24/11): a névoa da Dungeon das 3 etapas no minimapa, uma textura que o jogo sobe da CPU
+        if (mu::ui::window::CDungeonEtapasWindow::IsFogSource(source))
+        {
+            texture = mu::ui::window::CDungeonEtapasWindow::ResolveFog(width, height);
+            return true;
+        }
         if (!RenderTarget::IsSource(source))
             return false;
         texture = RenderTarget::Resolve(source, width, height);

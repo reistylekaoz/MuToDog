@@ -154,3 +154,19 @@ body { pointer-events: none; }
 .edges .edge-top:nth-child(23), .edges .edge-bottom:nth-child(23) { left: 770px; }
 .edges .edge-top:nth-child(24), .edges .edge-bottom:nth-child(24) { left: 805px; }
 .edges .edge-top:nth-child(25), .edges .edge-bottom:nth-child(25) { left: 840px; }
+
+/* MuToDog (24/11): Dungeon das 3 etapas. A névoa da party por cima do mapa (o mesmo quadrado de 800 e a mesma matriz)
+   e as marcas do que está na parte revelada: horda, subchefe, boss e o portal pro próximo andar (minimapa.gd). */
+.fog {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 800px;
+	height: 800px;
+	transform-origin: left top;
+	pointer-events: none;
+}
+.marker.dg0 { decorator: none; background-color: #e0503c; border-radius: 3px; }
+.marker.dg1 { decorator: none; background-color: #ff9a2e; border: 1px #000000; border-radius: 5px; }
+.marker.dg2 { decorator: none; background-color: #ff3048; border: 2px #ffe08a; border-radius: 8px; }
+.marker.dg3 { decorator: none; background-color: #3aff8a50; border: 2px #5affa0; border-radius: 10px; }

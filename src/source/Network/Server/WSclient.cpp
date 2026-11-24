@@ -16,6 +16,7 @@
 #include "UI/Estudo/QuestsMainWindow.h"
 #include "UI/Estudo/MercadoWindow.h"
 #include "UI/Estudo/BauJoiasWindow.h"
+#include "UI/Estudo/DungeonEtapasWindow.h"
 #include "UI/Chat/ChatMessages.h"
 #include "UI/Combat/SiegeUpdates.h"
 #include "UI/Events/DoppelgangerUpdates.h"
@@ -14835,6 +14836,8 @@ static void ProcessPacket(const BYTE* ReceiveBuffer, int32_t Size)
         mu::ui::window::CBossBarWindow::ReceivePacket(ReceiveBuffer, Size);
         // C1 FA 03/04, o aviso e o impacto do golpe especial da Séphora (GolpeBoss.cs)
         mu::ui::window::GolpeBoss::ReceivePacket(ReceiveBuffer, Size);
+        // C1 FA 20/21 e C2 FA 22/24, o painel, o Guardião, as marcas e a névoa da Dungeon das 3 etapas
+        mu::ui::window::CDungeonEtapasWindow::ReceivePacket(ReceiveBuffer, Size);
         break;
     default:
         break;

@@ -1,0 +1,39 @@
+<rml>
+<head>
+	<title>Dungeon das 3 etapas</title>
+	<link type="text/rcss" href="base.rcss"/>
+	<link type="text/rcss" href="dungeon_etapas.rcss"/>
+</head>
+<body data-model="dungeon_etapas">
+	<!-- MuToDog (MU Estudo, 24/11): a Dungeon das 3 etapas (CDungeonEtapasWindow), no jeito do cliente Godot.
+	     #guard é a janela do Guardião (janela_dungeon.gd, C1 FA 21): o líder escolhe a dificuldade e confirma, quem é
+	     da party entra na do líder. #corner é o painel do canto inferior direito (painel_dungeon.gd, C1 FA 20):
+	     esperando a party (com "Iniciar agora" pro líder), jogando (chefes derrotados) e o fim.
+	     A janela em px da tela de referência 640 x 480 (.stage dp); o painel preso no canto da tela, em dp. -->
+	<div id="corner" data-if="panel">
+		<div id="corner_title">{{title}}</div>
+		<div id="corner_line" data-if="line != ''">{{line}}</div>
+		<div id="corner_big" data-class-small="state == 2">{{big}}</div>
+		<div id="corner_hint" data-if="hint != ''">{{hint}}</div>
+		<div id="corner_start" data-if="start_button" data-event-click="dg_start">Iniciar agora</div>
+	</div>
+	<div id="screen" class="stage dp">
+		<div id="guard" data-if="guard" data-class-member="!leader">
+			<div id="title">Dungeon das 3 etapas</div>
+			<div id="rules">Nível mínimo 300  ·  1 vez por dia  ·  party até 5  ·  1 hora</div>
+			<div id="prizes">Prêmios: Box of Weapon, Necklace e Kundun, peça de set e Rage Earring (Personal) no Infernal e no Hardcore</div>
+			<div id="rows">
+				<div class="dif" data-for="d : difficulties" data-class-selected="leader && d.index == choice"
+				     data-class-hard="d.index == 4" data-class-locked="!leader" data-event-click="dg_choose(d.index)">
+					<div class="name">{{d.name}}</div>
+					<div class="note">{{d.note}}</div>
+				</div>
+			</div>
+			<div id="confirm" data-if="leader" data-event-click="dg_confirm">{{confirm}}</div>
+			<div id="member_note" data-if="!leader">Só o líder escolhe a dificuldade e confirma</div>
+			<div id="enter" data-if="!leader" data-event-click="dg_enter">Entrar na do líder</div>
+			<div id="close" data-event-click="dg_close">Fechar</div>
+		</div>
+	</div>
+</body>
+</rml>
