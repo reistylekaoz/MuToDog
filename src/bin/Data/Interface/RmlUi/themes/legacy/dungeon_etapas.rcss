@@ -104,3 +104,47 @@ body { pointer-events: none; }
 #enter { left: 85dp; top: 208dp; width: 130dp; height: 18dp; font-size: 9dp; line-height: 18dp; }
 #close { left: 120dp; top: 228dp; width: 60dp; height: 18dp; font-size: 8dp; line-height: 18dp; color: #bac1cc; }
 #confirm:hover, #enter:hover, #close:hover { border-color: #78bfff; color: #ffffff; }
+
+/* a caixa do portal, 220 x 96 no meio da tela (24/11, C1 FA 25) */
+#portal {
+	position: absolute;
+	left: 210dp;
+	top: 160dp;
+	width: 220dp;
+	height: 96dp;
+	background-color: rgba(9, 11, 13, 240);
+	border: 1dp #3e4652;
+	pointer-events: auto;
+	font-family: "token(font-body)";
+	color: #ebedf1;
+}
+#portal_title {
+	position: absolute;
+	left: 35dp;
+	top: 5dp;
+	width: 150dp;
+	height: 16dp;
+	text-align: center;
+	font-family: "token(font-title)";
+	font-size: 10dp;
+	line-height: 16dp;
+	color: #dde1e7;
+}
+#portal_text, #portal_note { position: absolute; left: 0dp; width: 220dp; text-align: center; white-space: nowrap; }
+#portal_text { top: 28dp; font-size: 10dp; line-height: 14dp; font-weight: bold; color: #ffffff; }
+#portal_note { top: 45dp; font-size: 7dp; line-height: 10dp; color: #7a8699; }
+#portal_go, #portal_stay {
+	position: absolute;
+	top: 66dp;
+	height: 18dp;
+	text-align: center;
+	font-size: 9dp;
+	line-height: 18dp;
+	background-color: #1e2228;
+	border: 1dp #3e4652;
+	cursor: pointer;
+	color: #ffffff;
+}
+#portal_go { left: 30dp; width: 80dp; }
+#portal_stay { left: 120dp; width: 70dp; color: #bac1cc; }
+#portal_go:hover, #portal_stay:hover { border-color: #78bfff; color: #ffffff; }

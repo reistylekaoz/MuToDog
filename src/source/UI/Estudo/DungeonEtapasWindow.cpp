@@ -37,6 +37,8 @@ constexpr int ActionConfirm = 2;
 constexpr int ActionEnter = 3;
 constexpr int ActionClose = 4;
 constexpr int ActionStart = 5;
+constexpr int ActionPortalGo = 6;
+constexpr int ActionPortalStay = 7;
 
 struct Difficulty
 {
@@ -81,6 +83,8 @@ FogState g_Fog;
 std::vector<CDungeonEtapasWindow::Point> g_Points;
 bool g_GuardLeader = true;
 bool g_GuardPending = false;
+bool g_PortalPending = false;
+int g_PortalStage = 2;
 
 std::uint32_t NowMs()
 {
@@ -215,6 +219,11 @@ void CDungeonEtapasWindow::ReceivePacket(const std::uint8_t* packet, int size)
         g_GuardLeader = d[0] != 0;
         g_GuardPending = true;
     }
+    else if (!c2 && sub == 0x25 && length >= 1)
+    {
+        g_PortalStage = d[0];
+        g_PortalPending = true;
+    }
     else if (c2 && sub == 0x22 && length >= 1)
     {
         const int count = std::min(static_cast<int>(d[0]), (length - 1) / 3);
@@ -277,12 +286,18 @@ void CDungeonEtapasWindow::SendChat(const char* text)
 
 bool CDungeonEtapasWindow::UpdateMouseEvent()
 {
-    // o diálogo aberto segura o mouse (os botões são do RmlUi)
-    return !IsVisible();
+    // o diálogo aberto (ou a caixa do portal) segura o mouse (os botões são do RmlUi)
+    return !IsVisible() && !m_RmlView.GetModel().portal;
 }
 
 bool CDungeonEtapasWindow::UpdateKeyEvent()
 {
+    DungeonEtapasRmlModel& model = m_RmlView.GetModel();
+    if (model.portal && IsPress(VK_ESCAPE))
+    {
+        m_PendingAction = ActionPortalStay;
+        return false;
+    }
     if (IsVisible() && IsPress(VK_ESCAPE))
     {
         g_pNewUISystem->Hide(INTERFACE_DUNGEON_ETAPAS);
@@ -308,13 +323,29 @@ bool CDungeonEtapasWindow::Update()
         PlayBuffer(SOUND_CLICK01);
     }
 
+    if (g_PortalPending && inGame)
+    {
+        // 24/11 (Murilo): pisou ou clicou no portal, a caixa confirma antes de ir pra etapa seguinte
+        g_PortalPending = false;
+        DungeonEtapasRmlModel& model = m_RmlView.GetModel();
+        model.portal = true;
+        model.portalText = "Ir para a Etapa " + std::to_string(g_PortalStage) + " de 3?";
+        m_BuiltKey.clear();
+        PlayBuffer(SOUND_CLICK01);
+    }
+    if (!Active() && m_RmlView.GetModel().portal)
+    {
+        m_RmlView.GetModel().portal = false;
+        m_BuiltKey.clear();
+    }
+
     RunPending();
 
     m_RmlView.Ensure();
     Rml::ElementDocument* document = m_RmlView.Document();
     if (document == nullptr)
         return true;
-    const bool visible = inGame && (IsVisible() || PanelAlive());
+    const bool visible = inGame && (IsVisible() || PanelAlive() || m_RmlView.GetModel().portal);
     UI::RmlBridge::SyncDocumentVisibilityInFront(document, visible);
     if (visible)
         Rebuild();
@@ -366,6 +397,23 @@ void CDungeonEtapasWindow::RunPending()
             PlayBuffer(SOUND_CLICK01);
         }
         break;
+    case ActionPortalGo:
+        if (model.portal)
+        {
+            SendChat("/dungeon portal");
+            model.portal = false;
+            m_BuiltKey.clear();
+            PlayBuffer(SOUND_CLICK01);
+        }
+        break;
+    case ActionPortalStay:
+        if (model.portal)
+        {
+            model.portal = false;
+            m_BuiltKey.clear();
+            PlayBuffer(SOUND_CLICK01);
+        }
+        break;
     default:
         break;
     }
@@ -392,6 +440,8 @@ void CDungeonEtapasWindow::BindRmlModel(Rml::DataModelConstructor& c, DungeonEta
     c.Bind("choice", &model.choice);
     c.Bind("difficulties", &model.difficulties);
     c.Bind("confirm", &model.confirm);
+    c.Bind("portal", &model.portal);
+    c.Bind("portal_text", &model.portalText);
 
     c.BindEventCallback("dg_choose",
                         [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList& arguments)
@@ -410,6 +460,10 @@ void CDungeonEtapasWindow::BindRmlModel(Rml::DataModelConstructor& c, DungeonEta
                         { m_PendingAction = ActionClose; });
     c.BindEventCallback("dg_start", [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&)
                         { m_PendingAction = ActionStart; });
+    c.BindEventCallback("dg_portal_go", [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&)
+                        { m_PendingAction = ActionPortalGo; });
+    c.BindEventCallback("dg_portal_stay", [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&)
+                        { m_PendingAction = ActionPortalStay; });
 }
 
 void CDungeonEtapasWindow::Rebuild()
@@ -421,7 +475,8 @@ void CDungeonEtapasWindow::Rebuild()
                             std::to_string(g_Panel.state) + ',' + std::to_string(g_Panel.seconds) + ',' +
                             std::to_string(g_Panel.alive) + ',' + std::to_string(g_Panel.stage) + ',' +
                             std::to_string(g_Panel.bossesDead) + ',' + std::to_string(g_Panel.bossesTotal) + ',' +
-                            std::to_string(g_Panel.leader) + ',' + std::to_string(g_Panel.difficulty);
+                            std::to_string(g_Panel.leader) + ',' + std::to_string(g_Panel.difficulty) + ',' +
+                            std::to_string(model.portal);
     if (key == m_BuiltKey)
         return;
     m_BuiltKey = key;
@@ -458,13 +513,14 @@ void CDungeonEtapasWindow::Rebuild()
     }
     else
     {
-        model.line = "";
-        model.big = "Dungeon concluída";
-        model.hint = "Pegue as caixas antes de sair";
+        // 24/11: os segundos são o que falta pra ir pra Lorencia
+        model.line = g_Panel.seconds > 0 ? "Dungeon concluída" : "";
+        model.big = g_Panel.seconds > 0 ? TimeText(g_Panel.seconds) : "Dungeon concluída";
+        model.hint = g_Panel.seconds > 0 ? "Pegue as caixas: depois disso, Lorencia" : "Pegue as caixas antes de sair";
     }
 
     for (const char* field : {"panel", "state", "title", "line", "big", "hint", "start_button", "guard", "leader",
-                              "choice", "difficulties", "confirm"})
+                              "choice", "difficulties", "confirm", "portal", "portal_text"})
         m_RmlView.MarkDirty(field);
 }
 

@@ -1,5 +1,5 @@
 /* ---- Obsidiana e prata: moldura, placa do titulo e botoes do Meshy (base.rcss), como o Reset System ---- */
-#corner, #guard { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 2); border-width: 0; }
-#title, #corner_title { decorator: ninepatch(ob-placa, ob-placa-in, 2); }
-#confirm, #enter, #close, #corner_start { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 2); border-width: 0; }
-#confirm:hover, #enter:hover, #close:hover, #corner_start:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 2); }
+#corner, #guard, #portal { background-color: transparent; decorator: ninepatch(ob-moldura, ob-moldura-in, 2); border-width: 0; }
+#title, #corner_title, #portal_title { decorator: ninepatch(ob-placa, ob-placa-in, 2); }
+#confirm, #enter, #close, #corner_start, #portal_go, #portal_stay { background-color: transparent; decorator: ninepatch(ob-botao, ob-botao-in, 2); border-width: 0; }
+#confirm:hover, #enter:hover, #close:hover, #corner_start:hover, #portal_go:hover, #portal_stay:hover { decorator: ninepatch(ob-botao-sob, ob-botao-sob-in, 2); }

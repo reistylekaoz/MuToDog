@@ -9,11 +9,12 @@
 	     #guard é a janela do Guardião (janela_dungeon.gd, C1 FA 21): o líder escolhe a dificuldade e confirma, quem é
 	     da party entra na do líder. #corner é o painel do canto inferior direito (painel_dungeon.gd, C1 FA 20):
 	     esperando a party (com "Iniciar agora" pro líder), jogando (chefes derrotados) e o fim.
+	     #portal é a caixa do portal (C1 FA 25, 24/11): pisou ou clicou nele, "Ir agora" manda "/dungeon portal".
 	     A janela em px da tela de referência 640 x 480 (.stage dp); o painel preso no canto da tela, em dp. -->
 	<div id="corner" data-if="panel">
 		<div id="corner_title">{{title}}</div>
 		<div id="corner_line" data-if="line != ''">{{line}}</div>
-		<div id="corner_big" data-class-small="state == 2">{{big}}</div>
+		<div id="corner_big" data-class-small="state == 2 && line == ''">{{big}}</div>
 		<div id="corner_hint" data-if="hint != ''">{{hint}}</div>
 		<div id="corner_start" data-if="start_button" data-event-click="dg_start">Iniciar agora</div>
 	</div>
@@ -33,6 +34,13 @@
 			<div id="member_note" data-if="!leader">Só o líder escolhe a dificuldade e confirma</div>
 			<div id="enter" data-if="!leader" data-event-click="dg_enter">Entrar na do líder</div>
 			<div id="close" data-event-click="dg_close">Fechar</div>
+		</div>
+		<div id="portal" data-if="portal">
+			<div id="portal_title">Portal da Dungeon</div>
+			<div id="portal_text">{{portal_text}}</div>
+			<div id="portal_note">Quem ficar pega as caixas e entra depois.</div>
+			<div id="portal_go" data-event-click="dg_portal_go">Ir agora</div>
+			<div id="portal_stay" data-event-click="dg_portal_stay">Ficar</div>
 		</div>
 	</div>
 </body>

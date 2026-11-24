@@ -9,6 +9,8 @@
 //   chefes, e o fim). Some 3 s depois do último.
 // - C2 FA 22 [quantos, (x, y, tipo) ...]: o que está na parte revelada (0 horda, 1 subchefe, 2 boss, 3 portal), pro
 //   minimapa (Tab).
+// - C1 FA 25 [etapa de destino]: pisou ou clicou no portal (24/11); a caixa pergunta e "Ir agora" manda
+//   "/dungeon portal". No fim (estado 2 do FA 20) os segundos são o que falta pra ir pra Lorencia.
 // - C2 FA 24 [andar, 512 bytes]: a névoa da party, 64 x 64 casas de 4 x 4 tiles, bit (y/4)*64 + x/4 = revelada. Vira
 //   uma textura de 64 x 64 (FogSource) que o minimapa põe por cima do mapa.
 
@@ -45,6 +47,9 @@ struct DungeonEtapasRmlModel
     int choice = 1;
     std::vector<DungeonDifficultyRow> difficulties;
     Rml::String confirm;   // "Confirmar (Normal)"
+
+    bool portal = false;   // a caixa do portal (C1 FA 25)
+    Rml::String portalText; // "Ir para a Etapa 2 de 3?"
 };
 
 class CDungeonEtapasWindow : public CObject
