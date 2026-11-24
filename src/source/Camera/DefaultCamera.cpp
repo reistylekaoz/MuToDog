@@ -741,8 +741,8 @@ void DefaultCamera::UpdateZoomArc()
 
 float DefaultCamera::ZoomPitch() const
 {
-    const float far = atan2f(ZOOM_FAR_HEIGHT, ZOOM_FAR_HORIZONTAL) * 180.f / Q_PI;
-    return far + (ZOOM_NEAR_PITCH_DEG - far) * m_Zoom * m_Zoom;
+    const float farPitch = atan2f(ZOOM_FAR_HEIGHT, ZOOM_FAR_HORIZONTAL) * 180.f / Q_PI;
+    return farPitch + (ZOOM_NEAR_PITCH_DEG - farPitch) * m_Zoom * m_Zoom;
 }
 
 float DefaultCamera::ZoomHorizontal() const
