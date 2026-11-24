@@ -41,6 +41,8 @@ struct Entry
     bool lastVisible = false;
     bool placed = false;
     bool warnedUnsupportedFill = false;
+    // MU Estudo: its #panel is in dp (tools/estudo_dp.py) and keeps the dp ratio whatever scale the region gives.
+    mutable bool dpPanel = false;
 };
 
 std::unordered_map<std::string, Entry> g_windows;
@@ -155,14 +157,15 @@ Rml::Vector2f PanelSize(const Entry& entry)
             continue;
         // The panel's layout box: its own units, before the scale a slot gives it. MU Estudo: a panel whose sheet
         // is in dp (tools/estudo_dp.py, no transform) is measured in physical px, so it goes back to reference units.
-        const auto panelSize = [document]() -> Rml::Vector2f
+        const auto panelSize = [document, &entry]() -> Rml::Vector2f
         {
             Rml::Element* panel = document->GetElementById("panel");
             if (panel == nullptr)
                 return Rml::Vector2f{};
             Rml::Vector2f box = panel->GetBox().GetSize(Rml::BoxArea::Border);
             const Rml::Property* width = panel->GetProperty(Rml::PropertyId::Width);
-            if (width != nullptr && width->unit == Rml::Unit::DP)
+            entry.dpPanel = width != nullptr && width->unit == Rml::Unit::DP;
+            if (entry.dpPanel)
                 box /= document->GetContext()->GetDensityIndependentPixelRatio();
             return box;
         };
@@ -312,6 +315,17 @@ static bool FitRegions(Rml::ElementDocument* workspace, const UI::Scaling::Trans
     return changed;
 }
 
+// The scale a window's slot is sized at: the region's, or the dp ratio for a dp panel. MU Estudo v1.0.2: a region the
+// theme caps (900 px tall: the dock above the HUD) shrinks its scale, but a dp panel has no transform and keeps the
+// dp ratio, so a slot sized at the region scale was narrower than the panel and C ran past the right edge.
+static float SlotScale(const Entry& entry, Rml::Element* slot, const UI::Scaling::Transform& dock)
+{
+    if (entry.dpPanel)
+        if (Rml::Context* context = RmlUiRuntime::Instance().GetContext())
+            return context->GetDensityIndependentPixelRatio();
+    return RegionScale(slot->GetParentNode(), dock);
+}
+
 static Rml::ElementList PrepareSlots(Rml::ElementDocument* workspace, const UI::Scaling::Transform& dock)
 {
     Rml::ElementList slots;
@@ -339,8 +353,8 @@ static Rml::ElementList PrepareSlots(Rml::ElementDocument* workspace, const UI::
         if (fill)
         {
             // The theme sizes a fill slot, but never below the window's content size.
-            const float scale = RegionScale(slot->GetParentNode(), dock);
             Rml::Vector2f content = PanelSize(*entry);
+            const float scale = SlotScale(*entry, slot, dock);
             window->GetFillMinimumSize(content.x, content.y);
             slot->RemoveProperty(Rml::PropertyId::Width);
             slot->RemoveProperty(Rml::PropertyId::Height);
@@ -349,8 +363,8 @@ static Rml::ElementList PrepareSlots(Rml::ElementDocument* workspace, const UI::
         }
         else if (open)
         {
-            const float scale = RegionScale(slot->GetParentNode(), dock);
             const Rml::Vector2f size = PanelSize(*entry);
+            const float scale = SlotScale(*entry, slot, dock);
             SetLength(slot, Rml::PropertyId::Width, size.x * scale);
             SetLength(slot, Rml::PropertyId::Height, size.y * scale);
         }
