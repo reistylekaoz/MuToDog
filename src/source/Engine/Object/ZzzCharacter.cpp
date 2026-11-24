@@ -6,6 +6,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
+#include "UI/Estudo/RfAPe.h"
 #include "Core/Utilities/Random.h"
 #include <execution>
 #include <optional>
@@ -309,7 +310,7 @@ void SetPlayerStop(CHARACTER* c, bool playSounds)
     OBJECT* o = &c->Object;
     if (c->Object.Type == MODEL_PLAYER)
     {
-        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !mu::ui::window::RfAPe::APe(&c->Object))
         {
             if (gCharacterManager.GetBaseClass(c->Class) == CLASS_RAGEFIGHTER)//레이지파이터이면
             {
@@ -605,7 +606,7 @@ void SetPlayerWalk(CHARACTER* c, bool playSounds)
             Models[MODEL_PLAYER].Actions[PLAYER_DARKLORD_WALK].PlaySpeed *= 0.33f;
         }
 
-        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !mu::ui::window::RfAPe::APe(&c->Object))
         {
             if (c->Run < FENRIR_RUN_DELAY)
             {
@@ -829,22 +830,22 @@ void SetPlayerWalk(CHARACTER* c, bool playSounds)
     {
         PlayBuffer(static_cast<ESound>(SOUND_RUN_DARK_HORSE_1 + Random::Rand() % 3), o);
     }
-    else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone
+    else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !mu::ui::window::RfAPe::APe(&c->Object)
         && (c->Object.CurrentAction >= PLAYER_FENRIR_RUN && c->Object.CurrentAction <= PLAYER_FENRIR_RUN_ONE_LEFT_ELF))
     {
         PlayBuffer(static_cast<ESound>(SOUND_FENRIR_RUN_1 + Random::Rand() % 3), o);
     }
-    else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone
+    else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !mu::ui::window::RfAPe::APe(&c->Object)
         && (c->Object.CurrentAction >= PLAYER_FENRIR_WALK && c->Object.CurrentAction <= PLAYER_FENRIR_WALK_ONE_LEFT))
     {
         PlayBuffer(static_cast<ESound>(SOUND_FENRIR_RUN_1 + Random::Rand() % 2), o);
     }
-    else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone
+    else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !mu::ui::window::RfAPe::APe(&c->Object)
         && (c->Object.CurrentAction >= PLAYER_RAGE_FENRIR_RUN && c->Object.CurrentAction <= PLAYER_RAGE_FENRIR_RUN_ONE_LEFT))
     {
         PlayBuffer(static_cast<ESound>(SOUND_FENRIR_RUN_1 + Random::Rand() % 3), o);
     }
-    else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone
+    else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !mu::ui::window::RfAPe::APe(&c->Object)
         && (c->Object.CurrentAction >= PLAYER_RAGE_FENRIR_WALK && c->Object.CurrentAction <= PLAYER_RAGE_FENRIR_WALK_TWO_SWORD))
     {
         PlayBuffer(static_cast<ESound>(SOUND_FENRIR_RUN_1 + Random::Rand() % 2), o);
@@ -1074,6 +1075,7 @@ void SetAttackSpeed()
     Models[MODEL_PLAYER].Actions[PLAYER_SKILL_DARKSIDE_ATTACK].PlaySpeed = 0.3f + RageAttackSpeed;
     Models[MODEL_PLAYER].Actions[PLAYER_SKILL_DRAGONKICK].PlaySpeed = 0.4f + RageAttackSpeed;
     Models[MODEL_PLAYER].Actions[PLAYER_SKILL_DRAGONLORE].PlaySpeed = 0.3f + RageAttackSpeed;
+    Models[MODEL_PLAYER].Actions[PLAYER_SKILL_PHOENIX_SHOT].PlaySpeed = 0.3f + RageAttackSpeed;
     Models[MODEL_PLAYER].Actions[PLAYER_SKILL_ATT_UP_OURFORCES].PlaySpeed = 0.35f;
     Models[MODEL_PLAYER].Actions[PLAYER_SKILL_HP_UP_OURFORCES].PlaySpeed = 0.35f;
     Models[MODEL_PLAYER].Actions[PLAYER_RAGE_FENRIR_ATTACK_RIGHT].PlaySpeed = 0.25f + RageAttackSpeed;
@@ -1126,7 +1128,7 @@ void SetPlayerAttack(CHARACTER* c)
     {
         SetAttackSpeed();
 
-        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !mu::ui::window::RfAPe::APe(&c->Object))
         {
             if (c->Weapon[0].Type >= MODEL_SPEAR && c->Weapon[0].Type < MODEL_DOUBLE_POLEAXE)
                 SetAction(&c->Object, PLAYER_FENRIR_ATTACK_SPEAR);
@@ -1349,7 +1351,7 @@ void SetPlayerMagic(CHARACTER* c)
         {
             SetAction(o, PLAYER_RIDE_SKILL);
         }
-        else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+        else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !mu::ui::window::RfAPe::APe(&c->Object))
         {
             SetAction(o, PLAYER_FENRIR_ATTACK_MAGIC);
         }
@@ -4549,7 +4551,7 @@ void MoveCharacter(CHARACTER* c, OBJECT* o)
             {
                 SetAction(o, PLAYER_ATTACK_RIDE_STRIKE);
             }
-            else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone)
+            else if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !mu::ui::window::RfAPe::APe(&c->Object))
             {
                 SetAction(o, PLAYER_FENRIR_ATTACK_DARKLORD_STRIKE);
             }
@@ -6319,7 +6321,7 @@ float CharacterMoveSpeed(CHARACTER* c)
             return Speed;
         }
 
-        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !isholyitem)
+        if (c->Helper.Type == MODEL_HORN_OF_FENRIR && !c->SafeZone && !mu::ui::window::RfAPe::APe(&c->Object) && !isholyitem)
         {
             if (c->Run < FENRIR_RUN_DELAY / 2)
                 Speed = 15;

@@ -911,6 +911,8 @@ void UseSkillRagefighter(CHARACTER* pCha, OBJECT* pObj)
     break;
     case AT_SKILL_DRAGON_ROAR:
     case AT_SKILL_DRAGON_ROAR_STR:
+    // MuToDog (MU Estudo): a Phoenix Shot nao saia; no OpenMU ela é um Dragon Roar (PhoenixShotSkillPlugIn)
+    case AT_SKILL_PHOENIX_SHOT:
     {
         BYTE angle = (BYTE)((((pObj->Angle[2] + 180.f) / 360.f) * 255.f));
         WORD TKey = 0xffff;

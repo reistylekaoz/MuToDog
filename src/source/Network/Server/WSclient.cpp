@@ -5606,6 +5606,7 @@ BOOL ReceiveMagicContinue(const BYTE* ReceiveBuffer, int Size, BOOL bEncrypted)
                 break;
             case AT_SKILL_DRAGON_ROAR:
             case AT_SKILL_DRAGON_ROAR_STR:
+            case AT_SKILL_PHOENIX_SHOT:
             {
                 if (sc != Hero)
                     g_CMonkSystem.RageCreateEffect(so, MagicNumber);

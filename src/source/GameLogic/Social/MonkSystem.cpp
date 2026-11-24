@@ -493,6 +493,10 @@ bool CMonkSystem::SetRageSkillAni(int _nSkill, OBJECT* _pObj)
     case AT_SKILL_DRAGON_KICK:
         SetAction(_pObj, PLAYER_SKILL_DRAGONKICK);
         return true;
+    // MuToDog (MU Estudo): a Phoenix Shot (Phoenix Soul Star) com a acao dela
+    case AT_SKILL_PHOENIX_SHOT:
+        SetAction(_pObj, PLAYER_SKILL_PHOENIX_SHOT);
+        return true;
     case AT_SKILL_ATT_UP_OURFORCES:
     case AT_SKILL_HP_UP_OURFORCES:
     case AT_SKILL_HP_UP_OURFORCES_STR:
@@ -1152,26 +1156,10 @@ void CMonkSystem::CreateRepeatedDamagePoints(int _Key, OBJECT* pObj)
 
 bool CMonkSystem::IsRideNotUseSkill(int _nSkill, short _Type)
 {
-    if (!GameLogic::Items::IsHornMountModel(_Type))
-        return false;
-
-    // 탈것타고 있을 경우 사용 불가능한 스킬
-    switch (_nSkill)
-    {
-    case AT_SKILL_KILLING_BLOW:
-    case AT_SKILL_KILLING_BLOW_STR:
-    case AT_SKILL_KILLING_BLOW_MASTERY:
-    case AT_SKILL_BEAST_UPPERCUT:
-    case AT_SKILL_BEAST_UPPERCUT_STR:
-    case AT_SKILL_BEAST_UPPERCUT_MASTERY:
-    case AT_SKILL_CHAIN_DRIVE:
-    case AT_SKILL_CHAIN_DRIVE_STR:
-    case AT_SKILL_DRAGON_KICK:
-    case AT_SKILL_OCCUPY:
-        return true;
-    default:
-        return false;
-    }
+    // MuToDog (MU Estudo): nenhuma skill do RF fica presa na montaria. Antes Killing Blow, Beast Uppercut, Chain
+    // Drive, Dragon Kick e Occupy nao saiam no Fenrir; agora ele solta a pé (UI/Estudo/RfAPe.h).
+    (void)_nSkill;
+    (void)_Type;
     return false;
 }
 

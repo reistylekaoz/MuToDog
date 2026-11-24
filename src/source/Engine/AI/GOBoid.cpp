@@ -33,6 +33,7 @@
 #include "Engine/Object/Movement/HeroLook.h"
 #include "Engine/Object/ZzzObject.h"
 #include "Engine/Object/EnhancedMovement.h"
+#include "UI/Estudo/RfAPe.h"
 #include "Engine/Object/Movement/FrameTime.h"
 #include "Render/Renderer/MuRenderer.h"
 
@@ -308,6 +309,13 @@ bool MoveMount(OBJECT* o, bool bForceRender)
         case MODEL_FENRIR_RED:
         case MODEL_FENRIR_GOLD:
             if ((TerrainWall[TERRAIN_INDEX_REPEAT((int)(o->Owner->Position[0] / TERRAIN_SCALE), (int)(o->Owner->Position[1] / TERRAIN_SCALE))] & TW_SAFEZONE) == TW_SAFEZONE && bForceRender == FALSE)
+            {
+                o->Alpha = 0.f;
+                break;
+            }
+            // MuToDog (MU Estudo): o RF solta a skill a pé; o lobo some na skill e até 3 s depois (UI/Estudo/RfAPe.h)
+            mu::ui::window::RfAPe::Observar(o->Owner);
+            if (mu::ui::window::RfAPe::APe(o->Owner) && bForceRender == FALSE)
             {
                 o->Alpha = 0.f;
                 break;

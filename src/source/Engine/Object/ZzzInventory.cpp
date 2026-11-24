@@ -1368,6 +1368,19 @@ void GetSpecialOptionText(wchar_t* Text, WORD Option, WORD Value, int iMana)
         gSkillManager.GetSkillInformation(Option, 1, NULL, &iMana, NULL);
         mu_swprintf(Text, I18N::Game::BeastUppercutManaD, iMana);
         break;
+    // MuToDog (MU Estudo): skill sem linha propria (a Phoenix Shot da Phoenix Soul Star, 0,35) sai pelo nome dela.
+    // A linha vazia encerra o tooltip (LegacyTextListTooltip), e sem isto o resto das opcoes sumia.
+    default:
+        if (Option < MAX_SKILLS && SkillAttribute != nullptr && SkillAttribute[Option].Name[0] != L'\0')
+        {
+            gSkillManager.GetSkillInformation(Option, 1, NULL, &iMana, NULL);
+            mu_swprintf(Text, L"%ls (Mana: %d)", SkillAttribute[Option].Name, iMana);
+        }
+        else
+        {
+            mu_swprintf(Text, L" ");
+        }
+        break;
     }
 }
 
