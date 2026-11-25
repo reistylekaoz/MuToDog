@@ -51,7 +51,7 @@
 				<div class="corner corner-tr"></div>
 				<div class="corner corner-bl"></div>
 				<div class="corner corner-br"></div>
-				<div class="hit"></div>
+				<div class="hit" data-event-mousedown="minimap_press"></div>
 				<div class="close" data-event-click="minimap_close" data-attr-data-hint="close_hint"></div>
 			</div>
 			<!-- MuToDog: a ajuda do clique, embaixo do mapa (o minimapa.gd do Godot escreve a mesma linha) -->

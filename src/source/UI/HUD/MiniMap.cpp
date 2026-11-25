@@ -300,18 +300,6 @@ bool mu::ui::window::CMiniMap::UpdateMouseEvent()
     const UI::Scaling::Transform overlay = OverlayTransform();
     const float pointerY = UI::Scaling::LogicalY(overlay, g_fWindowMouseY);
     const bool overMap = pointerY >= 0.f && pointerY < static_cast<float>(kMapAreaHeight);
-    // MuToDog: botão direito no mapa anda até lá (UI/Estudo/AndarMinimapa.h), como no cliente Godot
-    if (overMap && IsVisible() && MouseRButtonPush)
-    {
-        MouseRButtonPush = false;
-        MouseRButton = false;
-        int tileX = 0, tileY = 0;
-        if (TileUnderPointer(g_fWindowMouseX, g_fWindowMouseY, tileX, tileY))
-        {
-            if (mu::ui::window::AndarMinimapa::Ir(tileX, tileY))
-                PlayBuffer(SOUND_CLICK01);
-        }
-    }
     return !overMap;
 }
 
@@ -356,6 +344,19 @@ void mu::ui::window::CMiniMap::BindRmlModel(Rml::DataModelConstructor& c, MiniMa
     c.Bind("help_top", &model.helpTop);
     c.Bind("help_width", &model.helpWidth);
 
+    // MuToDog: botão direito no mapa anda até lá (UI/Estudo/AndarMinimapa.h), como no cliente Godot. O .hit do
+    // mapa pega o mouse no RmlUi (o jogo não vê o clique), então o botão chega por aqui, em px da janela.
+    c.BindEventCallback("minimap_press", [](Rml::DataModelHandle, Rml::Event& event, const Rml::VariantList&)
+                        {
+                            if (event.GetParameter<int>("button", -1) != 1)
+                                return;
+                            int tileX = 0, tileY = 0;
+                            if (TileUnderPointer(event.GetParameter<float>("mouse_x", 0.f), event.GetParameter<float>("mouse_y", 0.f),
+                                                 tileX, tileY) &&
+                                mu::ui::window::AndarMinimapa::Ir(tileX, tileY))
+                                PlayBuffer(SOUND_CLICK01);
+                        });
+
     c.BindEventCallback("minimap_close", [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&)
                         { m_PendingClose = true; });
 }
@@ -391,8 +392,12 @@ void mu::ui::window::CMiniMap::SyncScreen()
     Sync(m_RmlView.Binder(), &MiniMapRmlModel::closeHint, "close_hint", StringUtils::WideToNarrow(I18N::Game::Close388));
     // MuToDog: a ajuda fica logo acima da borda de baixo do mapa (430 da tela de referência)
     const UI::Scaling::Transform overlay = OverlayTransform();
-    Sync(m_RmlView.Binder(), &MiniMapRmlModel::helpTop, "help_top",
-         UI::Scaling::PositionY(overlay, static_cast<float>(kMapAreaHeight - 22)));
+    // (a barra de baixo da HUD cobre o fim do mapa em tela larga: a ajuda sobe pra cima dela)
+    float helpTop = UI::Scaling::PositionY(overlay, static_cast<float>(kMapAreaHeight - 22));
+    UI::Placement::PlacementParticipant::Box strip;
+    if (UI::Placement::SlotBox("main_hud", strip))
+        helpTop = std::min(helpTop, strip.top - m_RmlView.GetModel().textPx * 2.f);
+    Sync(m_RmlView.Binder(), &MiniMapRmlModel::helpTop, "help_top", helpTop);
     Sync(m_RmlView.Binder(), &MiniMapRmlModel::helpWidth, "help_width", static_cast<float>(WindowWidth));
 
     // The border tiles depend on the screen alone: rebuilt when it changes, or when a theme reload
