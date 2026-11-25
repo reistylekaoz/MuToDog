@@ -35,6 +35,7 @@
 			     data-class-icon="marker.icon != ''"
 			     data-class-dg0="marker.dg == 0" data-class-dg1="marker.dg == 1"
 			     data-class-dg2="marker.dg == 2" data-class-dg3="marker.dg == 3"
+			     data-class-dg4="marker.dg == 4"
 			     data-style-width="marker.size + 'px'" data-style-height="marker.size + 'px'"
 			     data-style-transform="marker.transform"><img class="npc-icon" data-if="marker.icon != ''" data-attr-src="marker.icon"/></div>
 			<div class="screen">
@@ -52,6 +53,10 @@
 				<div class="corner corner-br"></div>
 				<div class="hit"></div>
 				<div class="close" data-event-click="minimap_close" data-attr-data-hint="close_hint"></div>
+			</div>
+			<!-- MuToDog: a ajuda do clique, embaixo do mapa (o minimapa.gd do Godot escreve a mesma linha) -->
+			<div class="help" data-style-top="help_top + 'px'" data-style-width="help_width + 'px'">
+				<span class="help-text" data-style-font-size="text_px + 'px'">Botão direito: andar até lá · Tab ou Esc: fechar</span>
 			</div>
 			<div class="hint" data-if="hint_visible" data-style-left="hint_left + 'px'" data-style-top="hint_top + 'px'"
 			     data-style-width="hint_width + 'px'" data-style-height="hint_height + 'px'">

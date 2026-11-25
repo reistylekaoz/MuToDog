@@ -22,7 +22,7 @@ struct MiniMapMarkerEntry
     float size = 15.f;     // the icon's side, physical px (the original never scaled it)
     Rml::String transform; // CSS matrix() placing the icon element
     Rml::String icon;      // MuToDog: o ícone do NPC (IconesNpc::Source), "" = o ponto de sempre
-    int dg = -1;           // MuToDog (24/11): marca da Dungeon das 3 etapas (0 horda, 1 subchefe, 2 boss, 3 portal)
+    int dg = -1;           // MuToDog (24/11): marca da Dungeon das 3 etapas (0 horda, 1 subchefe, 2 boss, 3 portal, 4 o destino do clique)
 };
 
 struct MiniMapRmlModel
@@ -42,5 +42,8 @@ struct MiniMapRmlModel
     bool hintVisible = false;
     Rml::String hintText;
     float hintLeft = 0.f, hintTop = 0.f, hintWidth = 0.f, hintHeight = 0.f;
+
+    // MuToDog: a linha de ajuda embaixo do mapa (botão direito anda até lá), physical px
+    float helpTop = 0.f, helpWidth = 0.f;
 };
 } // namespace mu::ui::window

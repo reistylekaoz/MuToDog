@@ -21,6 +21,11 @@
 #include "World/GameMaps/GM_Kanturu_3rd.h"
 #include "Render/Text/CUIRenderText.h"
 #include "UI/Estudo/NomesNpcWindow.h"
+#include "UI/Estudo/BossBarWindow.h"
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
 
 // DevEditor forward declarations (must be at global scope)
 #ifdef _EDITOR
@@ -75,6 +80,32 @@ void DrawHealthBar(int centerX, int topY, float health, int steps, float scale)
     }
     DisableAlphaBlend();
 }
+
+// MuToDog (MU Estudo): a barra de vida na cabeça no jeito do cliente Godot (textos_mu.gd _vida): 68 x 7 px numa tela
+// de 720 de altura, contorno preto, fundo vinho, a vida vermelha com o brilho no terço de cima e o rastro claro do
+// dano descendo 0,6 da barra por segundo. Desenhada na tela de referência esticada (640 x 480), por isso a conta em px.
+void DrawHeadHealthBar(float centerX, float bottomY, float health, float trail)
+{
+    const float pxX = 640.f / std::max(1.f, static_cast<float>(WindowWidth));  // 1 px da tela em unidades
+    const float pxY = 480.f / std::max(1.f, static_cast<float>(WindowHeight));
+    const float k = static_cast<float>(WindowHeight) / 720.f;
+    const float w = std::round(68.f * k) * pxX;
+    const float h = std::max(std::round(7.f * k), 4.f) * pxY;
+    const float x = centerX - w / 2.f;
+    const float y = bottomY - h;
+
+    EnableAlphaTest();
+    RenderColorQuadARGB(x - pxX, y - pxY, w + 2.f * pxX, h + 2.f * pxY, 0xBF000000u);
+    RenderColorQuadARGB(x, y, w, h, 0xE6290808u);
+    const float ix = x + pxX, iy = y + pxY, iw = w - 2.f * pxX, ih = h - 2.f * pxY;
+    if (trail > health)
+        RenderColorQuadARGB(ix + iw * health, iy, iw * (trail - health), ih, 0xD9FFD999u);
+    if (health > 0.f)
+    {
+        RenderColorQuadARGB(ix, iy, iw * health, ih, 0xFFC7120Du);
+        RenderColorQuadARGB(ix, iy, iw * health, std::ceil(ih / pxY * 0.4f) * pxY, 0x8CFF614Du);
+    }
+}
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -86,7 +117,7 @@ mu::ui::window::CNameWindow::CNameWindow()
     m_pNewUIMng = NULL;
 
     m_bShowItemName = false;
-    m_bShowMonsterHealthBar = false;
+    m_bShowMonsterHealthBar = true; // MuToDog: a barra na cabeça já vem ligada, como no Godot (F8 esconde)
 }
 
 mu::ui::window::CNameWindow::~CNameWindow()
@@ -326,6 +357,22 @@ void mu::ui::window::CNameWindow::RenderMonsterHealthBars()
     if (!m_bShowMonsterHealthBar)
         return;
 
+    // o rastro claro de cada monstro (Key pra saber quando a casa trocou de monstro)
+    static float s_Trail[MAX_CHARACTERS_CLIENT];
+    static int s_TrailKey[MAX_CHARACTERS_CLIENT];
+    static bool s_Started = false;
+    if (!s_Started)
+    {
+        std::fill(std::begin(s_TrailKey), std::end(s_TrailKey), -1);
+        s_Started = true;
+    }
+    using Clock = std::chrono::steady_clock;
+    static Clock::time_point s_Last = Clock::now();
+    const Clock::time_point now = Clock::now();
+    const float dt = std::clamp(std::chrono::duration<float>(now - s_Last).count(), 0.f, 0.25f);
+    s_Last = now;
+
+    const int bossId = CBossBarWindow::ShownId();
     for (int i = 0; i < MAX_CHARACTERS_CLIENT; i++)
     {
         const CHARACTER* c = &CharactersClient[i];
@@ -333,9 +380,22 @@ void mu::ui::window::CNameWindow::RenderMonsterHealthBars()
 
         if (!o->Live || !o->Visible || o->Alpha <= 0.f || c->Dead > 0 || o->Kind != KIND_MONSTER)
             continue;
+        // o boss com a barra do topo não ganha outra na cabeça (Godot: _barra_na_cabeca)
+        if (bossId >= 0 && c->Key == bossId)
+            continue;
 
+        // HealthStatus vem do servidor a cada golpe (1/250 da vida); -1 = ainda não apanhou, barra cheia
+        const float health = c->HealthStatus < 0.f ? 1.f : std::clamp(c->HealthStatus, 0.f, 1.f);
+        if (s_TrailKey[i] != c->Key)
+        {
+            s_TrailKey[i] = c->Key;
+            s_Trail[i] = health;
+        }
+        s_Trail[i] = std::max(health, s_Trail[i] - dt * 0.6f);
+
+        // 35 cm acima da cabeça, como o Godot (altura + 0,35)
         vec3_t Position;
-        Vector(o->Position[0], o->Position[1], o->Position[2] + o->BoundingBoxMax[2] + 60.f, Position);
+        Vector(o->Position[0], o->Position[1], o->Position[2] + o->BoundingBoxMax[2] + 35.f, Position);
 
         int ScreenX, ScreenY;
         vec3_t transformPos;
@@ -350,9 +410,9 @@ void mu::ui::window::CNameWindow::RenderMonsterHealthBars()
             || ScreenY > (REFERENCE_HEIGHT + 100))
             continue;
 
-        // Fixed at ~3/7 width with 8 segments so each stays close to the original thickness.
-        DrawHealthBar(ScreenX, ScreenY, c->HealthStatus, 8, 3.f / 7.f);
+        DrawHeadHealthBar(static_cast<float>(ScreenX), static_cast<float>(ScreenY), health, s_Trail[i]);
     }
+    DisableAlphaBlend();
 }
 
 float mu::ui::window::CNameWindow::GetLayerDepth()

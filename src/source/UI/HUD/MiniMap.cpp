@@ -25,11 +25,13 @@
 #include "Render/Text/CUIRenderText.h"
 #include "UI/Estudo/IconesNpc.h"
 #include "UI/Estudo/DungeonEtapasWindow.h"
+#include "UI/Estudo/AndarMinimapa.h"
 #include "Engine/Object/ZzzCharacter.h"
 
 #include <RmlUi/Core/ElementDocument.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cwchar>
@@ -89,6 +91,32 @@ UI::MiniMap::Screen CurrentScreen()
             transform.scaleY,
             transform.offsetX,
             transform.offsetY};
+}
+
+// MuToDog: a casa do mapa debaixo do ponteiro (px da janela), o contrário do MapQuad. As marcas (e a seta do herói)
+// saem 25 px à direita do mapa desde o original (kMarkerShift do MiniMapLayout.cpp) e é nelas que a pessoa mira,
+// então o clique volta esses 25 px antes da conta.
+bool TileUnderPointer(float windowX, float windowY, int& tileX, int& tileY)
+{
+    if (Hero == nullptr)
+        return false;
+    const float length = UI::MiniMap::MapLength;
+    const float heroY = (static_cast<float>(Hero->PositionX) / 256.f) * length;
+    const float heroX = (static_cast<float>(Hero->PositionY) / 256.f) * length;
+    const UI::MiniMap::Quad q = UI::MiniMap::MapQuad(CurrentScreen(), heroX, heroY, length, UI::MiniMap::MapRotation);
+    const float ux = q.topRight.x - q.topLeft.x, uy = q.topRight.y - q.topLeft.y;
+    const float vx = q.bottomLeft.x - q.topLeft.x, vy = q.bottomLeft.y - q.topLeft.y;
+    const float det = ux * vy - uy * vx;
+    if (std::abs(det) < 1e-6f)
+        return false;
+    const float px = windowX - 25.f - q.topLeft.x, py = windowY - q.topLeft.y;
+    const float u = (px * vy - py * vx) / det; // 0..1 na largura do mapa = o Y da casa
+    const float v = (ux * py - uy * px) / det; // 0..1 na altura do mapa = o X da casa
+    if (u < 0.f || v < 0.f || u >= 1.f || v >= 1.f)
+        return false;
+    tileX = static_cast<int>(v * 256.f);
+    tileY = static_cast<int>(u * 256.f);
+    return true;
 }
 
 // The marker the original drew: Kind 1 an NPC (hidden in Crywolf while it is occupied, but the
@@ -271,7 +299,20 @@ bool mu::ui::window::CMiniMap::UpdateMouseEvent()
     // top 430 rows goes to nothing behind the map.
     const UI::Scaling::Transform overlay = OverlayTransform();
     const float pointerY = UI::Scaling::LogicalY(overlay, g_fWindowMouseY);
-    return !(pointerY >= 0.f && pointerY < static_cast<float>(kMapAreaHeight));
+    const bool overMap = pointerY >= 0.f && pointerY < static_cast<float>(kMapAreaHeight);
+    // MuToDog: botão direito no mapa anda até lá (UI/Estudo/AndarMinimapa.h), como no cliente Godot
+    if (overMap && IsVisible() && MouseRButtonPush)
+    {
+        MouseRButtonPush = false;
+        MouseRButton = false;
+        int tileX = 0, tileY = 0;
+        if (TileUnderPointer(g_fWindowMouseX, g_fWindowMouseY, tileX, tileY))
+        {
+            if (mu::ui::window::AndarMinimapa::Ir(tileX, tileY))
+                PlayBuffer(SOUND_CLICK01);
+        }
+    }
+    return !overMap;
 }
 
 void mu::ui::window::CMiniMap::BindRmlModel(Rml::DataModelConstructor& c, MiniMapRmlModel& model)
@@ -312,6 +353,8 @@ void mu::ui::window::CMiniMap::BindRmlModel(Rml::DataModelConstructor& c, MiniMa
     c.Bind("hint_top", &model.hintTop);
     c.Bind("hint_width", &model.hintWidth);
     c.Bind("hint_height", &model.hintHeight);
+    c.Bind("help_top", &model.helpTop);
+    c.Bind("help_width", &model.helpWidth);
 
     c.BindEventCallback("minimap_close", [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&)
                         { m_PendingClose = true; });
@@ -346,6 +389,11 @@ void mu::ui::window::CMiniMap::SyncScreen()
 {
     UI::RmlBridge::SyncNativeTextSize(m_RmlView.Binder());
     Sync(m_RmlView.Binder(), &MiniMapRmlModel::closeHint, "close_hint", StringUtils::WideToNarrow(I18N::Game::Close388));
+    // MuToDog: a ajuda fica logo acima da borda de baixo do mapa (430 da tela de referência)
+    const UI::Scaling::Transform overlay = OverlayTransform();
+    Sync(m_RmlView.Binder(), &MiniMapRmlModel::helpTop, "help_top",
+         UI::Scaling::PositionY(overlay, static_cast<float>(kMapAreaHeight - 22)));
+    Sync(m_RmlView.Binder(), &MiniMapRmlModel::helpWidth, "help_width", static_cast<float>(WindowWidth));
 
     // The border tiles depend on the screen alone: rebuilt when it changes, or when a theme reload
     // left the model empty.
@@ -460,6 +508,18 @@ void mu::ui::window::CMiniMap::SyncMap()
         const UI::MiniMap::Marker marker =
             UI::MiniMap::MarkerQuad(screen, heroX, heroY, pointX, pointY, size, 0.f, length, UI::MiniMap::MapRotation, false);
         markers.push_back({false, size, MatrixText(UI::MiniMap::ElementToQuad(marker.quad, size, size)), {}, type});
+    }
+
+    // MuToDog: para onde estou indo pelo clique no mapa (o ponto amarelo do minimapa.gd)
+    int destX = 0, destY = 0;
+    if (mu::ui::window::AndarMinimapa::Destino(destX, destY))
+    {
+        const float size = 12.f * std::max(1.f, screen.scaleY);
+        const float pointY = (static_cast<float>(destX) + 0.5f) / 256.f * length;
+        const float pointX = (static_cast<float>(destY) + 0.5f) / 256.f * length;
+        const UI::MiniMap::Marker marker =
+            UI::MiniMap::MarkerQuad(screen, heroX, heroY, pointX, pointY, size, 0.f, length, UI::MiniMap::MapRotation, false);
+        markers.push_back({false, size, MatrixText(UI::MiniMap::ElementToQuad(marker.quad, size, size)), {}, 4});
     }
 
     MiniMapRmlModel& model = m_RmlView.GetModel();

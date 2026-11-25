@@ -216,6 +216,11 @@ void CBossBarWindow::ReceivePacket(const std::uint8_t* packet, int size)
     }
 }
 
+int CBossBarWindow::ShownId()
+{
+    return g_Bar.active && g_Bar.end.empty() ? g_Bar.id : -1;
+}
+
 bool CBossBarWindow::UpdateMouseEvent()
 {
     return true;

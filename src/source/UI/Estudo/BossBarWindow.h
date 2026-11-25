@@ -57,6 +57,8 @@ public:
 
     // C1 FA 01 e C1 FA 02 (WSclient.cpp ProcessPacket).
     static void ReceivePacket(const std::uint8_t* packet, int size);
+    // O id (Key) do boss com a barra no topo agora, -1 sem barra: a barra da cabeça (NameWindow) some nele.
+    static int ShownId();
 
 private:
     void BindRmlModel(Rml::DataModelConstructor& c, BossBarRmlModel& model);

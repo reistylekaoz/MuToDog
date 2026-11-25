@@ -170,3 +170,17 @@ body { pointer-events: none; }
 .marker.dg1 { decorator: none; background-color: #ff9a2e; border: 1px #000000; border-radius: 5px; }
 .marker.dg2 { decorator: none; background-color: #ff3048; border: 2px #ffe08a; border-radius: 8px; }
 .marker.dg3 { decorator: none; background-color: #3aff8a50; border: 2px #5affa0; border-radius: 10px; }
+
+/* MuToDog: o destino do clique no mapa (botão direito, UI/Estudo/AndarMinimapa.h), o ponto amarelo do minimapa.gd. */
+.marker.dg4 { decorator: none; background-color: #ffe666; border: 2px #00000099; border-radius: 6px; }
+/* MuToDog: a linha de ajuda embaixo do mapa. */
+.help { position: absolute; left: 0; pointer-events: none; }
+.help-text {
+	display: block;
+	width: 100%;
+	font-family: "token(font-body)";
+	color: #d9d9e6;
+	text-align: center;
+	white-space: nowrap;
+	font-effect: outline(2px #000000e6);
+}
