@@ -345,14 +345,14 @@ void mu::ui::window::CMiniMap::BindRmlModel(Rml::DataModelConstructor& c, MiniMa
     c.Bind("help_width", &model.helpWidth);
 
     // MuToDog: botão direito no mapa anda até lá (UI/Estudo/AndarMinimapa.h), como no cliente Godot. O .hit do
-    // mapa pega o mouse no RmlUi (o jogo não vê o clique), então o botão chega por aqui, em px da janela.
+    // mapa pega o mouse no RmlUi (o jogo não vê o clique), então o botão chega por aqui. O ponto vem do ponteiro do
+    // jogo (px da janela, o mesmo da dica do NPC): o mouse_x/mouse_y do evento não está nessa medida.
     c.BindEventCallback("minimap_press", [](Rml::DataModelHandle, Rml::Event& event, const Rml::VariantList&)
                         {
                             if (event.GetParameter<int>("button", -1) != 1)
                                 return;
                             int tileX = 0, tileY = 0;
-                            if (TileUnderPointer(event.GetParameter<float>("mouse_x", 0.f), event.GetParameter<float>("mouse_y", 0.f),
-                                                 tileX, tileY) &&
+                            if (TileUnderPointer(g_fWindowMouseX, g_fWindowMouseY, tileX, tileY) &&
                                 mu::ui::window::AndarMinimapa::Ir(tileX, tileY))
                                 PlayBuffer(SOUND_CLICK01);
                         });
