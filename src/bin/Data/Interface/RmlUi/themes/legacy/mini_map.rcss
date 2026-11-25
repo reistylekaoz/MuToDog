@@ -184,3 +184,12 @@ body { pointer-events: none; }
 	white-space: nowrap;
 	font-effect: outline(2px #000000e6);
 }
+
+/* MuToDog (25/11): spot de monstro (minimapa.gd), a cor pelo nível perto do meu; aceso com o mouse em cima. */
+.marker.spot0, .marker.spot1, .marker.spot2 { decorator: none; border-width: 1px; }
+.marker.spot0 { background-color: #73ff7329; border-color: #73ff73d9; }
+.marker.spot1 { background-color: #ffd94d29; border-color: #ffd94dd9; }
+.marker.spot2 { background-color: #ff4d4029; border-color: #ff4d40d9; }
+.marker.spot0.lit { background-color: #73ff7352; border: 2px #a8ffa8; }
+.marker.spot1.lit { background-color: #ffd94d52; border: 2px #ffe894; }
+.marker.spot2.lit { background-color: #ff4d4052; border: 2px #ff8c80; }

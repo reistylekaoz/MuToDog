@@ -36,6 +36,8 @@
 			     data-class-dg0="marker.dg == 0" data-class-dg1="marker.dg == 1"
 			     data-class-dg2="marker.dg == 2" data-class-dg3="marker.dg == 3"
 			     data-class-dg4="marker.dg == 4"
+			     data-class-spot0="marker.spot == 0" data-class-spot1="marker.spot == 1" data-class-spot2="marker.spot == 2"
+			     data-class-lit="marker.lit" data-style-border-radius="(marker.size / 2) + 'px'"
 			     data-style-width="marker.size + 'px'" data-style-height="marker.size + 'px'"
 			     data-style-transform="marker.transform"><img class="npc-icon" data-if="marker.icon != ''" data-attr-src="marker.icon"/></div>
 			<div class="screen">

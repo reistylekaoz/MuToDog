@@ -27,6 +27,8 @@
 #include "UI/Estudo/DungeonEtapasWindow.h"
 #include "UI/Estudo/AndarMinimapa.h"
 #include "Engine/Object/ZzzCharacter.h"
+#include "Engine/Object/ZzzInfomation.h"
+#include "json.hpp"
 
 #include <RmlUi/Core/ElementDocument.h>
 
@@ -35,7 +37,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cwchar>
+#include <fstream>
+#include <map>
 #include <string>
+#include <vector>
 
 extern BYTE m_OccupationState;
 
@@ -117,6 +122,82 @@ bool TileUnderPointer(float windowX, float windowY, int& tileX, int& tileY)
     tileX = static_cast<int>(v * 256.f);
     tileY = static_cast<int>(u * 256.f);
     return true;
+}
+
+// MuToDog (25/11): os spots de monstro do OpenMU no minimapa, como no cliente Godot (minimapa.gd, 08/11): um círculo
+// por spot na cor do nível perto do meu, sem texto; com o mouse em cima ele acende e a dica diz o monstro, o nível e
+// quantos tem. Dados: dados/spots_minimapa.json, mapa -> [x1, y1, x2, y2, [[nome, nível, quantos], ...]], o mesmo
+// do Godot (ferramentas/dados_minimapa.py no mu-online).
+struct Spot
+{
+    float cx = 0.f, cy = 0.f; // o centro em casas
+    float tiles = 3.5f;       // o raio em casas
+    int level = 0;            // o nível do último monstro da lista (a cor)
+    std::string text;
+};
+
+struct SpotHit
+{
+    float x = 0.f, y = 0.f, radius = 0.f; // px da janela
+    const Spot* spot = nullptr;
+};
+
+const std::vector<Spot>& SpotsOf(int world)
+{
+    static std::map<int, std::vector<Spot>> s_spots;
+    static bool s_loaded = false;
+    if (!s_loaded)
+    {
+        s_loaded = true;
+        std::ifstream file("Data/Interface/RmlUi/dados/spots_minimapa.json");
+        const nlohmann::json j = file ? nlohmann::json::parse(file, nullptr, false) : nlohmann::json();
+        if (j.is_object())
+        {
+            for (auto it = j.begin(); it != j.end(); ++it)
+            {
+                std::vector<Spot>& list = s_spots[std::atoi(it.key().c_str())];
+                for (const auto& e : it.value())
+                {
+                    if (!e.is_array() || e.size() < 5 || !e[4].is_array() || e[4].empty())
+                        continue;
+                    const int x1 = e[0].get<int>(), y1 = e[1].get<int>(), x2 = e[2].get<int>(), y2 = e[3].get<int>();
+                    Spot spot;
+                    // o spot de 6 (5 x 5 casas) dá um círculo de 3,5 casas; área grande fica com o que cabe nela
+                    spot.cx = (x1 + x2 + 1) / 2.f;
+                    spot.cy = (y1 + y2 + 1) / 2.f;
+                    spot.tiles = std::max(3.5f, std::min(x2 - x1 + 1, y2 - y1 + 1) / 2.f);
+                    for (const auto& m : e[4])
+                    {
+                        if (!m.is_array() || m.size() < 3)
+                            continue;
+                        if (!spot.text.empty())
+                            spot.text += "  /  ";
+                        spot.text += m[0].get<std::string>() + " · nível " + std::to_string(m[1].get<int>()) + " · " +
+                                     std::to_string(m[2].get<int>()) + " monstros";
+                        spot.level = m[1].get<int>();
+                    }
+                    list.push_back(std::move(spot));
+                }
+            }
+        }
+    }
+    static const std::vector<Spot> s_none;
+    const auto found = s_spots.find(world);
+    return found != s_spots.end() ? found->second : s_none;
+}
+
+// o que está desenhado agora, pra dica (SyncHint)
+std::vector<SpotHit> s_SpotHits;
+
+// a cor pelo nível perto do meu (Godot _cor_nivel): vermelho acima de +10, amarelo de -5 a +10, verde abaixo
+int SpotColor(int level)
+{
+    const int mine = CharacterAttribute != nullptr ? static_cast<int>(CharacterAttribute->Level) : 1;
+    if (level > mine + 10)
+        return 2;
+    if (level > mine - 5)
+        return 1;
+    return 0;
 }
 
 // The marker the original drew: Kind 1 an NPC (hidden in Crywolf while it is occupied, but the
@@ -328,6 +409,8 @@ void mu::ui::window::CMiniMap::BindRmlModel(Rml::DataModelConstructor& c, MiniMa
     marker.RegisterMember("transform", &MiniMapMarkerEntry::transform);
     marker.RegisterMember("icon", &MiniMapMarkerEntry::icon); // MuToDog (rodada 14)
     marker.RegisterMember("dg", &MiniMapMarkerEntry::dg);     // MuToDog (24/11)
+    marker.RegisterMember("spot", &MiniMapMarkerEntry::spot); // MuToDog (25/11)
+    marker.RegisterMember("lit", &MiniMapMarkerEntry::lit);
     c.RegisterArray<std::vector<MiniMapMarkerEntry>>();
     c.Bind("markers", &model.markers);
 
@@ -474,6 +557,43 @@ void mu::ui::window::CMiniMap::SyncMap()
 
     AddLiveNpcs();
     std::vector<MiniMapMarkerEntry> markers;
+
+    // MuToDog (25/11): os spots primeiro, por baixo dos NPCs e portais
+    s_SpotHits.clear();
+    {
+        const float tilePx = length / 256.f * std::sqrt(screen.scaleX * screen.scaleY);
+        for (const Spot& spot : SpotsOf(static_cast<int>(gMapManager.WorldActive)))
+        {
+            const float radius = std::max(spot.tiles * tilePx, 6.f * screen.scaleY);
+            const float size = radius * 2.f;
+            const float pointY = spot.cx / 256.f * length;
+            const float pointX = spot.cy / 256.f * length;
+            const UI::MiniMap::Marker marker =
+                UI::MiniMap::MarkerQuad(screen, heroX, heroY, pointX, pointY, size, 0.f, length, UI::MiniMap::MapRotation, false);
+            const float x = (marker.quad.topRight.x + marker.quad.bottomLeft.x) / 2.f;
+            const float y = (marker.quad.topRight.y + marker.quad.bottomLeft.y) / 2.f;
+            s_SpotHits.push_back({x, y, radius, &spot});
+        }
+        // acende o primeiro debaixo do ponteiro
+        const SpotHit* lit = nullptr;
+        for (const SpotHit& hit : s_SpotHits)
+            if (!lit && std::hypot(g_fWindowMouseX - hit.x, g_fWindowMouseY - hit.y) <= hit.radius + 2.f)
+                lit = &hit;
+        for (const SpotHit& hit : s_SpotHits)
+        {
+            const float size = hit.radius * 2.f;
+            // em pé na tela (o círculo não gira com o mapa): topLeft, topRight, bottomLeft
+            const UI::MiniMap::Quad quad{{hit.x - hit.radius, hit.y - hit.radius},
+                                         {hit.x + hit.radius, hit.y - hit.radius},
+                                         {hit.x - hit.radius, hit.y + hit.radius}};
+            MiniMapMarkerEntry entry{false, size, MatrixText(UI::MiniMap::ElementToQuad(quad, size, size)), {}, -1};
+            entry.spot = SpotColor(hit.spot->level);
+            entry.lit = &hit == lit;
+            markers.push_back(std::move(entry));
+        }
+        if (lit)
+            std::rotate(s_SpotHits.begin(), s_SpotHits.begin() + (lit - s_SpotHits.data()), s_SpotHits.begin() + (lit - s_SpotHits.data()) + 1);
+    }
     for (int i = 0; i < MAX_MINI_MAP_DATA; i++)
     {
         const MINI_MAP& data = m_Mini_Map_Data[i];
@@ -531,7 +651,8 @@ void mu::ui::window::CMiniMap::SyncMap()
     const bool same = model.markers.size() == markers.size() &&
                       std::equal(markers.begin(), markers.end(), model.markers.begin(),
                                  [](const MiniMapMarkerEntry& a, const MiniMapMarkerEntry& b)
-                                 { return a.portal == b.portal && a.size == b.size && a.transform == b.transform && a.icon == b.icon && a.dg == b.dg; });
+                                 { return a.portal == b.portal && a.size == b.size && a.transform == b.transform && a.icon == b.icon && a.dg == b.dg &&
+                                          a.spot == b.spot && a.lit == b.lit; });
     if (!same)
     {
         model.markers = std::move(markers);
@@ -612,6 +733,21 @@ void mu::ui::window::CMiniMap::SyncHint()
             width = UI::Scaling::SizeX(transform, static_cast<float>(size.cx + 6));
             height = UI::Scaling::SizeY(transform, static_cast<float>(size.cy));
         }
+    }
+
+    // MuToDog (25/11): sem NPC debaixo do ponteiro, o spot aceso (o primeiro de s_SpotHits) dá a dica, em cima do círculo
+    if (!found && !s_SpotHits.empty() &&
+        std::hypot(g_fWindowMouseX - s_SpotHits[0].x, g_fWindowMouseY - s_SpotHits[0].y) <= s_SpotHits[0].radius + 2.f)
+    {
+        const SpotHit& hit = s_SpotHits[0];
+        found = true;
+        name = StringUtils::NarrowToWide(hit.spot->text);
+        g_pRenderText->SetFont(g_hFont);
+        const SIZE size = g_pRenderText->MeasureText(name.c_str(), static_cast<int>(name.size()));
+        width = UI::Scaling::SizeX(transform, static_cast<float>(size.cx + 6));
+        height = UI::Scaling::SizeY(transform, static_cast<float>(size.cy));
+        left = hit.x - width / 2.f;
+        top = hit.y - hit.radius - height - 4.f;
     }
 
     Sync(m_RmlView.Binder(), &MiniMapRmlModel::hintVisible, "hint_visible", found);

@@ -23,6 +23,8 @@ struct MiniMapMarkerEntry
     Rml::String transform; // CSS matrix() placing the icon element
     Rml::String icon;      // MuToDog: o ícone do NPC (IconesNpc::Source), "" = o ponto de sempre
     int dg = -1;           // MuToDog (24/11): marca da Dungeon das 3 etapas (0 horda, 1 subchefe, 2 boss, 3 portal, 4 o destino do clique)
+    int spot = -1;         // MuToDog (25/11): spot de monstro, a cor pelo nível perto do meu (0 verde, 1 amarelo, 2 vermelho)
+    bool lit = false;      // MuToDog (25/11): o spot com o mouse em cima
 };
 
 struct MiniMapRmlModel
