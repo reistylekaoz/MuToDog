@@ -89,8 +89,8 @@ private:
     int  m_PlayerZoomLevel = 3;
     void HandleWheelZoom();
 
-    // MuToDog (MU Estudo): zoom da roda no jeito do cliente Godot (mundo.gd aplicar_zoom). 0 é a câmera padrão do MU
-    // (1300 atrás, 1150 acima, mirando os pés), 1 é o mais perto; 8 voltas da roda vão de um ao outro. A distância
+    // MuToDog (MU Estudo): zoom da roda no jeito do cliente Godot (mundo.gd aplicar_zoom). 0 é o mais longe (1,3x a câmera
+    // padrão do MU de 1300 atrás e 1150 acima, como os 26 m do Godot), 1 é o mais perto; 8 voltas da roda vão de um ao outro. A distância
     // anda reta e a inclinação cai com o quadrado da aproximação: a câmera desce num arco e o mapa passa por trás do
     // herói (o efeito de paralaxe). m_Zoom corre atrás do m_ZoomTarget, suave.
     float m_Zoom = 0.f;

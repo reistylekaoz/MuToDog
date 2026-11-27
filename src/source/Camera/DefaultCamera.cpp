@@ -97,6 +97,9 @@ namespace
     constexpr float ZOOM_FAR_HORIZONTAL = 1300.f;
     constexpr float ZOOM_FAR_HEIGHT = 1150.f;
     constexpr float ZOOM_NEAR_RADIUS_FACTOR = 0.26f;
+    // 27/11, o Murilo: "coloque no scroll pra ficar distante igual do mu dog". O longe do Godot com o visual dream é
+    // 26 m contra os 20 do MU (VisualDream.LONGE): o arco começa 1,3x mais longe, na mesma inclinação.
+    constexpr float ZOOM_OUT_FACTOR = 1.3f;
     constexpr float ZOOM_NEAR_PITCH_DEG = 15.f;
     constexpr float ZOOM_NEAR_AIM_Z = 110.f;
     constexpr int ZOOM_STEPS = 8;
@@ -747,15 +750,15 @@ float DefaultCamera::ZoomPitch() const
 
 float DefaultCamera::ZoomHorizontal() const
 {
-    const float farRadius = sqrtf(ZOOM_FAR_HORIZONTAL * ZOOM_FAR_HORIZONTAL + ZOOM_FAR_HEIGHT * ZOOM_FAR_HEIGHT);
-    const float radius = farRadius + (farRadius * ZOOM_NEAR_RADIUS_FACTOR - farRadius) * m_Zoom;
+    const float muRadius = sqrtf(ZOOM_FAR_HORIZONTAL * ZOOM_FAR_HORIZONTAL + ZOOM_FAR_HEIGHT * ZOOM_FAR_HEIGHT);
+    const float radius = muRadius * (ZOOM_OUT_FACTOR + (ZOOM_NEAR_RADIUS_FACTOR - ZOOM_OUT_FACTOR) * m_Zoom);
     return radius * cosf(ZoomPitch() * Q_PI / 180.f);
 }
 
 float DefaultCamera::ZoomHeight() const
 {
-    const float farRadius = sqrtf(ZOOM_FAR_HORIZONTAL * ZOOM_FAR_HORIZONTAL + ZOOM_FAR_HEIGHT * ZOOM_FAR_HEIGHT);
-    const float radius = farRadius + (farRadius * ZOOM_NEAR_RADIUS_FACTOR - farRadius) * m_Zoom;
+    const float muRadius = sqrtf(ZOOM_FAR_HORIZONTAL * ZOOM_FAR_HORIZONTAL + ZOOM_FAR_HEIGHT * ZOOM_FAR_HEIGHT);
+    const float radius = muRadius * (ZOOM_OUT_FACTOR + (ZOOM_NEAR_RADIUS_FACTOR - ZOOM_OUT_FACTOR) * m_Zoom);
     return radius * sinf(ZoomPitch() * Q_PI / 180.f) + ZOOM_NEAR_AIM_Z * m_Zoom;
 }
 
