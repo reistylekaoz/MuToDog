@@ -807,7 +807,8 @@ bool CMyInventory::UpdateKeyEvent()
         }
     }
 
-    if (CanOpenMyShopInterface() == true && IsPress('S'))
+    // estudo: sem loja pessoal pela mochila (botão e tecla S); quem vende usa o Mercado (F10)
+    if (false && CanOpenMyShopInterface() == true && IsPress('S'))
     {
         if (m_bMyShopOpen)
         {
@@ -959,7 +960,7 @@ void CMyInventory::SyncRmlModel()
     syncBool(&MyInventoryRmlModel::repairVisible, "repair_visible", m_bRepairEnableLevel && !otherWindowOpen);
     syncWide(&MyInventoryRmlModel::repairTooltip, "repair_tooltip", I18N::Game::RepairL);
 
-    syncBool(&MyInventoryRmlModel::myShopVisible, "myshop_visible", m_bMyShopOpen && !otherWindowOpen);
+    syncBool(&MyInventoryRmlModel::myShopVisible, "myshop_visible", false);
     syncBool(&MyInventoryRmlModel::myShopModeOpen, "myshop_mode_open", m_MyShopMode == MYSHOP_MODE_OPEN);
     syncBool(&MyInventoryRmlModel::myShopLocked, "myshop_locked", m_bMyShopLocked);
     syncWide(&MyInventoryRmlModel::myShopTooltip, "myshop_tooltip",
