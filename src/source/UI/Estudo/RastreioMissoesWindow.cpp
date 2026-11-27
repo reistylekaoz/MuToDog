@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "UI/Estudo/RastreioMissoesWindow.h"
 #include "UI/Estudo/QuestsMainWindow.h"
+#include "UI/Placement/WindowPlacement.h"
 #include "UI/Core/WindowSystem.h"
 #include "Audio/DSPlaySound.h"
 #include "Data/GameConfig/GameConfig.h"
@@ -114,6 +115,9 @@ bool CRastreioMissoesWindow::Update()
     if (!inGame || !m_HasRows)
         return true;
 
+    // abriu ou fechou a mochila (ou outra janela do lado): o rastreio sai de baixo dela
+    if (UI::Placement::UncoveredWorldRight() != m_LivreDireita)
+        m_Placed = false;
     if (!m_Placed)
         Place();
     if (m_Save)
@@ -186,7 +190,13 @@ void CRastreioMissoesWindow::Place()
     const float y = std::clamp(CornerY + m_OffsetY, -sobraY, std::max(-sobraY, 480.f + sobraY - height));
     m_OffsetX = x - cantoX;
     m_OffsetY = y - CornerY;
-    model.left = RastreioDp(x);
+    // janela aberta na direita (mochila, personagem): só na tela o rastreio vai pro lado dela; o lugar guardado
+    // não muda, e ele volta quando a janela fecha
+    m_LivreDireita = UI::Placement::UncoveredWorldRight();
+    float xTela = x;
+    if (m_Scale > 0.f)
+        xTela = std::max(-sobraX, std::min(x, m_LivreDireita / m_Scale - sobraX - PanelWidth - 4.f));
+    model.left = RastreioDp(xTela);
     model.top = RastreioDp(y);
     m_RmlView.MarkDirty("left");
     m_RmlView.MarkDirty("top");

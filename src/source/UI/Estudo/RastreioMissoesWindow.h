@@ -66,6 +66,7 @@ private:
     float m_DragOffsetX = 0.f;
     float m_DragOffsetY = 0.f;
     float m_Scale = 1.f;
+    float m_LivreDireita = -1.f; // UncoveredWorldRight() da última Place, px da tela
     bool m_Moved = false;
     bool m_Save = false;
     bool m_Home = false;
