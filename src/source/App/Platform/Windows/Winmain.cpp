@@ -2144,8 +2144,9 @@ bool StartClient(char* szCmdLine)
     const SDL_WindowFlags windowFlags =
         Core::Platform::BuildSDLWindowFlags(g_bUseWindowMode != TRUE, false) | SDL_WINDOW_HIDDEN;
 
+    // Mu TD: o nome do servidor na janela (27/11, o Murilo)
     g_sdlWindow =
-        SDL_CreateWindow("MU Online", static_cast<int>(WindowWidth), static_cast<int>(WindowHeight), windowFlags);
+        SDL_CreateWindow("Mu TD", static_cast<int>(WindowWidth), static_cast<int>(WindowHeight), windowFlags);
     if (!g_sdlWindow)
     {
         g_ErrorReport.Write(L"> SDL_CreateWindow failed.\r\n");

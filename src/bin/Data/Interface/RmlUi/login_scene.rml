@@ -5,7 +5,8 @@
 	<link type="text/rcss" href="login_scene.rcss"/>
 </head>
 <body data-model="login_scene">
-	<!-- What NewRenderLogInScene() draws over the login scene's world: in tour mode the MU logo,
+	<!-- Mu TD (27/11, o Murilo): o logo do servidor (RmlUi/mutd/logo.ozt, pedido como .tga, caminho a partir da pasta do tema) no lugar do MU da Webzen; o brilho dele fica desligado nos temas.
+	     What NewRenderLogInScene() draws over the login scene's world: in tour mode the MU logo,
 	     its glow added to the world behind it, both fading in; the copyright line right-aligned on
 	     the original's x 335 and "All Rights Reserved." left-aligned on it; the version line at the
 	     left edge; all three on the bottom edge, white on a half-transparent black box sized to the
@@ -15,7 +16,7 @@
 	     every window). Takes no pointer events. -->
 	<div id="logo" data-if="logo_visible">
 		<div id="logo-glow" data-style-opacity="glow_level"></div>
-		<img id="logo-image" src="../../../../Logo/MU-logo.tga" data-style-opacity="logo_level"
+		<img id="logo-image" src="../../mutd/logo.tga" data-style-opacity="logo_level"
 		     data-style-image-color="logo_color"/>
 	</div>
 	<div class="line line--copyright" data-style-transform="'scale(' + font_scale + ')'">
