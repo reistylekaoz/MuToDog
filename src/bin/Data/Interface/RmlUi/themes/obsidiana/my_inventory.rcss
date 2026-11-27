@@ -223,3 +223,5 @@
 /* classe que nao usa o slot (elmo do Dark Lord, luva do Rage Fighter): sem silhueta */
 .equip-slot.no-art { decorator: none; }
 .inv-btn-exit { color: #e9edf3; border-color: #3e4652; }
+/* sem loja pessoal na mochila (o Mercado do F10 vende): o "+" fecha o buraco do botao dela */
+.inv-btn-expand { left: 97px; }
