@@ -2124,25 +2124,10 @@ bool CheckCommand(wchar_t* Text, bool bMacroText)
             return false;
         }
 
+        // estudo: sem loja pessoal (27/11, o Murilo); quem vende usa o Mercado do F10
         if (wcscmp(Text, I18N::Game::PersonalStore1117) == 0 || wcsicmp(Text, L"/personalshop") == 0)
         {
-            if (gMapManager.InChaosCastle() == true)
-            {
-                g_pSystemLogBox->AddText(I18N::Game::CanTBeInChaosCastle, mu::ui::window::TYPE_SYSTEM_MESSAGE);
-                return false;
-            }
-
-            int level = CharacterAttribute->Level;
-            if (level >= 6)
-            {
-                g_pNewUISystem->Show(mu::ui::window::INTERFACE_MYSHOP_INVENTORY);
-            }
-            else
-            {
-                wchar_t szError[48] = L"";
-                mu_swprintf(szError, I18N::Game::OnlyAboveLevelDCanUse, 6);
-                g_pSystemLogBox->AddText(szError, mu::ui::window::TYPE_SYSTEM_MESSAGE);
-            }
+            g_pSystemLogBox->AddText(L"A loja pessoal está desligada. Pra vender, use o Mercado (F10).", mu::ui::window::TYPE_SYSTEM_MESSAGE);
             return true;
         }
         if (wcsstr(Text, I18N::Game::Buy) != nullptr || wcsstr(Text, L"/purchase") != nullptr)
